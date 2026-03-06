@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kaku — Terminal for AI Coding</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (references/spell-ui-tokens.css + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --font-mono: 'Fira Code', 'SF Mono', Consolas, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+      }
+    }
+
+    /* ============ SPELL-UI STATIC (references/spell-ui-static.css) ============ */
+    .ve-card {
+      background: var(--card);
+      color: var(--card-foreground);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+    }
+    .ve-card--elevated {
+      background: var(--accent);
+      color: var(--accent-foreground);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    }
+    .ve-card--recessed {
+      background: var(--muted);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .ve-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+      font-size: 0.75rem;
+      line-height: 1;
+      border-radius: var(--radius-sm);
+      padding: 4px 6px;
+      white-space: nowrap;
+    }
+    .ve-badge--default { background: var(--primary); color: var(--primary-foreground); }
+    .ve-badge--secondary { background: var(--secondary); color: var(--secondary-foreground); }
+    .ve-badge--outline { border: 1px solid var(--input); background: var(--background); }
+    .ve-badge--green { background: oklch(0.6 0.118 184.704 / 0.12); color: var(--chart-2); }
+    .ve-badge--red { background: oklch(0.577 0.245 27.325 / 0.12); color: var(--destructive); }
+    .ve-badge--orange { background: oklch(0.828 0.189 84.429 / 0.12); color: var(--chart-4); }
+    .ve-badge--blue { background: oklch(0.646 0.222 41.116 / 0.12); color: var(--chart-1); }
+    .ve-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; white-space: nowrap; font-size: 0.875rem; font-weight: 500; border-radius: var(--radius-md); transition: background, color, border-color, box-shadow 0.15s ease; cursor: pointer; border: 1px solid transparent; outline: none; }
+    .ve-button--default { height: 2.25rem; padding: 0 1rem; background: var(--primary); color: var(--primary-foreground); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+    .ve-button--default:hover { background: oklch(from var(--primary) l c h / 0.9); }
+    .ve-button--outline { height: 2.25rem; padding: 0 1rem; border-color: var(--border); background: var(--background); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+    .ve-button--outline:hover { background: var(--accent); color: var(--accent-foreground); }
+    .ve-button--secondary { height: 2.25rem; padding: 0 1rem; background: var(--secondary); color: var(--secondary-foreground); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+    .ve-button--ghost:hover { background: var(--accent); color: var(--accent-foreground); }
+    .ve-button--sm { height: 2rem; padding: 0 0.75rem; border-radius: var(--radius-md); }
+    .ve-section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+    }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .ve-code-block {
+      background: var(--code-bg, var(--muted));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      max-height: 20rem;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; white-space: pre-wrap; overflow-wrap: break-word; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text, var(--foreground)); }
+    .ve-code-filename { position: absolute; top: -12px; left: 24px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; line-height: 1; padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--card); color: var(--card-foreground); }
+    .ve-table-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-table-wrap tbody tr:nth-child(even) { background: oklch(0.488 0.243 264.376 / 0.04); }
+    @media (prefers-color-scheme: dark) {
+      .ve-table-wrap tbody tr:nth-child(even) { background: oklch(0.488 0.243 264.376 / 0.08); }
+    }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-inner-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.75rem 1rem; }
+    .ve-inner-card .ve-title { font-weight: 600; font-size: 0.8125rem; margin-bottom: 0.25rem; }
+    .ve-inner-card .ve-desc { color: var(--muted-foreground); font-size: 0.75rem; line-height: 1.5; }
+    .ve-inner-card code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .ve-callout {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--chart-1);
+      border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+      padding: 0.875rem 1.125rem;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      color: var(--muted-foreground);
+    }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ SPELL-UI DEPTH (template modifiers) ============ */
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+
+    /* ============ LAYOUT (responsive-nav: TOC + main) ============ */
+    :root {
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      --accent: var(--chart-1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 50% 0%, oklch(0.646 0.222 41.116 / 0.06) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 2rem 1.5rem;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 50% 0%, oklch(0.488 0.243 264.376 / 0.08) 0%, transparent 55%); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.04s); }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 0 2.5rem;
+    }
+    .main { min-width: 0; }
+
+    .toc {
+      position: sticky;
+      top: 1.5rem;
+      align-self: start;
+      padding: 0.875rem 0;
+      grid-row: 1 / -1;
+      max-height: calc(100dvh - 3rem);
+      overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .toc-title {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .toc a {
+      display: block;
+      font-size: 0.6875rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      border-left: 2px solid transparent;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      line-height: 1.4;
+      margin-bottom: 1px;
+    }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--accent); background: oklch(0.488 0.243 264.376 / 0.06); }
+    @media (prefers-color-scheme: dark) {
+      .toc a.active { background: oklch(0.488 0.243 264.376 / 0.12); }
+    }
+
+    @media (max-width: 900px) {
+      .wrap { grid-template-columns: 1fr; gap: 0; padding-top: 0; }
+      .toc {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        max-height: none;
+        display: flex;
+        gap: 0.25rem;
+        align-items: center;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        padding: 0.625rem 0;
+        margin: 0 -1.5rem;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+        grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a {
+        white-space: nowrap;
+        flex-shrink: 0;
+        border-left: none;
+        border-bottom: 2px solid transparent;
+        border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+        padding: 0.375rem 0.625rem;
+        font-size: 0.625rem;
+      }
+      .toc a.active { border-left: none; border-bottom-color: var(--accent); background: var(--surface); }
+      .main { padding-top: 1.25rem; }
+      .page-section { scroll-margin-top: 3rem; }
+    }
+
+    .hero {
+      margin-bottom: 2rem;
+      --i: 0;
+    }
+    .hero .ve-card--hero {
+      padding: 1.75rem 1.5rem;
+    }
+    .hero h1 {
+      font-family: var(--font-body);
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.375rem;
+    }
+    .hero .tagline {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+    }
+    .hero .lead {
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: var(--text-dim);
+      max-width: 52ch;
+    }
+    .hero a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .hero a:hover { text-decoration: none; }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .features .ve-card {
+      --i: 1;
+      min-width: 0;
+    }
+    .features .ve-card:first-child { border-left: 3px solid var(--chart-1); }
+    .features .ve-card h3 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      margin-bottom: 0.375rem;
+    }
+    .features .ve-card p {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      color: var(--muted-foreground);
+    }
+
+    .page-section { margin-bottom: 2rem; }
+    .page-section .ve-section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .ve-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .ve-table-wrap { margin-bottom: 1rem; }
+    .ve-table-wrap table code { font-family: var(--font-mono); font-size: 0.75rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .quick-start-wrap .ve-card { padding: 1.25rem 1.5rem; }
+    .quick-start {
+      list-style: none;
+      counter-reset: step;
+    }
+    .quick-start li {
+      position: relative;
+      padding-left: 2.25rem;
+      margin-bottom: 0.625rem;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      --i: 2;
+    }
+    .quick-start li::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1.375rem;
+      height: 1.375rem;
+      border-radius: var(--radius-sm);
+      background: var(--primary);
+      color: var(--primary-foreground);
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .quick-start code { font-family: var(--font-mono); font-size: 0.75rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .ve-callout { margin-top: 0; }
+    .cli-wrap .ve-card--recessed { padding: 1rem 1.25rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="toc" id="toc">
+      <div class="toc-title">Contents</div>
+      <a href="#s-features">Features</a>
+      <a href="#s-shortcuts">Shortcuts</a>
+      <a href="#s-performance">Performance</a>
+      <a href="#s-quick-start">Quick Start</a>
+      <a href="#s-kaku-ai">Kaku AI</a>
+      <a href="#s-cli">CLI</a>
+    </nav>
+
+    <div class="main">
+      <header class="hero animate">
+        <div class="ve-card ve-card--hero">
+          <h1>Kaku</h1>
+          <p class="tagline">A fast, out-of-the-box terminal built for AI coding</p>
+          <p class="lead">
+            Deeply customized fork of WezTerm for macOS. Zero config, theme-aware, curated shell stack, and a smaller binary with instant startup. Full WezTerm Lua config compatibility.
+          </p>
+          <p class="tagline" style="margin-top: 0.5rem;">
+            <a href="https://github.com/tw93/Kaku" target="_blank" rel="noopener">github.com/tw93/Kaku</a>
+          </p>
+        </div>
+      </header>
+
+      <section id="s-features" class="page-section animate">
+        <h2 class="ve-section-label"><span class="ve-dot" style="background: var(--chart-1);"></span>Features</h2>
+        <div class="features">
+          <div class="ve-card animate">
+            <h3>Zero Config</h3>
+            <p>Defaults: JetBrains Mono, opencode theme, macOS font rendering, low-res font sizing. Ready on first launch.</p>
+          </div>
+          <div class="ve-card animate">
+            <h3>Theme-Aware</h3>
+            <p>Built-in dark/light themes with tuned selection colors, font weight, and practical <code>color_overrides</code> support.</p>
+          </div>
+          <div class="ve-card animate">
+            <h3>Curated Shell Suite</h3>
+            <p>Built-in zsh plugins (z, completions, syntax highlighting, autosuggestions). Optional: Starship, Delta, Lazygit, Yazi.</p>
+          </div>
+          <div class="ve-card animate">
+            <h3>Fast &amp; Lightweight</h3>
+            <p>~40% smaller binary, instant startup, lazy loading, stripped-down GPU-accelerated core.</p>
+          </div>
+          <div class="ve-card animate">
+            <h3>WezTerm-Compatible</h3>
+            <p>Use WezTerm's Lua config directly; full API compatibility, no migration.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="s-shortcuts" class="page-section animate" style="--i: 1;">
+        <h2 class="ve-section-label"><span class="ve-dot" style="background: var(--chart-1);"></span>Shortcuts</h2>
+        <div class="ve-table-scroll">
+          <div class="ve-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Action</th>
+                  <th>Shortcut</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Toggle Global Window</td><td><code>Cmd + Opt + Ctrl + K</code></td></tr>
+                <tr><td>New Tab</td><td><code>Cmd + T</code></td></tr>
+                <tr><td>New Window</td><td><code>Cmd + N</code></td></tr>
+                <tr><td>Close Tab/Pane</td><td><code>Cmd + W</code></td></tr>
+                <tr><td>Navigate Tabs</td><td><code>Cmd + Shift + [</code>, <code>Cmd + Shift + ]</code> or <code>Cmd + 1-9</code></td></tr>
+                <tr><td>Navigate Panes</td><td><code>Cmd + Opt + Arrows</code></td></tr>
+                <tr><td>Split Pane Vertical</td><td><code>Cmd + D</code></td></tr>
+                <tr><td>Split Pane Horizontal</td><td><code>Cmd + Shift + D</code></td></tr>
+                <tr><td>Zoom/Unzoom Pane</td><td><code>Cmd + Shift + Enter</code></td></tr>
+                <tr><td>Open Settings Panel</td><td><code>Cmd + ,</code></td></tr>
+                <tr><td>Kaku AI Settings</td><td><code>Cmd + Shift + A</code></td></tr>
+                <tr><td>Apply Suggestion</td><td><code>Cmd + Shift + E</code></td></tr>
+                <tr><td>Open Lazygit</td><td><code>Cmd + Shift + G</code></td></tr>
+                <tr><td>Yazi File Manager</td><td><code>Cmd + Shift + Y</code> or <code>y</code></td></tr>
+                <tr><td>Font Size</td><td><code>Cmd + +</code>, <code>Cmd + -</code>, <code>Cmd + 0</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="s-performance" class="page-section animate" style="--i: 2;">
+        <h2 class="ve-section-label"><span class="ve-dot" style="background: var(--chart-2);"></span>Performance</h2>
+        <div class="kpi-row">
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">~40 MB</div>
+            <div class="ve-kpi-card__label">Executable</div>
+          </div>
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">~80 MB</div>
+            <div class="ve-kpi-card__label">Resources</div>
+          </div>
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">Instant</div>
+            <div class="ve-kpi-card__label">Launch</div>
+          </div>
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">~100 ms</div>
+            <div class="ve-kpi-card__label">Shell bootstrap</div>
+          </div>
+        </div>
+        <div class="ve-table-scroll">
+          <div class="ve-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>Upstream</th>
+                  <th>Kaku</th>
+                  <th>Methodology</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Executable Size</td><td>~67 MB</td><td>~40 MB</td><td>Aggressive symbol stripping &amp; feature pruning</td></tr>
+                <tr><td>Resources Volume</td><td>~100 MB</td><td>~80 MB</td><td>Asset optimization &amp; lazy-loaded assets</td></tr>
+                <tr><td>Launch Latency</td><td>Standard</td><td>Instant</td><td>Just-in-time initialization</td></tr>
+                <tr><td>Shell Bootstrap</td><td>~200 ms</td><td>~100 ms</td><td>Optimized environment provisioning</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="s-quick-start" class="page-section animate" style="--i: 3;">
+        <h2 class="ve-section-label"><span class="ve-dot" style="background: var(--chart-3);"></span>Quick Start</h2>
+        <div class="quick-start-wrap">
+          <div class="ve-card">
+            <ol class="quick-start">
+              <li>Download Kaku DMG and drag to Applications, or <code>brew install tw93/tap/kakuku</code></li>
+              <li>Open Kaku (Apple-notarized; no security warnings)</li>
+              <li>First launch auto-sets up your shell environment</li>
+              <li>Config: <code>~/.config/kaku/kaku.lua</code> (WezTerm Lua API). Run <code>kaku config</code> or <code>Cmd + ,</code> for Settings TUI</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section id="s-kaku-ai" class="page-section animate" style="--i: 4;">
+        <h2 class="ve-section-label"><span class="ve-dot" style="background: var(--chart-4);"></span>Kaku AI</h2>
+        <div class="ve-callout">
+          <strong>Kaku Assistant</strong> analyzes failed commands and suggests a safe fix; press <code>Cmd + Shift + E</code> to apply. Configure via <code>kaku ai</code> or <code>Cmd + Shift + A</code>: enable/disable, model, base URL, API key. One place to manage external AI tools (Claude Code, Codex, Gemini CLI, Copilot CLI, etc.). For custom headers (e.g. enterprise gateway), edit <code>~/.config/kaku/assistant.toml</code> and set <code>custom_headers</code>.
+        </div>
+      </section>
+
+      <section id="s-cli" class="page-section animate" style="--i: 5;">
+        <h2 class="ve-section-label"><span class="ve-dot" style="background: var(--chart-5);"></span>CLI</h2>
+        <div class="cli-wrap">
+          <div class="ve-card ve-card--recessed">
+            <div class="ve-code-block">
+              <pre><code>kaku          # list commands
+kaku ai       # AI settings
+kaku config   # open Settings TUI
+kaku doctor   # diagnostics (Ctrl + Shift + L in app)
+kaku update   # check for updates
+kaku cli split-pane -- bash -c "echo Hello"</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var toc = document.getElementById('toc');
+    var links = toc.querySelectorAll('a');
+    var sections = [];
+    links.forEach(function(link) {
+      var id = link.getAttribute('href').slice(1);
+      var el = document.getElementById(id);
+      if (el) sections.push({ id: id, el: el, link: link });
+    });
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          links.forEach(function(l) { l.classList.remove('active'); });
+          var match = sections.find(function(s) { return s.el === entry.target; });
+          if (match) {
+            match.link.classList.add('active');
+            if (window.innerWidth <= 900) {
+              match.link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+          }
+        }
+      });
+    }, { rootMargin: '-10% 0px -80% 0px' });
+    sections.forEach(function(s) { observer.observe(s.el); });
+    links.forEach(function(link) {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        var id = link.getAttribute('href').slice(1);
+        var el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          history.replaceState(null, '', '#' + id);
+        }
+      });
+    });
+  })();
+  </script>
+</body>
+</html>
