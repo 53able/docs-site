@@ -1,0 +1,141 @@
+---
+name: docs-site-add-visual-doc
+description: docs-site に Spell UI 準拠のビジュアル解説ページを追加し、index にリンク・画面構成を揃え、ブランチでコミットして PR まで行う一連のワークフロー。本スキル内の手順だけで完結する。「資料を追加して」「新しい解説ページを」「index に載せたい」と依頼された時に使用。
+---
+
+# docs-site ビジュアル解説の追加ワークフロー
+
+docs-site リポジトリに、Spell UI で統一したビジュアル解説ページを追加し、index との整合を取って **PR まで完了**させる手順。参照はすべて **プロジェクト内** の既存ファイルに取り、本スキル内で完結する。
+
+## 前提
+
+- **出力先**: 解説ページの HTML は **`<プロジェクトルート>/docs/`** に出力する（ユーザーが別指定した場合はそれに従う）。
+- **main 直接コミット禁止**のルールがある場合は、必ずブランチを切ってからコミットする。
+- ファイル名・ブランチ名は **単語連結最大 4 つまで** のルールに従う。
+
+---
+
+## ワークフロー（スキル内完結）
+
+### Step 1: 参照取得（プロジェクト内のみ）
+
+Spell UI のトークン・コンポーネント・TOC 実装は、**プロジェクト内の既存ファイル** を読んで把握する。
+
+| 読むファイル | 目的 |
+|-------------|------|
+| `index.html` | Spell UI トークン（`:root` / dark）、`.ve-card` / `.ve-card--hero` / `.ve-section-label`、`.doc-list` とリンクカード（`.ve-card--link`、`.index-doc-title`、`.index-doc-file`）の構造 |
+| `docs/opentui.html` または `docs/react-grab.html` のいずれか 1 件 | 解説ページ 1 本の体裁：THEME（:root + dark）、Spell UI static（.ve-card, .ve-card--elevated, .ve-card--recessed, .ve-card--hero, .ve-section-label, .ve-code-block, .ve-table-wrap, .ve-kpi-card, .ve-callout）、`.wrap` / `.toc` / `.main`、`.sec-head`、Scroll Spy 用の `<script>` |
+
+**注意**: 本スキル配下に `references/` がある場合でも、**実際の見た目は index と docs の既存 HTML に合わせる**。プロジェクト内の `index.html` と `docs/*.html` を正とする。
+
+### Step 2: ビジュアル解説ページの生成
+
+1. **新規ファイル**: `docs/<名前>.html`（名前は内容が分かるように、例: `react-grab.html`, `kaku-terminal.html`）。
+2. **Spell UI 準拠**
+   - 上記 Step 1 で読んだ `docs/opentui.html` または `docs/react-grab.html` の `<style>` 構造を流用する（THEME → Spell UI static → Reset → Wrap+TOC → Typography → その他）。
+   - コンポーネント: `.ve-card`（本文）、`.ve-card--elevated`（強調ブロック）、`.ve-card--recessed`（参照・補足）、`.ve-card--hero`（先頭ヒーロー用）、`.ve-section-label` + `.ve-dot`、`.ve-code-block`、`.ve-table-wrap`、`.ve-kpi-card`、`.ve-callout` を内容に応じて使い分ける。
+3. **4 セクション以上の場合**
+   - `.wrap` / `.toc` / `.main` のレイアートを使う。
+   - デスクトップ: スティッキーサイドバー TOC。モバイル: 横スクロール TOC（既存 docs のメディアクエリを流用）。
+   - 各セクションに `id` を付け、TOC の `a[href="#id"]` と対応させる。
+   - スクロールに連動して TOC の `active` を付ける Scroll Spy 用の `<script>` を、既存の `docs/*.html` からコピーして使う。
+4. **内容**
+   - 対象の製品・ツール・概念に合わせて、概要・構成・使い方・API・参考リンクなどのセクションを組み、既存の解説ページと同程度の粒度で書く。
+
+### Step 3: index.html へのリンク追加
+
+- 資料一覧 **`.doc-list`** 内に、既存と同形式のリンクカードを **1 件** 追加する。
+- 挿入位置: 既存の `<li>...</li>` の直後（コメント「追加する資料はここに」の直前が無難）。
+
+```html
+<li>
+  <a class="ve-card ve-card--link" href="docs/<ファイル名>.html">
+    <span class="index-doc-title">（資料のタイトル）</span>
+    <span class="index-doc-file">docs/<ファイル名>.html</span>
+  </a>
+</li>
+```
+
+### Step 4: index の画面構成を Spell UI で揃える（任意）
+
+index のレイアートを他ページと統一したい場合のみ行う。
+
+- ヒーローを `.ve-card.ve-card--hero` でラップする。
+- 資料リスト直前に `.ve-section-label`（＋`.ve-dot`）を追加する。
+- `.container` に `max-width: 920px` を設定する。
+- 背景を chart-1 系の淡いグラデーションにする。
+- 変更対象は `index.html` のみ。既存のリンクカードの挙動は変えない。
+- 実施する場合は、**別コミット**（例: refactor）に分けるとよい。
+
+### Step 5: ブランチ・コミット
+
+1. **環境確認**
+   - `git branch --show-current` で現在ブランチを確認。
+2. **main にいる場合**
+   - main 直接コミット禁止なら、作業用ブランチを切る。
+   - ブランチ名例: `docs/<名前>-link`（単語連結最大 4 つ、例: `docs/react-grab-link`）。
+   ```bash
+   git checkout -b docs/<名前>-link
+   ```
+3. **ステージ・コミット**
+   - 「解説ページ追加＋index リンク」は **1 コミット** にまとめる（論理単位）。
+   - コミットメッセージ例: `docs: ○○ ビジュアル解説追加と index リンク`（○○は資料名・トピック）。
+   ```bash
+   git add docs/<新規ファイル>.html index.html
+   git commit -m "docs: ○○ ビジュアル解説追加と index リンク"
+   ```
+
+### Step 6: Push とドラフト PR 作成
+
+1. **未コミットの有無確認**
+   - `git status -s` で未コミット変更が無いことを確認。
+2. **Push**
+   ```bash
+   git push -u origin docs/<名前>-link
+   ```
+3. **ドラフト PR**
+   - `gh` でドラフト PR を作成。本文はヒアドキュメントで渡し、クォーティング問題を避ける。
+   ```bash
+   gh pr create --draft --base main --assignee @me --title "docs: ○○ ビジュアル解説ページ追加" --body-file - <<'PRBODY'
+   ## なぜ必要か
+   （○○の概要を資料として残し、資料一覧から参照できるようにするため、など）
+
+   ## 何を変えたか
+   - docs/<ファイル>.html を新規追加（Spell UI 準拠・目次・Scroll Spy 付き）
+   - index.html の資料リストに ○○ へのリンクカードを 1 件追加
+
+   ## 変更内容
+   - （セクション構成の簡潔な説明）
+
+   ## レビューポイント
+   - Spell UI の体裁が他資料と揃っているか
+   - リンク・コード例の内容が誤っていないか
+
+   ## 確認済み事項
+   - main には直接コミットせずブランチでコミット済み
+   - コミットは 1 件（解説ページ追加＋index リンク）
+   PRBODY
+   ```
+   - GitHub コメントでは絵文字を使わないルールがある場合は、PR 本文にも絵文字を入れない。
+
+---
+
+## チェックリスト（完了確認）
+
+- [ ] 解説ページが `docs/` にあり、Spell UI トークン・コンポーネントで統一されている
+- [ ] index の資料一覧（`.doc-list`）に当該ページへのリンクが追加されている
+- [ ] （任意）index のヒーロー・セクションラベル・コンテナ幅が Spell UI で揃っている
+- [ ] main に直接コミットしておらず、ブランチでコミットしている
+- [ ] ドラフト PR が作成され、ベースは main・アサイン済み
+
+---
+
+## 参照（必要時のみ）
+
+| 用途 | 参照先 |
+|------|--------|
+| コミット分割・複数カテゴリ | commit-diffs スキル |
+| PR 本文の詳細テンプレート・複雑な PR | pr-creation スキル |
+| index 変更プランの事前評価 | self-refine スキル |
+
+通常の「1 解説ページ追加 + index リンク → 1 コミット → 1 ドラフト PR」は、**上記 Step 1〜6 のみで完結**する。
