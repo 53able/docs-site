@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Paperclip — ゼロヒューマン企業のためのオーケストレーション</title>
   <meta name="description" content="ゼロヒューマン企業のためのオーケストレーション Paperclip の紹介。">
+  <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Paperclip — ゼロヒューマン企業のためのオーケストレーション">
   <meta property="og:description" content="ゼロヒューマン企業のためのオーケストレーション Paperclip の紹介。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/paperclip-master.html">
+  <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Paperclip — ゼロヒューマン企業のためのオーケストレーション">
   <meta name="twitter:description" content="ゼロヒューマン企業のためのオーケストレーション Paperclip の紹介。">
@@ -197,7 +199,9 @@
     <a href="#overview">概要</a>
     <a href="#features">特徴</a>
     <a href="#problems">解決する問題</a>
+    <a href="#special">なぜ特別か</a>
     <a href="#quickstart">クイックスタート</a>
+    <a href="#development">開発</a>
     <a href="#links">参考リンク</a>
   </nav>
 
@@ -281,7 +285,31 @@
     </ul>
   </div>
 
-  <section id="quickstart" class="sec-head">4 — クイックスタート</section>
+  <section id="special" class="sec-head">4 — なぜ特別か</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> オーケストレーションの正しさ</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ポイント</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Atomic execution</td><td>タスクチェックアウトと予算強制がアトミック。二重作業と暴走コストを防ぐ。</td></tr>
+          <tr><td>Persistent agent state</td><td>エージェントはハートビートをまたいで同じタスクコンテキストを再開。ゼロからやり直さない。</td></tr>
+          <tr><td>Runtime skill injection</td><td>エージェントは実行時に Paperclip のワークフローやプロジェクトコンテキストを学習可能。再学習不要。</td></tr>
+          <tr><td>Governance with rollback</td><td>承認ゲートが強制され、設定はリビジョン管理。悪い変更は安全にロールバック可能。</td></tr>
+          <tr><td>Goal-aware execution</td><td>タスクはゴールの親子関係を持ち、エージェントは「なぜ」を一貫して把握できる。</td></tr>
+          <tr><td>True multi-company isolation</td><td>すべてのエンティティは会社スコープ。1 デプロイで複数会社を完全に分離したデータ・監査で運用可能。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Paperclip が向いていないもの</span>
+    <p>チャットボットではなく「仕事」を持つエージェント用。ワークフロー Builder やプロンプトマネージャーではなく、組織図・ゴール・予算・ガバナンスで「会社」をモデルする。単一エージェント用ではなく、チーム向け。</p>
+  </div>
+
+  <section id="quickstart" class="sec-head">5 — クイックスタート</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> セルフホスト・オープンソース</span>
     <p>Paperclip アカウントは不要。一発セットアップ:</p>
@@ -299,7 +327,24 @@ pnpm dev</code></pre>
     <div class="ve-callout"><strong>要件:</strong> Node.js 20+、pnpm 9.15+</div>
   </div>
 
-  <section id="links" class="sec-head">5 — 参考リンク</section>
+  <section id="development" class="sec-head">6 — 開発</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 開発用コマンド</span>
+    <p>リポジトリ clone 後、主なスクリプト:</p>
+    <div class="ve-code-block">
+      <pre><code>pnpm dev          # API + UI のフル開発（watch）
+pnpm dev:once     # ファイル監視なしで 1 回起動
+pnpm dev:server   # サーバーのみ
+pnpm build        # 全体ビルド
+pnpm typecheck    # 型チェック
+pnpm test:run     # テスト実行
+pnpm db:generate  # DB マイグレーション生成
+pnpm db:migrate   # マイグレーション適用</code></pre>
+    </div>
+    <p>詳細は <code>doc/DEVELOPING.md</code> を参照。</p>
+  </div>
+
+  <section id="links" class="sec-head">7 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
     <ul>
