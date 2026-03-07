@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kaku リポジトリ解説 — コードベース構成</title>
+  <meta name="description" content="Kaku（WezTerm fork）のリポジトリ構成・ワークスペース・主要クレートの解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Kaku リポジトリ解説 — コードベース構成">
+  <meta property="og:description" content="Kaku（WezTerm fork）のリポジトリ構成・ワークスペース・主要クレートの解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/kaku-repo.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Kaku リポジトリ解説 — コードベース構成">
+  <meta name="twitter:description" content="Kaku（WezTerm fork）のリポジトリ構成・ワークスペース・主要クレートの解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --font-mono: 'Fira Code', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.646 0.222 41.116 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.488 0.243 264.376 / 0.08) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC (responsive nav) ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#workspace">ワークスペース構成</a>
+    <a href="#crates">主要クレート</a>
+    <a href="#build">ビルド</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>Kaku リポジトリ解説</h1>
+  <p class="subtitle">WezTerm fork のコードベース構成・ワークスペース・クレート役割</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> リポジトリ</span>
+    <p><strong>Kaku</strong> は <a href="https://github.com/wez/wezterm" target="_blank" rel="noopener">WezTerm</a> の fork。AI コーディング向けに「ゼロコンフィグ・軽量・即起動」を目指したターミナル。Rust の Cargo ワークスペースで、<strong>kaku</strong>（CLI）と <strong>kaku-gui</strong>（GUI）の 2 本のバイナリ、および <strong>config</strong>（Lua 設定）・<strong>mux</strong>（マルチプレクサ）・多数の wezterm-* クレートで構成される。</p>
+    <div class="ve-callout">
+      <strong>製品の使い方</strong>は別資料 <a href="kaku-terminal.html">Kaku — Terminal for AI Coding</a> を参照。本ページはリポジトリ・開発者向けの構成解説。
+    </div>
+  </div>
+
+  <section id="workspace" class="sec-head">2 — ワークスペース構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Cargo workspace</span>
+    <p>ルート <code>Cargo.toml</code> の <code>[workspace] members</code> に含まれる主なクレート:</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>パス</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>kaku</code></td><td>CLI バイナリ。clap でサブコマンド（ai, config, doctor, update, cli 等）、mux・wezterm-client・config に依存。</td></tr>
+          <tr><td><code>kaku-gui</code></td><td>GUI バイナリ。ウィンドウ・タブ・ペイン描画、macOS ネイティブ連携。</td></tr>
+          <tr><td><code>config</code></td><td>Lua 設定読み込み（mlua, wezterm-config-derive）。<code>~/.config/kaku/kaku.lua</code> を WezTerm API 互換で解釈。</td></tr>
+          <tr><td><code>mux</code></td><td>マルチプレクサ。タブ・ペイン・PTY 管理。wezterm-mux-server-impl 等と連携。</td></tr>
+          <tr><td><code>crates/bidi</code></td><td>双方向テキスト（Bidi）処理。</td></tr>
+          <tr><td><code>crates/wezterm-*</code></td><td>wezterm-cell, wezterm-escape-parser, wezterm-surface, wezterm-ssh, wezterm-open-url, wezterm-uds, wezterm-dynamic 等。ターミナル描画・入力・通信の基盤。</td></tr>
+          <tr><td><code>deps/cairo</code></td><td>Cairo バインディング（描画）。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>このほか <code>term</code>・<code>termwiz</code>・<code>window</code>・<code>lua-api-crates</code> などサブツリーがあり、WezTerm 由来のターミナルエミュレーションと Lua API を提供する。</p>
+  </div>
+
+  <section id="crates" class="sec-head">3 — 主要クレート</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> kaku（CLI）</span>
+    <p><code>kaku/Cargo.toml</code> の主な依存: <code>config</code>, <code>mux</code>, <code>wezterm-client</code>, <code>wezterm-gui-subcommands</code>, <code>clap</code>, <code>ratatui</code>, <code>env-bootstrap</code>, <code>portable-pty</code>, <code>termwiz</code>。TUI（<code>kaku config</code>, <code>kaku ai</code>）は ratatui で実装されている。</p>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> config</span>
+    <p>Lua 5.4（mlua, vendored）で <code>kaku.lua</code> を読み、WezTerm 互換の <code>config</code> テーブルを構築。フォント・テーマ・キーバインド・<code>color_overrides</code> 等を扱う。notify で設定ファイル変更の監視が可能。</p>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> crates/ 補助</span>
+    <p><code>wezterm-cell</code>（セル表現）, <code>wezterm-escape-parser</code>（エスケープシーケンス）, <code>wezterm-surface</code>（描画サーフェス）, <code>pty</code>, <code>bidi</code>, <code>codec</code> などがターミナル核心を担う。Kaku 固有の最適化（strip, lazy load）はビルドプロファイルで制御される。</p>
+  </div>
+
+  <section id="build" class="sec-head">4 — ビルド</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> プロファイル</span>
+    <p>通常のリリースは <code>cargo build --release</code>。より小さいバイナリ用に <code>release-opt</code> が定義されている:</p>
+    <div class="ve-code-block">
+      <pre><code>[profile.release-opt]
+inherits = "release"
+opt-level = "z"    # サイズ最適化
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+panic = "abort"</code></pre>
+    </div>
+    <p>使用例: <code>cargo build --profile release-opt -p kaku -p kaku-gui</code>。実行体・リソースの削減により、公式の「約 40% 小型・即起動」を実現している。</p>
+  </div>
+
+  <section id="links" class="sec-head">5 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・上流</span>
+    <ul>
+      <li><a href="https://github.com/tw93/Kaku" target="_blank" rel="noopener">GitHub: tw93/Kaku</a></li>
+      <li><a href="https://github.com/wez/wezterm" target="_blank" rel="noopener">GitHub: wez/wezterm</a>（上流）</li>
+      <li><a href="kaku-terminal.html">Kaku — Terminal for AI Coding</a>（本サイト・製品解説）</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) s.link.classList.add('active'); else s.link.classList.remove('active');
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
