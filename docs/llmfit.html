@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>llmfit — ハードウェアに合う LLM を一発で見つける</title>
   <meta name="description" content="ハードウェアに合う LLM を一発で見つける llmfit の紹介。">
+  <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="llmfit — ハードウェアに合う LLM を一発で見つける">
   <meta property="og:description" content="ハードウェアに合う LLM を一発で見つける llmfit の紹介。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/llmfit.html">
+  <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="llmfit — ハードウェアに合う LLM を一発で見つける">
   <meta name="twitter:description" content="ハードウェアに合う LLM を一発で見つける llmfit の紹介。">
@@ -257,6 +259,27 @@ cargo build --release
       <pre><code>llmfit</code></pre>
     </div>
     <p>対話式 UI が起動する。システムスペック（CPU / RAM / GPU / VRAM / バックエンド）が上部に表示され、モデル一覧がスコア順のテーブルで出る。検索・フィルタ・ソート・テーマ切り替え・Plan モード（必要なハードウェア見積もり）・ダウンロードなどがキー操作で可能。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>キー</th><th>操作</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>↑</code> / <code>↓</code> または <code>j</code> / <code>k</code></td><td>モデル移動</td></tr>
+          <tr><td><code>/</code></td><td>検索モード（名前・プロバイダ・パラメータ・用途で部分一致）</td></tr>
+          <tr><td><code>f</code></td><td>Fit フィルタ: All → Runnable → Perfect → Good → Marginal</td></tr>
+          <tr><td><code>a</code></td><td>利用可否: All → GGUF Avail → Installed</td></tr>
+          <tr><td><code>s</code></td><td>ソート列: Score / Params / Mem% / Ctx / Date / Use Case</td></tr>
+          <tr><td><code>t</code></td><td>テーマ切替（6 種類、自動保存）</td></tr>
+          <tr><td><code>p</code></td><td>Plan モード（選択モデルに必要なハードウェア見積もり）</td></tr>
+          <tr><td><code>d</code></td><td>選択モデルをダウンロード（複数プロバイダ時はピッカー表示）</td></tr>
+          <tr><td><code>Enter</code></td><td>詳細表示のオン/オフ</td></tr>
+          <tr><td><code>q</code></td><td>終了</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Plan モード（<code>p</code>）</h3>
+    <p>「このマシンに何が載るか」ではなく「このモデルを動かすには何が必要か」を逆算する。選択行で <code>p</code> を押すと、Context / Quant / Target TPS を編集でき、最小・推奨 VRAM/RAM/CPU コアや、GPU / CPU offload / CPU のみの可否が表示される。</p>
     <h3>CLI モード</h3>
     <p><code>--cli</code> またはサブコマンドで従来のテーブル出力になる。</p>
     <div class="ve-code-block">
@@ -285,6 +308,9 @@ llmfit plan "Qwen/Qwen3-4B-MLX-4bit" --context 8192 --json</code></pre>
           <tr><td><code>GET /api/v1/models/top?limit=5&use_case=coding</code></td><td>このノード向けトップモデル</td></tr>
         </tbody>
       </table>
+    </div>
+    <div class="ve-callout">
+      <strong>上級者向け:</strong> GPU VRAM の自動検出が失敗する環境では <code>llmfit --memory=24G</code> で指定できる。メモリ見積もりのコンテキスト長は <code>--max-context 8192</code> でキャップ可能。いずれも TUI / CLI / serve で共通。
     </div>
   </div>
 
