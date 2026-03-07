@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Requirements Audit — Reference Template</title>
+<!--
+  Reference template for the visual-explainer skill: data tables.
+  Theme and component tokens from spell-ui-main (app/globals.css + registry/spell-ui/badge).
+  Key patterns demonstrated:
+  - spell-ui semantic tokens and Badge-style status (green/red/orange variants)
+  - KPI summary cards (spell-ui card + radius-lg)
+  - Collapsible <details> section
+  - Real <table> with sticky header, alternating rows
+  - Status badges aligned to spell-ui Badge (rounded-sm, px-1.5 py-1, font-medium text-xs)
+  - Staggered row animation, prefers-color-scheme, responsive table wrapper
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============ THEME (references/spell-ui-tokens.css + fonts) ============ */
+  :root {
+    --radius: 0.625rem;
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.646 0.222 41.116);
+    --chart-2: oklch(0.6 0.118 184.704);
+    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-4: oklch(0.828 0.189 84.429);
+    --chart-5: oklch(0.769 0.188 70.08);
+    --code-bg: var(--muted);
+    --code-text: #032f62;
+    --font-body: 'Instrument Serif', 'Georgia', serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --font-sans: system-ui, -apple-system, sans-serif;
+    --bg: var(--background);
+    --surface: var(--card);
+    --surface2: var(--muted);
+    --border-bright: var(--ring);
+    --text: var(--foreground);
+    --text-dim: var(--muted-foreground);
+    --accent-dim: oklch(0.646 0.222 41.116 / 0.1);
+    --green: var(--chart-2);
+    --green-dim: oklch(0.6 0.118 184.704 / 0.12);
+    --red: var(--destructive);
+    --red-dim: oklch(0.577 0.245 27.325 / 0.12);
+    --orange: var(--chart-4);
+    --orange-dim: oklch(0.828 0.189 84.429 / 0.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: oklch(0.1149 0 0);
+      --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0);
+      --card-foreground: oklch(0.985 0 0);
+      --popover: oklch(0.205 0 0);
+      --popover-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(22.213% 0.00003 271.152);
+      --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0);
+      --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%);
+      --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+      --chart-1: oklch(0.488 0.243 264.376);
+      --chart-2: oklch(0.696 0.17 162.48);
+      --chart-3: oklch(0.769 0.188 70.08);
+      --chart-4: oklch(0.627 0.265 303.9);
+      --chart-5: oklch(0.645 0.246 16.439);
+      --code-bg: #0f0f0f;
+      --code-text: #9ecbff;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --border-bright: var(--ring);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      --accent-dim: oklch(0.488 0.243 264.376 / 0.15);
+      --green: var(--chart-2);
+      --green-dim: oklch(0.696 0.17 162.48 / 0.15);
+      --red: var(--destructive);
+      --red-dim: oklch(0.704 0.191 22.216 / 0.15);
+      --orange: var(--chart-4);
+      --orange-dim: oklch(0.627 0.265 303.9 / 0.15);
+    }
+  }
+
+  /* ============ SPELL-UI STATIC (references/spell-ui-static.css) ============ */
+  .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+  .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+  .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+  .ve-badge { display: inline-flex; align-items: center; justify-content: center; font-weight: 500; font-size: 0.75rem; line-height: 1; border-radius: var(--radius-sm); padding: 4px 6px; white-space: nowrap; }
+  .ve-badge--default { background: var(--primary); color: var(--primary-foreground); }
+  .ve-badge--secondary { background: var(--secondary); color: var(--secondary-foreground); }
+  .ve-badge--outline { border: 1px solid var(--input); background: var(--background); }
+  .ve-badge--green { background: oklch(0.6 0.118 184.704 / 0.12); color: var(--chart-2); }
+  .ve-badge--red { background: oklch(0.577 0.245 27.325 / 0.12); color: var(--destructive); }
+  .ve-badge--orange { background: oklch(0.828 0.189 84.429 / 0.12); color: var(--chart-4); }
+  .ve-badge--blue { background: oklch(0.646 0.222 41.116 / 0.12); color: var(--chart-1); }
+  .ve-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; white-space: nowrap; font-size: 0.875rem; font-weight: 500; border-radius: var(--radius-md); transition: background, color, border-color, box-shadow 0.15s ease; cursor: pointer; border: 1px solid transparent; outline: none; }
+  .ve-button--default { height: 2.25rem; padding: 0 1rem; background: var(--primary); color: var(--primary-foreground); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+  .ve-button--outline { height: 2.25rem; padding: 0 1rem; border-color: var(--border); background: var(--background); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+  .ve-button--secondary { height: 2.25rem; padding: 0 1rem; background: var(--secondary); color: var(--secondary-foreground); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+  .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 500; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+  .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .ve-code-block { background: var(--code-bg, var(--muted)); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+  .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+  .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text, var(--foreground)); }
+  .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+  .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+  .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+  .ve-table-wrap tbody tr:hover { background: var(--border); }
+  .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+  .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+  .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+  .ve-inner-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.75rem 1rem; }
+  .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+
+  /* ============ RESET + BASE ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse at 30% 0%, var(--accent-dim) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 100%, var(--green-dim) 0%, transparent 40%);
+    color: var(--text);
+    font-family: var(--font-sans);
+    padding: 40px;
+    min-height: 100vh;
+  }
+
+  /* ============ ANIMATION ============ */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate {
+    animation: fadeUp 0.35s ease-out both;
+    animation-delay: calc(var(--i, 0) * 0.04s);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ============ CONTAINER ============ */
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  /* ============ HEADER ============ */
+  h1 {
+    font-family: var(--font-body);
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: -0.3px;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    margin-bottom: 32px;
+  }
+
+  /* ============ LEGEND ============ */
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ============ TEMPLATE: table wrapper + table ============ */
+  .ve-table-wrap { margin-bottom: 24px; }
+
+  .ve-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ============ TABLE ============ */
+  .ve-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  /* Header */
+  .ve-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .ve-table th {
+    background: var(--surface2);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-dim);
+    text-align: left;
+    padding: 14px 16px;
+    border-bottom: 2px solid var(--border-bright);
+    white-space: nowrap;
+  }
+
+  /* Cells */
+  .ve-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .ve-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* Wide text column */
+  .ve-table .wide {
+    min-width: 220px;
+    max-width: 440px;
+  }
+
+  /* Alternating rows */
+  .ve-table tbody tr:nth-child(even) {
+    background: var(--accent-dim);
+  }
+
+  /* Row hover + animation stagger */
+  .ve-table tbody tr {
+    transition: background 0.15s ease;
+    animation: fadeUp 0.35s ease-out both;
+    animation-delay: calc(var(--i, 0) * 0.04s);
+  }
+
+  .ve-table tbody tr:hover {
+    background: var(--border);
+  }
+
+  /* Code in cells */
+  .ve-table code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--accent-dim);
+    color: var(--chart-1);
+    padding: 1px 5px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Secondary text */
+  .ve-table small {
+    display: block;
+    color: var(--text-dim);
+    font-size: 11px;
+    margin-top: 3px;
+  }
+
+  /* ============ TEMPLATE: status badge dot ============ */
+  .ve-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* ============ FOOTER ROW ============ */
+  .ve-table tfoot td {
+    background: var(--surface2);
+    font-weight: 600;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    border-top: 2px solid var(--border-bright);
+    border-bottom: none;
+    padding: 14px 16px;
+  }
+
+  /* ============ TEMPLATE: KPI row + value colors ============ */
+  .ve-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .ve-kpi-card__value { font-family: var(--font-body); font-size: 32px; font-weight: 400; }
+  .ve-kpi-card__value--green { color: var(--green); }
+  .ve-kpi-card__value--red { color: var(--red); }
+  .ve-kpi-card__value--orange { color: var(--orange); }
+
+  .ve-kpi-card__label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.2px; margin-top: 6px; }
+
+  /* ============ COLLAPSIBLE ============ */
+  details.collapsible {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  details.collapsible summary {
+    padding: 14px 20px;
+    background: var(--surface);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    transition: background 0.15s ease;
+  }
+
+  details.collapsible summary:hover {
+    background: var(--surface-elevated, var(--surface));
+  }
+
+  details.collapsible summary::-webkit-details-marker { display: none; }
+
+  details.collapsible summary::before {
+    content: '▸';
+    font-size: 11px;
+    color: var(--text-dim);
+    transition: transform 0.15s ease;
+  }
+
+  details.collapsible[open] summary::before {
+    transform: rotate(90deg);
+  }
+
+  details.collapsible .collapsible__body {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+
+  details.collapsible .collapsible__body strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  details.collapsible .collapsible__body code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--accent-dim);
+    color: var(--chart-1);
+    padding: 1px 5px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 768px) {
+    body { padding: 16px; }
+    h1 { font-size: 24px; }
+    .ve-table th,
+    .ve-table td { padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <h1 class="animate" style="--i:0">Requirements Audit</h1>
+  <p class="subtitle animate" style="--i:1">victoria's email vs. implementation plan &mdash; point-by-point review</p>
+
+  <div class="ve-kpi-row animate" style="--i:2">
+    <div class="ve-kpi-card">
+      <div class="ve-kpi-card__value">14</div>
+      <div class="ve-kpi-card__label">Items Reviewed</div>
+    </div>
+    <div class="ve-kpi-card">
+      <div class="ve-kpi-card__value ve-kpi-card__value--green">13</div>
+      <div class="ve-kpi-card__label">Match</div>
+    </div>
+    <div class="ve-kpi-card">
+      <div class="ve-kpi-card__value ve-kpi-card__value--red">1</div>
+      <div class="ve-kpi-card__label">Gap</div>
+    </div>
+    <div class="ve-kpi-card">
+      <div class="ve-kpi-card__value" style="color:var(--chart-1)">93%</div>
+      <div class="ve-kpi-card__label">Coverage</div>
+    </div>
+  </div>
+
+  <div class="legend animate" style="--i:3">
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--green)"></div> Match</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--red)"></div> Gap</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--orange)"></div> Partial</div>
+  </div>
+
+  <div class="ve-table-wrap animate" style="--i:4">
+    <div class="ve-table-scroll">
+      <table class="ve-table">
+        <thead>
+          <tr>
+            <th class="wide">Request</th>
+            <th class="wide">Plan</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="--i:4">
+            <td class="wide">Template: <code>yoth-special-edition</code> only</td>
+            <td class="wide">Plan scopes everything to this template.</td>
+            <td><span class="ve-badge ve-badge--green">Match</span></td>
+          </tr>
+          <tr style="--i:5">
+            <td class="wide">EOD tomorrow (Friday), Tuesday AM launch</td>
+            <td class="wide">Plan header says same.</td>
+            <td><span class="ve-badge ve-badge--green">Match</span></td>
+          </tr>
+          <tr style="--i:6">
+            <td class="wide">Update BIS button label and pop up text</td>
+            <td class="wide">Button text + modal description configurable via settings.</td>
+            <td><span class="ve-badge ve-badge--green">Match</span></td>
+          </tr>
+          <tr style="--i:7">
+            <td class="wide">Use Stoq's API to trigger events</td>
+            <td class="wide">Uses <code>openInlineForm</code>, <code>openModal</code>, <code>removeInlineForm</code>.</td>
+            <td><span class="ve-badge ve-badge--green">Match</span></td>
+          </tr>
+          <tr style="--i:8">
+            <td class="wide">Custom button + modal with text settings in buy buttons block</td>
+            <td class="wide">Schema settings in <code>buy_buttons</code> block.</td>
+            <td><span class="ve-badge ve-badge--green">Match</span></td>
+          </tr>
+          <tr style="--i:9">
+            <td class="wide">Default values = current behavior when empty</td>
+            <td class="wide">Blank settings = Stoq default "Notify Me" behavior.</td>
+            <td><span class="ve-badge ve-badge--green">Match</span></td>
+          </tr>
+          <tr style="--i:10">
+            <td class="wide">Only display for OOS variants</td>
+            <td class="wide">DOM-based sold-out detection.</td>
+            <td><span class="ve-badge ve-badge--green">Match</span></td>
+          </tr>
+          <tr style="--i:11">
+            <td class="wide">Exclude products with <code>excludebis</code> tag</td>
+            <td class="wide">Checked in both PDP and PLP Liquid.</td>
+            <td><span class="ve-badge ve-badge--green">Match</span></td>
+          </tr>
+          <tr style="--i:12">
+            <td class="wide"><code>openInlineForm</code> to load Stoq form in modal</td>
+            <td class="wide">PDP modal uses <code>openInlineForm</code>.</td>
+            <td><span class="ve-badge ve-badge--green">Match</span></td>
+          </tr>
+          <tr style="--i:13">
+            <td class="wide">Updated Button Label: "Join the waitlist"</td>
+            <td class="wide">Pre-populated in template JSON.</td>
+            <td><span class="ve-badge ve-badge--green">Match</span></td>
+          </tr>
+          <tr style="--i:14">
+            <td class="wide">Updated Pop Up Text: "Sign up to be notified when we restock this or other embroidered styles."</td>
+            <td class="wide"><code>bis_modal_description</code> setting.</td>
+            <td><span class="ve-badge ve-badge--green">Match</span></td>
+          </tr>
+          <tr style="--i:15">
+            <td class="wide">Theme: Huha 2.0 - Giddy Up Collection D2C Launch</td>
+            <td class="wide">Clone ID <code>145580556374</code>.</td>
+            <td><span class="ve-badge ve-badge--green">Match</span></td>
+          </tr>
+          <tr style="--i:16">
+            <td class="wide">Changes made locally</td>
+            <td class="wide">Local dev + theme push.</td>
+            <td><span class="ve-badge ve-badge--green">Match</span></td>
+          </tr>
+          <tr style="--i:17">
+            <td class="wide">Run <code>stoq:restock-modal:submitted</code> when form is submitted</td>
+            <td class="wide">Not mentioned in plan.
+              <small>When using <code>openInlineForm</code> inside a custom modal, unclear if Stoq fires this event automatically or if manual dispatch is needed.</small>
+            </td>
+            <td><span class="ve-badge ve-badge--red">Gap</span></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>14 items reviewed</td>
+            <td></td>
+            <td>13 match &middot; 1 gap</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <details class="collapsible animate" style="--i:19">
+    <summary>Gap Analysis Detail</summary>
+    <div class="collapsible__body">
+      <strong>Gap: <code>stoq:restock-modal:submitted</code> event.</strong>
+      Michael explicitly requests firing this event on form submission. The plan uses Stoq's <code>openInlineForm</code> inside a custom modal, but doesn't address whether Stoq dispatches this event automatically in that context. If other integrations (Klaviyo, analytics, theme JS) listen for it, missing it could silently break the submission pipeline. Recommend adding an explicit <code>dispatchEvent</code> call as a safety net.
+    </div>
+  </details>
+
+</div>
+
+</body>
+</html>
