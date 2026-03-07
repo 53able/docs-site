@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Learn Claude Code — Anthropic 公式の AI コーディングアシスタント</title>
-  <meta name="description" content="Anthropic の Claude Code（Learn Claude Code）の概要。CLI・VS Code・デスクトップアプリでの利用とよくあるワークフロー。">
+  <title>Learn Claude Code — Anthropic 公式の AI コーディングアシスタント教材</title>
+  <meta name="description" content="0 から 1 で nano Claude Code-like agent を構築する教材。12 段階セッションでループ・ツール・計画・チーム・worktree 分離まで学ぶ。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Learn Claude Code — Anthropic 公式の AI コーディングアシスタント">
-  <meta property="og:description" content="Anthropic の Claude Code（Learn Claude Code）の概要。CLI・VS Code・デスクトップアプリでの利用とよくあるワークフロー。">
+  <meta property="og:title" content="Learn Claude Code — Anthropic 公式の AI コーディングアシスタント教材">
+  <meta property="og:description" content="0 から 1 で nano Claude Code-like agent を構築する教材。12 段階セッションでループ・ツール・計画・チーム・worktree 分離まで学ぶ。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/learn-claude-code.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Learn Claude Code — Anthropic 公式の AI コーディングアシスタント">
-  <meta name="twitter:description" content="Anthropic の Claude Code（Learn Claude Code）の概要。CLI・VS Code・デスクトップアプリでの利用とよくあるワークフロー。">
+  <meta name="twitter:title" content="Learn Claude Code — Anthropic 公式の AI コーディングアシスタント教材">
+  <meta name="twitter:description" content="0 から 1 で nano Claude Code-like agent を構築する教材。12 段階セッションでループ・ツール・計画・チーム・worktree 分離まで学ぶ。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -197,109 +197,173 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
-    <a href="#platforms">利用形態</a>
-    <a href="#workflows">よくあるワークフロー</a>
-    <a href="#install">導入</a>
+    <a href="#agent-loop">コアパターン</a>
+    <a href="#learning-path">学習パス</a>
+    <a href="#quickstart">クイックスタート</a>
+    <a href="#structure">プロジェクト構成</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
   <h1>Learn Claude Code</h1>
-  <p class="subtitle">Anthropic 公式の AI コーディングアシスタント。コードベースの読解・編集・コマンド実行・開発ツール連携。</p>
+  <p class="subtitle">0 から 1 へ構築する nano Claude Code-like agent。12 段階セッションでループ・ツール・計画・チーム・worktree 分離まで。</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
-  <div class="ve-card ve-card--elevated" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-    <p><strong>Claude Code</strong>（Learn Claude Code）は、Anthropic が提供する AI コーディングアシスタント。コードベースの読解・ファイル編集・ターミナルコマンド実行・IDE や CI/CD との連携を通じて、機能追加・バグ修正・リファクタリング・自動化を支援する。公式ドキュメントでは「Understanding codebases」「Finding relevant code」「Fixing bugs」「Refactoring code」「Using subagents」などのワークフローが案内されている。</p>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> エージェントパターン</span>
+    <p>Learn Claude Code は、<strong>Claude Code のような AI コーディングエージェントを 0→1 で組み立てる教材</strong>。1 つのループとツール実行が最小の土台で、各セッションで 1 つのメカニズムを足していく。本番のエージェントに必要なポリシー・権限・ライフサイクルは教材のため簡略化されている。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">CLI</span><span class="ve-kpi-card__label">推奨</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">VS Code</span><span class="ve-kpi-card__label">拡張</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Desktop</span><span class="ve-kpi-card__label">アプリ</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Subagents</span><span class="ve-kpi-card__label">専門委譲</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">12</span><span class="ve-kpi-card__label">セッション</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">フェーズ</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Python</span><span class="ve-kpi-card__label">リファレンス</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Next.js</span><span class="ve-kpi-card__label">Web 可視化</span></div>
     </div>
-    <p>利用には Claude のサブスクリプション（Pro / Max / Teams / Enterprise）、Claude Console アカウント、または対応クラウドプロバイダ経由のアクセスが必要。</p>
+    <p>流れ: <strong>User → messages[] → LLM → response</strong>。<code>stop_reason == "tool_use"</code> ならツール実行して結果を messages に追加しループ、そうでなければテキストを返して終了。これがすべての AI コーディングエージェントの土台になる。</p>
   </div>
 
-  <section id="platforms" class="sec-head">2 — 利用形態</section>
+  <section id="agent-loop" class="sec-head">2 — コアパターン</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 最小ループ</span>
+    <p>各セッションはこのループの上に 1 つのメカニズムを重ねる。ループ自体は変わらない。</p>
+    <div class="ve-code-block">
+      <pre><code>def agent_loop(messages):
+    while True:
+        response = client.messages.create(
+            model=MODEL, system=SYSTEM,
+            messages=messages, tools=TOOLS,
+        )
+        messages.append({"role": "assistant", "content": response.content})
+
+        if response.stop_reason != "tool_use":
+            return
+
+        results = []
+        for block in response.content:
+            if block.type == "tool_use":
+                output = TOOL_HANDLERS[block.name](**block.input)
+                results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": output,
+                })
+        messages.append({"role": "user", "content": results})</code></pre>
+    </div>
+  </div>
+
+  <section id="learning-path" class="sec-head">3 — 学習パス</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> どこで動くか</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> 4 フェーズ</span>
+    <p><strong>フェーズ1（ループ）</strong>: s01 エージェントループ、s02 Tool Use（dispatch map）。</p>
+    <p><strong>フェーズ2（計画と知識）</strong>: s03 TodoWrite、s04 サブエージェント、s05 Skills（SKILL.md を tool_result で注入）、s06 Context Compact（3層コンテキスト圧縮）。</p>
+    <p><strong>フェーズ3（永続化）</strong>: s07 タスクシステム（ファイルベース CRUD + 依存グラフ）、s08 バックグラウンドタスク（デーモンスレッド + 通知キュー）。</p>
+    <p><strong>フェーズ4（チーム）</strong>: s09 エージェントチーム（JSONL メールボックス）、s10 チームプロトコル、s11 自律エージェント（アイドルサイクル + 自動クレーム）、s12 Worktree 分離（タスクとディレクトリの紐付け）。</p>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> セッション一覧</span>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>形態</th><th>説明</th></tr>
+          <tr><th>セッション</th><th>トピック</th><th>モットー</th></tr>
         </thead>
         <tbody>
-          <tr><td><strong>Terminal CLI</strong></td><td>推奨。フル機能のコマンドライン。macOS/Linux/WSL ではネイティブインストール、Homebrew / WinGet も利用可。</td></tr>
-          <tr><td><strong>VS Code 拡張</strong></td><td>インライン diff・@ メンション・プラン確認・会話履歴。</td></tr>
-          <tr><td><strong>デスクトップアプリ</strong></td><td>スタンドアロン。ビジュアル diff 確認と複数セッション。</td></tr>
-          <tr><td><strong>Web</strong></td><td>ブラウザ上で実行。</td></tr>
-          <tr><td>その他</td><td>JetBrains IDE・Slack・CI/CD ツールなどにも対応。</td></tr>
+          <tr><td>s01</td><td>エージェントループ</td><td><em>One loop &amp; Bash is all you need</em></td></tr>
+          <tr><td>s02</td><td>Tool Use</td><td>ツールを足すなら、ハンドラーを 1 つ足すだけ</td></tr>
+          <tr><td>s03</td><td>TodoWrite</td><td>計画のないエージェントは行き当たりばったり</td></tr>
+          <tr><td>s04</td><td>サブエージェント</td><td>各サブタスクにクリーンなコンテキストを</td></tr>
+          <tr><td>s05</td><td>Skills</td><td>必要な知識を、必要な時に読み込む</td></tr>
+          <tr><td>s06</td><td>Context Compact</td><td>コンテキストはいつか溢れる、空ける手段が要る</td></tr>
+          <tr><td>s07</td><td>タスクシステム</td><td>目標を小タスクに分解し、ディスクに記録する</td></tr>
+          <tr><td>s08</td><td>バックグラウンドタスク</td><td>遅い操作はバックグラウンドへ</td></tr>
+          <tr><td>s09</td><td>エージェントチーム</td><td>一人で終わらないなら、チームメイトに任せる</td></tr>
+          <tr><td>s10</td><td>チームプロトコル</td><td>統一の通信ルールが必要</td></tr>
+          <tr><td>s11</td><td>自律エージェント</td><td>チームメイトが自らボードを見て仕事を取る</td></tr>
+          <tr><td>s12</td><td>Worktree 分離</td><td>各自のディレクトリで作業し、互いに干渉しない</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <section id="workflows" class="sec-head">3 — よくあるワークフロー</section>
+  <section id="quickstart" class="sec-head">4 — クイックスタート</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 公式チュートリアルより</span>
-    <ul>
-      <li><strong>Understanding codebases</strong> — コードベースの概要やアーキテクチャパターンの把握</li>
-      <li><strong>Finding relevant code</strong> — 特定機能に関連するファイルの特定</li>
-      <li><strong>Fixing bugs</strong> — エラー共有と修正案の取得</li>
-      <li><strong>Refactoring code</strong> — レガシーコードの安全な近代化</li>
-      <li><strong>Using subagents</strong> — コードレビュー・テストなど専門タスクの委譲</li>
-    </ul>
-  </div>
-
-  <section id="install" class="sec-head">4 — 導入</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> ターミナル（macOS/Linux/WSL）</span>
-    <p>推奨のネイティブインストール:</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> 実行</span>
     <div class="ve-code-block">
-      <pre><code>curl -fsSL https://claude.ai/install.sh | bash</code></pre>
+      <pre><code>git clone https://github.com/shareAI-lab/learn-claude-code
+cd learn-claude-code
+pip install -r requirements.txt
+cp .env.example .env   # ANTHROPIC_API_KEY を設定
+
+python agents/s01_agent_loop.py       # 最初の一歩
+python agents/s12_worktree_task_isolation.py  # 全セッションの到達点
+python agents/s_full.py               # 総括: 全メカニズム統合</code></pre>
     </div>
-    <p>その他は Homebrew や WinGet からもインストール可能。詳細は公式 Quickstart を参照。</p>
-  </div>
-  <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> 注意</span>
-    <p class="ve-callout">Claude Code の利用には、Claude の有料プラン（Pro / Max / Teams / Enterprise）、Claude Console アカウント、または対応クラウドプロバイダ経由のアクセスが必要です。</p>
+    <h3>Web プラットフォーム</h3>
+    <p>インタラクティブな可視化・ステップスルー・ソースビューア・各セッションのドキュメント。</p>
+    <div class="ve-code-block">
+      <pre><code>cd web && npm install && npm run dev   # http://localhost:3000</code></pre>
+    </div>
   </div>
 
-  <section id="links" class="sec-head">5 — 参考リンク</section>
+  <section id="structure" class="sec-head">5 — プロジェクト構成</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> ディレクトリ</span>
     <ul>
-      <li><a href="https://docs.anthropic.com/en/docs/claude-code/quickstart" target="_blank" rel="noopener">Quickstart — Claude Code Docs</a></li>
-      <li><a href="https://docs.anthropic.com/en/docs/claude-code/tutorials" target="_blank" rel="noopener">Common workflows — Claude Code Docs</a></li>
-      <li><a href="https://docs.anthropic.com/en/docs/claude-code/cli-reference" target="_blank" rel="noopener">CLI reference — Claude Code Docs</a></li>
-      <li><a href="https://docs.anthropic.com/en/docs/claude-code/ide-integrations" target="_blank" rel="noopener">Use Claude Code in VS Code — Claude Code Docs</a></li>
-      <li><a href="https://docs.anthropic.com/s/claude-code" target="_blank" rel="noopener">Claude Code overview — Claude Code Docs</a></li>
+      <li><code>agents/</code> — Python リファレンス実装（s01〜s12 + s_full）</li>
+      <li><code>docs/{en,zh,ja}/</code> — メンタルモデル優先のドキュメント（3 言語）</li>
+      <li><code>web/</code> — インタラクティブ学習プラットフォーム（Next.js）</li>
+      <li><code>skills/</code> — s05 用の Skill ファイル</li>
     </ul>
   </div>
+
+  <section id="links" class="sec-head">6 — 参考リンク</section>
+  <div class="ve-callout" style="margin-top:0;">
+    <p><strong>リポジトリ</strong>: <a href="https://github.com/shareAI-lab/learn-claude-code" target="_blank" rel="noopener">shareAI-lab/learn-claude-code</a></p>
+    <p><strong>ドキュメント</strong>: リポジトリ内 <code>docs/ja/</code> に各セッションの解説（s01-the-agent-loop.md など）。</p>
+    <p><strong>次のステップ</strong>: Kode Agent CLI（<code>npm i -g @shareai-lab/kode</code>）、Kode Agent SDK（アプリへの埋め込み）は README を参照。</p>
+    <p><strong>姉妹教材</strong>: <a href="https://github.com/shareAI-lab/claw0" target="_blank" rel="noopener">claw0</a> — 常時稼働アシスタント（ハートビート・Cron・IM・メモリ・Soul）の分解教材。</p>
   </div>
-</div>
+  </div><!-- /main -->
+</div><!-- /wrap -->
 
 <script>
 (function() {
-  var toc = document.getElementById('toc');
-  if (!toc) return;
-  var links = toc.querySelectorAll('a[href^="#"]');
-  var sections = [];
-  links.forEach(function(a) {
-    var id = a.getAttribute('href').slice(1);
-        var el = document.getElementById(id);
-    if (el) sections.push({ link: a, head: el });
+  const toc = document.getElementById('toc');
+  const links = toc.querySelectorAll('a');
+  const sections = [];
+
+  links.forEach(function(link) {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) sections.push({ id: id, el: el, link: link });
   });
-  function updateActive() {
-    var top = window.scrollY + 24;
-    sections.forEach(function(s) {
-      var rect = s.head.getBoundingClientRect();
-      var docTop = rect.top + window.scrollY;
-      if (docTop <= top) s.link.classList.add('active'); else s.link.classList.remove('active');
+
+  const observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        links.forEach(function(l) { l.classList.remove('active'); });
+        const match = sections.find(function(s) { return s.el === entry.target; });
+        if (match) {
+          match.link.classList.add('active');
+          if (window.innerWidth <= 1000) {
+            match.link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        }
+      }
     });
-  }
-  window.addEventListener('scroll', updateActive, { passive: true });
-  updateActive();
+  }, { rootMargin: '-10% 0px -80% 0px' });
+
+  sections.forEach(function(s) { observer.observe(s.el); });
+
+  links.forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', '#' + id);
+      }
+    });
+  });
 })();
 </script>
 </body>
