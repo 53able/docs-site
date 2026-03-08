@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>gws — Google Workspace CLI</title>
-  <meta name="description" content="Drive / Gmail / Calendar など Google Workspace API を一つの CLI で扱う gws。Discovery 駆動・構造化 JSON・AI エージェント用スキル付き。">
+  <title>Locutus — 他言語の標準ライブラリを TypeScript に</title>
+  <meta name="description" content="PHP・Go・Python・Ruby・C 等の標準ライブラリ関数を TypeScript で再実装した Locutus。約500関数を個別 import で tree-shake 可能。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="gws — Google Workspace CLI">
-  <meta property="og:description" content="Drive / Gmail / Calendar など Google Workspace API を一つの CLI で扱う gws。Discovery 駆動・構造化 JSON・AI エージェント用スキル付き。">
-  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/gws.html">
+  <meta property="og:title" content="Locutus — 他言語の標準ライブラリを TypeScript に">
+  <meta property="og:description" content="PHP・Go・Python・Ruby・C 等の標準ライブラリ関数を TypeScript で再実装した Locutus。約500関数を個別 import で tree-shake 可能。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/locutus.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="gws — Google Workspace CLI">
-  <meta name="twitter:description" content="Drive / Gmail / Calendar など Google Workspace API を一つの CLI で扱う gws。Discovery 駆動・構造化 JSON・AI エージェント用スキル付き。">
+  <meta name="twitter:title" content="Locutus — 他言語の標準ライブラリを TypeScript に">
+  <meta name="twitter:description" content="PHP・Go・Python・Ruby・C 等の標準ライブラリ関数を TypeScript で再実装した Locutus。約500関数を個別 import で tree-shake 可能。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -197,81 +197,55 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
-    <a href="#install-auth">インストールと認証</a>
-    <a href="#syntax-flags">コマンド構文とフラグ</a>
+    <a href="#scope">スコープと方針</a>
+    <a href="#languages">対応言語とモジュール</a>
     <a href="#usage">使い方</a>
-    <a href="#ai-skills">AI エージェント連携</a>
-    <a href="#links">参考リンク</a>
+    <a href="#dev">開発・参考リンク</a>
   </nav>
 
   <div class="main">
-  <h1>gws</h1>
-  <p class="subtitle">Google Workspace を一つの CLI で — Drive, Gmail, Calendar, Sheets ほか。Discovery 駆動・構造化 JSON・エージェント用スキル付き。</p>
+  <h1>Locutus</h1>
+  <p class="subtitle">他言語の標準ライブラリを TypeScript に。PHP・Go・Python・Ruby・C 等、約500関数を個別 import で。</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
-  <div class="ve-card ve-card--elevated" style="--i:0">
+  <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-    <p><strong>gws</strong>（Google Workspace CLI）は、Drive・Gmail・Calendar・Sheets・Admin など Google Workspace の API を、ひとつの CLI から動的に扱うツール。コマンド一覧を静的に持たず、実行時に Google の <a href="https://developers.google.com/discovery" target="_blank" rel="noopener">Discovery Service</a> を読んでコマンド面を組み立てる。API が増えれば <code>gws</code> も自動で対応する。</p>
+    <p><strong>Locutus</strong> は、PHP・Go・Python・Ruby・C・Clojure などの標準ライブラリ関数を TypeScript で再実装したライブラリ。各関数は単体で import でき、tree-shake 可能。キャッチフレーズは「All your standard libraries will be assimilated into our TypeScript collective. Resistance is futile.」で、他言語の「定番」を JavaScript の世界に持ち込むのが目的だ。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Discovery</span><span class="ve-kpi-card__label">動的コマンド</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">JSON</span><span class="ve-kpi-card__label">出力形式</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">OAuth / SA</span><span class="ve-kpi-card__label">認証</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">100+</span><span class="ve-kpi-card__label">Agent Skills</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">~500</span><span class="ve-kpi-card__label">関数</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">ESM</span><span class="ve-kpi-card__label">配信</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Tree-shake</span><span class="ve-kpi-card__label">対応</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node 22+</span><span class="ve-kpi-card__label">ランタイム</span></div>
     </div>
-    <p>人間向けには <code>--help</code>・<code>--dry-run</code>・自動ページネーション。AI エージェント向けには構造化 JSON 出力と同梱の Agent Skills で、LLM が Workspace を操作できる。</p>
+    <p>教育・娯楽・実用のバランスで、同じ問題を他言語がどう解くかを TypeScript で体験できる。ビルド成果物は <code>dist/</code>（CommonJS）と <code>dist/esm</code>（ESM）、ES2022 ターゲット。</p>
   </div>
 
-  <section id="install-auth" class="sec-head">2 — インストールと認証</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> インストール</span>
-    <p>Node.js 18+ でグローバルインストール（プリビルドバイナリ同梱。Rust 不要）:</p>
-    <div class="ve-code-block">
-      <pre><code>npm install -g @googleworkspace/cli</code></pre>
+  <section id="scope" class="sec-head">2 — スコープと方針</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ポートするもの</span>
+    <p>Locutus がポートするのは<strong>関数の振る舞い</strong>であり、他言語のランタイムやデータ構造ではない。API 境界は JavaScript ネイティブに保つ。</p>
+    <p>つまり、Go の slice/map、Python の tuple/bytes、Ruby の symbol、C の struct/pointer などを Locutus の API で再現しない。例: Go の日付フォーマット系をポートするなら、JavaScript の <code>Date</code> を受け取り <code>string</code> を返す形にする。</p>
+    <div class="ve-callout" style="margin-top: 1rem;">
+      <strong>例外:</strong> PHP 互換のため <code>locutus.objectsAsArrays</code> を有効にすると、プレーンな JS オブジェクトを連想配列として扱う挙動になる。
     </div>
-    <p>バイナリのみが必要な場合は <a href="https://github.com/googleworkspace/cli/releases" target="_blank" rel="noopener">GitHub Releases</a> から取得。ソースからは <code>cargo install --git https://github.com/googleworkspace/cli --locked</code>。Nix では <code>nix run github:googleworkspace/cli</code>。</p>
   </div>
-  <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> 認証（優先順位）</span>
+
+  <section id="languages" class="sec-head">3 — 対応言語とモジュール</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 名前空間とカテゴリ</span>
+    <p><code>src/</code> 以下は言語ごとにディレクトリが分かれており、各言語内で array / strings / math / json / url などのモジュールに分類されている。型定義は <code>index.d.ts</code> で <code>php</code>, <code>golang</code>, <code>python</code>, <code>ruby</code>, <code>c</code> の名前空間として公開されている。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>優先</th><th>方法</th><th>設定</th></tr>
+          <tr><th>言語</th><th>主なモジュール例</th></tr>
         </thead>
         <tbody>
-          <tr><td>1</td><td>アクセストークン</td><td><code>GOOGLE_WORKSPACE_CLI_TOKEN</code></td></tr>
-          <tr><td>2</td><td>認証情報ファイル</td><td><code>GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE</code></td></tr>
-          <tr><td>3</td><td>暗号化済み認証情報</td><td><code>gws auth login</code> で保存</td></tr>
-          <tr><td>4</td><td>平文認証情報</td><td><code>~/.config/gws/credentials.json</code></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p>初回は <code>gws auth setup</code>（GCP プロジェクト作成・API 有効化・ログインの案内）。<code>gcloud</code> が無い場合は Google Cloud Console で OAuth クライアントを手動作成し、<code>gws auth login</code> でログイン。サービスアカウントの場合は上記環境変数でキーファイルを指定する。</p>
-  </div>
-
-  <section id="syntax-flags" class="sec-head">3 — コマンド構文とフラグ</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 構文</span>
-    <div class="ve-code-block">
-      <pre><code>gws &lt;service&gt; &lt;resource&gt; [sub-resource] &lt;method&gt; [flags]</code></pre>
-    </div>
-    <p>例: <code>gws drive files list</code>、<code>gws gmail users messages send</code>。各階層で <code>--help</code> が使える。</p>
-  </div>
-  <div class="ve-card" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> 主なフラグ</span>
-    <div class="ve-table-wrap">
-      <table>
-        <thead>
-          <tr><th>フラグ</th><th>用途</th></tr>
-        </thead>
-        <tbody>
-          <tr><td><code>--params '&lt;JSON&gt;'</code></td><td>URL/クエリパラメータ（id, q, pageSize など）</td></tr>
-          <tr><td><code>--json '&lt;JSON&gt;'</code></td><td>POST/PUT/PATCH のリクエストボディ</td></tr>
-          <tr><td><code>--page-all</code></td><td>全ページを NDJSON（1 行 1 JSON）で出力</td></tr>
-          <tr><td><code>--fields '&lt;MASK&gt;'</code></td><td>レスポンスのフィールド制限（コンテキスト節約に重要）</td></tr>
-          <tr><td><code>--dry-run</code></td><td>変更系の実行前にリクエスト検証のみ</td></tr>
-          <tr><td><code>--upload &lt;PATH&gt;</code></td><td>マルチパートアップロード用ファイル</td></tr>
-          <tr><td><code>--output &lt;PATH&gt;</code></td><td>バイナリダウンロード先</td></tr>
-          <tr><td><code>--sanitize &lt;TEMPLATE&gt;</code></td><td>Google Cloud Model Armor で出力をサニタイズ</td></tr>
+          <tr><td><code>php</code></td><td>array, strings, math, json, _var, datetime, url</td></tr>
+          <tr><td><code>golang</code></td><td>strings（Contains, Join, Split, ToLower, Trim 等）</td></tr>
+          <tr><td><code>python</code></td><td>string（ascii_letters, capwords 等）, math（factorial, gcd, sqrt 等）, re</td></tr>
+          <tr><td><code>ruby</code></td><td>Math, String, Array</td></tr>
+          <tr><td><code>c</code></td><td>math, stdio, ctype, stdlib, string</td></tr>
+          <tr><td><code>clojure</code></td><td>core（reduce_kv, get_in, partition 等）, Math, string</td></tr>
         </tbody>
       </table>
     </div>
@@ -279,53 +253,47 @@
 
   <section id="usage" class="sec-head">4 — 使い方</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 読み取り（GET/LIST）</span>
-    <p><code>--fields</code> で返却フィールドを絞り、トークン消費を抑える:</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> インストール</span>
     <div class="ve-code-block">
-      <pre><code>gws drive files list --params '{"q": "name contains \"Report\"", "pageSize": 10}' --fields "files(id,name,mimeType)"</code></pre>
+      <pre><code>npm install locutus</code></pre>
     </div>
+    <p>必要な関数だけをパス指定で import する。</p>
+    <div class="ve-code-block">
+      <pre><code>import { sprintf } from 'locutus/php/strings/sprintf'
+const effectiveness = 'futile'
+console.log(sprintf('Resistance is %s', effectiveness))
+// Resistance is futile</code></pre>
+    </div>
+    <div class="ve-code-block">
+      <pre><code>import { Contains } from 'locutus/golang/strings/Contains'
+console.log(Contains('Locutus', 'cut'))  // true</code></pre>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> ブラウザ</span>
+    <p>公式サイトの「Module JS / Standalone JS」スニペットは、広く使われているブラウザをベースラインにしている。アプリが古いブラウザを対象にする場合は、TypeScript/Babel/SWC/esbuild でトランスパイルし、必要な polyfill を自前で入れて検証する。Locutus はスニペットに polyfill を注入しない。</p>
+  </div>
+
+  <section id="dev" class="sec-head">5 — 開発・参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 開発コマンド</span>
+    <ul>
+      <li><code>yarn check</code> — format + lint + test</li>
+      <li><code>yarn test:parity</code> — 他言語との挙動照合</li>
+      <li><code>yarn test</code> — フルテスト</li>
+      <li><code>yarn lint</code> — Biome</li>
+      <li><code>yarn fix:biome</code> — 自動修正</li>
+    </ul>
+    <p>バージョニングはプラグマティック: 関数レベルのパリティ修正も <code>patch</code> がデフォルト。詳細は <code>CONTRIBUTING.md#versioning</code> を参照。</p>
   </div>
   <div class="ve-card" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> 書き込み（POST/PUT/PATCH）</span>
-    <p>ボディは <code>--json</code>。本実行前に <code>--dry-run</code> で検証推奨:</p>
-    <div class="ve-code-block">
-      <pre><code>gws sheets spreadsheets create --json '{"properties": {"title": "Q1 Budget"}}'
-gws chat spaces messages create --params '{"parent": "spaces/xyz"}' --json '{"text": "Deploy complete."}' --dry-run</code></pre>
-    </div>
-  </div>
-  <div class="ve-card ve-card--recessed" style="--i:2">
-    <span class="ve-section-label"><span class="ve-dot"></span> ページネーション・スキーマ</span>
-    <p>大量一覧は <code>--page-all</code> で NDJSON ストリーム。パラメータやボディの形が分からないときは <code>gws schema &lt;service.resource.method&gt;</code> でスキーマを確認する:</p>
-    <div class="ve-code-block">
-      <pre><code>gws drive files list --params '{"pageSize": 100}' --page-all | jq -r '.files[].name'
-gws schema drive.files.list
-gws schema sheets.spreadsheets.create</code></pre>
-    </div>
-  </div>
-
-  <section id="ai-skills" class="sec-head">5 — AI エージェント連携</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> Agent Skills</span>
-    <p>リポジトリに 100+ の Agent Skills（<code>SKILL.md</code>）が同梱。対応 API ごと＋レシピ（Gmail / Drive / Docs / Calendar / Sheets）。一括または必要なだけ追加:</p>
-    <div class="ve-code-block">
-      <pre><code>npx skills add https://github.com/googleworkspace/cli
-npx skills add https://github.com/googleworkspace/cli/tree/main/skills/gws-drive
-npx skills add https://github.com/googleworkspace/cli/tree/main/skills/gws-gmail</code></pre>
-    </div>
-    <p>Gemini CLI 拡張では <code>gemini extensions install https://github.com/googleworkspace/cli</code> で gws コマンドとスキルをエージェントに渡せる。認証は端末で一度 <code>gws auth setup</code> すれば拡張から利用される。</p>
-  </div>
-  <div class="ve-callout" style="--i:1">
-    <strong>エージェント向けルール（CONTEXT.md より）</strong>: スキーマが不明なときは先に <code>gws schema &lt;resource&gt;.&lt;method&gt;</code> を実行。一覧系は <code>--params '{"fields": "id,name"}'</code> などでフィールドを絞りコンテキストを保護。変更系は <code>--dry-run</code> で検証してから本実行。
-  </div>
-
-  <section id="links" class="sec-head">6 — 参考リンク</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> 参考リンク</span>
     <ul>
-      <li><a href="https://github.com/googleworkspace/cli" target="_blank" rel="noopener">GitHub: googleworkspace/cli</a></li>
-      <li><a href="https://www.npmjs.com/package/@googleworkspace/cli" target="_blank" rel="noopener">npm: @googleworkspace/cli</a></li>
-      <li><a href="https://developers.google.com/discovery" target="_blank" rel="noopener">Google API Discovery Service</a></li>
+      <li><a href="https://locutus.io" target="_blank" rel="noopener">locutus.io</a> — 公式サイト・関数一覧</li>
+      <li><a href="https://github.com/locutusjs/locutus" target="_blank" rel="noopener">GitHub: locutusjs/locutus</a></li>
+      <li><a href="https://www.npmjs.com/package/locutus" target="_blank" rel="noopener">npm: locutus</a></li>
     </ul>
+    <p>ライセンスは MIT。ただし <code>src/php/bc/</code> と <code>src/php/_helpers/_bc.js</code> は PHP の bcmath/Libbcmath 由来のため LGPL-2.1。</p>
   </div>
   </div>
 </div>

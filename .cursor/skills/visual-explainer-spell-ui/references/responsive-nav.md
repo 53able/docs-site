@@ -203,6 +203,54 @@ Place before `</body>`, after any Mermaid init:
 </script>
 ```
 
+### Alternative: scroll-based Scroll Spy
+
+When you cannot use IntersectionObserver (e.g. minimal script, no observer), use a scroll-position check. **Critical:** only one TOC link must have `.active` at a time.
+
+**Anti-pattern (causes multiple highlights):** Adding `active` for every section where `docTop <= top` makes every section above the viewport active. Wrong:
+
+```js
+// WRONG: multiple items get .active
+sections.forEach(s => {
+  if (docTop <= top) s.link.classList.add('active');
+  else s.link.classList.remove('active');
+});
+```
+
+**Correct:** Compute a single `current` = the last section whose top is still at or above the scroll reference, then toggle `active` only on that link:
+
+```html
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+```
+
+Use this scroll-based snippet when copying into docs-site or other static HTML pages that do not use the IntersectionObserver version above.
+
 ## Adaptation Notes
 
 - The `.toc-title` text, link labels, accent color, and section IDs change per page. Everything else is copy-paste.

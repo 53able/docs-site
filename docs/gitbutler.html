@@ -303,14 +303,14 @@
   });
   function updateActive() {
     var top = window.scrollY + 24;
-    var current = null;
+    var current = sections[0] || null;
     sections.forEach(function(s) {
       var rect = s.head.getBoundingClientRect();
       var docTop = rect.top + window.scrollY;
       if (docTop <= top) current = s;
     });
     sections.forEach(function(s) {
-      if (s === current) s.link.classList.add('active'); else s.link.classList.remove('active');
+      s.link.classList.toggle('active', s === current);
     });
   }
   window.addEventListener('scroll', updateActive, { passive: true });
