@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Superpowers — コーディングエージェント向け開発ワークフロー</title>
+  <meta name="description" content="Claude Code / Cursor / Codex 等のコーディングエージェント向けのスキルベース開発ワークフロー。brainstorming、TDD、プラン実行、コードレビューまで一貫したプロセスを提供。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Superpowers — コーディングエージェント向け開発ワークフロー">
+  <meta property="og:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。brainstorming、TDD、プラン実行、コードレビューまで一貫。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/superpowers.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Superpowers — コーディングエージェント向け開発ワークフロー">
+  <meta name="twitter:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。brainstorming、TDD、プラン実行まで一貫。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --font-mono: 'Fira Code', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.646 0.222 41.116 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.488 0.243 264.376 / 0.08) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#workflow">基本ワークフロー</a>
+    <a href="#skills">スキルライブラリ</a>
+    <a href="#install">インストール</a>
+    <a href="#philosophy">哲学</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>Superpowers</h1>
+  <p class="subtitle">Composable skills for coding agents. Your agent doesn't just jump into code — it plans, reviews, and follows a disciplined workflow.</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <p><strong>Superpowers</strong> は、コーディングエージェント（Claude Code、Cursor、Codex、OpenCode、Gemini CLI など）向けの<strong>ソフトウェア開発ワークフロー一式</strong>。組み合わせ可能な「スキル」と、エージェントがそれらを確実に使うための初期指示で構成され、コードを書く前に仕様を引き出し、設計を承認してからプランに落とし、TDD とサブエージェント駆動で実装・レビュー・マージ判断まで一貫したプロセスを提供する。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Skills</span><span class="ve-kpi-card__label">組み合わせ可能</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">TDD</span><span class="ve-kpi-card__label">RED-GREEN-REFACTOR</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Subagent</span><span class="ve-kpi-card__label">タスク単位実行</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Review</span><span class="ve-kpi-card__label">計画準拠チェック</span></div>
+    </div>
+    <p>エージェントは「何か作る」と検知すると、いきなりコードを書かずに「何をしたいか」を問いかけ、仕様を固めてから設計を短いチャンクで示し、承認後に実装プランを作成する。「go」と言えばサブエージェント駆動でタスクを消化し、レビューを挟みながら進める。スキルは自動でトリガーされるため、ユーザーは特別な操作をせずにエージェントに Superpowers を持たせられる。</p>
+  </div>
+
+  <section id="workflow" class="sec-head">2 — 基本ワークフロー</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 6 ステップ</span>
+    <p>エージェントはタスクの前に必ず関連スキルを確認する。推奨ではなく必須のワークフローとして組み込まれる。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>順</th><th>スキル</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td><code>brainstorming</code></td><td>コードを書く前に発動。曖昧なアイデアを問いで整理し、設計をセクションごとに示して承認を得る。設計ドキュメントを保存。</td></tr>
+          <tr><td>2</td><td><code>using-git-worktrees</code></td><td>設計承認後に発動。分離したワークスペースで新ブランチを作成し、セットアップとクリーンなテストベースを確認。</td></tr>
+          <tr><td>3</td><td><code>writing-plans</code></td><td>承認された設計に基づき、2〜5 分で完了するタスクに分解。各タスクにファイルパス・完全なコード・検証手順を記載。</td></tr>
+          <tr><td>4</td><td><code>subagent-driven-development</code> / <code>executing-plans</code></td><td>プランに従い、タスクごとにサブエージェントを起動。二段階レビュー（仕様準拠 → コード品質）またはバッチ実行＋人間チェックポイント。</td></tr>
+          <tr><td>5</td><td><code>test-driven-development</code></td><td>実装中に発動。RED-GREEN-REFACTOR を強制。失敗テストを書き、落ちることを確認し、最小コードで通す。テストより前に書いたコードは削除。</td></tr>
+          <tr><td>6</td><td><code>requesting-code-review</code></td><td>タスク間で発動。プランとの整合性をレビューし、深刻度別に報告。クリティカルな問題は進行をブロック。</td></tr>
+          <tr><td>7</td><td><code>finishing-a-development-branch</code></td><td>タスク完了時に発動。テスト確認後、マージ / PR / 維持 / 破棄の選択肢を提示し、ワークツリーを整理。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="skills" class="sec-head">3 — スキルライブラリ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ別一覧</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>カテゴリ</th><th>スキル</th><th>概要</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Testing</td><td><code>test-driven-development</code></td><td>RED-GREEN-REFACTOR サイクル（アンチパターン参照付き）</td></tr>
+          <tr><td>Debugging</td><td><code>systematic-debugging</code></td><td>4 段階の根因追跡（root-cause-tracing、defense-in-depth、condition-based-waiting）</td></tr>
+          <tr><td>Debugging</td><td><code>verification-before-completion</code></td><td>修正が本当に効いているか確認してから完了とする</td></tr>
+          <tr><td>Collaboration</td><td><code>brainstorming</code></td><td>問いによる設計の洗練</td></tr>
+          <tr><td>Collaboration</td><td><code>writing-plans</code></td><td>詳細な実装プラン</td></tr>
+          <tr><td>Collaboration</td><td><code>executing-plans</code></td><td>チェックポイント付きバッチ実行</td></tr>
+          <tr><td>Collaboration</td><td><code>dispatching-parallel-agents</code></td><td>並列サブエージェントワークフロー</td></tr>
+          <tr><td>Collaboration</td><td><code>requesting-code-review</code></td><td>レビュー前チェックリスト</td></tr>
+          <tr><td>Collaboration</td><td><code>receiving-code-review</code></td><td>フィードバックへの対応</td></tr>
+          <tr><td>Collaboration</td><td><code>using-git-worktrees</code></td><td>分離ブランチでの並行開発</td></tr>
+          <tr><td>Collaboration</td><td><code>finishing-a-development-branch</code></td><td>マージ / PR 判断ワークフロー</td></tr>
+          <tr><td>Collaboration</td><td><code>subagent-driven-development</code></td><td>二段階レビュー付きの高速イテレーション</td></tr>
+          <tr><td>Meta</td><td><code>writing-skills</code></td><td>ベストプラクティスに沿った新規スキル作成（テスト手法含む）</td></tr>
+          <tr><td>Meta</td><td><code>using-superpowers</code></td><td>スキルシステムの導入</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="install" class="sec-head">4 — インストール</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> プラットフォーム別</span>
+    <p>Claude Code / Cursor はプラグイン市場から、Codex / OpenCode は手動セットアップ。各環境でインストール後、新セッションで「この機能を計画して」などスキルが発動するような依頼をすると、エージェントが該当スキルを自動で読み込む。</p>
+    <h3>Claude Code（公式マーケットプレース）</h3>
+    <div class="ve-code-block">
+      <pre><code>/plugin install superpowers@claude-plugins-official</code></pre>
+    </div>
+    <h3>Claude Code（コミュニティマーケットプレース）</h3>
+    <div class="ve-code-block">
+      <pre><code>/plugin marketplace add obra/superpowers-marketplace
+/plugin install superpowers@superpowers-marketplace</code></pre>
+    </div>
+    <h3>Cursor</h3>
+    <p>Agent チャットでプラグイン市場から <code>/add-plugin superpowers</code> または「superpowers」で検索。</p>
+    <h3>Codex</h3>
+    <div class="ve-code-block">
+      <pre><code>Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.codex/INSTALL.md</code></pre>
+    </div>
+    <p>詳細: <a href="https://github.com/obra/superpowers/blob/main/docs/README.codex.md" target="_blank" rel="noopener">docs/README.codex.md</a></p>
+    <h3>OpenCode</h3>
+    <div class="ve-code-block">
+      <pre><code>Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.opencode/INSTALL.md</code></pre>
+    </div>
+    <p>詳細: <a href="https://github.com/obra/superpowers/blob/main/docs/README.opencode.md" target="_blank" rel="noopener">docs/README.opencode.md</a></p>
+    <h3>Gemini CLI</h3>
+    <div class="ve-code-block">
+      <pre><code>gemini extensions install https://github.com/obra/superpowers
+gemini extensions update superpowers   # 更新時</code></pre>
+    </div>
+    <div class="ve-callout">
+      <strong>確認:</strong> 新規セッションで「この機能を計画して」や「このバグを調査して」などスキルが発動しそうな依頼をすると、エージェントが該当スキルを自動で読み込む。
+    </div>
+  </div>
+
+  <section id="philosophy" class="sec-head">5 — 哲学</section>
+  <div class="ve-card ve-card--recessed" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 設計思想</span>
+    <ul>
+      <li><strong>Test-Driven Development</strong> — 常にテストを先に書く</li>
+      <li><strong>Systematic over ad-hoc</strong> — 当て推量よりプロセス</li>
+      <li><strong>Complexity reduction</strong> — シンプルさを最優先</li>
+      <li><strong>Evidence over claims</strong> — 主張の前に検証してから「完了」とする</li>
+    </ul>
+  </div>
+
+  <section id="links" class="sec-head">6 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/obra/superpowers" target="_blank" rel="noopener">GitHub: obra/superpowers</a> — 本体リポジトリ</li>
+      <li><a href="https://github.com/obra/superpowers-marketplace" target="_blank" rel="noopener">Superpowers Marketplace</a> — プラグイン用マーケットプレース</li>
+      <li><a href="https://claude.com/plugins/superpowers" target="_blank" rel="noopener">Claude 公式プラグイン: Superpowers</a></li>
+      <li><a href="https://blog.fsck.com/2025/10/09/superpowers/" target="_blank" rel="noopener">Superpowers for Claude Code</a> — 作者ブログ記事</li>
+      <li><a href="https://github.com/sponsors/obra" target="_blank" rel="noopener">Sponsor (Jesse/obra)</a></li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
