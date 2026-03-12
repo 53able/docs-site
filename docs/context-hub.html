@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Context Hub — コーディングエージェント向けキュレートドキュメント</title>
-  <meta name="description" content="Chub（Context Hub）はエージェント向けのバージョン付き・キュレートされた API ドキュメント。検索・取得・アノテーション・フィードバックでセッションを超えて賢くなる仕組みの概要。">
+  <title>Context Hub — コーディングエージェント向けドキュメント取得 CLI</title>
+  <meta name="description" content="Context Hub（chub）はエージェントがバージョン管理された API ドキュメントを検索・取得し、アノテーションとフィードバックでセッションを超えて賢くなるための CLI。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Context Hub — コーディングエージェント向けキュレートドキュメント">
-  <meta property="og:description" content="Chub（Context Hub）はエージェント向けのバージョン付き・キュレートされた API ドキュメント。検索・取得・アノテーション・フィードバックでセッションを超えて賢くなる仕組みの概要。">
+  <meta property="og:title" content="Context Hub — コーディングエージェント向けドキュメント取得 CLI">
+  <meta property="og:description" content="エージェントがキュレーションされた API ドキュメントを検索・取得し、アノテーションで学びを蓄積する chub CLI の概要。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/context-hub.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Context Hub — コーディングエージェント向けキュレートドキュメント">
-  <meta name="twitter:description" content="Chub（Context Hub）はエージェント向けのバージョン付き・キュレートされた API ドキュメント。検索・取得・アノテーション・フィードバックの概要。">
+  <meta name="twitter:title" content="Context Hub — コーディングエージェント向けドキュメント取得 CLI">
+  <meta name="twitter:description" content="エージェントがキュレーションされた API ドキュメントを検索・取得し、アノテーションで学びを蓄積する chub CLI の概要。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
   <style>
     /* ============ THEME (Spell UI tokens + fonts) ============ */
     :root {
@@ -50,8 +50,8 @@
       --chart-5: oklch(0.769 0.188 70.08);
       --code-bg: var(--muted);
       --code-text: #032f62;
-      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
-      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --font-mono: 'Fira Code', 'SF Mono', Consolas, monospace;
       --bg: var(--background);
       --surface: var(--card);
       --surface2: var(--muted);
@@ -139,7 +139,7 @@
       body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.488 0.243 264.376 / 0.08) 0%, transparent 50%); }
     }
 
-    /* ============ Wrap + TOC (responsive nav) ============ */
+    /* ============ Wrap + TOC ============ */
     .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
     .main { min-width: 0; max-width: 72rem; }
     .toc {
@@ -183,6 +183,10 @@
     .ve-code-block { margin: 1rem 0; }
     code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
 
+    .flow-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 1rem 0; }
+    .flow-row .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .flow-row .arrow { color: var(--text-dim); }
+
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
     .kpi-row .ve-kpi-card { min-width: 0; }
     @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
@@ -197,116 +201,91 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
-    <a href="#quickstart">Quick Start</a>
-    <a href="#how-it-works">仕組み</a>
-    <a href="#commands">コマンド一覧</a>
-    <a href="#self-improving">セッションを超えて賢く</a>
-    <a href="#content-features">コンテンツと機能</a>
+    <a href="#commands">コマンド</a>
+    <a href="#flow">検索・取得・学習の流れ</a>
+    <a href="#content">コンテンツ・取得オプション</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
   <h1>Context Hub</h1>
-  <p class="subtitle">コーディングエージェント向けのキュレート・バージョン付きドキュメント。検索・取得・アノテーション・フィードバックで、セッションを超えて賢くなる。</p>
+  <p class="subtitle">chub — コーディングエージェントがキュレーションされたドキュメントを取得し、セッションを超えて賢くなるための CLI。</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-    <p><strong>Context Hub</strong>（CLI 名: <strong>Chub</strong>）は、コーディングエージェントが「API をハルシネートする」「セッションで学んだことを忘れる」問題に向き合うための仕組み。キュレートされバージョン管理されたドキュメントを配信し、エージェントが <code>chub search</code> / <code>chub get</code> で必要なドキュメントを取得して使う。コンテンツはすべてオープンで Markdown としてこのリポジトリにあり、エージェントが読む内容をそのまま確認・貢献できる。</p>
+    <p><strong>Context Hub</strong>（略称 <strong>chub</strong>）は、コーディングエージェントが「正しい API ドキュメント」を手に入れ、セッションをまたいで学びを蓄積するための CLI。エージェントは API を hallucinate したり、前のセッションで得た知識を忘れたりしがちなので、バージョン管理された Markdown のドキュメントを検索・取得し、必要に応じてローカルでアノテーションを付けて次回以降の取得時に自動で付与されるようにする。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">chub</span><span class="ve-kpi-card__label">CLI</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">chub</span><span class="ve-kpi-card__label">CLI 名</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">search / get</span><span class="ve-kpi-card__label">検索・取得</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">annotate</span><span class="ve-kpi-card__label">ローカル注釈</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">annotate</span><span class="ve-kpi-card__label">ローカルメモ</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">feedback</span><span class="ve-kpi-card__label">作者へ投票</span></div>
     </div>
-    <p>npm パッケージは <code>@aisuite/chub</code>。Node.js 18 以上。エージェント用スキル（例: get-api-docs）を組み合わせると「最新の API ドキュメントを chub で取得して使う」フローを自動化できる。</p>
+    <p>コンテンツはこのリポジトリ内で Markdown と YAML フロントマターで管理されており、誰でも PR で追加・改善できる。エージェント用スキル（例: <code>get-api-docs</code>）を組み合わせると「chub を使って最新の API ドキュメントを取ってきて使え」とプロンプトするだけで済む。</p>
   </div>
 
-  <section id="quickstart" class="sec-head">2 — Quick Start</section>
-  <div class="ve-card ve-card--elevated" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 導入</span>
-    <p>グローバルインストール後、検索して取得する。</p>
-    <div class="ve-code-block">
-      <pre><code>npm install -g @aisuite/chub
-chub search openai                 # 利用可能なドキュメントを検索
-chub get openai/chat --lang py     # 現在のドキュメントを取得（Python 版）</code></pre>
-    </div>
-    <p>言語は <code>--lang py</code> / <code>--lang js</code> で指定。取得した Markdown をエージェントのコンテキストに含めてコード生成に使う。</p>
-  </div>
-
-  <section id="how-it-works" class="sec-head">3 — 仕組み</section>
+  <section id="commands" class="sec-head">2 — コマンド</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 設計思想</span>
-    <p>Chub は<strong>人間ではなくコーディングエージェントが使う</strong>ことを前提にしている。プロンプトで「chub を使って最新の API ドキュメントを取得し、その内容に従って実装して」と指示するか、<a href="https://github.com/context-hub/context-hub/blob/main/cli/skills/get-api-docs/SKILL.md" target="_blank" rel="noopener">get-api-docs スキル</a>（SKILL.md）をエージェントに登録して使う。</p>
-    <p>基本フローは <strong>search → fetch → use</strong>。エージェントが不足やワークアラウンドに気づいたら、<code>chub annotate</code> でローカルにメモしておくと、次回の <code>chub get</code> 時にその注釈が自動で付いて返る。作者への評価は <code>chub feedback &lt;id&gt; up</code> / <code>down</code> で送れる。</p>
-  </div>
-  <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> 例</span>
-    <div class="ve-code-block">
-      <pre><code>chub search "stripe payments"        # 関連ドキュメントを検索
-chub get stripe/api --lang js       # ドキュメントを取得
-# エージェントがドキュメントを読み、正しいコードを書く。
-
-chub annotate stripe/api "Needs raw body for webhook verification"
-# 次セッションでは chub get 時にこの注釈が自動で付与される。</code></pre>
-    </div>
-  </div>
-
-  <section id="commands" class="sec-head">4 — コマンド一覧</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> CLI</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> 一覧</span>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>コマンド</th><th>説明</th></tr>
+          <tr><th>コマンド</th><th>目的</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>chub search [query]</code></td><td>ドキュメント・スキルを検索（クエリ省略で一覧）</td></tr>
-          <tr><td><code>chub get &lt;id&gt; [--lang py|js]</code></td><td>ID でドキュメントまたはスキルを取得</td></tr>
-          <tr><td><code>chub annotate &lt;id&gt; &lt;note&gt;</code></td><td>ドキュメント／スキルにローカル注釈を付与</td></tr>
-          <tr><td><code>chub annotate &lt;id&gt; --clear</code></td><td>注釈を削除</td></tr>
-          <tr><td><code>chub annotate --list</code></td><td>すべての注釈を一覧</td></tr>
-          <tr><td><code>chub feedback &lt;id&gt; up|down</code></td><td>ドキュメントをアップ／ダウンボート（作者に送信）</td></tr>
+          <tr><td><code>chub search [query]</code></td><td>ドキュメント・スキルを検索。クエリなしで一覧。<code>--tags</code> / <code>--lang</code> / <code>--limit</code> で絞り込み。</td></tr>
+          <tr><td><code>chub get &lt;id&gt; [--lang py|js]</code></td><td>ID でドキュメントまたはスキルを取得。言語指定でバリアント選択。<code>--file</code> / <code>--full</code> で参照ファイルを追加取得。</td></tr>
+          <tr><td><code>chub annotate &lt;id&gt; &lt;note&gt;</code></td><td>そのドキュメントにローカルでメモを付与。次回 <code>chub get</code> 時に自動で末尾に付く。</td></tr>
+          <tr><td><code>chub annotate &lt;id&gt; --clear</code></td><td>アノテーションを削除。</td></tr>
+          <tr><td><code>chub annotate --list</code></td><td>全アノテーション一覧。</td></tr>
+          <tr><td><code>chub feedback &lt;id&gt; up|down</code></td><td>ドキュメントを up/down で評価。作者にフィードバックが送られ、品質改善に使われる。</td></tr>
         </tbody>
       </table>
     </div>
-    <p>オプション（<code>--file</code>, <code>--full</code> など）とパイプの詳細は <a href="https://github.com/context-hub/context-hub/blob/main/docs/cli-reference.md" target="_blank" rel="noopener">CLI Reference</a> を参照。</p>
+    <div class="ve-callout">
+      <strong>グローバル:</strong> <code>--json</code> で JSON 出力（エージェントやパイプ向け）。<code>--version</code> / <code>--help</code> でバージョン・ヘルプ。
+    </div>
   </div>
 
-  <section id="self-improving" class="sec-head">5 — セッションを超えて賢く</section>
+  <section id="flow" class="sec-head">3 — 検索・取得・学習の流れ</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> アノテーションとフィードバック</span>
-    <p><strong>アノテーション</strong>は、エージェントがドキュメントに付けるローカルメモ。セッションをまたいで永続し、次回 <code>chub get</code> したときに自動で付いて返る。過去の経験を次に活かせる。</p>
-    <p><strong>フィードバック</strong>（up / down）は作者に送られ、ドキュメントの改善に使われる。みんなの利用結果がコンテンツの質向上につながる。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> 基本フロー</span>
+    <p>多くの場合は「検索 → 取得 → エージェントが読んでコードを書く」で完結する。</p>
+    <div class="flow-row">
+      <span class="step">chub search "stripe payments"</span>
+      <span class="arrow">→</span>
+      <span class="step">chub get stripe/api --lang js</span>
+      <span class="arrow">→</span>
+      <span class="step">エージェントがドキュメントを読んでコード生成</span>
+    </div>
+    <p>ギャップに気づいたら <code>chub annotate stripe/api "Webhook 検証は raw body が必要"</code> のようにメモを付ける。次回 <code>chub get stripe/api</code> したとき、取得結果の末尾にそのメモが自動で付与されるので、エージェントは前セッションの学びを忘れない。</p>
   </div>
   <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> 対比</span>
-    <p>Context Hub なし: ウェブ検索 → ノイズ → コードが動かない → 修正に手間 → 知識は忘れられ、次のセッションで繰り返し。</p>
-    <p>Context Hub あり: キュレートドキュメントを取得 → 動くコードが出やすい → ギャップがあればアノテーション → 次回はさらに賢く。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> With / Without Context Hub</span>
+    <p>Context Hub なし: ウェブ検索はノイズが多い・コードが壊れやすい・直す手間・知識はセッションで消える → 次のセッションで同じことを繰り返す。Context Hub あり: キュレーションされたドキュメントを取得・コードが動きやすい・ギャップはアノテーションで補い、次回以降に引き継がれる → セッションを重ねるほど賢くなる。</p>
   </div>
 
-  <section id="content-features" class="sec-head">6 — コンテンツと機能</section>
+  <section id="content" class="sec-head">4 — コンテンツ・取得オプション</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> コンテンツタイプ</span>
-    <p>バージョン管理され、<strong>言語別</strong>（py / js など）のバリアントがある。「何を知るべきか」が整理されている。API ドキュメント以外（エージェントスキルなど）もロードマップ上。</p>
-  </div>
-  <div class="ve-card" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> Incremental Fetch</span>
-    <p>ドキュメントにメイン以外の参照ファイルがある場合、<code>--file</code> で必要なファイルだけ、<code>--full</code> で一式を取得できる。トークンを無駄にしない。</p>
-  </div>
-  <div class="ve-callout" style="--i:2">
-    <strong>貢献</strong>: ドキュメント・スキルは Markdown + YAML フロントマターで PR により追加できる。Content Guide でフォーマットと構造を確認できる。
+    <span class="ve-section-label"><span class="ve-dot"></span> 言語別・バージョン</span>
+    <p>ドキュメントは言語別（<code>--lang py</code>, <code>--lang js</code> など）のバリアントを持てる。複数言語ある場合は <code>--lang</code> を省略すると選択を促される。1 言語だけの場合は自動でその言語が選ばれる。</p>
+    <h3>Incremental Fetch</h3>
+    <p>1 本のドキュメントに参照ファイル（例: <code>references/advanced.md</code>）がある場合、<code>chub get</code> の出力末尾に「追加ファイルがあります」と案内が出る。<code>--file &lt;path&gt;</code> で必要なファイルだけ取得、<code>--full</code> で全部取得。トークンを無駄にしない。</p>
+    <div class="ve-code-block">
+      <pre><code>chub get acme/widgets --file references/advanced.md
+chub get acme/widgets --full</code></pre>
+    </div>
   </div>
 
-  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <section id="links" class="sec-head">5 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・リポジトリ</span>
     <ul>
-      <li><a href="https://github.com/context-hub/context-hub" target="_blank" rel="noopener">GitHub: context-hub/context-hub</a> — リポジトリ（cli, content, docs）</li>
+      <li><a href="https://github.com/andrewyng/context-hub" target="_blank" rel="noopener">GitHub: andrewyng/context-hub</a> — 本体リポジトリ（コンテンツ・CLI）</li>
       <li><a href="https://www.npmjs.com/package/@aisuite/chub" target="_blank" rel="noopener">npm: @aisuite/chub</a> — CLI パッケージ</li>
-      <li><a href="https://github.com/context-hub/context-hub/blob/main/docs/cli-reference.md" target="_blank" rel="noopener">CLI Reference</a> — コマンド・フラグ・パイプ</li>
-      <li><a href="https://github.com/context-hub/context-hub/blob/main/docs/feedback-and-annotations.md" target="_blank" rel="noopener">Feedback and Annotations</a> — アノテーション・フィードバックの詳細</li>
-      <li><a href="https://github.com/context-hub/context-hub/blob/main/docs/content-guide.md" target="_blank" rel="noopener">Content Guide</a> — ドキュメントのフォーマット・構造</li>
+      <li>リポジトリ内 <code>docs/cli-reference.md</code> — フルコマンドリファレンス</li>
+      <li>リポジトリ内 <code>docs/feedback-and-annotations.md</code> — アノテーション・フィードバックの詳細</li>
+      <li>リポジトリ内 <code>cli/skills/get-api-docs/SKILL.md</code> — エージェント用「API ドキュメント取得」スキル例（Claude Code なら <code>~/.claude/skills/get-api-docs</code> に配置して利用可能）</li>
     </ul>
   </div>
   </div>
