@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenUI — ジェネラティブ UI のオープン標準</title>
+  <meta name="description" content="OpenUI はストリーミングファーストの構造化 UI 言語と React ランタイムで、LLM 出力を最大 67% トークン削減。コンポーネントライブラリからプロンプト生成・レンダリングまで一貫したジェネラティブ UI フレームワークの概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="OpenUI — ジェネラティブ UI のオープン標準">
+  <meta property="og:description" content="ストリーミングファーストの OpenUI Lang と React ランタイムで LLM 出力を構造化 UI に。コンポーネント駆動のプロンプト生成とレンダリング。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/openui.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="OpenUI — ジェネラティブ UI のオープン標準">
+  <meta name="twitter:description" content="ストリーミングファーストの OpenUI Lang と React ランタイムで LLM 出力を構造化 UI に。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.646 0.222 41.116 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.488 0.243 264.376 / 0.08) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Mermaid container ============ */
+    .mermaid-wrap { display: flex; justify-content: center; margin: 1rem 0; min-width: 0; }
+    .mermaid-wrap svg { max-width: 100%; height: auto; }
+
+    /* ============ Animation ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#packages">パッケージ構成</a>
+    <a href="#quickstart">クイックスタート</a>
+    <a href="#how-it-works">仕組み</a>
+    <a href="#openui-lang">OpenUI Lang</a>
+    <a href="#benchmarks">トークン効率</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>OpenUI</h1>
+  <p class="subtitle">The Open Standard for Generative UI — ストリーミングファーストの構造化 UI 言語と React ランタイム</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <p>OpenUI は<strong>フルスタックのジェネラティブ UI フレームワーク</strong>。コンパクトなストリーミングファーストの言語（OpenUI Lang）、React ランタイム、組み込みコンポーネントライブラリ、そのまま使えるチャット UI を提供し、<strong>JSON と比べて最大 67% トークン削減</strong>を実現する。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">OpenUI Lang</span><span class="ve-kpi-card__label">構造化 UI 言語</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">React</span><span class="ve-kpi-card__label">ランタイム</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">67%</span><span class="ve-kpi-card__label">トークン削減</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Zod</span><span class="ve-kpi-card__label">型付きコンポーネント</span></div>
+    </div>
+    <p><strong>中核:</strong> OpenUI Lang はモデル出力用のコンパクトなストリーミング向け言語。コンポーネントライブラリを定義し、そこからプロンプトを生成。モデルがストリームする OpenUI Lang をパースして React で段階的にレンダリングする。</p>
+  </div>
+
+  <section id="packages" class="sec-head">2 — パッケージ構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> モノレポ</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>パッケージ</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>@openuidev/react-lang</code></td><td>コアランタイム — コンポーネント定義・パーサ・レンダラ・プロンプト生成</td></tr>
+          <tr><td><code>@openuidev/react-headless</code></td><td>ヘッドレスチャット状態・ストリーミングアダプタ・メッセージ形式変換</td></tr>
+          <tr><td><code>@openuidev/react-ui</code></td><td>チャットレイアウトと 2 系統の組み込みコンポーネントライブラリ</td></tr>
+          <tr><td><code>@openuidev/cli</code></td><td>アプリのスキャフォールドとシステムプロンプト／JSON Schema 生成</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-code-block">
+      <pre><code>npm install @openuidev/react-lang @openuidev/react-ui</code></pre>
+    </div>
+  </div>
+
+  <section id="quickstart" class="sec-head">3 — クイックスタート</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> CLI で作成</span>
+    <div class="ve-code-block">
+      <pre><code>npx @openuidev/cli@latest create --name genui-chat-app
+cd genui-chat-app
+echo "OPENAI_API_KEY=sk-your-key-here" > .env
+npm run dev</code></pre>
+    </div>
+    <p>スキャフォールドされたアプリにはストリーミング・組み込み UI・OpenUI Lang 対応が含まれる。プロンプトは許可したコンポーネント集合から自動生成され、ストリーム到着とともに UI が更新される。</p>
+  </div>
+
+  <section id="how-it-works" class="sec-head">4 — 仕組み</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> フロー</span>
+    <p>コンポーネントが「モデルが生成できるもの」を決める。</p>
+    <div class="mermaid-wrap">
+      <div class="mermaid">
+flowchart LR
+  A["Component Library"] --> B["System Prompt"]
+  B --> C["LLM"]
+  C --> D["OpenUI Lang Stream"]
+  D --> E["Renderer"]
+  E --> F["Live UI"]
+      </div>
+    </div>
+    <ol style="padding-left: 1.5rem; margin-top: 1rem;">
+      <li>コンポーネントライブラリを定義または再利用する。</li>
+      <li>そのライブラリからシステムプロンプトを生成する。</li>
+      <li>プロンプトをモデルに送る。</li>
+      <li>OpenUI Lang のストリームをクライアントに返す。</li>
+      <li>Renderer で段階的にレンダリングする。</li>
+    </ol>
+    <p><a href="https://www.openui.com/playground" target="_blank" rel="noopener">Playground</a> でデフォルトコンポーネントライブラリを使ってリアルタイムに UI を生成できる。</p>
+  </div>
+
+  <section id="openui-lang" class="sec-head">5 — OpenUI Lang</section>
+  <div class="ve-card ve-card--recessed" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 設計</span>
+    <p>OpenUI Lang は<strong>構造化かつストリーミング可能</strong>なモデル出力用に設計されている。</p>
+    <ul>
+      <li><strong>ストリーミング出力</strong> — トークン到着に合わせて UI を段階的に出力。</li>
+      <li><strong>トークン効率</strong> — 同等の JSON より最大 67% 少ないトークン（<a href="#benchmarks">ベンチマーク</a>参照）。</li>
+      <li><strong>制御されたレンダリング</strong> — 定義・登録したコンポーネントだけに出力を制限。</li>
+      <li><strong>型付きコンポーネント</strong> — Zod スキーマで props と構造を事前定義。</li>
+    </ul>
+  </div>
+
+  <section id="benchmarks" class="sec-head">6 — トークン効率</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ベンチマーク概要</span>
+    <p>tiktoken（GPT-5 エンコーダ）で計測。7 シナリオで OpenUI Lang と 2 種の JSON ストリーミング形式を比較。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>シナリオ</th><th>Vercel JSON</th><th>Thesys C1 JSON</th><th>OpenUI Lang</th><th>vs Vercel</th><th>vs C1</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>simple-table</td><td>340</td><td>357</td><td>148</td><td>-56.5%</td><td>-58.5%</td></tr>
+          <tr><td>chart-with-data</td><td>520</td><td>516</td><td>231</td><td>-55.6%</td><td>-55.2%</td></tr>
+          <tr><td>contact-form</td><td>893</td><td>849</td><td>294</td><td>-67.1%</td><td>-65.4%</td></tr>
+          <tr><td>dashboard</td><td>2247</td><td>2261</td><td>1226</td><td>-45.4%</td><td>-45.8%</td></tr>
+          <tr><td>pricing-page</td><td>2487</td><td>2379</td><td>1195</td><td>-52.0%</td><td>-49.8%</td></tr>
+          <tr><td>settings-panel</td><td>1244</td><td>1205</td><td>540</td><td>-56.6%</td><td>-55.2%</td></tr>
+          <tr><td>e-commerce-product</td><td>2449</td><td>2381</td><td>1166</td><td>-52.4%</td><td>-51.0%</td></tr>
+          <tr><td><strong>合計</strong></td><td><strong>10180</strong></td><td><strong>9948</strong></td><td><strong>4800</strong></td><td><strong>-52.8%</strong></td><td><strong>-51.7%</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>手法と再現手順はリポジトリの <code>benchmarks/</code> を参照。</p>
+  </div>
+
+  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://openui.com" target="_blank" rel="noopener">openui.com</a> — ドキュメント</li>
+      <li><a href="https://www.openui.com/playground" target="_blank" rel="noopener">Playground</a> — ブラウザで試す</li>
+      <li><a href="https://github.com/thesysdev/openui" target="_blank" rel="noopener">GitHub: thesysdev/openui</a> — 本体リポジトリ</li>
+      <li><a href="https://github.com/thesysdev/openui/tree/main/examples/openui-chat" target="_blank" rel="noopener">examples/openui-chat</a> — サンプルチャットアプリ（Next.js）</li>
+      <li><a href="https://discord.com/invite/Pbv5PsqUSv" target="_blank" rel="noopener">Discord</a> — コミュニティ</li>
+    </ul>
+  </div>
+  </div><!-- /main -->
+</div><!-- /wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { primaryColor: '#e07c4a', primaryTextColor: '#1a1a1a', primaryBorderColor: '#c2410c', lineColor: '#64748b', secondaryColor: '#f1f5f9', tertiaryColor: '#f8fafc' } });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
