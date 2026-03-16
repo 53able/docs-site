@@ -200,6 +200,7 @@
     <a href="#skills">スキル一覧</a>
     <a href="#architecture">アーキテクチャ</a>
     <a href="#install">インストール</a>
+    <a href="#cursor">Cursor で利用する</a>
     <a href="#links">参考リンク</a>
   </nav>
 
@@ -276,7 +277,61 @@ cd .claude/skills/gstack && ./setup</code></pre>
     <p>実ファイルをコミットする（サブモジュールではない）ため、<code>git clone</code> 後は各メンバーが <code>cd .claude/skills/gstack && ./setup</code> を一度実行すればよい。バイナリと node_modules は gitignore 済み。</p>
   </div>
 
-  <section id="links" class="sec-head">5 — 参考リンク</section>
+  <section id="cursor" class="sec-head">5 — Cursor で利用する</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 結論</span>
+    <p><strong>gstack は Cursor でも利用可能</strong>。スキルは Markdown + シェル実行のため、Claude Code 用のパスを Cursor 用に読み替えればよい。</p>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 手順</span>
+    <p>Cursor ではスキルを <code>.cursor/skills/</code> に置く。gstack をクローンしたあと、SKILL.md 内の <code>~/.claude/skills/gstack</code> および <code>.claude/skills/gstack</code> を <code>~/.cursor/skills/gstack</code> またはリポジトリの <code>.cursor/skills/gstack</code> に合わせて置き換える。clone と <code>./setup</code> のあとに<strong>パス置換スクリプト</strong>を実行する（下記「Cursor 用パス置換」参照）。</p>
+    <h3>マシンにインストール（Cursor のみ）</h3>
+    <div class="ve-code-block">
+      <pre><code>git clone https://github.com/garrytan/gstack.git ~/.cursor/skills/gstack
+cd ~/.cursor/skills/gstack && ./setup</code></pre>
+    </div>
+    <h3>Cursor 用パス置換</h3>
+    <p>setup のあと、SKILL.md や bin スクリプト内のパスを Cursor 用に置き換える。以下を <code>~/.cursor/skills/gstack</code>（またはリポジトリの <code>.cursor/skills/gstack</code>）で実行する。</p>
+    <div class="ve-code-block">
+      <pre><code># 置換対象のファイルを検索し、.claude → .cursor に一括置換（macOS / Linux 共通）
+find . -type f ! -path "./.git/*" -exec grep -l 'claude/skills/gstack' {} \; 2>/dev/null | while read -r f; do
+  perl -i -pe 's|\$HOME/\.claude/skills/gstack|\$HOME/.cursor/skills/gstack|g;
+               s|~/.claude/skills/gstack|~/.cursor/skills/gstack|g;
+               s|\.claude/skills/gstack|.cursor/skills/gstack|g' "$f"
+done</code></pre>
+    </div>
+    <p>これで Preamble の <code>gstack-update-check</code> / <code>gstack-config</code> や、<code>/browse</code> の <code>$B</code> 解決が <code>~/.cursor/skills/gstack</code> を参照する。gstack を上書き更新（<code>git pull</code> など）した場合は、再度この置換を実行する。</p>
+    <h3>パス置換の確認</h3>
+    <p>置換後に、まだ <code>.claude/skills/gstack</code> を参照しているファイルがないか確認する。同じディレクトリで実行する。</p>
+    <div class="ve-code-block">
+      <pre><code># 置換漏れがあれば一覧表示し、exit 1 で終了
+left=$(find . -type f ! -path "./.git/*" -exec grep -l 'claude/skills/gstack' {} \; 2>/dev/null)
+if [ -n "$left" ]; then
+  echo "まだ .claude/skills/gstack を参照しているファイル:"
+  echo "$left"
+  exit 1
+else
+  echo "OK: すべてのファイルが .cursor 用パスに置換されています"
+fi</code></pre>
+    </div>
+    <h3>リポジトリに追加（チーム共有・Cursor）</h3>
+    <div class="ve-code-block">
+      <pre><code>cp -Rf ~/.cursor/skills/gstack .cursor/skills/gstack
+rm -rf .cursor/skills/gstack/.git
+cd .cursor/skills/gstack && ./setup</code></pre>
+    </div>
+    <p>続いて上記の「Cursor 用パス置換」を <code>.cursor/skills/gstack</code> で実行し、「パス置換の確認」で置換漏れがないことを確認する。問題なければ置換後のファイルをコミットすればよい。gstack 本体を更新したときは、再度 clone または pull のうえ <code>./setup</code> と置換・確認をやり直す。</p>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> 違いと注意</span>
+    <ul>
+      <li><strong>スラッシュコマンド</strong>: Cursor のエージェントチャットでは <code>/</code> のあとにスキル名を入力するとスラッシュコマンドのように起動できる（例: <code>/plan-ceo-review</code>）。gstack の各ワークフローを Cursor 用スキルとして置き、フォルダ名・frontmatter の <code>name</code> を <code>plan-ceo-review</code> などに揃えれば、Claude Code と同様に <code>/plan-ceo-review</code> で呼び出せる。明示起動のみにしたい場合はスキルに <code>disable-model-invocation: true</code> を指定する。</li>
+      <li><strong>AskUserQuestion</strong>: gstack のスキルは「ユーザーに質問する」ために AskUserQuestion を指定している。Cursor ではエージェントがチャットで質問し、ユーザーが返答する形で同等のやりとりができる。</li>
+      <li><strong>ブラウザ</strong>: <code>/browse</code> 相当は gstack のバイナリ（Bun サーバー + Chromium）を Bash から <code>$B</code> で叩く。Cursor には cursor-ide-browser MCP もあるが、gstack の Ref システム・サブ秒レイテンシ・永続セッションは gstack バイナリ利用時のみ。Cursor で gstack をそのまま使う場合は、スキルに従ってターミナルから <code>browse</code> を実行する形になる。</li>
+    </ul>
+  </div>
+
+  <section id="links" class="sec-head">6 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
     <ul>
