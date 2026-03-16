@@ -200,6 +200,7 @@
     <a href="#skills">スキル一覧</a>
     <a href="#architecture">アーキテクチャ</a>
     <a href="#install">インストール</a>
+    <a href="#cursor">Cursor で利用する</a>
     <a href="#links">参考リンク</a>
   </nav>
 
@@ -276,7 +277,38 @@ cd .claude/skills/gstack && ./setup</code></pre>
     <p>実ファイルをコミットする（サブモジュールではない）ため、<code>git clone</code> 後は各メンバーが <code>cd .claude/skills/gstack && ./setup</code> を一度実行すればよい。バイナリと node_modules は gitignore 済み。</p>
   </div>
 
-  <section id="links" class="sec-head">5 — 参考リンク</section>
+  <section id="cursor" class="sec-head">5 — Cursor で利用する</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 結論</span>
+    <p><strong>gstack は Cursor でも利用可能</strong>。スキルは Markdown + シェル実行のため、Claude Code 用のパスを Cursor 用に読み替えればよい。</p>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 手順</span>
+    <p>Cursor ではスキルを <code>.cursor/skills/</code> に置く。gstack をクローンしたあと、SKILL.md 内の <code>~/.claude/skills/gstack</code> および <code>.claude/skills/gstack</code> を <code>~/.cursor/skills/gstack</code> またはリポジトリの <code>.cursor/skills/gstack</code> に合わせて置き換える（または gstack 側で Cursor 用パスをサポートするまで、clone 先を <code>.cursor/skills/gstack</code> にして setup を実行する）。</p>
+    <h3>マシンにインストール（Cursor のみ）</h3>
+    <div class="ve-code-block">
+      <pre><code>git clone https://github.com/garrytan/gstack.git ~/.cursor/skills/gstack
+cd ~/.cursor/skills/gstack && ./setup</code></pre>
+    </div>
+    <p>setup は <code>browse</code> バイナリのビルドなどを行う。SKILL.md の Preamble や SETUP では <code>~/.claude/skills/gstack</code> を参照しているため、現状の gstack のままでは <code>~/.cursor/skills/gstack</code> に置いた場合にパスがずれる。そのときは SKILL.md 内のパスを手で <code>~/.cursor/skills/gstack</code> に置換するか、gstack が CURSOR_SKILLS などでパスを切り替える対応を待つ。</p>
+    <h3>リポジトリに追加（チーム共有・Cursor）</h3>
+    <div class="ve-code-block">
+      <pre><code>cp -Rf ~/.cursor/skills/gstack .cursor/skills/gstack
+rm -rf .cursor/skills/gstack/.git
+cd .cursor/skills/gstack && ./setup</code></pre>
+    </div>
+    <p>同上、SKILL.md 内の <code>.claude/skills/gstack</code> を <code>.cursor/skills/gstack</code> に置換する必要がある場合がある。</p>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> 違いと注意</span>
+    <ul>
+      <li><strong>スラッシュコマンド</strong>: Cursor のエージェントチャットでは <code>/</code> のあとにスキル名を入力するとスラッシュコマンドのように起動できる（例: <code>/plan-ceo-review</code>）。gstack の各ワークフローを Cursor 用スキルとして置き、フォルダ名・frontmatter の <code>name</code> を <code>plan-ceo-review</code> などに揃えれば、Claude Code と同様に <code>/plan-ceo-review</code> で呼び出せる。明示起動のみにしたい場合はスキルに <code>disable-model-invocation: true</code> を指定する。</li>
+      <li><strong>AskUserQuestion</strong>: gstack のスキルは「ユーザーに質問する」ために AskUserQuestion を指定している。Cursor ではエージェントがチャットで質問し、ユーザーが返答する形で同等のやりとりができる。</li>
+      <li><strong>ブラウザ</strong>: <code>/browse</code> 相当は gstack のバイナリ（Bun サーバー + Chromium）を Bash から <code>$B</code> で叩く。Cursor には cursor-ide-browser MCP もあるが、gstack の Ref システム・サブ秒レイテンシ・永続セッションは gstack バイナリ利用時のみ。Cursor で gstack をそのまま使う場合は、スキルに従ってターミナルから <code>browse</code> を実行する形になる。</li>
+    </ul>
+  </div>
+
+  <section id="links" class="sec-head">6 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
     <ul>
