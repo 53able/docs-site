@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taste Skill — AI が書くフロントエンドを「ちゃんとしたデザイン」にするスキル集</title>
+  <meta name="description" content="AI ツールが書くフロントエンドを、汎用的でつまらない UI ではなく、モダンでプレミアムなデザインにするためのスキル集。レイアウト・タイポグラフィ・色・余白・モーションを制御する 4 種類の SKILL.md の概要と使い方。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Taste Skill — AI が書くフロントエンドを「ちゃんとしたデザイン」にするスキル集">
+  <meta property="og:description" content="AI ツールが書くフロントエンドを、モダンでプレミアムなデザインにするための 4 種類の SKILL.md の概要と使い方。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/taste-skill.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Taste Skill — AI が書くフロントエンドを「ちゃんとしたデザイン」にするスキル集">
+  <meta name="twitter:description" content="AI ツールが書くフロントエンドを、モダンでプレミアムなデザインにするための 4 種類の SKILL.md の概要と使い方。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --font-mono: 'Fira Code', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.646 0.222 41.116 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.488 0.243 264.376 / 0.08) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#skills">4 つのスキル</a>
+    <a href="#usage">使い方</a>
+    <a href="#settings">設定（taste-skill）</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>Taste Skill</h1>
+  <p class="subtitle">AI が書くフロントエンドを、汎用的でつまらない UI ではなく、モダンでプレミアムなデザインにするスキル集。</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <p><strong>Taste Skill</strong> は、AI ツール（Cursor や Claude Code など）が生成するフロントエンドコードの「見た目」を、汎用的で退屈なテンプレートっぽいものから、モダンでプレミアムなデザインに寄せるための <strong>SKILL.md の集合</strong>。レイアウト・タイポグラフィ・色・余白・モーション・ビジュアル品質をルール化し、AI に読ませて従わせることで、一貫した品質の UI を出させる。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">スキル種類</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">SKILL.md</span><span class="ve-kpi-card__label">1 ファイルで完結</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Copy</span><span class="ve-kpi-card__label">プロジェクトにコピー</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">@参照</span><span class="ve-kpi-card__label">Cursor 等で参照</span></div>
+    </div>
+    <p>各スキルは独立したフォルダに <code>SKILL.md</code> が 1 本あるだけ。プロジェクトにコピーして、AI に「この SKILL を読んで従え」と指示するだけで使える。</p>
+  </div>
+
+  <section id="skills" class="sec-head">2 — 4 つのスキル</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 一覧</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>スキル</th><th>フォルダ</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>taste-skill</strong></td>
+            <td><code>taste-skill/</code></td>
+            <td>メインのデザインスキル。ゼロから「ちゃんとした」フロントを書かせる。レイアウト・タイポグラフィ・色・余白・モーション・ビジュアル品質をカバー。</td>
+          </tr>
+          <tr>
+            <td><strong>redesign-skill</strong></td>
+            <td><code>redesign-skill/</code></td>
+            <td>既存プロジェクトのアップグレード用。ゼロから作り直さず、現状を監査してから最大のデザイン問題を優先して直す。任意の CSS フレームや vanilla CSS と組み合わせ可能。</td>
+          </tr>
+          <tr>
+            <td><strong>soft-skill</strong></td>
+            <td><code>soft-skill/</code></td>
+            <td>「高級感」に特化。プレミアムフォント・大きな余白・奥行きのあるカード・スプリングベースのアニメーション・フローティングナビなど。AI がやりがちな汎用デフォルトを禁止し、テンプレート感を消す。</td>
+          </tr>
+          <tr>
+            <td><strong>output-skill</strong></td>
+            <td><code>output-skill/</code></td>
+            <td>出力の「手抜き」を防ぐ。プレースホルダーコメント・省略されたコードブロック・未完成の出力を禁止し、AI に最後まで書き切らせる。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>taste-skill は React/Next.js・Tailwind・Framer Motion などを前提にした具体的なルール（フォント・色・レイアウト・アニメーション）を持つ。redesign-skill は「Scan → Diagnose → Fix」の流れで既存コードを監査し、タイポグラフィ・色・レイアウトの改善ポイントを列挙してから修正する。soft-skill は Awwwards 級のビジュアルを目指す persona と、禁止パターン・レイアウトアーキタイプ・コンポーネントの作法を定義する。output-skill はコード内の <code>// ...</code> や「続きは同じパターン」といった省略を禁止し、トークン制限に達した場合は「continue で再開」と明示する運用を定める。</p>
+  </div>
+
+  <section id="usage" class="sec-head">3 — 使い方</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 導入</span>
+    <ol style="list-style: decimal; padding-left: 1.5rem;">
+      <li>使いたいスキルのフォルダから <code>SKILL.md</code> をプロジェクトにコピーする。</li>
+      <li>AI に「この SKILL を読んで従え」と指示する。多くのエディタではファイルを直接参照できる（例: Cursor の <code>@SKILL.md</code>）。</li>
+    </ol>
+    <p>以上。AI がファイルを読んでルールに従い、生成するコードの見た目や出力の完結度がスキルに沿うようになる。</p>
+    <div class="ve-callout">
+      <strong>組み合わせ:</strong> 複数スキルを同時に使う場合、taste-skill（または redesign-skill）でデザインを指定し、output-skill で省略禁止を掛ける、といった使い方ができる。
+    </div>
+  </div>
+
+  <section id="settings" class="sec-head">4 — 設定（taste-skill のみ）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 3 つのパラメータ</span>
+    <p>taste-skill の <code>SKILL.md</code> 先頭には、1〜10 の数値で変えられる設定が 3 つある。プロダクトの種類に合わせて調整する。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>設定</th><th>意味</th><th>1–3</th><th>4–7</th><th>8–10</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>DESIGN_VARIANCE</code></td>
+            <td>レイアウトの実験度</td>
+            <td>クリーン・中央揃え・標準グリッド</td>
+            <td>重なり・サイズのばらつき</td>
+            <td>非対称・大胆な余白・非常にモダン</td>
+          </tr>
+          <tr>
+            <td><code>MOTION_INTENSITY</code></td>
+            <td>アニメーションの量</td>
+            <td>ほぼなし・シンプルなホバー</td>
+            <td>フェードイン・スムーススクロール</td>
+            <td>マグネティック効果・スプリング・スクロール連動</td>
+          </tr>
+          <tr>
+            <td><code>VISUAL_DENSITY</code></td>
+            <td>1 画面あたりの情報量</td>
+            <td>大きくゆったり・高級感</td>
+            <td>一般的なアプリ・サイト程度</td>
+            <td>密・ダッシュボードやデータ重視 UI</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>ユーザーがチャットで「もっと動きを抑えて」などと指定した場合は、その指示に合わせて AI がこれらの値を動的に解釈して使う。</p>
+  </div>
+
+  <section id="links" class="sec-head">5 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/lexnlin/taste-skill" target="_blank" rel="noopener">GitHub: lexnlin/taste-skill</a> — 本体リポジトリ（README・4 スキル・examples・research）</li>
+      <li>リポジトリ内 <code>research/</code> — スキル設計の背景調査（laziness の原因と対策など）</li>
+      <li>README の Examples — taste-skill で作ったサンプル画像（Floria など）</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
