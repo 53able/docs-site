@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI UX Pro Max — AI デザインインテリジェンス スキル</title>
+  <meta name="description" content="161 の業界ルール・67 UI スタイル・57 フォントペアで完全なデザインシステムを自動生成する AI スキル。Claude Code・Cursor・Windsurf など 15 プラットフォーム対応。BM25 ハイブリッド検索エンジン搭載。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="UI UX Pro Max — AI デザインインテリジェンス スキル">
+  <meta property="og:description" content="161 の業界ルール・67 UI スタイル・57 フォントペアで完全なデザインシステムを自動生成する AI スキル。Claude Code・Cursor・Windsurf など 15 プラットフォーム対応。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/ui-ux-pro-max.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="UI UX Pro Max — AI デザインインテリジェンス スキル">
+  <meta name="twitter:description" content="161 の業界ルール・67 UI スタイル・57 フォントペアで完全なデザインシステムを自動生成する AI スキル。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--border) 50%, transparent 50%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.6 0.118 184.704 / 0.12); color: var(--chart-2); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 65% 0%, oklch(0.6 0.118 184.704 / 0.07) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 65% 0%, oklch(0.696 0.17 162.48 / 0.09) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    p:last-child { margin-bottom: 0; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-2); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-1); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    /* KPI row */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Design system flow steps */
+    .flow-steps { display: flex; flex-direction: column; gap: 0; margin: 1rem 0; }
+    .flow-step { display: grid; grid-template-columns: 2rem 1fr; gap: 0 1rem; align-items: start; }
+    .flow-step + .flow-step { margin-top: 0; }
+    .flow-step__connector { display: flex; flex-direction: column; align-items: center; }
+    .flow-step__num {
+      width: 2rem; height: 2rem; border-radius: 50%;
+      background: color-mix(in oklch, var(--chart-2) 15%, transparent 85%);
+      border: 1.5px solid var(--chart-2);
+      color: var(--chart-2); font-family: var(--font-mono);
+      font-size: 0.75rem; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .flow-step__line { width: 1.5px; flex: 1; min-height: 1.5rem; background: var(--border); margin: 3px 0; }
+    .flow-step:last-child .flow-step__line { display: none; }
+    .flow-step__body { padding: 0 0 1.5rem; min-width: 0; }
+    .flow-step__title { font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.35rem; color: var(--text); }
+    .flow-step__desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+    .flow-step__tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
+    .flow-tag { font-family: var(--font-mono); font-size: 0.6875rem; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 2px 7px; color: var(--text-dim); }
+
+    /* Platform grid */
+    .platform-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.5rem; margin: 0.75rem 0; }
+    .platform-chip {
+      font-family: var(--font-mono); font-size: 0.75rem;
+      background: var(--muted); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 0.375rem 0.625rem;
+      color: var(--text-dim); text-align: center; line-height: 1.3;
+    }
+    .platform-chip strong { display: block; color: var(--text); font-size: 0.8125rem; font-weight: 600; font-family: var(--font-body); }
+
+    /* Stagger animations */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#design-system">デザインシステム生成</a>
+    <a href="#database">データベース</a>
+    <a href="#install">インストール</a>
+    <a href="#usage">使い方</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>UI UX Pro Max</h1>
+  <p class="subtitle">nextlevelbuilder/ui-ux-pro-max-skill — AI にプロレベルのデザイン判断力を与えるスキル</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <p><strong>UI UX Pro Max</strong> は、AI コーディングエージェントに「プロレベルの UI/UX デザイン判断力」を付与するスキル。Claude Code・Cursor・Windsurf など 15 プラットフォームに対応。UI 制作をチャットで依頼するだけで、業界・スタックに最適化された完全なデザインシステムを自動生成する。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card" style="--i:1">
+        <div class="ve-kpi-card__value">161</div>
+        <div class="ve-kpi-card__label">業界推論ルール</div>
+      </div>
+      <div class="ve-kpi-card" style="--i:2">
+        <div class="ve-kpi-card__value">67</div>
+        <div class="ve-kpi-card__label">UI スタイル</div>
+      </div>
+      <div class="ve-kpi-card" style="--i:3">
+        <div class="ve-kpi-card__value">57</div>
+        <div class="ve-kpi-card__label">フォントペア</div>
+      </div>
+      <div class="ve-kpi-card" style="--i:4">
+        <div class="ve-kpi-card__value">99</div>
+        <div class="ve-kpi-card__label">UX ガイドライン</div>
+      </div>
+    </div>
+    <p>v2.0 のフラグシップ機能は <strong>デザインシステムジェネレーター</strong>。BM25 ランキングと正規表現のハイブリッド検索エンジンが 5 ドメインを並列照合し、パターン・スタイル・カラー・タイポグラフィ・エフェクト・アンチパターン・プリデリバリーチェックリストを一括で出力する。</p>
+  </div>
+
+  <section id="design-system" class="sec-head">2 — デザインシステム生成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 生成パイプライン</span>
+    <p>「美容スパのランディングページを作って」という一言から、以下のパイプラインが動く。</p>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-step__connector">
+          <div class="flow-step__num">1</div>
+          <div class="flow-step__line"></div>
+        </div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">ユーザーリクエスト</div>
+          <div class="flow-step__desc">自然言語で UI 制作を依頼するだけ。スタック・業界・スタイルの指定は任意。</div>
+          <div class="flow-step__tags">
+            <span class="flow-tag">chat</span>
+            <span class="flow-tag">slash command</span>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step__connector">
+          <div class="flow-step__num">2</div>
+          <div class="flow-step__line"></div>
+        </div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">マルチドメイン並列検索（5 ドメイン）</div>
+          <div class="flow-step__desc">製品タイプ・スタイル・カラーパレット・ランディングパターン・タイポグラフィを BM25 + 正規表現で同時照合。</div>
+          <div class="flow-step__tags">
+            <span class="flow-tag">products.csv</span>
+            <span class="flow-tag">styles.csv</span>
+            <span class="flow-tag">colors.csv</span>
+            <span class="flow-tag">landing.csv</span>
+            <span class="flow-tag">typography.csv</span>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step__connector">
+          <div class="flow-step__num">3</div>
+          <div class="flow-step__line"></div>
+        </div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">推論エンジン</div>
+          <div class="flow-step__desc">161 の業界別ルールを適用。スタイル優先度付け・アンチパターン除外・JSON 条件ルール処理を経て最適解を絞り込む。</div>
+          <div class="flow-step__tags">
+            <span class="flow-tag">BM25 ranking</span>
+            <span class="flow-tag">rule matching</span>
+            <span class="flow-tag">anti-pattern filter</span>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step__connector">
+          <div class="flow-step__num">4</div>
+          <div class="flow-step__line"></div>
+        </div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">完全なデザインシステム出力</div>
+          <div class="flow-step__desc">パターン・スタイル・カラー・タイポグラフィ・エフェクト・アンチパターン・プリデリバリーチェックリストを一括生成。</div>
+          <div class="flow-step__tags">
+            <span class="flow-tag">ASCII</span>
+            <span class="flow-tag">Markdown</span>
+            <span class="flow-tag">persist</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 出力例 — Beauty Spa</span>
+    <div class="ve-code-block">
+      <pre><code>+----------------------------------------------------------------------------------------+
+|  TARGET: Serenity Spa - RECOMMENDED DESIGN SYSTEM                                      |
++----------------------------------------------------------------------------------------+
+|  PATTERN: Hero-Centric + Social Proof                                                  |
+|     Sections: Hero → Services → Testimonials → Booking → Contact                      |
+|                                                                                        |
+|  STYLE: Soft UI Evolution                                                              |
+|     Keywords: Soft shadows, subtle depth, calming, premium feel, organic shapes        |
+|     Best For: Wellness, beauty, lifestyle brands, premium services                     |
+|     Performance: Excellent  |  Accessibility: WCAG AA                                 |
+|                                                                                        |
+|  COLORS:                                                                               |
+|     Primary:    #E8B4B8  (Soft Pink)      Secondary: #A8D5BA  (Sage Green)            |
+|     CTA:        #D4AF37  (Gold)           Background: #FFF5F5 (Warm White)            |
+|                                                                                        |
+|  TYPOGRAPHY: Cormorant Garamond / Montserrat                                           |
+|     Mood: Elegant, calming, sophisticated                                              |
+|                                                                                        |
+|  AVOID: Bright neon colors  +  Harsh animations  +  AI purple/pink gradients          |
+|                                                                                        |
+|  PRE-DELIVERY CHECKLIST:                                                               |
+|     [ ] No emojis as icons (use SVG: Heroicons/Lucide)                                 |
+|     [ ] cursor-pointer on all clickable elements                                       |
+|     [ ] Hover states with smooth transitions (150-300ms)                               |
+|     [ ] Light mode: text contrast 4.5:1 minimum                                        |
+|     [ ] Focus states visible for keyboard nav                                          |
+|     [ ] prefers-reduced-motion respected                                               |
+|     [ ] Responsive: 375px, 768px, 1024px, 1440px                                       |
++----------------------------------------------------------------------------------------+</code></pre>
+    </div>
+  </div>
+
+  <section id="database" class="sec-head">3 — データベース</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> CSV データベース一覧</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:11rem">ファイル</th>
+            <th>内容</th>
+            <th style="width:4rem; text-align:right">件数</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>products.csv</code></td>
+            <td>業界別推論ルール（パターン・スタイル優先度・カラームード・フォント・エフェクト・アンチパターン）</td>
+            <td style="text-align:right; font-variant-numeric:tabular-nums">161</td>
+          </tr>
+          <tr>
+            <td><code>styles.csv</code></td>
+            <td>UI スタイル定義（CSS キーワード・AI プロンプト・適用シーン）。General 49 + Landing Page 8 + BI/Analytics 10</td>
+            <td style="text-align:right; font-variant-numeric:tabular-nums">67</td>
+          </tr>
+          <tr>
+            <td><code>colors.csv</code></td>
+            <td>業界別カラーパレット（<code>products.csv</code> の 161 カテゴリと 1:1 対応）</td>
+            <td style="text-align:right; font-variant-numeric:tabular-nums">161</td>
+          </tr>
+          <tr>
+            <td><code>typography.csv</code></td>
+            <td>フォントペア（Google Fonts インポート付き・ムード分類）</td>
+            <td style="text-align:right; font-variant-numeric:tabular-nums">57</td>
+          </tr>
+          <tr>
+            <td><code>landing.csv</code></td>
+            <td>ランディングページ構造・CTA 戦略パターン</td>
+            <td style="text-align:right; font-variant-numeric:tabular-nums">24+</td>
+          </tr>
+          <tr>
+            <td><code>charts.csv</code></td>
+            <td>チャートタイプとライブラリ推奨（ダッシュボード・分析向け）</td>
+            <td style="text-align:right; font-variant-numeric:tabular-nums">25</td>
+          </tr>
+          <tr>
+            <td><code>ux-guidelines.csv</code></td>
+            <td>ベストプラクティス・アンチパターン・アクセシビリティルール</td>
+            <td style="text-align:right; font-variant-numeric:tabular-nums">99</td>
+          </tr>
+          <tr>
+            <td><code>stacks/</code></td>
+            <td>スタック別ガイドライン（React, Next.js, Astro, Vue, Nuxt, Svelte, SwiftUI, Flutter, shadcn/ui ほか）</td>
+            <td style="text-align:right; font-variant-numeric:tabular-nums">13</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 対応業界カテゴリ（抜粋）</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:10rem">カテゴリ</th>
+            <th>代表的なプロダクトタイプ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Tech &amp; SaaS</td><td>SaaS, Micro SaaS, B2B Service, Developer Tool / IDE, AI/Chatbot Platform, Cybersecurity</td></tr>
+          <tr><td>Finance</td><td>Fintech/Crypto, Banking, Insurance, Personal Finance Tracker, Invoice &amp; Billing</td></tr>
+          <tr><td>Healthcare</td><td>Medical Clinic, Pharmacy, Dental, Veterinary, Mental Health, Medication Reminder</td></tr>
+          <tr><td>E-commerce</td><td>General, Luxury, Marketplace (P2P), Subscription Box, Food Delivery</td></tr>
+          <tr><td>Services</td><td>Beauty/Spa, Restaurant, Hotel, Legal, Home Services, Booking &amp; Appointment</td></tr>
+          <tr><td>Creative</td><td>Portfolio, Agency, Photography, Gaming, Music Streaming, Photo/Video Editor</td></tr>
+          <tr><td>Lifestyle</td><td>Habit Tracker, Recipe &amp; Cooking, Meditation, Weather, Diary, Mood Tracker</td></tr>
+          <tr><td>Emerging Tech</td><td>Web3/NFT, Spatial Computing, Quantum Computing, Autonomous Drone Fleet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="install" class="sec-head">4 — インストール</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> CLI（推奨）</span>
+    <p>最も簡単な方法。プロジェクトへ移動してから対象の AI アシスタントを指定して初期化する。</p>
+    <div class="ve-code-block">
+      <pre><code># CLI をグローバルインストール
+npm install -g uipro-cli
+
+# プロジェクトへ移動してから AI を指定して初期化
+uipro init --ai claude      # Claude Code
+uipro init --ai cursor      # Cursor
+uipro init --ai windsurf    # Windsurf
+uipro init --ai codex       # Codex CLI
+uipro init --ai gemini      # Gemini CLI
+uipro init --ai all         # 全アシスタント対応
+
+# その他のコマンド
+uipro versions              # 利用可能なバージョン一覧
+uipro update                # 最新版に更新
+uipro init --offline        # GitHub ダウンロードをスキップ</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Claude Marketplace</span>
+    <p>Claude Code から直接インストールする場合は、2 コマンドのみ。</p>
+    <div class="ve-code-block">
+      <pre><code>/plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill
+/plugin install ui-ux-pro-max@ui-ux-pro-max-skill</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-callout" style="margin-top: 1rem;">
+    <strong>前提条件:</strong> Python 3.x が必要（検索スクリプトの実行に使用）。<code>python3 --version</code> で確認のこと。macOS は <code>brew install python3</code>、Ubuntu は <code>sudo apt install python3</code>。
+  </div>
+
+  <h3 style="margin-top: 1.5rem;">対応プラットフォーム</h3>
+  <div class="ve-card ve-card--elevated" style="--i:2">
+    <div class="platform-grid">
+      <div class="platform-chip"><strong>Claude Code</strong>スキルモード</div>
+      <div class="platform-chip"><strong>Cursor</strong>スキルモード</div>
+      <div class="platform-chip"><strong>Windsurf</strong>スキルモード</div>
+      <div class="platform-chip"><strong>Codex CLI</strong>スキルモード</div>
+      <div class="platform-chip"><strong>Gemini CLI</strong>スキルモード</div>
+      <div class="platform-chip"><strong>Continue</strong>スキルモード</div>
+      <div class="platform-chip"><strong>OpenCode</strong>スキルモード</div>
+      <div class="platform-chip"><strong>Qoder</strong>スキルモード</div>
+      <div class="platform-chip"><strong>CodeBuddy</strong>スキルモード</div>
+      <div class="platform-chip"><strong>Antigravity</strong>スキルモード</div>
+      <div class="platform-chip"><strong>Droid</strong>スキルモード</div>
+      <div class="platform-chip"><strong>Trae</strong>SOLOモード</div>
+      <div class="platform-chip"><strong>Kiro</strong>スラッシュコマンド</div>
+      <div class="platform-chip"><strong>GitHub Copilot</strong>スラッシュコマンド</div>
+      <div class="platform-chip"><strong>Roo Code</strong>スラッシュコマンド</div>
+    </div>
+  </div>
+
+  <section id="usage" class="sec-head">5 — 使い方</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> スキルモード（自動起動）</span>
+    <p>対応エージェントでは、UI/UX 作業をチャットで依頼するだけでスキルが自動起動する。</p>
+    <div class="ve-code-block">
+      <pre><code>Build a landing page for my SaaS product
+
+Create a dashboard for healthcare analytics
+
+Design a portfolio website with dark mode
+
+Make a mobile app UI for e-commerce
+
+Build a fintech banking app with dark theme</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> ワークフローモード（スラッシュコマンド）</span>
+    <p>Kiro・GitHub Copilot・Roo Code ではスラッシュコマンドで呼び出す。</p>
+    <div class="ve-code-block">
+      <pre><code>/ui-ux-pro-max Build a landing page for my SaaS product</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> デザインシステムコマンド（上級）</span>
+    <p>スクリプトを直接呼び出すことで、デザインシステムを CLI から生成・永続化できる。</p>
+    <div class="ve-code-block">
+      <pre><code># ASCII 出力でデザインシステム生成
+python3 .claude/skills/ui-ux-pro-max/scripts/search.py "beauty spa wellness" --design-system -p "Serenity Spa"
+
+# Markdown 出力で生成
+python3 .claude/skills/ui-ux-pro-max/scripts/search.py "fintech banking" --design-system -f markdown
+
+# ドメイン指定検索
+python3 .claude/skills/ui-ux-pro-max/scripts/search.py "glassmorphism" --domain style
+python3 .claude/skills/ui-ux-pro-max/scripts/search.py "elegant serif" --domain typography
+
+# スタック別ガイドライン検索
+python3 .claude/skills/ui-ux-pro-max/scripts/search.py "form validation" --stack react
+python3 .claude/skills/ui-ux-pro-max/scripts/search.py "responsive layout" --stack html-tailwind
+
+# デザインシステムをファイルへ永続化
+python3 .claude/skills/ui-ux-pro-max/scripts/search.py "SaaS dashboard" --design-system --persist -p "MyApp"
+python3 .claude/skills/ui-ux-pro-max/scripts/search.py "SaaS dashboard" --design-system --persist -p "MyApp" --page "dashboard"</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:3">
+    <span class="ve-section-label"><span class="ve-dot"></span> デザインシステムの永続化（Master + Overrides パターン）</span>
+    <p><code>--persist</code> フラグを使うと <code>design-system/</code> フォルダが作成され、セッションをまたいでもデザインシステムが維持される。</p>
+    <div class="ve-code-block">
+      <pre><code>design-system/
+├── MASTER.md           # グローバル設定（カラー・タイポ・スペーシング・コンポーネント）
+└── pages/
+    └── dashboard.md    # ページ別オーバーライド（Master からの差分のみ）</code></pre>
+    </div>
+    <p style="margin-top: 0.75rem;">利用時は「ページ固有ファイルが存在すればその設定を優先し、なければ MASTER を使う」という階層取得で運用する。</p>
+  </div>
+
+  <section id="architecture" class="sec-head">6 — アーキテクチャ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ディレクトリ構造</span>
+    <div class="ve-code-block">
+      <pre><code>src/ui-ux-pro-max/          ← Source of Truth
+├── data/
+│   ├── products.csv        ← 161 業界推論ルール
+│   ├── styles.csv          ← 67 UI スタイル
+│   ├── colors.csv          ← 161 カラーパレット
+│   ├── typography.csv      ← 57 フォントペア
+│   ├── landing.csv         ← ランディングパターン
+│   ├── charts.csv          ← 25 チャートタイプ
+│   ├── ux-guidelines.csv   ← 99 UX ガイドライン
+│   └── stacks/             ← 13 スタック別ガイドライン
+├── scripts/
+│   ├── search.py           ← CLI エントリーポイント
+│   ├── core.py             ← BM25 + 正規表現ハイブリッド検索エンジン
+│   └── design_system.py    ← デザインシステムジェネレーター
+└── templates/
+    ├── base/               ← 共通 SKILL.md・クイックリファレンス
+    └── platforms/          ← プラットフォーム別設定 JSON
+
+cli/                        ← npm パッケージ（uipro-cli）
+├── src/
+│   ├── commands/init.ts    ← インストールコマンド
+│   └── utils/template.ts   ← テンプレートレンダリングエンジン
+└── assets/                 ← バンドル済みアセット（~564KB）
+    ├── data/               ← src/ui-ux-pro-max/data/ のコピー
+    ├── scripts/            ← src/ui-ux-pro-max/scripts/ のコピー
+    └── templates/          ← src/ui-ux-pro-max/templates/ のコピー</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--elevated" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 検索エンジンの仕組み</span>
+    <p><code>core.py</code> は <strong>BM25 ランキング</strong>と<strong>正規表現マッチング</strong>のハイブリッド検索エンジン。<code>--domain</code> 指定なしでも入力テキストから適切なデータベースを自動選択して検索できる。</p>
+    <p><code>design_system.py</code> はこの検索エンジンを 5 ドメイン（製品・スタイル・カラー・ランディング・タイポグラフィ）で並列実行し、業界別ルール（<code>ui-reasoning.csv</code>）に基づいて結果を統合。最終的なデザインシステム推奨を生成する。</p>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> コントリビューション手順</span>
+    <p>変更は必ず <code>src/ui-ux-pro-max/</code> を Source of Truth として行う。CLI への反映は <code>cp</code> で <code>cli/assets/</code> を同期し、<code>bun run build</code> でビルド後にテストする。</p>
+    <div class="ve-code-block">
+      <pre><code># データ・スクリプトを変更後、CLI アセットへ同期
+cp -r src/ui-ux-pro-max/data/* cli/assets/data/
+cp -r src/ui-ux-pro-max/scripts/* cli/assets/scripts/
+
+# CLI をビルドしてローカルテスト
+cd cli && bun run build
+node dist/index.js init --ai claude --offline</code></pre>
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/nextlevelbuilder/ui-ux-pro-max-skill" target="_blank" rel="noopener">GitHub: nextlevelbuilder/ui-ux-pro-max-skill</a> — 本体リポジトリ（Python + TypeScript）</li>
+      <li><a href="https://www.npmjs.com/package/uipro-cli" target="_blank" rel="noopener">npm: uipro-cli</a> — CLI インストーラー</li>
+      <li><a href="https://uupm.cc" target="_blank" rel="noopener">uupm.cc</a> — 公式サイト</li>
+      <li><a href="https://nextlevelbuilder.io" target="_blank" rel="noopener">NextLevelBuilder.io</a> — 開発者サイト</li>
+      <li><a href="https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/releases" target="_blank" rel="noopener">リリース履歴</a> — バージョン情報・変更点</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
