@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodePilot — Claude Code デスクトップ GUI クライアント</title>
+  <meta name="description" content="Claude Code CLI をバックエンドに Electron + Next.js で動くデスクトップ GUI クライアント。マルチプロバイダー・IM Bridge・MCP プラグイン対応。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="CodePilot — Claude Code デスクトップ GUI クライアント">
+  <meta property="og:description" content="Claude Code CLI をバックエンドに Electron + Next.js で動くデスクトップ GUI クライアント。マルチプロバイダー・IM Bridge・MCP プラグイン対応。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/code-pilot.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CodePilot — Claude Code デスクトップ GUI クライアント">
+  <meta name="twitter:description" content="Claude Code CLI をバックエンドに Electron + Next.js で動くデスクトップ GUI クライアント。マルチプロバイダー・IM Bridge・MCP プラグイン対応。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.75rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 75% 0%, oklch(0.646 0.222 41.116 / 0.05) 0%, transparent 48%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 75% 0%, oklch(0.488 0.243 264.376 / 0.07) 0%, transparent 48%); }
+    }
+
+    /* ============ Wrap + TOC (responsive nav) ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 0.75rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.3rem; font-size: 0.9375rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { opacity: 0.8; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    strong { font-weight: 600; }
+
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Feature grid ============ */
+    .feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    @media (max-width: 700px) { .feature-grid { grid-template-columns: 1fr; } }
+
+    /* ============ Mermaid wrap with zoom ============ */
+    .mermaid-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; margin: 1rem 0; }
+    .mermaid-controls { display: flex; gap: 0.5rem; align-self: flex-start; }
+    .mermaid-controls button {
+      background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 3px 10px; font-size: 0.75rem; font-family: var(--font-mono); cursor: pointer; color: var(--text);
+      transition: background 0.15s;
+    }
+    .mermaid-controls button:hover { background: var(--border); }
+    .mermaid-container { overflow: auto; max-width: 100%; width: 100%; cursor: grab; user-select: none; }
+    .mermaid-container:active { cursor: grabbing; }
+    .mermaid-inner { display: inline-block; transform-origin: top left; }
+
+    /* ============ Step list ============ */
+    .step-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+    .step-list li { display: flex; gap: 1rem; align-items: flex-start; }
+    .step-num {
+      flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%;
+      background: color-mix(in oklch, var(--chart-1) 15%, var(--muted));
+      color: var(--chart-1); font-size: 0.75rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 2px;
+    }
+    .step-content { flex: 1; min-width: 0; font-size: 0.9375rem; line-height: 1.55; }
+    .ve-code-block.sm { margin-top: 0.5rem; }
+
+    /* ============ Animations ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#features">主要機能</a>
+    <a href="#stack">技術スタック</a>
+    <a href="#setup">セットアップ</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>CodePilot</h1>
+    <p class="subtitle">Claude Code デスクトップ GUI クライアント — Electron + Next.js + マルチプロバイダー</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> CodePilot とは</span>
+      <p><strong>CodePilot</strong> は <strong>Claude Code CLI をバックエンドとして活用する統合デスクトップ GUI クライアント</strong>。Electron + Next.js（App Router）で構築されており、CLI だけでは難しい「マルチプロバイダー切り替え・IM リモート制御・スキル管理・使用量可視化」を提供する。全データは <code>~/.codepilot/codepilot.db</code>（SQLite）にローカル保存し、プライバシーを担保。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">5</span><span class="ve-kpi-card__label">AI プロバイダー</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">IM Bridge</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">12</span><span class="ve-kpi-card__label">DB テーブル</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">v0.38</span><span class="ve-kpi-card__label">バージョン</span></div>
+      </div>
+      <div class="ve-callout">
+        <strong>対象ユーザー:</strong> Claude Code を日常業務で使うエンジニア・個人開発者。<code>claude login</code> 済みの環境があれば、リリース版をダウンロードするだけで即使える。
+      </div>
+    </div>
+
+    <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> システム全体図</span>
+      <div class="mermaid-wrap">
+        <div class="mermaid-controls">
+          <button id="zoom-in">+</button>
+          <button id="zoom-out">−</button>
+          <button id="zoom-reset">reset</button>
+        </div>
+        <div class="mermaid-container" id="mermaid-container">
+          <div class="mermaid-inner" id="mermaid-inner">
+            <div class="mermaid">graph TD
+    U["ユーザー (GUI)"] -->|POST /api/chat| API["Next.js\nAPI Routes"]
+    IM["IM\nTelegram / Discord / 飛書"] -->|Webhook / Poll| BR["Bridge\nAdapter"]
+    BR --> API
+    API --> CC["claude-client.ts\nAgent SDK ラッパー"]
+    CC --> SDK["Claude Agent SDK\nSSE Stream"]
+    SDK --> SSM["stream-session-manager.ts\nライフサイクル管理"]
+    SSM --> HOOK["useSSEStream Hook\nブラウザ購読"]
+    SSM --> DB["SQLite DB\nbetter-sqlite3"]
+    HOOK --> UI["MessageList\nリアルタイム描画"]
+
+    style U fill:#f5f0eb,stroke:#c2410c,color:#1a1a1a,rx:8
+    style IM fill:#e8f4f8,stroke:#0891b2,color:#1a1a1a,rx:8
+    style SDK fill:#fef9e7,stroke:#d97706,color:#1a1a1a,rx:8
+    style DB fill:#f0fdf4,stroke:#059669,color:#1a1a1a,rx:8
+    style UI fill:#f5f0eb,stroke:#c2410c,color:#1a1a1a,rx:8</div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:0.8125rem; color: var(--muted-foreground); margin-top: 0.25rem;">
+        Electron の <code>main.ts</code> が <code>127.0.0.1</code> 上で Next.js スタンドアロンサーバーをフォーク（ランダムポート）。フロントエンドはそのサーバーへ接続する。
+      </p>
+    </div>
+
+    <div class="feature-grid" style="margin-top: 1rem;">
+      <div class="ve-card ve-card--recessed" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> フロントエンド層</span>
+        <ul>
+          <li><strong>Next.js 16 App Router</strong> + React 19</li>
+          <li>ページ: chat / settings / plugins / skills / bridge / gallery / cli-tools</li>
+          <li>20 種類以上の REST API エンドポイント</li>
+          <li>SSE でリアルタイムストリーミング受信</li>
+        </ul>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> コアビジネスロジック</span>
+        <ul>
+          <li><code>claude-client.ts</code> — Agent SDK ラッパー</li>
+          <li><code>stream-session-manager.ts</code> — SSE ライフサイクル</li>
+          <li><code>conversation-registry.ts</code> — アクティブセッション登録</li>
+          <li><code>error-classifier.ts</code> — 16 種類のエラー分類</li>
+          <li><code>provider-doctor.ts</code> — 診断 5 プローブ + 修復</li>
+        </ul>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:3">
+        <span class="ve-section-label"><span class="ve-dot"></span> Electron 層</span>
+        <ul>
+          <li><code>main.ts</code> — IPC・ウィンドウ管理・Next.js フォーク</li>
+          <li><code>preload.ts</code> — contextBridge でインストール / アップデーター API 露出</li>
+          <li><code>terminal-manager.ts</code> — ターミナルセッション管理</li>
+          <li><code>updater.ts</code> — 自動アップデーター</li>
+        </ul>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:4">
+        <span class="ve-section-label"><span class="ve-dot"></span> Bridge サブシステム</span>
+        <ul>
+          <li>Telegram Bot API / 飛書 SDK / Discord.js / QQ</li>
+          <li>長ポーリング / WebSocket でメッセージ受信</li>
+          <li><code>channelRouter</code> — IM → セッションマッピング</li>
+          <li><code>deliveryLayer</code> — フォーマット + 分片 + レート制限</li>
+        </ul>
+      </div>
+    </div>
+
+    <section id="features" class="sec-head">3 — 主要機能</section>
+    <div class="feature-grid">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 会話・コーディング</span>
+        <ul>
+          <li>3 モード: <strong>Code / Plan / Ask</strong></li>
+          <li>推論レベル: Low / Medium / High / Max + Thinking</li>
+          <li>権限制御: Default / Full Access・アクション単位承認</li>
+          <li>セッション制御: 一時停止・再開・チェックポイント巻き戻し・アーカイブ</li>
+          <li>スプリットスクリーン: 2 会話を並列表示</li>
+          <li>スラッシュコマンド: <code>/help</code> <code>/cost</code> <code>/compact</code> <code>/doctor</code></li>
+          <li>マルチモーダルビジョン: 画像添付対応</li>
+        </ul>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> マルチプロバイダー</span>
+        <ul>
+          <li><strong>Anthropic</strong> (Claude) / <strong>OpenRouter</strong></li>
+          <li><strong>Amazon Bedrock</strong> / <strong>Google Vertex AI</strong></li>
+          <li>カスタムエンドポイント対応</li>
+          <li><code>provider-doctor.ts</code> で接続診断・自動修復</li>
+        </ul>
+      </div>
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> MCP・スキル拡張</span>
+        <ul>
+          <li>MCP サーバー: stdio / sse / http 対応</li>
+          <li>ランタイム状態監視</li>
+          <li>スキル: カスタム / プロジェクト / グローバル</li>
+          <li>skills.sh マーケットプレイス連携</li>
+        </ul>
+      </div>
+      <div class="ve-card" style="--i:3">
+        <span class="ve-section-label"><span class="ve-dot"></span> データ・ワークスペース</span>
+        <ul>
+          <li><strong>Assistant Workspace</strong>: soul.md・user.md・claude.md・memory.md</li>
+          <li>インクリメンタルインデックス・検索・分類</li>
+          <li>ファイルブラウザ + シンタックスハイライト（Shiki 3）</li>
+          <li>使用量分析: トークン数・コスト見積もり・日次チャート</li>
+          <li>全データ SQLite にローカル保存</li>
+        </ul>
+      </div>
+      <div class="ve-card" style="--i:4">
+        <span class="ve-section-label"><span class="ve-dot"></span> IM リモート制御 (Bridge)</span>
+        <ul>
+          <li>Telegram / 飛書 / Discord / QQ からリモート操作</li>
+          <li>チャンネル単位でセッションマッピング</li>
+          <li>メッセージの分片送信・レート制限制御</li>
+        </ul>
+      </div>
+      <div class="ve-card" style="--i:5">
+        <span class="ve-section-label"><span class="ve-dot"></span> 画像生成・CLI 連携</span>
+        <ul>
+          <li>Gemini / Anthropic で画像バッチ生成</li>
+          <li>生成画像のギャラリー管理</li>
+          <li>Claude Code CLI <code>.jsonl</code> 履歴インポート</li>
+          <li>CLI セッション管理 UI</li>
+        </ul>
+      </div>
+    </div>
+
+    <section id="stack" class="sec-head">4 — 技術スタック</section>
+    <div class="ve-card" style="--i:0">
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>レイヤー</th><th>技術</th><th>備考</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>デスクトップシェル</td><td><code>Electron 40</code></td><td>DMG / NSIS / AppImage でマルチプラットフォーム配布</td></tr>
+            <tr><td>フロントエンド</td><td><code>Next.js 16</code> + <code>React 19</code></td><td>App Router、スタンドアロンサーバーモード</td></tr>
+            <tr><td>スタイル</td><td><code>Tailwind CSS 4</code> + <code>Radix UI</code></td><td>カラー直書き禁止（<code>lint:colors</code> で CI 検出）</td></tr>
+            <tr><td>データベース</td><td><code>better-sqlite3</code></td><td>WAL モード・12 テーブル・<code>~/.codepilot/codepilot.db</code></td></tr>
+            <tr><td>AI 統合</td><td><code>@ai-sdk/*</code></td><td>Anthropic / OpenRouter / Bedrock / Vertex / Google</td></tr>
+            <tr><td>IM 統合</td><td>Telegram / 飛書 / <code>discord.js</code></td><td>Bridge サブシステム経由</td></tr>
+            <tr><td>コード高亮</td><td><code>Shiki 3</code></td><td>ファイルブラウザ・コードブロック表示</td></tr>
+            <tr><td>アニメーション</td><td><code>Motion (Framer Motion v12)</code></td><td>UI トランジション</td></tr>
+            <tr><td>チャート</td><td><code>Recharts</code></td><td>使用量分析ページ</td></tr>
+            <tr><td>テスト</td><td><code>Playwright</code> + <code>node:test</code></td><td>E2E / スモーク / 単体</td></tr>
+            <tr><td>言語</td><td><code>TypeScript 5</code></td><td>strict モード</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="setup" class="sec-head">5 — セットアップ</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> リリース版（推奨）</span>
+      <ol class="step-list">
+        <li>
+          <span class="step-num">1</span>
+          <div class="step-content">
+            Claude Code CLI をインストールし、認証する
+            <div class="ve-code-block sm">
+              <pre><code>npm install -g @anthropic-ai/claude-code
+claude login</code></pre>
+            </div>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <div class="step-content">GitHub Releases から対応プラットフォームのインストーラーをダウンロードして起動する（macOS: .dmg / Windows: .exe / Linux: .AppImage）</div>
+        </li>
+      </ol>
+    </div>
+
+    <div class="ve-card" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> ソースビルド（開発者向け）</span>
+      <div class="ve-code-block">
+        <pre><code>git clone https://github.com/op7418/CodePilot.git
+cd CodePilot
+npm install
+
+npm run dev              # ブラウザモード (http://localhost:3000)
+npm run electron:dev     # フル Electron デスクトップアプリ</code></pre>
+      </div>
+      <div class="ve-table-wrap" style="margin-top: 1rem;">
+        <table>
+          <thead>
+            <tr><th>コマンド</th><th>用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>npm run test</code></td><td>typecheck + 単体テスト（約 4 秒）</td></tr>
+            <tr><td><code>npm run test:smoke</code></td><td>スモークテスト（約 15 秒、dev server 必要）</td></tr>
+            <tr><td><code>npm run test:e2e</code></td><td>フル E2E（60 秒超、dev server 必要）</td></tr>
+            <tr><td><code>npm run electron:pack:mac</code></td><td>macOS DMG（arm64 + x64）</td></tr>
+            <tr><td><code>npm run electron:pack:win</code></td><td>Windows NSIS インストーラー</td></tr>
+            <tr><td><code>npm run electron:pack:linux</code></td><td>Linux AppImage / deb / rpm</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>開発時の注意（CLAUDE.md より）:</strong> 複数 Worktree での開発時はポート隔離（<code>PORT=3001</code> 等）が必要。UI 変更は CDP でスクリーンショット検証必須。i18n 更新は <code>en.ts</code> と <code>zh.ts</code> の両方を必ず同期すること。DB スキーマ変更時はマイグレーションロジックの追記が必要。
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">6 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/op7418/CodePilot" target="_blank" rel="noopener">GitHub: op7418/CodePilot</a> — 本体リポジトリ</li>
+        <li><a href="https://openclaw.ai" target="_blank" rel="noopener">openclaw.ai</a> — 開発元</li>
+        <li><a href="https://github.com/anthropics/claude-code" target="_blank" rel="noopener">Claude Code CLI</a> — バックエンドとして使用</li>
+        <li><a href="https://www.electronjs.org/" target="_blank" rel="noopener">Electron</a> — デスクトップシェル</li>
+        <li><a href="https://nextjs.org/" target="_blank" rel="noopener">Next.js</a> — フロントエンドフレームワーク</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#f5f0eb',
+      primaryTextColor: '#1a1a1a',
+      primaryBorderColor: '#c2410c',
+      lineColor: '#999',
+      secondaryColor: '#e8f4f8',
+      tertiaryColor: '#f0fdf4',
+      fontSize: '14px'
+    }
+  });
+
+  (function() {
+    var zoom = 1;
+    var inner = document.getElementById('mermaid-inner');
+
+    document.getElementById('zoom-in').addEventListener('click', function() {
+      zoom = Math.min(zoom + 0.2, 3);
+      inner.style.transform = 'scale(' + zoom + ')';
+    });
+    document.getElementById('zoom-out').addEventListener('click', function() {
+      zoom = Math.max(zoom - 0.2, 0.4);
+      inner.style.transform = 'scale(' + zoom + ')';
+    });
+    document.getElementById('zoom-reset').addEventListener('click', function() {
+      zoom = 1;
+      inner.style.transform = 'scale(1)';
+    });
+
+    var container = document.getElementById('mermaid-container');
+    container.addEventListener('wheel', function(e) {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        zoom = e.deltaY < 0 ? Math.min(zoom + 0.1, 3) : Math.max(zoom - 0.1, 0.4);
+        inner.style.transform = 'scale(' + zoom + ')';
+      }
+    }, { passive: false });
+  })();
+</script>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
