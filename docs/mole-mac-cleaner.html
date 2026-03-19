@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mole — macOS ディープクリーン＆最適化オールインワンツール</title>
+  <meta name="description" content="CleanMyMac・AppCleaner・DaisyDisk・iStat Menus を1バイナリに統合した macOS 向けシステムメンテナンス CLI「Mole」の解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Mole — macOS ディープクリーン＆最適化オールインワンツール">
+  <meta property="og:description" content="CleanMyMac・AppCleaner・DaisyDisk・iStat Menus を1バイナリに統合した macOS 向けシステムメンテナンス CLI「Mole」の解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/mole-mac-cleaner.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Mole — macOS ディープクリーン＆最適化オールインワンツール">
+  <meta name="twitter:description" content="CleanMyMac・AppCleaner・DaisyDisk・iStat Menus を1バイナリに統合した macOS 向けシステムメンテナンス CLI「Mole」の解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + IBM Plex) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 25% 0%, oklch(0.646 0.222 41.116 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 25% 0%, oklch(0.488 0.243 264.376 / 0.1) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC (responsive nav) ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Feature grid ============ */
+    .feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    @media (max-width: 700px) { .feature-grid { grid-template-columns: 1fr; } }
+    .feature-grid .ve-card { min-width: 0; }
+
+    /* ============ arch-grid ============ */
+    .arch-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem; }
+    @media (max-width: 700px) { .arch-grid { grid-template-columns: 1fr; } }
+    .arch-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; min-width: 0; }
+    .arch-card__title { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 600; color: var(--chart-1); margin-bottom: 0.5rem; }
+    .arch-card ul { margin: 0; padding-left: 1.25rem; }
+    .arch-card li { font-size: 0.8125rem; color: var(--muted-foreground); margin-bottom: 0.25rem; }
+    .arch-card li code { font-size: 0.75rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); }
+
+    /* ============ stack-badge ============ */
+    .stack-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+    .stack-badge { font-family: var(--font-mono); font-size: 0.75rem; background: color-mix(in oklch, var(--muted) 80%, var(--chart-1) 20%); border: 1px solid color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%); border-radius: var(--radius-sm); padding: 3px 10px; color: var(--foreground); }
+
+    /* ============ Animations ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#install">インストール</a>
+    <a href="#commands">コマンド一覧</a>
+    <a href="#features">機能詳細</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#safety">安全設計</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>Mole</h1>
+    <p class="subtitle">macOS ディープクリーン＆最適化オールインワン CLI — <code>mo</code></p>
+
+    <!-- 1: 概要 -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> What is Mole</span>
+      <p><strong>Mole</strong>（コマンド名: <code>mo</code>）は、<strong>CleanMyMac・AppCleaner・DaisyDisk・iStat Menus</strong> の機能を <strong>1 つのバイナリ</strong>に統合した macOS 向けシステムメンテナンス CLI。Homebrew または 1 行スクリプトでインストールでき、Go 製の TUI（bubbletea）により インタラクティブな操作が可能。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">単一バイナリ</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Go</span><span class="ve-kpi-card__label">実装言語</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">TUI</span><span class="ve-kpi-card__label">インターフェース</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+      </div>
+      <p>矢印キーや Vim キーバインド（<code>h/j/k/l</code>）でナビゲート可能。<code>--dry-run</code> フラグで安全にプレビューしてから実行できる。</p>
+    </div>
+
+    <!-- 2: インストール -->
+    <section id="install" class="sec-head">2 — インストール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Homebrew（推奨）</span>
+      <div class="ve-code-block"><pre><code>brew install mole</code></pre></div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> スクリプトインストール</span>
+      <p>バージョン指定オプション付き：</p>
+      <div class="ve-code-block"><pre><code># 最新版
+curl -fsSL https://raw.githubusercontent.com/tw93/mole/main/install.sh | bash
+
+# バージョン指定
+curl -fsSL https://raw.githubusercontent.com/tw93/mole/main/install.sh | bash -s -- -s 1.17.0</code></pre></div>
+    </div>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> 起動</span>
+      <div class="ve-code-block"><pre><code>mo                 # インタラクティブメニュー
+mo clean           # ディープクリーン
+mo status          # リアルタイムシステム監視</code></pre></div>
+    </div>
+
+    <!-- 3: コマンド一覧 -->
+    <section id="commands" class="sec-head">3 — コマンド一覧</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> メインコマンド</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>コマンド</th><th>説明</th><th>備考</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>mo clean</code></td><td>キャッシュ・ログ・ブラウザ残骸のディープクリーン</td><td>破壊的操作 — <code>--dry-run</code> 推奨</td></tr>
+            <tr><td><code>mo uninstall</code></td><td>アプリ + 関連ファイル（LaunchAgent, Prefs, Cookies 等）を完全削除</td><td>破壊的操作 — <code>--dry-run</code> 推奨</td></tr>
+            <tr><td><code>mo optimize</code></td><td>DB リビルド・ネットワークリセット・Spotlight 再構築など</td><td><code>--whitelist</code> で除外設定</td></tr>
+            <tr><td><code>mo analyze</code></td><td>ディスク使用量ビジュアライザー。ファイルをゴミ箱へ移動</td><td>安全（Finder 経由でゴミ箱移動）</td></tr>
+            <tr><td><code>mo status</code></td><td>CPU・Memory・Disk・Network・Process のリアルタイム監視</td><td><code>--json</code> / パイプで JSON 出力</td></tr>
+            <tr><td><code>mo purge</code></td><td>古い <code>node_modules</code>/<code>target</code>/<code>dist</code> 等ビルド成果物を削除</td><td>破壊的操作 — <code>--dry-run</code> 推奨</td></tr>
+            <tr><td><code>mo installer</code></td><td>大容量インストーラーファイルを検索・削除</td><td>Downloads・Homebrew・iCloud 対応</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> ユーティリティコマンド</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>コマンド</th><th>説明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>mo touchid</code></td><td>sudo に Touch ID を設定</td></tr>
+            <tr><td><code>mo completion</code></td><td>シェルタブ補完を設定</td></tr>
+            <tr><td><code>mo update</code></td><td>Mole 本体を更新（<code>--nightly</code> でナイトリービルド）</td></tr>
+            <tr><td><code>mo remove</code></td><td>Mole をシステムから削除</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 4: 機能詳細 -->
+    <section id="features" class="sec-head">4 — 機能詳細</section>
+    <div class="feature-grid">
+      <div class="ve-card ve-card--elevated" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> ディープクリーン</span>
+        <p>ユーザーキャッシュ・ブラウザキャッシュ・開発ツール（Xcode, Node.js, npm）・システムログ・アプリ固有キャッシュ・ゴミ箱をまとめて削除。</p>
+        <div class="ve-code-block"><pre><code>$ mo clean
+  ✓ User app cache              45.2GB
+  ✓ Browser cache               10.5GB
+  ✓ Developer tools             23.3GB
+  ✓ System logs                  3.8GB
+============================
+Space freed: 95.5GB</code></pre></div>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> スマートアンインストーラー</span>
+        <p>アプリ本体の削除に加え、Application Support・Caches・Preferences・Logs・WebKit storage・Extensions・Launch daemons など <strong>12 箇所以上</strong> の関連ファイルを自動的に探して除去。</p>
+      </div>
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> ディスクアナライザー</span>
+        <p>インタラクティブなディレクトリブラウザ。ファイルサイズ・最終使用日時を確認しながらゴミ箱移動（Finder 経由）。<code>mo analyze /Volumes</code> で外部ドライブも対象可。</p>
+        <div class="ve-code-block"><pre><code>$ mo analyze
+ ▶ ███████████  48.2%  Library   75.4GB  >6mo
+   ████████░░   22.1%  Downloads 34.6GB
+   ↑↓←→ Navigate | ⌫ Delete | Q Quit</code></pre></div>
+      </div>
+      <div class="ve-card" style="--i:3">
+        <span class="ve-section-label"><span class="ve-dot"></span> ライブシステム監視</span>
+        <p>CPU・GPU・メモリ・ディスク・ネットワーク・プロセスをリアルタイム表示。ヘルススコア（0–100）付きのダッシュボード。<code>--json</code> やパイプで機械可読 JSON 出力も対応。</p>
+        <div class="ve-code-block"><pre><code>$ mo status --json | jq '.health_score'
+92</code></pre></div>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:4">
+        <span class="ve-section-label"><span class="ve-dot"></span> プロジェクト成果物クリーン</span>
+        <p><code>node_modules</code>・<code>target</code>・<code>build</code>・<code>dist</code>・<code>venv</code> など複数言語の古いビルド成果物を検索・削除。7 日以内の最近のプロジェクトはデフォルトで非選択。</p>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:5">
+        <span class="ve-section-label"><span class="ve-dot"></span> クイックランチャー連携</span>
+        <p>Raycast / Alfred 向けスクリプトコマンドを 1 行でセットアップ。<code>Mole Clean</code>・<code>Mole Status</code> 等 5 コマンドをランチャーから即起動できる。</p>
+        <div class="ve-code-block"><pre><code>curl -fsSL https://raw.githubusercontent.com/tw93/Mole/main/scripts/setup-quick-launchers.sh | bash</code></pre></div>
+      </div>
+    </div>
+
+    <!-- 5: アーキテクチャ -->
+    <section id="architecture" class="sec-head">5 — アーキテクチャ</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> テクノロジースタック</span>
+      <p>Go 製のシングルバイナリ。TUI フレームワークに <strong>bubbletea</strong>、スタイリングに <strong>lipgloss</strong>、システム情報取得に <strong>gopsutil</strong> を採用している。</p>
+      <div class="stack-row">
+        <span class="stack-badge">Go 1.25</span>
+        <span class="stack-badge">bubbletea</span>
+        <span class="stack-badge">lipgloss</span>
+        <span class="stack-badge">gopsutil/v4</span>
+        <span class="stack-badge">xxhash/v2</span>
+        <span class="stack-badge">golang.org/x/sync</span>
+      </div>
+    </div>
+    <div style="margin-top: 1rem;">
+      <div class="arch-grid">
+        <div class="arch-card">
+          <div class="arch-card__title">cmd/ — コマンドエントリ</div>
+          <ul>
+            <li><code>analyze/</code> — ディスク解析エントリ</li>
+            <li><code>check/</code> — 依存チェック</li>
+            <li><code>clean/</code> — キャッシュクリーン</li>
+            <li><code>manage/</code> — アプリ管理</li>
+            <li><code>optimize/</code> — 最適化</li>
+            <li><code>status/</code> — システム監視</li>
+            <li><code>uninstall/</code> — アプリ削除</li>
+          </ul>
+        </div>
+        <div class="arch-card">
+          <div class="arch-card__title">lib/ — ライブラリ層</div>
+          <ul>
+            <li><code>core/</code> — 共通基盤・パス検証</li>
+            <li><code>clean/</code> — キャッシュ検出ロジック</li>
+            <li><code>manage/</code> — アプリ管理ロジック</li>
+            <li><code>optimize/</code> — 最適化スクリプト実行</li>
+            <li><code>ui/</code> — bubbletea TUI コンポーネント</li>
+            <li><code>uninstall/</code> — アンインストールロジック</li>
+          </ul>
+        </div>
+      </div>
+      <div class="arch-grid">
+        <div class="arch-card">
+          <div class="arch-card__title">bin/ — Shell スクリプト群</div>
+          <ul>
+            <li><code>analyze.sh</code> / <code>clean.sh</code></li>
+            <li><code>optimize.sh</code> / <code>status.sh</code></li>
+            <li><code>uninstall.sh</code> / <code>purge.sh</code></li>
+            <li><code>touchid.sh</code> / <code>installer.sh</code></li>
+            <li><code>completion.sh</code></li>
+          </ul>
+        </div>
+        <div class="arch-card">
+          <div class="arch-card__title">mo — エントリポイント</div>
+          <ul>
+            <li>引数なしでインタラクティブメニュー</li>
+            <li>サブコマンドで直接実行</li>
+            <li>ターミナルを自動検出（iTerm2 は非推奨）</li>
+            <li><code>MO_LAUNCHER_APP=</code> で上書き可能</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6: 安全設計 -->
+    <section id="safety" class="sec-head">6 — 安全設計</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 安全ファースト原則</span>
+      <p>Mole はシステムに対する破壊的操作を含むため、以下の安全設計を採用している：</p>
+      <ul>
+        <li><strong>パス検証</strong> — 操作対象パスを厳格に検証し、保護ディレクトリへの誤操作を防ぐ</li>
+        <li><strong>保護ディレクトリルール</strong> — システム領域への削除操作を禁止</li>
+        <li><strong>保守的なクリーン境界</strong> — 不確実な場合は削除しない</li>
+        <li><strong>高リスク操作の明示的確認</strong> — 重要な操作は強い確認を求める</li>
+        <li><strong>不確実性への対応</strong> — リスクが高い・不明な場合はスキップ/拒否</li>
+      </ul>
+    </div>
+    <div class="ve-callout" style="margin-top: 1rem;">
+      <strong>破壊的操作のリスト:</strong> <code>clean</code>・<code>uninstall</code>・<code>purge</code>・<code>installer</code>・<code>remove</code> は削除操作を伴う。必ず <code>--dry-run</code> でプレビューし、必要に応じて <code>--debug</code> を加えて詳細ログを確認してから実行すること。操作ログは <code>~/Library/Logs/mole/operations.log</code> に記録される。無効にするには <code>MO_NO_OPLOG=1</code> を設定。
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1" style="margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> analyze の安全性</span>
+      <p><code>mo analyze</code> はファイルを直接削除せず、<strong>Finder 経由でゴミ箱へ移動</strong>する。即時削除の他コマンドと異なり、手動でアドホッククリーンを行う際はこちらが安全。</p>
+    </div>
+
+    <!-- 7: 参考リンク -->
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/tw93/Mole" target="_blank" rel="noopener">GitHub: tw93/Mole</a> — 本体リポジトリ（Go）</li>
+        <li><a href="https://www.youtube.com/watch?v=UEe9-w4CcQ0" target="_blank" rel="noopener">チュートリアル動画</a> — PAPAYA 電腦教室 による解説</li>
+        <li><a href="https://github.com/tw93/Kaku" target="_blank" rel="noopener">Kaku</a> — 推奨ターミナルアプリ（同作者）</li>
+        <li><a href="https://github.com/charmbracelet/bubbletea" target="_blank" rel="noopener">bubbletea</a> — Go の TUI フレームワーク</li>
+        <li><a href="https://github.com/charmbracelet/lipgloss" target="_blank" rel="noopener">lipgloss</a> — Go の TUI スタイリングライブラリ</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
