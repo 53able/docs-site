@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>agent-orchestrator — 複数 AI エージェントの並列オーケストレーション基盤</title>
+  <meta name="description" content="ComposioHQ の agent-orchestrator（ao）は、Claude Code・Codex 等の AI コーディングエージェントを git worktree 上で並列管理し、CI・レビュー対応を自動化するオーケストレーション基盤。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="agent-orchestrator — 複数 AI エージェントの並列オーケストレーション基盤">
+  <meta property="og:description" content="ComposioHQ の agent-orchestrator（ao）は、Claude Code・Codex 等の AI コーディングエージェントを git worktree 上で並列管理し、CI・レビュー対応を自動化するオーケストレーション基盤。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/agent-orchestrator.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="agent-orchestrator — 複数 AI エージェントの並列オーケストレーション基盤">
+  <meta name="twitter:description" content="ComposioHQ の agent-orchestrator（ao）は、Claude Code・Codex 等の AI コーディングエージェントを git worktree 上で並列管理し、CI・レビュー対応を自動化するオーケストレーション基盤。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + IBM Plex fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      /* teal accent for Mermaid & custom elements */
+      --teal: #0891b2;
+      --teal-dim: #e0f7fa;
+      --slate: #0c4a6e;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+        --teal: #22d3ee;
+        --teal-dim: #083344;
+        --slate: #bae6fd;
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block .cb-header { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--muted-foreground); padding: 0.4rem 1rem; border-bottom: 1px solid var(--border); background: var(--muted); }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.75rem; font-weight: 500; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 70% 0%, oklch(0.6 0.118 184.704 / 0.07) 0%, transparent 50%),
+        radial-gradient(ellipse at 20% 80%, oklch(0.646 0.222 41.116 / 0.04) 0%, transparent 45%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 70% 0%, oklch(0.696 0.17 162.48 / 0.08) 0%, transparent 50%),
+          radial-gradient(ellipse at 20% 80%, oklch(0.488 0.243 264.376 / 0.05) 0%, transparent 45%);
+      }
+    }
+
+    /* ============ Wrap + TOC (responsive nav) ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    p:last-child { margin-bottom: 0; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Section gap ============ */
+    .section-gap { margin-bottom: 1rem; }
+
+    /* ============ Mermaid wrap ============ */
+    .mermaid-wrap {
+      position: relative;
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin: 1rem 0;
+      user-select: none;
+    }
+    .mermaid-wrap .mz-controls {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: 4px;
+      z-index: 10;
+    }
+    .mermaid-wrap .mz-controls button {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      width: 26px;
+      height: 26px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .mermaid-wrap .mz-controls button:hover { background: var(--surface2); color: var(--text); }
+    .mermaid-viewport {
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 1.5rem 1rem;
+      min-height: 200px;
+      cursor: grab;
+    }
+    .mermaid-viewport.dragging { cursor: grabbing; }
+    .mermaid-viewport svg { max-width: 100%; height: auto; transform-origin: center top; transition: transform 0.05s linear; }
+
+    /* ============ Plugin badge ============ */
+    .plugin-slot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: color-mix(in oklch, var(--chart-2) 12%, transparent);
+      color: var(--chart-2);
+      border: 1px solid color-mix(in oklch, var(--chart-2) 30%, transparent);
+    }
+
+    /* ============ Status flow ============ */
+    .status-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0; margin: 0.75rem 0; }
+    .status-badge {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--muted);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .status-badge.active-state { background: color-mix(in oklch, var(--chart-2) 12%, transparent); color: var(--chart-2); border-color: color-mix(in oklch, var(--chart-2) 30%, transparent); }
+    .status-badge.end-state { background: color-mix(in oklch, var(--chart-1) 10%, transparent); color: var(--chart-1); border-color: color-mix(in oklch, var(--chart-1) 30%, transparent); }
+    .status-arrow { color: var(--text-dim); font-size: 0.75rem; padding: 0 2px; }
+
+    /* ============ Animations ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#plugins">プラグインシステム</a>
+    <a href="#reaction">Reaction エンジン</a>
+    <a href="#setup">セットアップ</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>agent-orchestrator</h1>
+    <p class="subtitle">ao — 複数 AI エージェントを並列管理するオーケストレーション基盤 by ComposioHQ</p>
+
+    <!-- KPI row -->
+    <div class="kpi-row">
+      <div class="ve-kpi-card" style="--i:0"><span class="ve-kpi-card__value">N+</span><span class="ve-kpi-card__label">並列 Agents</span></div>
+      <div class="ve-kpi-card" style="--i:1"><span class="ve-kpi-card__value">8</span><span class="ve-kpi-card__label">Plugin Slots</span></div>
+      <div class="ve-kpi-card" style="--i:2"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+      <div class="ve-kpi-card" style="--i:3"><span class="ve-kpi-card__value">ao</span><span class="ve-kpi-card__label">CLI コマンド</span></div>
+    </div>
+
+    <!-- 1 — 概要 -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何を解決するか</span>
+      <p>AI コーディングエージェントを 1 体ターミナルで動かすのは簡単だが、30 体を複数イシュー・ブランチ・PR にまたがって走らせると「誰がどのタスクを担当しているか」「CI が落ちたら誰に渡すか」「レビューコメントをどう返すか」という調整問題が生じる。<strong>agent-orchestrator（<code>ao</code>）</strong> はこの調整を自動化するオーケストレーション基盤。</p>
+      <p>各エージェントは独立した <code>git worktree</code> 上で動作し、CI 失敗時は自動でエージェントにログを送って修正させ、レビューコメントも自動ルーティングする。人間は <code>ao start</code> するだけで、あとは <code>localhost:3000</code> の Web ダッシュボードで PR をレビュー・マージするだけで済む。</p>
+    </div>
+    <div class="ve-card ve-card--elevated" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 3 つの非依存性</span>
+      <div class="ve-table-wrap" style="margin-top:0.25rem">
+        <table>
+          <thead><tr><th>非依存</th><th>対応実装</th></tr></thead>
+          <tbody>
+            <tr><td><strong>エージェント非依存</strong></td><td>Claude Code / Codex / Aider / OpenCode</td></tr>
+            <tr><td><strong>ランタイム非依存</strong></td><td>tmux / プロセス（Docker 拡張可）</td></tr>
+            <tr><td><strong>トラッカー非依存</strong></td><td>GitHub / Linear / GitLab</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 2 — アーキテクチャ -->
+    <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> コンポーネント構成</span>
+      <p>CLI → Core → Plugin スロット → Runtime（AI Agents on worktrees）という 3 層構造。外部サービス（GitHub / Linear）との接続は SCM・Tracker プラグインが担う。</p>
+      <div class="mermaid-wrap" id="arch-wrap">
+        <div class="mz-controls">
+          <button id="arch-zoom-in" title="拡大">+</button>
+          <button id="arch-zoom-out" title="縮小">−</button>
+          <button id="arch-zoom-reset" title="リセット">⟳</button>
+        </div>
+        <div class="mermaid-viewport" id="arch-vp">
+          <div class="mermaid" id="arch-diagram">
+flowchart TD
+    Human["人間\n(ao start)"] --> CLI["ao CLI\n@composio/ao-cli"]
+    Dashboard["Web Dashboard\nlocalhost:3000"] --> Core
+    CLI --> Core["ao-core\nSessionManager / LifecycleManager\nEventBus / PluginRegistry"]
+    Core --> RT["Runtime Plugin\ntmux / process"]
+    Core --> AG["Agent Plugin\nclaude-code / codex / aider"]
+    Core --> SCM["SCM Plugin\ngithub / gitlab"]
+    Core --> TR["Tracker Plugin\ngithub / linear"]
+    Core --> NOT["Notifier Plugin\ndesktop / slack / webhook"]
+    RT --> Agents["AI Agents\ngit worktrees"]
+    Agents --> GH["GitHub / GitLab\n(PR / CI / Reviews)"]
+    GH --> SCM
+    SCM --> Core
+
+    classDef human fill:#e0f7fa,stroke:#0891b2,color:#0c4a6e,rx:8
+    classDef core fill:#f0f9ff,stroke:#0369a1,color:#0c4a6e,rx:8
+    classDef plugin fill:#fff7ed,stroke:#ea580c,color:#7c2d12,rx:8
+    classDef external fill:#f0fdf4,stroke:#16a34a,color:#14532d,rx:8
+    classDef agent fill:#fdf4ff,stroke:#9333ea,color:#4a044e,rx:8
+
+    class Human,Dashboard human
+    class Core core
+    class RT,AG,SCM,TR,NOT plugin
+    class GH external
+    class Agents agent
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> モノレポ構成</span>
+      <div class="ve-table-wrap" style="margin-top:0.25rem">
+        <table>
+          <thead><tr><th>パッケージ</th><th>npm 名</th><th>役割</th></tr></thead>
+          <tbody>
+            <tr><td><code>ao</code></td><td><code>@composio/ao</code></td><td>グローバル CLI エントリーポイント（ao-cli への薄いラッパー）</td></tr>
+            <tr><td><code>cli</code></td><td><code>@composio/ao-cli</code></td><td>全 CLI コマンド実装（start / spawn / send / status 等）</td></tr>
+            <tr><td><code>core</code></td><td><code>@composio/ao-core</code></td><td>型定義・設定ローダー・SessionManager・LifecycleManager・EventBus</td></tr>
+            <tr><td><code>web</code></td><td><code>@composio/ao-web</code></td><td>React ダッシュボード（セッション一覧・ステータス・ターミナル表示）</td></tr>
+            <tr><td><code>mobile</code></td><td><code>@composio/ao-mobile</code></td><td>Expo/React Native モバイルアプリ（Push 通知受信）</td></tr>
+            <tr><td><code>plugins/*</code></td><td>各種</td><td>8 スロットの差し替え可能プラグイン群（計 20 実装）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3 — プラグインシステム -->
+    <section id="plugins" class="sec-head">3 — プラグインシステム</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 8 スロット / 20 実装</span>
+      <p>Core は 8 つのインターフェース（スロット）を定義し、各スロットの実装を差し替え可能にする Plugin-first アーキテクチャ。<code>PluginModule</code> インターフェースを実装して <code>create()</code> をエクスポートするだけで新規プラグインとして登録できる。</p>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>スロット</th><th>インターフェース（メソッド）</th><th>実装</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="plugin-slot">Runtime</span></td>
+              <td><code>create</code> / <code>destroy</code> / <code>sendMessage</code> / <code>getOutput</code> / <code>isAlive</code></td>
+              <td><code>runtime-tmux</code>、<code>runtime-process</code></td>
+            </tr>
+            <tr>
+              <td><span class="plugin-slot">Agent</span></td>
+              <td><code>getLaunchCommand</code> / <code>getActivityState</code> / <code>getSessionInfo</code></td>
+              <td><code>agent-claude-code</code>、<code>agent-codex</code>、<code>agent-aider</code>、<code>agent-opencode</code></td>
+            </tr>
+            <tr>
+              <td><span class="plugin-slot">Workspace</span></td>
+              <td><code>create</code> / <code>destroy</code> / <code>list</code></td>
+              <td><code>workspace-worktree</code>、<code>workspace-clone</code></td>
+            </tr>
+            <tr>
+              <td><span class="plugin-slot">Tracker</span></td>
+              <td><code>getIssue</code> / <code>generatePrompt</code> / <code>listIssues</code></td>
+              <td><code>tracker-github</code>、<code>tracker-linear</code>、<code>tracker-gitlab</code></td>
+            </tr>
+            <tr>
+              <td><span class="plugin-slot">SCM</span></td>
+              <td><code>detectPR</code> / <code>getPRState</code> / <code>getCIChecks</code> / <code>getReviews</code> / <code>mergePR</code></td>
+              <td><code>scm-github</code>、<code>scm-gitlab</code></td>
+            </tr>
+            <tr>
+              <td><span class="plugin-slot">Notifier</span></td>
+              <td><code>notify</code> / <code>notifyWithActions</code></td>
+              <td><code>notifier-desktop</code>、<code>notifier-slack</code>、<code>notifier-webhook</code>、<code>notifier-composio</code></td>
+            </tr>
+            <tr>
+              <td><span class="plugin-slot">Terminal</span></td>
+              <td><code>openSession</code> / <code>openAll</code></td>
+              <td><code>terminal-iterm2</code>、<code>terminal-web</code></td>
+            </tr>
+            <tr>
+              <td><span class="plugin-slot">LifecycleManager</span></td>
+              <td><code>start</code> / <code>stop</code> / <code>check</code></td>
+              <td>ポーリングループで全セッションの状態遷移を管理する内部実装</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed section-gap" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> Session ステータス遷移</span>
+      <div class="status-flow">
+        <span class="status-badge">spawning</span><span class="status-arrow">→</span>
+        <span class="status-badge active-state">working</span><span class="status-arrow">→</span>
+        <span class="status-badge active-state">pr_open</span><span class="status-arrow">→</span>
+        <span class="status-badge">ci_failed</span><span class="status-arrow">/</span>
+        <span class="status-badge">changes_requested</span><span class="status-arrow">/</span>
+        <span class="status-badge">approved</span><span class="status-arrow">→</span>
+        <span class="status-badge end-state">mergeable</span><span class="status-arrow">→</span>
+        <span class="status-badge end-state">merged</span>
+      </div>
+      <p style="margin-top:0.5rem">終端状態: <code>killed</code> / <code>terminated</code> / <code>done</code> / <code>errored</code> / <code>cleanup</code></p>
+    </div>
+
+    <!-- 4 — Reaction エンジン -->
+    <section id="reaction" class="sec-head">4 — Reaction エンジン</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 自動応答ループ</span>
+      <p>YAML で「CI 失敗 → エージェントに送る」「承認 + グリーン → 通知」などの自動反応をコードなしで設定できる。<code>LifecycleManager</code> がポーリングループで外部イベントを検出し、対応する Reaction を発火させる。</p>
+      <div class="mermaid-wrap" id="seq-wrap">
+        <div class="mz-controls">
+          <button id="seq-zoom-in" title="拡大">+</button>
+          <button id="seq-zoom-out" title="縮小">−</button>
+          <button id="seq-zoom-reset" title="リセット">⟳</button>
+        </div>
+        <div class="mermaid-viewport" id="seq-vp">
+          <div class="mermaid" id="seq-diagram">
+sequenceDiagram
+    participant H as 人間
+    participant AO as ao CLI
+    participant LM as LifecycleManager
+    participant AG as AI Agent
+    participant GH as GitHub
+
+    H->>AO: ao start
+    AO->>AG: Orchestrator Agent 起動
+    AG->>AO: ao spawn issue-101
+    AO->>AG: Worker Agent 起動 (新 worktree)
+    AG->>GH: git push / PR 作成
+    GH-->>LM: CI 失敗 (poll)
+    LM->>AG: CI ログを送信
+    AG->>GH: 修正 push
+    GH-->>LM: レビューコメント
+    LM->>AG: コメント転送
+    AG->>GH: 返答 push
+    GH-->>LM: Approved + CI green
+    LM->>H: デスクトップ通知 "マージ準備完了"
+    H->>GH: マージ
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ve-callout" style="--i:1">
+      <strong>Orchestrator / Worker の 2 層構造：</strong>
+      Orchestrator エージェント自体も AI（<code>ao</code> CLI を操作するエージェント）。Worker エージェントを <code>ao spawn</code> するのも AI が担う。人間は Orchestrator を起動してあとはレビュー・マージするだけ。
+    </div>
+
+    <!-- 5 — セットアップ -->
+    <section id="setup" class="sec-head">5 — セットアップ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> インストール</span>
+      <div class="ve-code-block">
+        <div class="cb-header">shell</div>
+        <pre><code>npm install -g @composio/ao
+# または
+npx @composio/ao doctor --fix   # 依存関係の自動セットアップ</code></pre>
+      </div>
+      <h3>主な CLI コマンド（人間が使う）</h3>
+      <div class="ve-code-block">
+        <div class="cb-header">shell</div>
+        <pre><code>ao start                          # カレントリポジトリで起動
+ao start https://github.com/org/repo  # リモートを clone して起動
+ao stop                           # 全停止
+ao status                         # セッション一覧表示
+ao dashboard                      # ブラウザでダッシュボードを開く
+ao doctor                         # 環境チェック（--fix で自動修正）</code></pre>
+      </div>
+      <h3>CLI コマンド（Orchestrator Agent が使う）</h3>
+      <div class="ve-code-block">
+        <div class="cb-header">shell</div>
+        <pre><code>ao spawn issue-101                # Worker Agent 起動
+ao batch-spawn 101 102 103        # 複数 Agent を一括起動
+ao send app-1 "修正してください"  # 実行中 Agent にメッセージ送信
+ao session ls                     # セッション一覧
+ao session kill app-1             # セッション終了</code></pre>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> YAML 設定例（最小構成）</span>
+      <div class="ve-code-block">
+        <div class="cb-header">agent-orchestrator.yaml</div>
+        <pre><code>port: 3000
+
+defaults:
+  runtime: tmux
+  agent: claude-code
+  workspace: worktree
+  notifiers: [desktop]
+
+projects:
+  my-app:
+    repo: owner/my-app
+    path: ~/my-app
+    defaultBranch: main
+    sessionPrefix: app
+
+reactions:
+  ci-failed:
+    auto: true
+    action: send-to-agent
+    retries: 2
+  changes-requested:
+    auto: true
+    action: send-to-agent
+    escalateAfter: 30m
+  approved-and-green:
+    auto: false   # true にすると自動マージ
+    action: notify</code></pre>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> データ保存先</span>
+      <ul>
+        <li>設定ファイル: <code>agent-orchestrator.yaml</code>（リポジトリ内）</li>
+        <li>セッションデータ: <code>~/.agent-orchestrator/{hash}-{projectId}/sessions/</code></li>
+        <li>git worktree: <code>~/.agent-orchestrator/{hash}-{projectId}/worktrees/</code></li>
+      </ul>
+      <p style="margin-top:0.5rem"><code>hash</code> はコンフィグファイルのディレクトリパスから SHA-256 で生成（12 文字）。複数チェックアウト環境でも衝突しない。</p>
+    </div>
+    <div class="ve-callout" style="--i:3">
+      <strong>前提条件：</strong>
+      Node.js 20+ / tmux / gh CLI / 対象エージェント（Claude Code 等）のインストールが必要。<code>ao doctor</code> で自動確認・修正可能。
+    </div>
+
+    <!-- 6 — 参考リンク -->
+    <section id="links" class="sec-head">6 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/ComposioHQ/agent-orchestrator" target="_blank" rel="noopener">GitHub: ComposioHQ/agent-orchestrator</a> — 本体リポジトリ（MIT ライセンス）</li>
+        <li><a href="https://github.com/ComposioHQ/agent-orchestrator/blob/main/README.md" target="_blank" rel="noopener">README.md</a> — クイックスタートガイド</li>
+        <li><a href="https://github.com/ComposioHQ/agent-orchestrator/blob/main/ARCHITECTURE.md" target="_blank" rel="noopener">ARCHITECTURE.md</a> — 詳細アーキテクチャドキュメント</li>
+        <li><a href="https://github.com/ComposioHQ/agent-orchestrator/blob/main/SETUP.md" target="_blank" rel="noopener">SETUP.md</a> — セットアップガイド</li>
+        <li><a href="https://composio.dev" target="_blank" rel="noopener">Composio 公式サイト</a> — 開発元</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+(function () {
+  /* ── Mermaid 初期化 ── */
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: isDark ? {
+      primaryColor: '#083344',
+      primaryTextColor: '#bae6fd',
+      primaryBorderColor: '#22d3ee',
+      lineColor: '#22d3ee',
+      secondaryColor: '#1e293b',
+      tertiaryColor: '#0f172a',
+      background: '#0f172a',
+      mainBkg: '#083344',
+      nodeBorder: '#22d3ee',
+      clusterBkg: '#1e293b',
+      fontSize: '13px',
+      edgeLabelBackground: '#1e293b',
+      actorBkg: '#083344',
+      actorBorder: '#22d3ee',
+      actorTextColor: '#bae6fd',
+      signalColor: '#22d3ee',
+      signalTextColor: '#bae6fd',
+      labelBoxBkgColor: '#083344',
+      labelBoxBorderColor: '#22d3ee',
+      labelTextColor: '#bae6fd',
+      noteBkgColor: '#1e293b',
+      noteTextColor: '#bae6fd',
+      noteBorderColor: '#22d3ee',
+    } : {
+      primaryColor: '#e0f7fa',
+      primaryTextColor: '#0c4a6e',
+      primaryBorderColor: '#0891b2',
+      lineColor: '#0891b2',
+      secondaryColor: '#f0f9ff',
+      tertiaryColor: '#ffffff',
+      background: '#ffffff',
+      mainBkg: '#e0f7fa',
+      nodeBorder: '#0891b2',
+      clusterBkg: '#f0f9ff',
+      fontSize: '13px',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#e0f7fa',
+      actorBorder: '#0891b2',
+      actorTextColor: '#0c4a6e',
+      signalColor: '#0891b2',
+      signalTextColor: '#0c4a6e',
+      labelBoxBkgColor: '#e0f7fa',
+      labelBoxBorderColor: '#0891b2',
+      labelTextColor: '#0c4a6e',
+      noteBkgColor: '#f0f9ff',
+      noteTextColor: '#0c4a6e',
+      noteBorderColor: '#0891b2',
+    }
+  });
+
+  mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
+
+  /* ── ズームコントローラ ── */
+  const setupZoom = (vpId, wrapperId, zoomInId, zoomOutId, zoomResetId) => {
+    const vp = document.getElementById(vpId);
+    if (!vp) return;
+    let scale = 1;
+    let dx = 0;
+    let dy = 0;
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+
+    const getSvg = () => vp.querySelector('svg');
+    const apply = () => {
+      const svg = getSvg();
+      if (svg) svg.style.transform = `scale(${scale}) translate(${dx}px, ${dy}px)`;
+    };
+
+    document.getElementById(zoomInId).addEventListener('click', () => { scale = Math.min(scale + 0.2, 3); apply(); });
+    document.getElementById(zoomOutId).addEventListener('click', () => { scale = Math.max(scale - 0.2, 0.4); dx = 0; dy = 0; apply(); });
+    document.getElementById(zoomResetId).addEventListener('click', () => { scale = 1; dx = 0; dy = 0; apply(); });
+
+    vp.addEventListener('wheel', (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      scale = Math.min(Math.max(scale - e.deltaY * 0.001, 0.4), 3);
+      apply();
+    }, { passive: false });
+
+    vp.addEventListener('mousedown', (e) => { dragging = true; startX = e.clientX - dx; startY = e.clientY - dy; vp.classList.add('dragging'); });
+    window.addEventListener('mouseup', () => { dragging = false; vp.classList.remove('dragging'); });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      dx = e.clientX - startX;
+      dy = e.clientY - startY;
+      apply();
+    });
+  };
+
+  /* Mermaid のレンダリング完了を待ってからズーム設定 */
+  setTimeout(() => {
+    setupZoom('arch-vp', 'arch-wrap', 'arch-zoom-in', 'arch-zoom-out', 'arch-zoom-reset');
+    setupZoom('seq-vp', 'seq-wrap', 'seq-zoom-in', 'seq-zoom-out', 'seq-zoom-reset');
+  }, 600);
+
+  /* ── Scroll Spy ── */
+  const toc = document.getElementById('toc');
+  if (toc) {
+    const links = toc.querySelectorAll('a[href^="#"]');
+    const sections = [];
+    links.forEach(function (a) {
+      const id = a.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      if (el) sections.push({ link: a, head: el });
+    });
+    const updateActive = () => {
+      const top = window.scrollY + 24;
+      let current = sections[0] || null;
+      sections.forEach(function (s) {
+        const docTop = s.head.getBoundingClientRect().top + window.scrollY;
+        if (docTop <= top) current = s;
+      });
+      sections.forEach(function (s) {
+        s.link.classList.toggle('active', s === current);
+      });
+    };
+    window.addEventListener('scroll', updateActive, { passive: true });
+    updateActive();
+  }
+})();
+</script>
+</body>
+</html>
