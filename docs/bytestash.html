@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ByteStash — セルフホスト型コードスニペット管理アプリ</title>
+  <meta name="description" content="コードスニペットをセキュアに保存・整理・管理する React + Node.js 製セルフホストアプリ。SQLite + Docker + OIDC 対応。アーキテクチャ・データモデル・API・デプロイ方法の技術概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="ByteStash — セルフホスト型コードスニペット管理アプリ">
+  <meta property="og:description" content="コードスニペットをセキュアに保存・整理・管理する React + Node.js 製セルフホストアプリ。SQLite + Docker + OIDC 対応。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/bytestash.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="ByteStash — セルフホスト型コードスニペット管理アプリ">
+  <meta name="twitter:description" content="コードスニペットをセキュアに保存・整理・管理する React + Node.js 製セルフホストアプリ。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.6 0.118 184.704);
+      --chart-2: oklch(0.646 0.222 41.116);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Outfit', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.696 0.17 162.48);
+        --chart-2: oklch(0.488 0.243 264.376);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.6 0.118 184.704 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 70% 0%, oklch(0.6 0.118 184.704 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 70% 0%, oklch(0.696 0.17 162.48 / 0.09) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    /* KPI row */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Architecture diagram */
+    .arch-flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; }
+    .arch-layer {
+      flex: 1; min-width: 140px;
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      position: relative;
+    }
+    .arch-layer + .arch-layer { border-left: none; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+    .arch-layer:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+    .arch-layer:not(:first-child):not(:last-child) { border-radius: 0; }
+    .arch-layer__title { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--chart-1); margin-bottom: 0.625rem; }
+    .arch-layer__items { display: flex; flex-direction: column; gap: 0.375rem; }
+    .arch-chip {
+      font-family: var(--font-mono); font-size: 0.75rem; padding: 0.25rem 0.5rem;
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-dim); white-space: nowrap;
+    }
+    .arch-arrow {
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-dim); padding: 0 0.25rem; font-size: 1.1rem; align-self: center;
+    }
+    @media (max-width: 640px) {
+      .arch-flow { flex-direction: column; }
+      .arch-layer + .arch-layer { border-left: 1px solid var(--border); border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
+      .arch-layer:first-child { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+      .arch-arrow { transform: rotate(90deg); }
+    }
+
+    /* Feature grid */
+    .feat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    @media (max-width: 640px) { .feat-grid { grid-template-columns: 1fr; } }
+    .feat-item { display: flex; align-items: flex-start; gap: 0.75rem; }
+    .feat-icon { width: 32px; height: 32px; border-radius: var(--radius-sm); background: color-mix(in oklch, var(--chart-1) 15%, transparent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.875rem; }
+
+    /* Route badge */
+    .method { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; padding: 1px 6px; border-radius: 3px; text-transform: uppercase; }
+    .method--get { background: oklch(0.6 0.118 184.704 / 0.15); color: oklch(0.5 0.118 184.704); }
+    .method--post { background: oklch(0.646 0.222 41.116 / 0.15); color: oklch(0.55 0.222 41.116); }
+    .method--put { background: oklch(0.828 0.189 84.429 / 0.15); color: oklch(0.55 0.189 84.429); }
+    .method--delete { background: oklch(0.577 0.245 27.325 / 0.15); color: oklch(0.5 0.245 27.325); }
+    @media (prefers-color-scheme: dark) {
+      .method--get { color: oklch(0.696 0.17 162.48); }
+      .method--post { color: oklch(0.769 0.188 70.08); }
+      .method--put { color: oklch(0.828 0.189 84.429); }
+      .method--delete { color: oklch(0.704 0.191 22.216); }
+    }
+
+    /* Animations */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#features">主要機能</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#datamodel">データモデル</a>
+    <a href="#api">API ルート</a>
+    <a href="#deploy">デプロイ</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>ByteStash</h1>
+    <p class="subtitle">byte·stash — self-hosted code snippet manager with multi-fragment, sharing &amp; OIDC.</p>
+
+    <!-- ==================== 1. 概要 ==================== -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+      <p><strong>ByteStash</strong> は、コードスニペットをセキュアに保存・整理・管理するためのセルフホスト型 Web アプリケーション。フロントエンドは <strong>React + Tailwind CSS</strong>、バックエンドは <strong>Node.js + Express</strong>、永続化は <strong>SQLite</strong>。Docker イメージで1コマンドで起動でき、JWT 認証・OIDC（シングルサインオン）・API キー認証を備える。</p>
+      <p>1 つのスニペットに複数の <strong>CodeFragment</strong>（ファイル）を持たせられるのが特徴で、プロジェクトをまたぐ関連コードをまとめて管理できる。カテゴリ・ピン留め・お気に入り・公開共有・有効期限付き共有リンクなど、実用的な機能が揃っている。</p>
+    </div>
+
+    <div class="kpi-row" style="margin-top:1rem">
+      <div class="ve-kpi-card" style="--i:1">
+        <div class="ve-kpi-card__value">React</div>
+        <div class="ve-kpi-card__label">Frontend</div>
+      </div>
+      <div class="ve-kpi-card" style="--i:2">
+        <div class="ve-kpi-card__value">Express</div>
+        <div class="ve-kpi-card__label">Backend</div>
+      </div>
+      <div class="ve-kpi-card" style="--i:3">
+        <div class="ve-kpi-card__value">SQLite</div>
+        <div class="ve-kpi-card__label">Database</div>
+      </div>
+      <div class="ve-kpi-card" style="--i:4">
+        <div class="ve-kpi-card__value">Docker</div>
+        <div class="ve-kpi-card__label">Deployment</div>
+      </div>
+    </div>
+
+    <!-- ==================== 2. 主要機能 ==================== -->
+    <section id="features" class="sec-head">2 — 主要機能</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 機能一覧</span>
+      <div class="feat-grid">
+        <div class="feat-item">
+          <div class="feat-icon">✏️</div>
+          <div>
+            <h3 style="margin:0 0 0.2rem">スニペット作成・編集</h3>
+            <p style="margin:0;font-size:0.875rem;color:var(--text-dim)">タイトル・説明・カテゴリ・複数フラグメントを持つスニペットをシンタックスハイライト付きエディタで編集。</p>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon">🔍</div>
+          <div>
+            <h3 style="margin:0 0 0.2rem">検索・フィルタ</h3>
+            <p style="margin:0;font-size:0.875rem;color:var(--text-dim)">言語・キーワード・カテゴリでスニペットを絞り込み。デバウンス付きリアルタイム検索。</p>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon">🔗</div>
+          <div>
+            <h3 style="margin:0 0 0.2rem">共有リンク</h3>
+            <p style="margin:0;font-size:0.875rem;color:var(--text-dim)">認証要否・閲覧回数上限・有効期限を設定した共有リンクを発行。埋め込み表示にも対応。</p>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon">🌐</div>
+          <div>
+            <h3 style="margin:0 0 0.2rem">公開スニペット</h3>
+            <p style="margin:0;font-size:0.875rem;color:var(--text-dim)">スニペットを公開設定にするとログインなしで閲覧可能。<code>/public</code> ルートで一覧表示。</p>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon">📌</div>
+          <div>
+            <h3 style="margin:0 0 0.2rem">ピン留め・お気に入り</h3>
+            <p style="margin:0;font-size:0.875rem;color:var(--text-dim)">スニペットをピン留め（<code>is_pinned</code>）またはお気に入り（<code>is_favorite</code>）に設定して優先表示。</p>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon">🔐</div>
+          <div>
+            <h3 style="margin:0 0 0.2rem">認証・アクセス制御</h3>
+            <p style="margin:0;font-size:0.875rem;color:var(--text-dim)">JWT セッション・OIDC（外部 IdP）・API キーの 3 方式。新規アカウント登録やアカウント機能自体の無効化も設定可能。</p>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon">🌍</div>
+          <div>
+            <h3 style="margin:0 0 0.2rem">i18n（多言語）</h3>
+            <p style="margin:0;font-size:0.875rem;color:var(--text-dim)">i18next ベースの国際化対応。新ロケールは <code>i18n:extract</code> コマンドで追加フローが整備されている。</p>
+          </div>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon">📖</div>
+          <div>
+            <h3 style="margin:0 0 0.2rem">Swagger API ドキュメント</h3>
+            <p style="margin:0;font-size:0.875rem;color:var(--text-dim)">サーバー起動後に <code>/api-docs</code> でインタラクティブな API 仕様を確認・試行できる。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 3. アーキテクチャ ==================== -->
+    <section id="architecture" class="sec-head">3 — アーキテクチャ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> レイヤー構成</span>
+      <div class="arch-flow" style="margin-bottom:1.5rem">
+        <div class="arch-layer">
+          <div class="arch-layer__title">Client (React)</div>
+          <div class="arch-layer__items">
+            <span class="arch-chip">components/snippets</span>
+            <span class="arch-chip">components/editor</span>
+            <span class="arch-chip">components/search</span>
+            <span class="arch-chip">components/auth</span>
+            <span class="arch-chip">components/categories</span>
+            <span class="arch-chip">components/settings</span>
+            <span class="arch-chip">components/admin</span>
+            <span class="arch-chip">hooks/useSnippetsQuery</span>
+            <span class="arch-chip">hooks/useAuth</span>
+            <span class="arch-chip">contexts (Auth / Settings)</span>
+          </div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-layer">
+          <div class="arch-layer__title">Server (Express)</div>
+          <div class="arch-layer__items">
+            <span class="arch-chip">snippetRoutes</span>
+            <span class="arch-chip">authRoutes</span>
+            <span class="arch-chip">shareRoutes</span>
+            <span class="arch-chip">embedRoutes</span>
+            <span class="arch-chip">publicRoutes</span>
+            <span class="arch-chip">apiKeyRoutes</span>
+            <span class="arch-chip">oidcRoutes</span>
+            <span class="arch-chip">adminRoutes</span>
+            <span class="arch-chip">middleware (JWT / OIDC)</span>
+            <span class="arch-chip">Swagger UI /api-docs</span>
+          </div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-layer">
+          <div class="arch-layer__title">Data</div>
+          <div class="arch-layer__items">
+            <span class="arch-chip">snippetRepository</span>
+            <span class="arch-chip">userRepository</span>
+            <span class="arch-chip">shareRepository</span>
+            <span class="arch-chip">apiKeyRepository</span>
+            <span class="arch-chip">adminRepository</span>
+            <span class="arch-chip" style="margin-top:0.5rem;border-color:var(--chart-1);color:var(--chart-1)">SQLite /data/snippets</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ve-callout">
+        <strong>npm workspaces 構成</strong> — ルートの <code>package.json</code> が <code>client</code> / <code>server</code> の 2 ワークスペースを管理。開発時は <code>./docker-compose.sh up --build</code> でフロント・バックを同時起動。
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top:1rem">
+      <span class="ve-section-label"><span class="ve-dot"></span> クライアント詳細</span>
+      <p>クライアントは React + Tailwind CSS で構築され、<strong>コンポーネント</strong> / <strong>hooks</strong> / <strong>contexts</strong> / <strong>service</strong> の 4 層に整理されている。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>ディレクトリ</th><th>役割</th></tr></thead>
+          <tbody>
+            <tr><td><code>components/snippets</code></td><td>スニペット一覧・詳細・カード・フォームなど中心的 UI</td></tr>
+            <tr><td><code>components/editor</code></td><td>シンタックスハイライト付きコードエディタ</td></tr>
+            <tr><td><code>components/search</code></td><td>言語・キーワードフィルタ UI</td></tr>
+            <tr><td><code>components/auth</code></td><td>ログイン・登録・OIDC コールバック画面</td></tr>
+            <tr><td><code>components/categories</code></td><td>カテゴリ選択・管理 UI</td></tr>
+            <tr><td><code>components/settings</code></td><td>ユーザー設定・API キー管理</td></tr>
+            <tr><td><code>components/admin</code></td><td>管理者向けユーザー・システム管理</td></tr>
+            <tr><td><code>hooks/useSnippetsQuery</code></td><td>スニペット CRUD の非同期フェッチ管理</td></tr>
+            <tr><td><code>hooks/useSnippetFilters</code></td><td>フィルタ状態（言語・キーワード等）の管理</td></tr>
+            <tr><td><code>hooks/useAuth</code></td><td>JWT トークン取得・保存・リフレッシュ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== 4. データモデル ==================== -->
+    <section id="datamodel" class="sec-head">4 — データモデル</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Snippet</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>フィールド</th><th>型</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>string</td><td>一意識別子</td></tr>
+            <tr><td><code>title</code></td><td>string</td><td>スニペットのタイトル</td></tr>
+            <tr><td><code>description</code></td><td>string</td><td>説明文</td></tr>
+            <tr><td><code>updated_at</code></td><td>string</td><td>最終更新日時（ISO 8601）</td></tr>
+            <tr><td><code>expiry_date</code></td><td>string?</td><td>有効期限（任意）</td></tr>
+            <tr><td><code>categories</code></td><td>string[]</td><td>カテゴリタグ一覧</td></tr>
+            <tr><td><code>fragments</code></td><td>CodeFragment[]</td><td>コードフラグメント群（複数ファイル対応）</td></tr>
+            <tr><td><code>is_public</code></td><td>number (0/1)</td><td>公開フラグ</td></tr>
+            <tr><td><code>is_pinned</code></td><td>number (0/1)</td><td>ピン留めフラグ</td></tr>
+            <tr><td><code>is_favorite</code></td><td>number (0/1)</td><td>お気に入りフラグ</td></tr>
+            <tr><td><code>share_count</code></td><td>number?</td><td>共有リンク生成数</td></tr>
+            <tr><td><code>username</code></td><td>string?</td><td>所有ユーザー名</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1; margin-top:1rem">
+      <span class="ve-section-label"><span class="ve-dot"></span> CodeFragment</span>
+      <p>1 つのスニペットに複数の <code>CodeFragment</code> を持てるのが ByteStash の特徴。関連するファイルをひとまとめで管理できる。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>フィールド</th><th>型</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>string?</td><td>フラグメント ID（新規作成時は省略可）</td></tr>
+            <tr><td><code>file_name</code></td><td>string</td><td>ファイル名（例: <code>index.ts</code>）</td></tr>
+            <tr><td><code>code</code></td><td>string</td><td>コード本体</td></tr>
+            <tr><td><code>language</code></td><td>string</td><td>プログラミング言語（ハイライト識別子）</td></tr>
+            <tr><td><code>position</code></td><td>number</td><td>表示順（昇順）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:2; margin-top:1rem">
+      <span class="ve-section-label"><span class="ve-dot"></span> Share（共有リンク）</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>フィールド</th><th>型</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>string</td><td>共有トークン ID</td></tr>
+            <tr><td><code>snippet_id</code></td><td>number</td><td>対象スニペット</td></tr>
+            <tr><td><code>requires_auth</code></td><td>number (0/1)</td><td>閲覧に認証が必要か</td></tr>
+            <tr><td><code>view_limit</code></td><td>number | null</td><td>閲覧回数上限（null = 無制限）</td></tr>
+            <tr><td><code>view_count</code></td><td>number</td><td>現在の閲覧回数</td></tr>
+            <tr><td><code>expires_at</code></td><td>string</td><td>有効期限</td></tr>
+            <tr><td><code>expired</code></td><td>number (0/1)</td><td>期限切れフラグ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-code-block" style="--i:3; margin-top:1rem">
+      <pre><code>// TypeScript インターフェース（client/src/types/snippets.ts）
+interface CodeFragment {
+  id?: string;
+  file_name: string;
+  code: string;
+  language: string;
+  position: number;
+}
+
+interface Snippet {
+  id: string;
+  title: string;
+  description: string;
+  updated_at: string;
+  expiry_date?: string;
+  categories: string[];
+  fragments: CodeFragment[];
+  share_count?: number;
+  is_public: number;
+  is_pinned: number;
+  is_favorite: number;
+  username?: string;
+}</code></pre>
+    </div>
+
+    <!-- ==================== 5. API ==================== -->
+    <section id="api" class="sec-head">5 — API ルート</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 主要エンドポイント</span>
+      <p>詳細な仕様はサーバー起動後に <code>/api-docs</code>（Swagger UI）で確認できる。以下は主要ルートのサマリ。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>メソッド</th><th>パス</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td><span class="method method--get">GET</span></td><td><code>/api/snippets</code></td><td>スニペット一覧（フィルタ・ページネーション対応）</td></tr>
+            <tr><td><span class="method method--post">POST</span></td><td><code>/api/snippets</code></td><td>新規スニペット作成</td></tr>
+            <tr><td><span class="method method--put">PUT</span></td><td><code>/api/snippets/:id</code></td><td>スニペット更新</td></tr>
+            <tr><td><span class="method method--delete">DELETE</span></td><td><code>/api/snippets/:id</code></td><td>スニペット削除</td></tr>
+            <tr><td><span class="method method--get">GET</span></td><td><code>/api/public/snippets</code></td><td>公開スニペット一覧（認証不要）</td></tr>
+            <tr><td><span class="method method--post">POST</span></td><td><code>/api/auth/login</code></td><td>ログイン・JWT 発行</td></tr>
+            <tr><td><span class="method method--post">POST</span></td><td><code>/api/auth/register</code></td><td>アカウント登録</td></tr>
+            <tr><td><span class="method method--post">POST</span></td><td><code>/api/snippets/:id/share</code></td><td>共有リンク生成</td></tr>
+            <tr><td><span class="method method--get">GET</span></td><td><code>/api/share/:shareId</code></td><td>共有リンクで閲覧</td></tr>
+            <tr><td><span class="method method--get">GET</span></td><td><code>/api/embed/:shareId</code></td><td>埋め込み表示</td></tr>
+            <tr><td><span class="method method--get">GET</span></td><td><code>/api/apikeys</code></td><td>API キー一覧</td></tr>
+            <tr><td><span class="method method--post">POST</span></td><td><code>/api/apikeys</code></td><td>API キー発行</td></tr>
+            <tr><td><span class="method method--get">GET</span></td><td><code>/api/admin/users</code></td><td>ユーザー一覧（管理者のみ）</td></tr>
+            <tr><td><span class="method method--get">GET</span></td><td><code>/oidc/login</code></td><td>OIDC 認証フロー開始</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== 6. デプロイ ==================== -->
+    <section id="deploy" class="sec-head">6 — デプロイ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Docker Compose（最小構成）</span>
+      <div class="ve-code-block">
+        <pre><code>services:
+  bytestash:
+    image: "ghcr.io/jordan-dalby/bytestash:latest"
+    restart: always
+    volumes:
+      - /your/snippet/path:/data/snippets
+    ports:
+      - "5000:5000"
+    environment:
+      BASE_PATH: ""
+      JWT_SECRET: your-secret-here
+      TOKEN_EXPIRY: 24h
+      ALLOW_NEW_ACCOUNTS: "true"
+      DISABLE_ACCOUNTS: "false"
+      DEBUG: "false"</code></pre>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1; margin-top:1rem">
+      <span class="ve-section-label"><span class="ve-dot"></span> 環境変数リファレンス</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>変数名</th><th>デフォルト</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td><code>JWT_SECRET</code></td><td>—</td><td>JWT 署名シークレット（必須）</td></tr>
+            <tr><td><code>TOKEN_EXPIRY</code></td><td><code>24h</code></td><td>JWT の有効期間</td></tr>
+            <tr><td><code>BASE_PATH</code></td><td><code>""</code></td><td>サブパスでホストする場合のプレフィックス</td></tr>
+            <tr><td><code>ALLOW_NEW_ACCOUNTS</code></td><td><code>true</code></td><td>新規アカウント登録を許可するか</td></tr>
+            <tr><td><code>DISABLE_ACCOUNTS</code></td><td><code>false</code></td><td>アカウント機能を完全に無効化</td></tr>
+            <tr><td><code>DISABLE_INTERNAL_ACCOUNTS</code></td><td><code>false</code></td><td>内部アカウント（非 OIDC）を無効化</td></tr>
+            <tr><td><code>ALLOWED_HOSTS</code></td><td>—</td><td>許可ホスト名（カンマ区切り）</td></tr>
+            <tr><td><code>DEBUG</code></td><td><code>false</code></td><td>詳細ログ出力</td></tr>
+            <tr><td><code>OIDC_ENABLED</code></td><td><code>false</code></td><td>OIDC 認証を有効化</td></tr>
+            <tr><td><code>OIDC_ISSUER_URL</code></td><td>—</td><td>OIDC プロバイダーの issuer URL</td></tr>
+            <tr><td><code>OIDC_CLIENT_ID</code></td><td>—</td><td>OIDC クライアント ID</td></tr>
+            <tr><td><code>OIDC_CLIENT_SECRET</code></td><td>—</td><td>OIDC クライアントシークレット</td></tr>
+            <tr><td><code>OIDC_SCOPES</code></td><td>—</td><td>要求するスコープ（スペース区切り）</td></tr>
+            <tr><td><code>OIDC_DISPLAY_NAME</code></td><td>—</td><td>ログインボタンに表示する IdP 名</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-callout" style="--i:2; margin-top:1rem">
+      <strong>Unraid / PikaPods 対応</strong> — Unraid App Store または PikaPods から 1 クリックでインストール可能。PikaPods は月 $1 から利用でき、<a href="https://www.pikapods.com/pods?run=bytestash" target="_blank" rel="noopener">こちら</a>からデモを試せる（Username: demo / Password: demodemo）。
+    </div>
+
+    <!-- ==================== 7. 参考リンク ==================== -->
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/jordan-dalby/ByteStash" target="_blank" rel="noopener">GitHub: jordan-dalby/ByteStash</a> — 本体リポジトリ</li>
+        <li><a href="https://bytestash-demo.pikapod.net/" target="_blank" rel="noopener">ByteStash デモ（PikaPods）</a> — 動作確認用デモ環境</li>
+        <li><a href="https://github.com/jordan-dalby/ByteStash/wiki/FAQ#environment-variables" target="_blank" rel="noopener">Wiki: 環境変数一覧</a> — 公式ドキュメント</li>
+        <li><a href="https://github.com/jordan-dalby/ByteStash/wiki/Single-Sign%E2%80%90on-Setup" target="_blank" rel="noopener">Wiki: SSO / OIDC セットアップ</a> — シングルサインオン設定手順</li>
+        <li><a href="https://unraid.net/community/apps" target="_blank" rel="noopener">Unraid App Store</a> — Unraid 向けインストール</li>
+        <li><a href="https://www.pikapods.com/pods?run=bytestash" target="_blank" rel="noopener">PikaPods: ByteStash</a> — 1 クリックホスティング</li>
+        <li><a href="https://ghcr.io/jordan-dalby/bytestash" target="_blank" rel="noopener">ghcr.io: bytestash イメージ</a> — GitHub Container Registry</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
