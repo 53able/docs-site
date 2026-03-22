@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Understand Anything — コードベースをナレッジグラフに変換する Claude Code プラグイン</title>
+  <meta name="description" content="LLM と静的解析でコードベースをインタラクティブなナレッジグラフに変換する Claude Code プラグイン Understand Anything の解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Understand Anything — コードベースをナレッジグラフに変換する Claude Code プラグイン">
+  <meta property="og:description" content="LLM と静的解析でコードベースをインタラクティブなナレッジグラフに変換する Claude Code プラグイン Understand Anything の解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/understand-anything.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Understand Anything — コードベースをナレッジグラフに変換する Claude Code プラグイン">
+  <meta name="twitter:description" content="LLM と静的解析でコードベースをインタラクティブなナレッジグラフに変換する Claude Code プラグイン Understand Anything の解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    /* ============ THEME (Spell UI tokens) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.003 240);
+      --foreground: oklch(0.13 0.015 240);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.13 0.015 240);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.13 0.015 240);
+      --primary: oklch(0.22 0.04 240);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.96 0.006 240);
+      --secondary-foreground: oklch(0.22 0.04 240);
+      --muted: oklch(0.955 0.006 240);
+      --muted-foreground: oklch(0.52 0.02 240);
+      --accent: oklch(0.955 0.006 240);
+      --accent-foreground: oklch(0.22 0.04 240);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.012 240);
+      --input: oklch(0.88 0.012 240);
+      --ring: oklch(0.65 0.03 240);
+      --chart-1: oklch(0.56 0.16 210);   /* teal */
+      --chart-2: oklch(0.48 0.12 220);   /* deep blue */
+      --chart-3: oklch(0.36 0.08 230);   /* navy */
+      --chart-4: oklch(0.72 0.12 185);   /* cyan-green */
+      --chart-5: oklch(0.62 0.18 195);   /* teal-bright */
+      --code-bg: oklch(0.955 0.006 240);
+      --code-text: oklch(0.26 0.14 220);
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.11 0.012 240);
+        --foreground: oklch(0.96 0.005 240);
+        --card: oklch(0.17 0.015 240);
+        --card-foreground: oklch(0.96 0.005 240);
+        --popover: oklch(0.17 0.015 240);
+        --popover-foreground: oklch(0.96 0.005 240);
+        --primary: oklch(0.90 0.01 240);
+        --primary-foreground: oklch(0.17 0.015 240);
+        --secondary: oklch(0.22 0.018 240);
+        --secondary-foreground: oklch(0.96 0.005 240);
+        --muted: oklch(0.24 0.018 240);
+        --muted-foreground: oklch(0.65 0.018 240);
+        --accent: oklch(0.24 0.018 240);
+        --accent-foreground: oklch(0.96 0.005 240);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 9%);
+        --input: oklch(1 0 0 / 12%);
+        --ring: oklch(0.48 0.025 240);
+        --chart-1: oklch(0.65 0.17 200);
+        --chart-2: oklch(0.58 0.14 215);
+        --chart-3: oklch(0.72 0.12 185);
+        --chart-4: oklch(0.80 0.10 190);
+        --chart-5: oklch(0.55 0.19 205);
+        --code-bg: oklch(0.14 0.012 240);
+        --code-text: oklch(0.72 0.14 200);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 24rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-family: var(--font-mono); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.56 0.16 210 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px),
+        radial-gradient(ellipse at 70% 0%, oklch(0.56 0.16 210 / 0.07) 0%, transparent 55%);
+      background-size: 40px 40px, 40px 40px, 100% 100%;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          linear-gradient(oklch(1 0 0 / 3%) 1px, transparent 1px),
+          linear-gradient(90deg, oklch(1 0 0 / 3%) 1px, transparent 1px),
+          radial-gradient(ellipse at 70% 0%, oklch(0.65 0.17 200 / 0.09) 0%, transparent 55%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; background-size: 30px 30px, 30px 30px, 100% 100%; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.0625rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); font-family: var(--font-mono); letter-spacing: -0.01em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 0.9375rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-5); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Architecture grid ============ */
+    .arch-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .arch-grid { grid-template-columns: 1fr; } }
+    .arch-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem 1.125rem; }
+    .arch-card__layer { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--chart-1); margin-bottom: 0.375rem; }
+    .arch-card__title { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.375rem; }
+    .arch-card__desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+
+    /* ============ Flow diagram wrap ============ */
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin: 1rem 0; overflow-x: auto; }
+    .mermaid { display: flex; justify-content: center; }
+    .mermaid svg { max-width: 100%; height: auto; }
+
+    /* ============ Badge ============ */
+    .badge { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid; }
+    .badge--teal { background: oklch(0.56 0.16 210 / 0.1); color: var(--chart-1); border-color: oklch(0.56 0.16 210 / 0.3); }
+    .badge--blue { background: oklch(0.48 0.12 220 / 0.1); color: var(--chart-2); border-color: oklch(0.48 0.12 220 / 0.3); }
+    @media (prefers-color-scheme: dark) {
+      .badge--teal { background: oklch(0.65 0.17 200 / 0.15); color: var(--chart-1); border-color: oklch(0.65 0.17 200 / 0.4); }
+      .badge--blue { background: oklch(0.58 0.14 215 / 0.15); color: var(--chart-2); border-color: oklch(0.58 0.14 215 / 0.4); }
+    }
+
+    /* ============ Persona cards ============ */
+    .persona-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.875rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .persona-row { grid-template-columns: 1fr; } }
+    .persona-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem 1.125rem; }
+    .persona-card__name { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--chart-1); margin-bottom: 0.375rem; }
+    .persona-card__desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+
+    /* ============ Animations ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">Contents</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#flow">解析フロー</a>
+    <a href="#commands">コマンド</a>
+    <a href="#types">コア型</a>
+    <a href="#setup">セットアップ</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>Understand Anything</h1>
+  <p class="subtitle">LLM + 静的解析でコードベースをインタラクティブなナレッジグラフに変換する Claude Code プラグイン</p>
+
+  <!-- 1 — 概要 -->
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> What it is</span>
+    <p><strong>Understand Anything</strong> は、Claude（Sonnet / Opus）と web-tree-sitter による静的解析を組み合わせ、任意のコードベースをインタラクティブな<strong>ナレッジグラフ</strong>に変換する Claude Code プラグイン。200,000 行規模のリポジトリでも「どこから読めばいいか」を即座に可視化し、ファイル・関数・クラス・依存関係をグラフのノードとして描画、自然言語の説明を付与する。</p>
+    <p>分析結果は <code>.understand-anything/knowledge-graph.json</code> に保存され、React Flow 製ダッシュボードで閲覧できる。Git 差分ベースのインクリメンタル更新にも対応。Claude Code 以外に Cursor / Codex / OpenCode も利用可能。</p>
+    <div class="kpi-row" style="margin-top:1.25rem">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">6+</span><span class="ve-kpi-card__label">コマンド</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">18</span><span class="ve-kpi-card__label">エッジ型</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">5</span><span class="ve-kpi-card__label">アーキレイヤー</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">ペルソナ</span></div>
+    </div>
+  </div>
+
+  <div style="margin-top:1rem">
+    <p style="font-size:0.875rem;color:var(--text-dim);margin-bottom:0.75rem">対象ユーザー</p>
+    <div class="persona-row">
+      <div class="persona-card">
+        <div class="persona-card__name">Junior</div>
+        <div class="persona-card__desc">新規参加の開発者向け。ガイドツアーでコードベースの全体像を素早く把握できる。</div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-card__name">PM / Designer</div>
+        <div class="persona-card__desc">コードを読まない職種向け。アーキテクチャレイヤーを視覚的に確認できる。</div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-card__name">PowerUser</div>
+        <div class="persona-card__desc">AI 開発者向け。自然言語クエリ・差分分析・影響範囲の即時確認。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 — アーキテクチャ -->
+  <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> モノレポ構成</span>
+    <div class="arch-grid">
+      <div class="arch-card">
+        <div class="arch-card__layer">Plugin Core</div>
+        <div class="arch-card__title">understand-anything-plugin/</div>
+        <div class="arch-card__desc">エージェント定義（<code>.md</code>）・スキル定義・TypeScript ソース（コンテキスト構築・差分分析）</div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-card__layer">Shared Engine</div>
+        <div class="arch-card__title">packages/core/</div>
+        <div class="arch-card__desc">型定義・Zod スキーマ・Fuse.js 検索・セマンティック検索・静的解析・Gitスタールネス管理</div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-card__layer">Dashboard UI</div>
+        <div class="arch-card__title">packages/dashboard/</div>
+        <div class="arch-card__desc">React 18 + Vite + TailwindCSS v4。React Flow でグラフ描画。Zustand で状態管理。</div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-card__layer">Static Analysis</div>
+        <div class="arch-card__title">web-tree-sitter (WASM)</div>
+        <div class="arch-card__desc">darwin/arm64 + Node.js 24 でネイティブ tree-sitter が動かないため WASM ビルドを採用。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1; margin-top:0.875rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> packages/core のモジュール</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>モジュール</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>types.ts</code></td><td>コアデータ型 — <code>KnowledgeGraph</code>, <code>GraphNode</code>, <code>GraphEdge</code> など</td></tr>
+          <tr><td><code>schema.ts</code></td><td>Zod スキーマ + <code>validateGraph()</code> バリデーション</td></tr>
+          <tr><td><code>search.ts</code></td><td>Fuse.js によるファジー検索エンジン</td></tr>
+          <tr><td><code>embedding-search.ts</code></td><td>コサイン類似度によるセマンティック検索</td></tr>
+          <tr><td><code>staleness.ts</code></td><td>Git コミット差分によるグラフ鮮度チェック + 差分マージ</td></tr>
+          <tr><td><code>analyzer/graph-builder.ts</code></td><td>ノード・エッジの組み立てエンジン</td></tr>
+          <tr><td><code>analyzer/llm-analyzer.ts</code></td><td>LLM へのプロンプト構築 & レスポンスパース</td></tr>
+          <tr><td><code>analyzer/layer-detector.ts</code></td><td>アーキレイヤー検出（API / Service / Data / UI / Utility）</td></tr>
+          <tr><td><code>analyzer/tour-generator.ts</code></td><td>依存順序のガイドツアー生成</td></tr>
+          <tr><td><code>plugins/tree-sitter-plugin.ts</code></td><td>tree-sitter（WASM版）を使った静的構文解析</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3 — 解析フロー -->
+  <section id="flow" class="sec-head">3 — 解析フロー</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> /understand 実行時のパイプライン</span>
+    <div class="mermaid-wrap">
+      <div class="mermaid">
+flowchart TD
+  A["/understand コマンド実行"] --> B
+  B["project-scanner\n(Claude Sonnet)\nファイル探索・言語検出"] --> C
+  C["file-analyzer × 最大3並列\n(Claude Opus)\ntree-sitter で静的抽出\n→ LLM でサマリー生成\n→ 中間ファイル書き出し"] --> D
+  D["architecture-analyzer\n(Claude Opus)\nAPI / Service / Data / UI / Utility\nレイヤー分類"] --> E
+  E["tour-builder\n(Claude Opus)\n依存順ガイドツアー生成"] --> F
+  F["graph-reviewer\n(Claude Sonnet)\n完全性・参照整合性を検証"] --> G
+  G["knowledge-graph.json 保存\n中間ファイルをクリーンアップ"] --> H
+  H["/understand-dashboard\nReact ダッシュボード自動起動"]
+
+  style A fill:#0891b2,color:#fff,stroke:none
+  style H fill:#0891b2,color:#fff,stroke:none
+  style G fill:#0369a1,color:#fff,stroke:none
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>インクリメンタル更新:</strong> <code>git diff &lt;last-commit&gt;..HEAD</code> で変更ファイルを検出 → 該当ノード・エッジのみ削除・再解析 → <code>mergeGraphUpdate()</code> でグラフをマージ。大規模リポジトリでも全量再解析を避けられる。
+    </div>
+  </div>
+
+  <!-- 4 — コマンド -->
+  <section id="commands" class="sec-head">4 — コマンド一覧</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ユーザー向けコマンド</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>機能</th><th>モデル</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>/understand</code></td>
+            <td>コードベース全体を解析してナレッジグラフを生成</td>
+            <td><span class="badge badge--blue">Sonnet + Opus</span></td>
+          </tr>
+          <tr>
+            <td><code>/understand-dashboard</code></td>
+            <td>ブラウザで React Flow ダッシュボードを起動</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><code>/understand-chat &lt;質問&gt;</code></td>
+            <td>コードベースへの自然言語質問（グラフコンテキスト付き）</td>
+            <td><span class="badge badge--teal">Sonnet</span></td>
+          </tr>
+          <tr>
+            <td><code>/understand-diff</code></td>
+            <td>現在の変更影響範囲をグラフ上で分析</td>
+            <td><span class="badge badge--teal">Sonnet</span></td>
+          </tr>
+          <tr>
+            <td><code>/understand-explain &lt;パス&gt;</code></td>
+            <td>特定ファイル・関数の詳細解説を生成</td>
+            <td><span class="badge badge--blue">Opus</span></td>
+          </tr>
+          <tr>
+            <td><code>/understand-onboard</code></td>
+            <td>新メンバー向けオンボーディングガイドを生成</td>
+            <td><span class="badge badge--blue">Opus</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5 — コア型 -->
+  <section id="types" class="sec-head">5 — コアデータ型</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> KnowledgeGraph ルート</span>
+    <div class="ve-code-block">
+      <pre><code>interface KnowledgeGraph {
+  version: string;
+  project: ProjectMeta;
+  nodes:   GraphNode[];   // file / function / class / module / concept
+  edges:   GraphEdge[];   // 18 種類のエッジ型
+  layers:  Layer[];       // アーキレイヤー (API/Service/Data/UI/Utility)
+  tour:    TourStep[];    // ガイドツアーステップ
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1; margin-top:0.875rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> エッジ型一覧（18 種）</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>カテゴリ</th><th>エッジ型</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>構造</td><td><code>imports</code> <code>exports</code> <code>contains</code> <code>inherits</code> <code>implements</code></td></tr>
+          <tr><td>制御フロー</td><td><code>calls</code> <code>subscribes</code> <code>publishes</code> <code>middleware</code></td></tr>
+          <tr><td>データ</td><td><code>reads_from</code> <code>writes_to</code> <code>transforms</code> <code>validates</code></td></tr>
+          <tr><td>メタ</td><td><code>depends_on</code> <code>tested_by</code> <code>configures</code></td></tr>
+          <tr><td>意味的</td><td><code>related</code> <code>similar_to</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:2; margin-top:0.875rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> スキル層の公開 API</span>
+    <p>プラグインの <code>understand-anything-plugin/src/index.ts</code> からエクスポートされるコンテキスト構築関数:</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>関数</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>buildChatContext()</code></td><td><code>/understand-chat</code> 用 — グラフを自然言語QA向けに要約</td></tr>
+          <tr><td><code>buildDiffContext()</code></td><td><code>/understand-diff</code> 用 — 変更差分の影響ノードを列挙</td></tr>
+          <tr><td><code>buildExplainContext()</code></td><td><code>/understand-explain</code> 用 — 対象の周辺グラフを抽出</td></tr>
+          <tr><td><code>buildOnboardingGuide()</code></td><td><code>/understand-onboard</code> 用 — ツアーステップをガイド形式に整形</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 6 — セットアップ -->
+  <section id="setup" class="sec-head">6 — セットアップ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Claude Code（ネイティブ）</span>
+    <div class="ve-code-block">
+      <pre><code>/plugin marketplace add Lum1104/Understand-Anything
+/plugin install understand-anything
+/understand   # 解析開始</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1; margin-top:0.875rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> Cursor</span>
+    <p>リポジトリをクローンするだけで <code>.cursor-plugin/plugin.json</code> から自動検出される。</p>
+    <div class="ve-code-block">
+      <pre><code>git clone https://github.com/Lum1104/Understand-Anything
+# Cursor でプロジェクトを開くと自動でプラグインが有効化される</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:2; margin-top:0.875rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> ローカル開発</span>
+    <p>前提: Node.js &ge; 22、pnpm &ge; 10</p>
+    <div class="ve-code-block">
+      <pre><code># 依存インストール
+pnpm install
+
+# core パッケージをビルド（ダッシュボードが依存）
+pnpm --filter @understand-anything/core build
+
+# ダッシュボード開発サーバー
+pnpm dev:dashboard
+
+# テスト
+pnpm --filter @understand-anything/core test
+
+# Lint
+pnpm lint</code></pre>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>tree-sitter に注意:</strong> darwin/arm64 + Node.js 24 ではネイティブビルドが失敗するため、<code>web-tree-sitter</code>（WASM版）を採用。ネイティブ <code>tree-sitter</code> へ置き換えた場合は動作しない。
+    </div>
+  </div>
+
+  <!-- 7 — 参考リンク -->
+  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/Lum1104/Understand-Anything" target="_blank" rel="noopener">GitHub: Lum1104/Understand-Anything</a> — 本体リポジトリ</li>
+      <li><a href="https://github.com/Lum1104/Understand-Anything/blob/main/README.md" target="_blank" rel="noopener">README.md</a> — インストール・使い方の公式ドキュメント</li>
+      <li><a href="https://github.com/Lum1104/Understand-Anything/blob/main/understand-anything-plugin/packages/core/src/types.ts" target="_blank" rel="noopener">types.ts</a> — コアデータ型定義</li>
+      <li><a href="https://reactflow.dev/" target="_blank" rel="noopener">React Flow</a> — ダッシュボードのグラフ描画ライブラリ</li>
+      <li><a href="https://github.com/tree-sitter/tree-sitter" target="_blank" rel="noopener">tree-sitter</a> — 静的構文解析エンジン（WASM版を採用）</li>
+    </ul>
+  </div>
+  </div><!-- .main -->
+</div><!-- .wrap -->
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#0891b2',
+      primaryTextColor: '#fff',
+      primaryBorderColor: '#0369a1',
+      lineColor: '#64748b',
+      secondaryColor: '#f1f5f9',
+      tertiaryColor: '#e2e8f0',
+      background: '#ffffff',
+      mainBkg: '#e0f2fe',
+      nodeBorder: '#0891b2',
+      clusterBkg: '#f0f9ff',
+      titleColor: '#0f172a',
+      edgeLabelBackground: '#f8fafc',
+      fontSize: '14px'
+    },
+    flowchart: { curve: 'basis', padding: 20 }
+  });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
