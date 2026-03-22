@@ -472,10 +472,24 @@ flowchart TD
 
   <div class="ve-card ve-card--recessed" style="--i:1; margin-top:0.875rem">
     <span class="ve-section-label"><span class="ve-dot"></span> Cursor</span>
-    <p>リポジトリをクローンするだけで <code>.cursor-plugin/plugin.json</code> から自動検出される。</p>
+    <p>Cursor は <code>.cursor-plugin/plugin.json</code> を自動検出する仕組みを使う。スキル・エージェント定義が相対パスで書かれているため、<strong>Understand-Anything リポジトリ自体を Cursor のワークスペースに含める</strong>必要がある。</p>
+    <h3 style="font-size:0.875rem;margin-top:1rem">手順</h3>
+    <ol style="margin:0.5rem 0 1rem;padding-left:1.5rem;font-size:0.9rem;line-height:1.75">
+      <li>任意の場所にリポジトリをクローンする（例: <code>~/tools/</code> 以下など、プロジェクトとは別でOK）</li>
+      <li>Cursor で解析したいプロジェクトを開く</li>
+      <li>メニュー <strong>File › Add Folder to Workspace…</strong> で、クローンした <code>Understand-Anything/</code> フォルダを追加する</li>
+      <li>Cursor が <code>.cursor-plugin/plugin.json</code> を検出し、コマンドが使えるようになる</li>
+      <li><code>/understand</code> を実行して解析開始</li>
+    </ol>
     <div class="ve-code-block">
-      <pre><code>git clone https://github.com/Lum1104/Understand-Anything
-# Cursor でプロジェクトを開くと自動でプラグインが有効化される</code></pre>
+      <pre><code># 1. クローン（場所はどこでも可）
+git clone https://github.com/Lum1104/Understand-Anything ~/tools/understand-anything
+
+# 2. Cursor でワークスペースに追加後、解析を実行
+/understand</code></pre>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>なぜワークスペースに追加するの？</strong> plugin.json 内のスキル・エージェント定義が <code>./understand-anything-plugin/skills/</code> という相対パスで書かれているため、Cursor がそのパスを解決できる場所にリポジトリが必要。プロジェクトのコードを汚染しないよう、別フォルダにクローンして追加するのがおすすめ。
     </div>
   </div>
 
