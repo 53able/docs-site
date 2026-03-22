@@ -210,6 +210,9 @@
     .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin: 1rem 0; overflow-x: auto; }
     .mermaid { display: flex; justify-content: center; }
     .mermaid svg { max-width: 100%; height: auto; }
+    @media (prefers-color-scheme: dark) {
+      .mermaid-wrap { background: #0f172a; border-color: rgba(255,255,255,0.08); }
+    }
 
     /* ============ Badge ============ */
     .badge { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid; }
@@ -516,10 +519,25 @@ pnpm lint</code></pre>
 </div><!-- .wrap -->
 
 <script>
+  const _dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   mermaid.initialize({
     startOnLoad: true,
     theme: 'base',
-    themeVariables: {
+    themeVariables: _dark ? {
+      primaryColor: '#0e7490',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#22d3ee',
+      lineColor: '#94a3b8',
+      secondaryColor: '#1e293b',
+      tertiaryColor: '#0f172a',
+      background: '#0f172a',
+      mainBkg: '#164e63',
+      nodeBorder: '#22d3ee',
+      clusterBkg: '#0f172a',
+      titleColor: '#e2e8f0',
+      edgeLabelBackground: '#1e293b',
+      fontSize: '14px'
+    } : {
       primaryColor: '#0891b2',
       primaryTextColor: '#fff',
       primaryBorderColor: '#0369a1',
