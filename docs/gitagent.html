@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gitagent — リポジトリがエージェントになる git-native 標準</title>
+  <meta name="description" content="gitagent はリポジトリをそのまま AI エージェント定義にする git-native 標準。フレームワーク非依存・コンプライアンス対応・コンポーザブル。Claude Code, OpenAI, LangChain など任意のランタイムにエクスポートできる。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="gitagent — リポジトリがエージェントになる git-native 標準">
+  <meta property="og:description" content="gitagent はリポジトリをそのまま AI エージェント定義にする git-native 標準。フレームワーク非依存・コンプライアンス対応・コンポーザブル。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/gitagent.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="gitagent — リポジトリがエージェントになる git-native 標準">
+  <meta name="twitter:description" content="gitagent はリポジトリをそのまま AI エージェント定義にする git-native 標準。フレームワーク非依存・コンプライアンス対応。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-2) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-2) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-2) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-2) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-2); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 24rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--border) 50%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.6 0.118 184.704 / 0.12); color: var(--chart-2); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.6 0.118 184.704 / 0.07) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.696 0.17 162.48 / 0.09) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-2); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-2); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 1.25rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 0.75rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.55; }
+    a { color: var(--chart-2); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 0.875rem 0; }
+
+    /* ============ Feature grid ============ */
+    .feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; }
+    @media (max-width: 640px) { .feature-grid { grid-template-columns: 1fr; } }
+    .feature-card { padding: 1rem 1.25rem; }
+    .feature-card__label { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--chart-2); margin-bottom: 0.375rem; font-family: var(--font-mono); }
+    .feature-card__title { font-size: 1rem; font-weight: 600; margin-bottom: 0.35rem; }
+    .feature-card__desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+
+    /* ============ File tree ============ */
+    .file-tree { font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.85; }
+    .file-tree .dir { color: var(--chart-2); font-weight: 500; }
+    .file-tree .file-req { color: var(--chart-1); font-weight: 600; }
+    .file-tree .comment { color: var(--text-dim); font-size: 0.725rem; }
+    .file-tree .group-label { color: var(--text-dim); font-size: 0.7rem; margin-top: 0.5rem; margin-bottom: 0.125rem; }
+
+    /* ============ Pattern grid ============ */
+    .pattern-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    @media (max-width: 900px) { .pattern-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 520px) { .pattern-grid { grid-template-columns: 1fr; } }
+    .pattern-card { padding: 0.875rem 1rem; }
+    .pattern-card__name { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.3rem; display: flex; align-items: baseline; gap: 0.375rem; }
+    .pattern-card__desc { font-size: 0.775rem; color: var(--text-dim); line-height: 1.55; }
+    .pattern-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px; border-radius: 4px; flex-shrink: 0;
+      background: color-mix(in oklch, var(--chart-2) 15%, transparent);
+      color: var(--chart-2); font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
+    }
+
+    /* ============ CLI steps ============ */
+    .cli-steps { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }
+    .cli-step { display: flex; gap: 1rem; align-items: flex-start; }
+    .cli-step__num {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      background: color-mix(in oklch, var(--chart-2) 15%, transparent);
+      color: var(--chart-2); font-size: 0.75rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono);
+    }
+    .cli-step__content { flex: 1; min-width: 0; }
+    .cli-step__label { font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .cli-step__cmd {
+      font-family: var(--font-mono); font-size: 0.8125rem;
+      background: var(--muted); padding: 0.375rem 0.75rem;
+      border-radius: var(--radius-sm); color: var(--code-text); display: block;
+    }
+
+    /* ============ Compliance grid ============ */
+    .compliance-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.875rem; }
+    @media (max-width: 900px) { .compliance-grid { grid-template-columns: 1fr; } }
+    .compliance-card { padding: 1rem 1.125rem; }
+    .compliance-card__org {
+      font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--chart-2); margin-bottom: 0.625rem;
+    }
+    .compliance-card__rules { list-style: none; padding: 0; margin: 0; }
+    .compliance-card__rules li { font-size: 0.8rem; line-height: 1.5; margin-bottom: 0.4rem; padding-left: 1.125rem; position: relative; }
+    .compliance-card__rules li::before { content: '—'; position: absolute; left: 0; color: var(--text-dim); }
+    .compliance-card__rules strong { font-weight: 600; color: var(--foreground); }
+
+    /* ============ Animation ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#structure">エージェント構造</a>
+    <a href="#patterns">パターン集</a>
+    <a href="#quickstart">クイックスタート</a>
+    <a href="#cli">CLI コマンド</a>
+    <a href="#compliance">コンプライアンス</a>
+    <a href="#adapters">アダプター</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+  <div class="main">
+
+    <div class="ve-card ve-card--hero" style="--i:0; margin-bottom: 2rem;">
+      <h1>gitagent</h1>
+      <p class="subtitle">your repository becomes your agent</p>
+      <p>フレームワーク非依存の <strong>git-native AI エージェント定義標準</strong>。リポジトリをクローンするだけでエージェントが手に入る。Claude Code, OpenAI, LangChain, CrewAI, AutoGen など任意のランタイムへエクスポートできる。</p>
+    </div>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 4 つの特徴</span>
+      <div class="feature-grid">
+        <div class="ve-card ve-card--elevated feature-card" style="--i:1">
+          <div class="feature-card__label">Git-native</div>
+          <div class="feature-card__title">バージョン管理が組み込み済み</div>
+          <div class="feature-card__desc">git commit でプロンプト変更を追跡。git diff でエージェントの変化を確認。ブランチで並行開発、タグでリリース管理。</div>
+        </div>
+        <div class="ve-card ve-card--elevated feature-card" style="--i:2">
+          <div class="feature-card__label">Framework-agnostic</div>
+          <div class="feature-card__title">どのフレームワークにも対応</div>
+          <div class="feature-card__desc">アダプターで Claude Code / OpenAI / CrewAI / Cursor など 12 以上の形式にエクスポート。同一の定義を複数ランタイムで使い回せる。</div>
+        </div>
+        <div class="ve-card ve-card--elevated feature-card" style="--i:3">
+          <div class="feature-card__label">Compliance-ready</div>
+          <div class="feature-card__title">金融規制に対応済み</div>
+          <div class="feature-card__desc">FINRA・Federal Reserve・SEC の主要ルールを <code>agent.yaml</code> で宣言。職務分離（SOD）・監査ログ・キルスイッチを標準サポート。</div>
+        </div>
+        <div class="ve-card ve-card--elevated feature-card" style="--i:4">
+          <div class="feature-card__label">Composable</div>
+          <div class="feature-card__title">エージェントを組み合わせる</div>
+          <div class="feature-card__desc">extends で親エージェントを継承。dependencies で外部エージェントを取り込む。agents/ サブディレクトリで階層構造を定義。</div>
+        </div>
+      </div>
+    </div>
+
+    <section id="structure" class="sec-head">2 — エージェント構造</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> リポジトリ = エージェント定義</span>
+      <p style="margin-bottom: 1rem;">2 つのファイルだけが必須。残りはすべてオプション。必要なものだけ追加していける。</p>
+      <div class="ve-card ve-card--recessed" style="padding: 1rem 1.375rem;">
+        <div class="file-tree">
+          <div style="font-weight: 600; margin-bottom: 0.25rem;">my-agent/</div>
+          <div class="group-label" style="margin-left: 1rem;"># Core Identity (required)</div>
+          <div style="margin-left: 1rem;"><span class="file-req">├── agent.yaml</span><span class="comment">        # マニフェスト — 名前, バージョン, モデル, スキル, ツール, コンプライアンス</span></div>
+          <div style="margin-left: 1rem;"><span class="file-req">├── SOUL.md</span><span class="comment">           # アイデンティティ, ペルソナ, コミュニケーションスタイル, 価値観</span></div>
+          <div class="group-label" style="margin-left: 1rem;"># Behavior &amp; Rules</div>
+          <div style="margin-left: 1rem;"><span class="dir">├── RULES.md</span><span class="comment">          # ハード制約, must-always / must-never, 安全境界</span></div>
+          <div style="margin-left: 1rem;"><span class="dir">├── DUTIES.md</span><span class="comment">         # 職務分離ポリシーとロール境界</span></div>
+          <div style="margin-left: 1rem;"><span class="dir">├── AGENTS.md</span><span class="comment">         # フレームワーク非依存のフォールバック指示</span></div>
+          <div class="group-label" style="margin-left: 1rem;"># Capabilities</div>
+          <div style="margin-left: 1rem;"><span class="dir">├── skills/</span><span class="comment">           # 再利用可能な能力モジュール (SKILL.md + スクリプト)</span></div>
+          <div style="margin-left: 1rem;"><span class="dir">├── tools/</span><span class="comment">            # MCP 互換ツール定義 (YAML スキーマ)</span></div>
+          <div style="margin-left: 1rem;"><span class="dir">├── workflows/</span><span class="comment">        # マルチステップ手順 / プレイブック</span></div>
+          <div class="group-label" style="margin-left: 1rem;"># Knowledge &amp; Memory</div>
+          <div style="margin-left: 1rem;"><span class="dir">├── knowledge/</span><span class="comment">        # エージェントが参照できる参考ドキュメント</span></div>
+          <div style="margin-left: 1rem;"><span class="dir">├── memory/runtime/</span><span class="comment">   # セッション横断の永続メモリ (dailylog.md, context.md)</span></div>
+          <div class="group-label" style="margin-left: 1rem;"># Lifecycle &amp; Composition</div>
+          <div style="margin-left: 1rem;"><span class="dir">├── hooks/</span><span class="comment">            # ライフサイクルハンドラ (bootstrap.md, teardown.md)</span></div>
+          <div style="margin-left: 1rem;"><span class="dir">├── compliance/</span><span class="comment">       # 規制コンプライアンス成果物</span></div>
+          <div style="margin-left: 1rem;"><span class="dir">└── agents/</span><span class="comment">           # サブエージェント定義 (再帰構造)</span></div>
+        </div>
+      </div>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>必須は 2 ファイルだけ:</strong> <code>agent.yaml</code>（マニフェスト）と <code>SOUL.md</code>（アイデンティティ）。残りはすべてオプションで、必要に応じて追加する。
+      </div>
+    </div>
+
+    <section id="patterns" class="sec-head">3 — パターン集</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> git-native エージェントが生み出すアーキテクチャパターン</span>
+      <div class="pattern-grid">
+        <div class="ve-card ve-card--elevated pattern-card" style="--i:1">
+          <div class="pattern-card__name"><span class="pattern-num">01</span>Human-in-the-Loop</div>
+          <div class="pattern-card__desc">RL エージェントが新スキルを学習 / メモリ書き込みの際、ブランチ + PR を開いて人間レビュー後にマージ。</div>
+        </div>
+        <div class="ve-card ve-card--elevated pattern-card" style="--i:2">
+          <div class="pattern-card__name"><span class="pattern-num">02</span>職務分離 (SOD)</div>
+          <div class="pattern-card__desc">maker / checker / executor / auditor ロールと競合マトリクスを DUTIES.md で定義。<code>validate --compliance</code> で違反を事前検出。</div>
+        </div>
+        <div class="ve-card ve-card--elevated pattern-card" style="--i:3">
+          <div class="pattern-card__name"><span class="pattern-num">03</span>Live Agent Memory</div>
+          <div class="pattern-card__desc">memory/runtime/ に dailylog.md・key-decisions.md・context.md を書き込み、セッション間でステートを維持。</div>
+        </div>
+        <div class="ve-card ve-card--elevated pattern-card" style="--i:4">
+          <div class="pattern-card__name"><span class="pattern-num">04</span>Agent Versioning</div>
+          <div class="pattern-card__desc">エージェントの変更はすべて git commit。壊れたプロンプトのロールバックや、過去バージョンの探索が可能。</div>
+        </div>
+        <div class="ve-card ve-card--elevated pattern-card" style="--i:5">
+          <div class="pattern-card__name"><span class="pattern-num">05</span>Shared Context</div>
+          <div class="pattern-card__desc">モノレポのルートに置いた context.md / skills/ / tools/ を全エージェントへ自動共有。重複なし、単一情報源。</div>
+        </div>
+        <div class="ve-card ve-card--elevated pattern-card" style="--i:6">
+          <div class="pattern-card__name"><span class="pattern-num">06</span>Branch Deployment</div>
+          <div class="pattern-card__desc">dev → staging → main のブランチでエージェント変更を環境昇格。ソフトウェアリリースと同じ感覚で管理。</div>
+        </div>
+        <div class="ve-card ve-card--elevated pattern-card" style="--i:7">
+          <div class="pattern-card__name"><span class="pattern-num">07</span>Knowledge Tree</div>
+          <div class="pattern-card__desc">knowledge/ にエンティティ関係を階層ツリー + エンベディングで格納。エージェントが実行時に構造化データを推論。</div>
+        </div>
+        <div class="ve-card ve-card--elevated pattern-card" style="--i:8">
+          <div class="pattern-card__name"><span class="pattern-num">08</span>Agent Forking</div>
+          <div class="pattern-card__desc">公開リポジトリをフォークして SOUL.md をカスタマイズ。改善を PR でアップストリームへ貢献できる OSS コラボ。</div>
+        </div>
+        <div class="ve-card ve-card--elevated pattern-card" style="--i:9">
+          <div class="pattern-card__name"><span class="pattern-num">09</span>CI/CD for Agents</div>
+          <div class="pattern-card__desc">push ごとに <code>gitagent validate</code> を GitHub Actions で実行。CI でエージェント品質をテストし、不正なマージをブロック。</div>
+        </div>
+        <div class="ve-card ve-card--elevated pattern-card" style="--i:10">
+          <div class="pattern-card__name"><span class="pattern-num">10</span>Agent Diff &amp; Audit</div>
+          <div class="pattern-card__desc"><code>git diff</code> でバージョン間の変更を確認。<code>git blame</code> で全行の作者と日時を追跡。完全な監査証跡。</div>
+        </div>
+        <div class="ve-card ve-card--elevated pattern-card" style="--i:11">
+          <div class="pattern-card__name"><span class="pattern-num">11</span>Tagged Releases</div>
+          <div class="pattern-card__desc">安定バージョンを v1.1.0 タグで管理。本番はタグ固定、canary はステージングで検証。問題は即ロールバック。</div>
+        </div>
+        <div class="ve-card ve-card--elevated pattern-card" style="--i:12">
+          <div class="pattern-card__name"><span class="pattern-num">12</span>SkillsFlow</div>
+          <div class="pattern-card__desc">workflows/ の YAML で決定論的なパイプラインを定義。skill / agent / tool ステップを depends_on で順序付け。</div>
+        </div>
+      </div>
+    </div>
+
+    <section id="quickstart" class="sec-head">4 — クイックスタート</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 5 ステップで始める</span>
+      <div class="cli-steps">
+        <div class="cli-step">
+          <div class="cli-step__num">1</div>
+          <div class="cli-step__content">
+            <div class="cli-step__label">インストール</div>
+            <code class="cli-step__cmd">npm install -g gitagent</code>
+          </div>
+        </div>
+        <div class="cli-step">
+          <div class="cli-step__num">2</div>
+          <div class="cli-step__content">
+            <div class="cli-step__label">新規エージェント作成</div>
+            <code class="cli-step__cmd">gitagent init --template standard</code>
+          </div>
+        </div>
+        <div class="cli-step">
+          <div class="cli-step__num">3</div>
+          <div class="cli-step__content">
+            <div class="cli-step__label">バリデーション</div>
+            <code class="cli-step__cmd">gitagent validate</code>
+          </div>
+        </div>
+        <div class="cli-step">
+          <div class="cli-step__num">4</div>
+          <div class="cli-step__content">
+            <div class="cli-step__label">エージェント情報を確認</div>
+            <code class="cli-step__cmd">gitagent info</code>
+          </div>
+        </div>
+        <div class="cli-step">
+          <div class="cli-step__num">5</div>
+          <div class="cli-step__content">
+            <div class="cli-step__label">システムプロンプトへエクスポート</div>
+            <code class="cli-step__cmd">gitagent export --format system-prompt</code>
+          </div>
+        </div>
+      </div>
+      <h3>agent.yaml — 最小構成</h3>
+      <div class="ve-code-block">
+        <pre><code>spec_version: "0.1.0"
+name: my-agent
+version: 0.1.0
+description: A helpful assistant agent</code></pre>
+      </div>
+      <h3>agent.yaml — コンプライアンス設定例（金融機関向け）</h3>
+      <div class="ve-code-block">
+        <pre><code>spec_version: "0.1.0"
+name: compliance-analyst
+version: 1.0.0
+model:
+  preferred: claude-opus-4-6
+compliance:
+  risk_tier: high
+  frameworks: [finra, federal_reserve, sec]
+  supervision:
+    human_in_the_loop: always
+    kill_switch: true
+  recordkeeping:
+    audit_logging: true
+    retention_period: 7y
+    immutable: true
+  segregation_of_duties:
+    roles:
+      - id: analyst
+        permissions: [create, submit]
+      - id: reviewer
+        permissions: [review, approve, reject]
+    conflicts:
+      - [analyst, reviewer]
+    enforcement: strict</code></pre>
+      </div>
+    </div>
+
+    <section id="cli" class="sec-head">5 — CLI コマンド</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 主要コマンド一覧</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>コマンド</th><th>説明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>gitagent init [--template]</code></td><td>新規エージェントを雛形から作成 (<code>minimal</code> / <code>standard</code> / <code>full</code>)</td></tr>
+            <tr><td><code>gitagent validate [--compliance]</code></td><td>仕様と規制要件に対してバリデーション</td></tr>
+            <tr><td><code>gitagent info</code></td><td>エージェントのサマリーを表示</td></tr>
+            <tr><td><code>gitagent export --format &lt;fmt&gt;</code></td><td>他フォーマットへエクスポート（アダプター経由）</td></tr>
+            <tr><td><code>gitagent import --from &lt;fmt&gt; &lt;path&gt;</code></td><td>claude / cursor / crewai / opencode からインポート</td></tr>
+            <tr><td><code>gitagent run &lt;source&gt; --adapter &lt;a&gt;</code></td><td>git リポジトリまたはローカルディレクトリからエージェントを実行</td></tr>
+            <tr><td><code>gitagent install</code></td><td>git ベースの依存エージェントを解決・インストール</td></tr>
+            <tr><td><code>gitagent audit</code></td><td>コンプライアンス監査レポートを生成</td></tr>
+            <tr><td><code>gitagent skills &lt;cmd&gt;</code></td><td>スキル管理 (<code>search</code> / <code>install</code> / <code>list</code> / <code>info</code>)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="compliance" class="sec-head">6 — コンプライアンス</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 金融規制への対応</span>
+      <div class="compliance-grid">
+        <div class="ve-card ve-card--elevated compliance-card" style="--i:1">
+          <div class="compliance-card__org">FINRA</div>
+          <ul class="compliance-card__rules">
+            <li><strong>Rule 3110</strong> — 監督: human-in-the-loop, エスカレーション, キルスイッチ</li>
+            <li><strong>Rule 4511</strong> — 記録保持: 不変監査ログ, 保持期間, SEC 17a-4 準拠</li>
+            <li><strong>Rule 2210</strong> — コミュニケーション: 公正・均衡な強制</li>
+            <li><strong>Reg Notice 24-09</strong> — GenAI/LLM への既存ルール適用</li>
+          </ul>
+        </div>
+        <div class="ve-card ve-card--elevated compliance-card" style="--i:2">
+          <div class="compliance-card__org">Federal Reserve</div>
+          <ul class="compliance-card__rules">
+            <li><strong>SR 11-7</strong> — モデルリスク管理: バリデーション頻度, 継続的モニタリング</li>
+            <li><strong>SR 23-4</strong> — サードパーティリスク: ベンダーデューデリジェンス, SOC レポート</li>
+          </ul>
+        </div>
+        <div class="ve-card ve-card--elevated compliance-card" style="--i:3">
+          <div class="compliance-card__org">SEC / CFPB</div>
+          <ul class="compliance-card__rules">
+            <li><strong>Reg S-P</strong> — 顧客プライバシー, PII 取扱い</li>
+            <li><strong>CFPB 2022-03</strong> — 説明可能な不利益処分, 差別影響の低減</li>
+          </ul>
+        </div>
+      </div>
+      <h3 style="margin-top: 1.5rem;">職務分離 (SOD) の仕組み</h3>
+      <div class="ve-card ve-card--recessed" style="--i:4">
+        <p>4 ロール (<strong>maker</strong> / <strong>checker</strong> / <strong>executor</strong> / <strong>auditor</strong>) を定義し、同一エージェントが複数ロールを担えない競合マトリクスを宣言。重要なアクション（信用決定、規制申告等）は複数エージェントの参加を必須化。</p>
+        <div class="ve-code-block" style="margin-top: 0.75rem;">
+          <pre><code>compliance:
+  segregation_of_duties:
+    roles:
+      - id: maker
+        permissions: [create, submit]
+      - id: checker
+        permissions: [review, approve, reject]
+    conflicts:
+      - [maker, checker]          # maker は自分の作業を承認できない
+    handoffs:
+      - action: credit_decision
+        required_roles: [maker, checker]
+        approval_required: true
+    enforcement: strict           # 違反はデプロイをブロック</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <section id="adapters" class="sec-head">7 — アダプター &amp; 継承</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 対応エクスポート形式</span>
+      <p style="margin-bottom: 1rem;"><code>gitagent export</code> / <code>gitagent run</code> で利用できるアダプター。同一定義を任意のランタイムで動かせる。</p>
+      <div class="ve-table-wrap" style="margin-bottom: 1.5rem;">
+        <table>
+          <thead>
+            <tr><th>アダプター</th><th>説明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>system-prompt</code></td><td>連結システムプロンプト（任意の LLM で動作）</td></tr>
+            <tr><td><code>claude-code</code></td><td>Claude Code 互換の CLAUDE.md</td></tr>
+            <tr><td><code>openai</code></td><td>OpenAI Agents SDK Python コード</td></tr>
+            <tr><td><code>crewai</code></td><td>CrewAI YAML 設定</td></tr>
+            <tr><td><code>cursor</code></td><td>Cursor <code>.cursor/rules/*.mdc</code> ファイル</td></tr>
+            <tr><td><code>github</code></td><td>GitHub Actions エージェント</td></tr>
+            <tr><td><code>gemini</code></td><td>Google Gemini CLI (GEMINI.md + settings.json)</td></tr>
+            <tr><td><code>lyzr</code></td><td>Lyzr Studio エージェント</td></tr>
+            <tr><td><code>opencode</code></td><td>OpenCode 指示 + 設定</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>継承 &amp; コンポジション</h3>
+      <div class="ve-code-block">
+        <pre><code># 親エージェントを継承
+extends: https://github.com/org/base-agent.git
+
+# 依存エージェントを追加
+dependencies:
+  - name: fact-checker
+    source: https://github.com/org/fact-checker.git
+    version: ^1.0.0
+    mount: agents/fact-checker</code></pre>
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">8 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/open-gitagent/gitagent" target="_blank" rel="noopener">GitHub: open-gitagent/gitagent</a> — 本体リポジトリ（TypeScript）</li>
+        <li><a href="https://www.npmjs.com/package/@shreyaskapale/gitagent" target="_blank" rel="noopener">npm: @shreyaskapale/gitagent</a> — パッケージ</li>
+        <li><a href="https://github.com/open-gitagent/gitagent/blob/main/spec/SPECIFICATION.md" target="_blank" rel="noopener">仕様書 (SPECIFICATION.md)</a> — フルスペック・JSON スキーマ</li>
+        <li><a href="https://github.com/NVIDIA-AI-Blueprints/aiq" target="_blank" rel="noopener">NVIDIA AIQ Deep Researcher</a> — gitagent 移植サンプル（3 エージェント階層）</li>
+        <li><a href="https://air-governance-framework.finos.org/mitigations/mi-22_multi-agent-isolation-and-segmentation.html" target="_blank" rel="noopener">FINOS AI Governance Framework</a> — コンプライアンス設計の参照元</li>
+        <li><a href="https://www.trysalient.com/" target="_blank" rel="noopener">Salient AI</a> — SOD パターンのインスピレーション元</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
