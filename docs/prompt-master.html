@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prompt Master — あらゆる AI ツール向け最適プロンプト生成スキル</title>
+  <meta name="description" content="Claude スキル。ターゲットツールを特定し、9次元のインテント抽出とトークン効率監査を経て、一発で通るプロンプトを生成する。30+ ツール対応、12 テンプレート、35 クレジット消費パターン検出。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Prompt Master — あらゆる AI ツール向け最適プロンプト生成スキル">
+  <meta property="og:description" content="Claude スキル。ターゲットツールを特定し、9次元のインテント抽出とトークン効率監査を経て、一発で通るプロンプトを生成する。30+ ツール対応、12 テンプレート、35 クレジット消費パターン検出。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/prompt-master.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Prompt Master — あらゆる AI ツール向け最適プロンプト生成スキル">
+  <meta name="twitter:description" content="Claude スキル。ターゲットツールを特定し、9次元のインテント抽出とトークン効率監査を経て、一発で通るプロンプトを生成する。30+ ツール対応、12 テンプレート、35 クレジット消費パターン検出。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #0c4a6e;
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      /* Teal accent for this page */
+      --accent-teal: oklch(0.6 0.118 184.704);
+      --accent-teal-dim: oklch(0.6 0.118 184.704 / 0.12);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #7dd3fc;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+        --accent-teal: oklch(0.696 0.17 162.48);
+        --accent-teal-dim: oklch(0.696 0.17 162.48 / 0.15);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--accent-teal) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--accent-teal) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--accent-teal) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--accent-teal) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--accent-teal); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: var(--muted); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; font-weight: 700; line-height: 1.1; color: var(--accent-teal); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--accent-teal); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: var(--accent-teal-dim); color: var(--accent-teal); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 70% 0%, oklch(0.6 0.118 184.704 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 70% 0%, oklch(0.696 0.17 162.48 / 0.09) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--accent-teal); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--accent-teal); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); color: var(--text); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--accent-teal); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { opacity: 0.8; }
+    .ve-section-label .ve-dot { background: var(--accent-teal); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 900px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 560px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Mermaid */
+    .mermaid-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      overflow: hidden;
+      margin: 1rem 0;
+    }
+    .mermaid-controls {
+      display: flex; gap: 6px; padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .mermaid-controls button {
+      font-family: var(--font-mono); font-size: 11px; padding: 3px 9px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--card); color: var(--text-dim); cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .mermaid-controls button:hover { background: var(--muted); color: var(--text); }
+    .mermaid-viewport {
+      overflow: hidden; cursor: grab; user-select: none;
+      min-height: 300px; display: flex; justify-content: center; align-items: flex-start; padding: 24px;
+    }
+    .mermaid-viewport.dragging { cursor: grabbing; }
+    .mermaid-inner { transform-origin: top center; transition: transform 0.1s ease; }
+
+    /* Patterns collapsible */
+    details { margin-bottom: 0.5rem; }
+    details > summary {
+      cursor: pointer; padding: 0.625rem 1rem; background: var(--muted);
+      border: 1px solid var(--border); border-radius: var(--radius-md);
+      font-size: 0.8125rem; font-weight: 600; list-style: none;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background 0.15s;
+    }
+    details > summary:hover { background: var(--border); }
+    details[open] > summary { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+    details > summary::after { content: '+'; font-family: var(--font-mono); color: var(--text-dim); }
+    details[open] > summary::after { content: '−'; }
+    .pattern-count {
+      font-family: var(--font-mono); font-size: 10px; background: var(--accent-teal-dim);
+      color: var(--accent-teal); padding: 2px 7px; border-radius: 20px; font-weight: 700;
+    }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#pipeline">パイプライン</a>
+    <a href="#routing">ツールルーティング</a>
+    <a href="#templates">テンプレート</a>
+    <a href="#patterns">35 パターン</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>Prompt Master</h1>
+  <p class="subtitle">v1.5.0 — あらゆる AI ツールに一発で通るプロンプトを生成する Claude スキル</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <p><strong>Prompt Master</strong> は、ユーザーの粗いアイデアを受け取り、ターゲット AI ツールを特定して、そのツール専用に最適化された単一のコピー可能なプロンプトを生成する Claude スキル。「4回目のリプロンプトでやっと意図が伝わる」という無駄をゼロにする。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">30+</span><span class="ve-kpi-card__label">対応ツール</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">12</span><span class="ve-kpi-card__label">テンプレート</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">35</span><span class="ve-kpi-card__label">検出パターン</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">9</span><span class="ve-kpi-card__label">インテント次元</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">≤3</span><span class="ve-kpi-card__label">確認質問上限</span></div>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--elevated" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 解決する問題</span>
+    <p>AI ユーザーが信用を無駄にする典型パターン:</p>
+    <div class="ve-code-block">
+      <pre><code>曖昧なプロンプト → 的外れな出力 → リプロンプト → 近づく → リプロンプト → 4回目でやっと正解
+
+= 3回分の API 呼び出しが無駄。1日 50 プロンプト × 毎日 = 実際のお金と時間。</code></pre>
+    </div>
+    <p style="margin-bottom:0">核心の洞察: <em>「最良のプロンプトは最も長いものではない。すべての単語が意味を持つものだ。」</em></p>
+  </div>
+
+  <div class="ve-card" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> インストール</span>
+    <h3>推奨: Claude.ai（ブラウザ）</h3>
+    <ol style="padding-left:1.5rem;margin-bottom:1rem">
+      <li>リポジトリを ZIP でダウンロード</li>
+      <li><code>claude.ai → サイドバー → カスタマイズ → スキル → スキルをアップロード</code></li>
+    </ol>
+    <h3>または Claude Code スキルディレクトリへ直接</h3>
+    <div class="ve-code-block">
+      <pre><code>mkdir -p ~/.claude/skills
+git clone https://github.com/nidhinjs/prompt-master.git ~/.claude/skills/prompt-master</code></pre>
+    </div>
+    <h3>使い方</h3>
+    <div class="ve-code-block">
+      <pre><code># 自然言語で呼び出す
+Write me a prompt for Cursor to refactor my auth module
+
+# または明示的に呼び出す
+/prompt-master
+I want to ask Claude Code to build a todo app with React and Supabase</code></pre>
+    </div>
+  </div>
+
+  <section id="pipeline" class="sec-head">2 — パイプライン</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 7 ステップの実行フロー</span>
+    <p>すべてのリクエストは、内部でサイレントに以下のパイプラインを通過する。フレームワーク名はユーザーに見せない。</p>
+    <div class="mermaid-wrap">
+      <div class="mermaid-controls">
+        <button id="btn-zoom-in">+</button>
+        <button id="btn-zoom-out">−</button>
+        <button id="btn-reset">Reset</button>
+      </div>
+      <div class="mermaid-viewport" id="mermaid-viewport">
+        <div class="mermaid-inner" id="mermaid-inner">
+          <div class="mermaid">
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#f0fdfa', 'primaryTextColor': '#134e4a', 'primaryBorderColor': '#5eead4', 'lineColor': '#0891b2', 'secondaryColor': '#f0fdf4', 'tertiaryColor': '#fffbeb', 'fontFamily': 'IBM Plex Sans, system-ui, sans-serif', 'fontSize': '14px', 'nodeBorder': '1px solid #5eead4' }}}%%
+flowchart TD
+    A([ユーザーの粗いアイデア]) --> B[1. ターゲットツール検出]
+    B --> C[2. 9次元のインテント抽出]
+    C --> D{不明な情報?}
+    D -- あり / 最大3質問 --> E[3. 明確化質問]
+    E --> F[4. 正しいフレームワークへルーティング]
+    D -- なし --> F
+    F --> G[5. セーフテクニックを適用]
+    G --> H[6. トークン効率監査]
+    H --> I([単一コピー可能なプロンプト])
+    style A fill:#f0fdfa,stroke:#5eead4
+    style I fill:#f0fdf4,stroke:#86efac
+    style D fill:#fffbeb,stroke:#fcd34d
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 9 次元のインテント抽出</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>次元</th><th>抽出対象</th><th>必須?</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Task</strong></td><td>具体的なアクション — 曖昧な動詞を精密な操作に変換</td><td>常に</td></tr>
+          <tr><td><strong>Target tool</strong></td><td>どの AI システムがこのプロンプトを受け取るか</td><td>常に</td></tr>
+          <tr><td><strong>Output format</strong></td><td>結果の形・長さ・構造・ファイル形式</td><td>常に</td></tr>
+          <tr><td><strong>Constraints</strong></td><td>MUST / MUST NOT・スコープ境界</td><td>複雑なタスク時</td></tr>
+          <tr><td><strong>Input</strong></td><td>ユーザーがプロンプトと一緒に提供するもの</td><td>該当時</td></tr>
+          <tr><td><strong>Context</strong></td><td>ドメイン・プロジェクト状態・セッション内の先行決定</td><td>履歴あり時</td></tr>
+          <tr><td><strong>Audience</strong></td><td>出力を読む人・技術レベル</td><td>ユーザー向け時</td></tr>
+          <tr><td><strong>Success criteria</strong></td><td>プロンプトが機能したと判断する方法（可能な限り二値で）</td><td>複雑なタスク時</td></tr>
+          <tr><td><strong>Examples</strong></td><td>パターン固定のための入出力ペア</td><td>フォーマット重要時</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="routing" class="sec-head">3 — ツールルーティング</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ別ルーティング</span>
+    <p>Prompt Master は 30+ ツール専用プロファイルを持つ。リスト外のツールは <strong>Universal Fingerprint</strong>（4つの質問）で対応。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>カテゴリ</th><th>主なツール</th><th>主な最適化ポイント</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Reasoning LLM</strong></td>
+            <td><code>Claude</code>, <code>ChatGPT/GPT-5.x</code>, <code>Gemini 2.x</code>, <code>Qwen2.5</code>, <code>MiniMax</code>, <code>DeepSeek-R1</code></td>
+            <td>パディング除去、XML 構造化、出力コントラクト明示</td>
+          </tr>
+          <tr>
+            <td><strong>Thinking LLM</strong></td>
+            <td><code>o3</code>, <code>o4-mini</code>, <code>DeepSeek-R1</code>, <code>Qwen3 thinking</code></td>
+            <td>短い命令のみ。CoT を<em>絶対に追加しない</em></td>
+          </tr>
+          <tr>
+            <td><strong>Local LLM</strong></td>
+            <td><code>Ollama</code>, <code>Llama</code>, <code>Mistral</code></td>
+            <td>シンプルなフラット構造、モデル確認必須、Modelfile 込みで提供</td>
+          </tr>
+          <tr>
+            <td><strong>Agentic IDE</strong></td>
+            <td><code>Claude Code</code>, <code>Cursor</code>, <code>Windsurf</code>, <code>Copilot</code>, <code>Antigravity</code></td>
+            <td>開始状態・目標状態・禁止アクション・ストップ条件が必須</td>
+          </tr>
+          <tr>
+            <td><strong>Full-stack Gen</strong></td>
+            <td><code>Bolt</code>, <code>v0</code>, <code>Lovable</code>, <code>Figma Make</code>, <code>Google Stitch</code></td>
+            <td>スタック・バージョン・スキャフォールドしない機能を明示</td>
+          </tr>
+          <tr>
+            <td><strong>Autonomous Agent</strong></td>
+            <td><code>Devin/SWE-agent</code>, <code>Manus</code></td>
+            <td>開始状態・目標状態・ファイルスコープ・禁止アクションリスト</td>
+          </tr>
+          <tr>
+            <td><strong>Computer Use</strong></td>
+            <td><code>Perplexity Comet</code>, <code>OpenAI Atlas</code>, <code>OpenClaw</code></td>
+            <td>結果で指示、ナビステップ不要、購入等の許可境界を明示</td>
+          </tr>
+          <tr>
+            <td><strong>Image AI</strong></td>
+            <td><code>Midjourney</code>, <code>DALL-E 3</code>, <code>Stable Diffusion</code>, <code>SeeDream</code>, <code>ComfyUI</code></td>
+            <td>生成 vs 編集を検出、ネガティブプロンプト必須、パラメータ明示</td>
+          </tr>
+          <tr>
+            <td><strong>Video / Voice AI</strong></td>
+            <td><code>Sora</code>, <code>Runway</code>, <code>Kling</code>, <code>LTX</code>, <code>ElevenLabs</code></td>
+            <td>カメラムーブ・シネマティック言語・感情・ペース・強調マーカー</td>
+          </tr>
+          <tr>
+            <td><strong>3D AI</strong></td>
+            <td><code>Meshy</code>, <code>Tripo</code>, <code>Rodin</code>, <code>BlenderGPT</code>, <code>Unity AI</code></td>
+            <td>スタイルキーワード・エクスポート形式・ポリゴン予算・リグ要件</td>
+          </tr>
+          <tr>
+            <td><strong>Workflow AI</strong></td>
+            <td><code>Zapier</code>, <code>Make</code>, <code>n8n</code></td>
+            <td>トリガーアプリ + イベント → アクションアプリ + フィールドマッピング</td>
+          </tr>
+          <tr>
+            <td><strong>Search AI</strong></td>
+            <td><code>Perplexity</code></td>
+            <td>モード指定（検索 / 分析 / 比較）、引用要件、根拠付きクエリ</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="templates" class="sec-head">4 — テンプレート & セーフテクニック</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 12 テンプレート（自動選択）</span>
+    <p>Prompt Master はタスクに応じて適切なアーキテクチャを自動選択する。ユーザーにはフレームワーク名を見せない。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>テンプレート</th><th>最適なユースケース</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>RTF</strong> <small style="color:var(--text-dim)">Role, Task, Format</small></td><td>高速なワンショットタスク</td></tr>
+          <tr><td><strong>CO-STAR</strong> <small style="color:var(--text-dim)">Context, Objective, Style, Tone, Audience, Response</small></td><td>プロフェッショナルな文書・レポート・ビジネスライティング</td></tr>
+          <tr><td><strong>RISEN</strong> <small style="color:var(--text-dim)">Role, Instructions, Steps, End Goal, Narrowing</small></td><td>複雑なマルチステッププロジェクト</td></tr>
+          <tr><td><strong>CRISPE</strong> <small style="color:var(--text-dim)">Capacity, Role, Insight, Statement, Personality, Experiment</small></td><td>クリエイティブ作業・ブランドボイス・反復コンテンツ</td></tr>
+          <tr><td><strong>Chain of Thought</strong></td><td>数学・ロジック・デバッグ・マルチステップ分析（標準 LLM のみ）</td></tr>
+          <tr><td><strong>Few-Shot</strong></td><td>一貫した構造出力・パターン複製</td></tr>
+          <tr><td><strong>File-Scope Template</strong></td><td>Cursor / Windsurf / Copilot — コード編集 AI</td></tr>
+          <tr><td><strong>ReAct + Stop Conditions</strong></td><td>Claude Code / Devin / AutoGPT — 自律エージェント</td></tr>
+          <tr><td><strong>Visual Descriptor</strong></td><td>Midjourney / DALL-E / Stable Diffusion / Sora — 生成</td></tr>
+          <tr><td><strong>Reference Image Editing</strong></td><td>既存画像の編集（編集 vs 生成を自動検出）</td></tr>
+          <tr><td><strong>ComfyUI</strong></td><td>ノードベース画像ワークフロー — 正/負プロンプト分割</td></tr>
+          <tr><td><strong>Prompt Decompiler</strong></td><td>既存プロンプトの分解・別ツール向け適応・簡素化・分割</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 5 つのセーフテクニック</span>
+    <p>信頼性が証明され効果が予測可能なテクニックのみを使用。幻覚や予測不可能な出力を引き起こすとして <strong>Tree of Thought / Graph of Thought / Universal Self-Consistency / プロンプトチェーニング / Mixture of Experts</strong> は明示的に除外。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>テクニック</th><th>効果</th><th>適用条件</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Role Assignment</strong></td><td>深さと語彙を調整する専門家 ID を割り当てる</td><td>複雑または専門的なタスク</td></tr>
+          <tr><td><strong>Few-Shot Examples</strong></td><td>2〜5 例でフォーマット一貫性を担保</td><td>同じフォーマット問題を 2 回以上リプロンプトした場合</td></tr>
+          <tr><td><strong>XML Structural Tags</strong></td><td>Claude 系ツールが信頼して解析できる構造を提供</td><td>複数セクションの複雑なプロンプト</td></tr>
+          <tr><td><strong>Grounding Anchors</strong></td><td>引用・事実タスクでの幻覚防止ルールを追加</td><td>事実確認・引用タスク</td></tr>
+          <tr><td><strong>Chain of Thought</strong></td><td>論理タスクでステップバイステップの推論を強制</td><td>標準 LLM のみ（o3 / o4-mini / R1 / Qwen3 thinking には<em>絶対に使わない</em>）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>Memory Block:</strong> セッション履歴がある場合、先行決定（スタック・アーキテクチャ・制約・試して失敗したこと）を <code>## Context (carry forward)</code> ブロックとしてプロンプト冒頭 30% に配置する。長いセッションでの最大のクレジット節約手段。
+    </div>
+  </div>
+
+  <section id="patterns" class="sec-head">5 — 35 クレジット消費パターン</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ別パターン一覧</span>
+    <p>Prompt Master はすべてのユーザー入力をスキャンしてこれらのパターンを検出し、サイレントに修正する。修正がユーザーの意図を変える場合のみフラグを立てる。</p>
+
+    <details>
+      <summary>
+        <span>Task パターン <span class="pattern-count">7</span></span>
+      </summary>
+      <div class="ve-table-wrap" style="border-radius:0 0 var(--radius-md) var(--radius-md); border-top:none">
+        <table>
+          <thead><tr><th>#</th><th>パターン</th><th>Before</th><th>After</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>曖昧なタスク動詞</td><td>"help me with my code"</td><td>"<code>getUserData()</code> を async/await にリファクタリングし null リターンを処理する"</td></tr>
+            <tr><td>2</td><td>1プロンプトに2タスク</td><td>"explain AND rewrite"</td><td>分割: まず説明、次に書き直し</td></tr>
+            <tr><td>3</td><td>成功基準なし</td><td>"make it better"</td><td>"既存のユニットテストをパスし null 入力を処理できたら完了"</td></tr>
+            <tr><td>4</td><td>過度に許可的なエージェント</td><td>"do whatever it takes"</td><td>許可するアクションと禁止するアクションの明示リスト</td></tr>
+            <tr><td>5</td><td>感情的なタスク記述</td><td>"it's totally broken"</td><td>"user が null の時 43 行目でキャッチされない TypeError が発生"</td></tr>
+            <tr><td>6</td><td>アプリ全体をビルド</td><td>"build my entire app"</td><td>Prompt 1（スキャフォールド）→ Prompt 2（機能）→ Prompt 3（仕上げ）に分割</td></tr>
+            <tr><td>7</td><td>暗黙の参照</td><td>"add the other thing we discussed"</td><td>常にタスク全体を再記述、「あの件」と参照しない</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>
+        <span>Context パターン <span class="pattern-count">6</span></span>
+      </summary>
+      <div class="ve-table-wrap" style="border-radius:0 0 var(--radius-md) var(--radius-md); border-top:none">
+        <table>
+          <thead><tr><th>#</th><th>パターン</th><th>修正策</th></tr></thead>
+          <tbody>
+            <tr><td>8</td><td>前知識を想定</td><td>先行決定をすべて含む Memory Block を先頭に追加</td></tr>
+            <tr><td>9</td><td>プロジェクトコンテキストなし</td><td>役職・経験・プロジェクト状態を具体的に記述</td></tr>
+            <tr><td>10</td><td>スタックを忘れる</td><td>新しいプロンプトが先行の技術選択と矛盾しないよう Memory Block を常時含める</td></tr>
+            <tr><td>11</td><td>幻覚を招く質問</td><td>"Cite only sources you are certain of. If uncertain, say so." を追加</td></tr>
+            <tr><td>12</td><td>対象読者が不明</td><td>技術レベル・立場・知識背景を明示</td></tr>
+            <tr><td>13</td><td>過去の失敗を言及しない</td><td>"I already tried X and it failed because Y. Do not suggest X." を追加</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>
+        <span>Format パターン <span class="pattern-count">6</span></span>
+      </summary>
+      <div class="ve-table-wrap" style="border-radius:0 0 var(--radius-md) var(--radius-md); border-top:none">
+        <table>
+          <thead><tr><th>#</th><th>パターン</th><th>修正策</th></tr></thead>
+          <tbody>
+            <tr><td>14</td><td>出力形式なし</td><td>形式・長さ・構造を明示（例: "3 bullets, each under 20 words"）</td></tr>
+            <tr><td>15</td><td>暗黙の長さ</td><td>"in exactly 3 sentences" など数値で指定</td></tr>
+            <tr><td>16</td><td>ロール割り当てなし</td><td>ドメイン専門家 ID を追加</td></tr>
+            <tr><td>17</td><td>曖昧な美的形容詞</td><td>"professional" → "Monochrome, 16px base font, no decorative elements"</td></tr>
+            <tr><td>18</td><td>画像 AI にネガティブプロンプトなし</td><td>必ず "no watermark, no blur, no distortion" を追加</td></tr>
+            <tr><td>19</td><td>Midjourney に散文プロンプト</td><td>コンマ区切りディスクリプタ + <code>--ar --v</code> パラメータ形式に変換</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>
+        <span>Scope パターン <span class="pattern-count">6</span></span>
+      </summary>
+      <div class="ve-table-wrap" style="border-radius:0 0 var(--radius-md) var(--radius-md); border-top:none">
+        <table>
+          <thead><tr><th>#</th><th>パターン</th><th>修正策</th></tr></thead>
+          <tbody>
+            <tr><td>20</td><td>スコープ境界なし</td><td>"Only edit files inside <code>src/</code>. Do not touch <code>package.json</code>." を追加</td></tr>
+            <tr><td>21</td><td>スタック制約なし</td><td>"React 18, TypeScript strict, no external libraries" を明示</td></tr>
+            <tr><td>22</td><td>エージェントにストップ条件なし</td><td>チェックポイントと人間レビュートリガーを追加</td></tr>
+            <tr><td>23</td><td>IDE AI にファイルパスなし</td><td>"Update <code>handleLogin()</code> in <code>src/pages/Login.tsx</code> only"</td></tr>
+            <tr><td>24</td><td>ツールに合わないテンプレート</td><td>File-Scope Template に変換</td></tr>
+            <tr><td>25</td><td>コードベース全体を貼り付け</td><td>関連する関数とファイルのみにスコープダウン</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>
+        <span>Reasoning パターン <span class="pattern-count">5</span></span>
+      </summary>
+      <div class="ve-table-wrap" style="border-radius:0 0 var(--radius-md) var(--radius-md); border-top:none">
+        <table>
+          <thead><tr><th>#</th><th>パターン</th><th>修正策</th></tr></thead>
+          <tbody>
+            <tr><td>26</td><td>論理タスクに CoT なし</td><td>"Think through this carefully before answering" を追加</td></tr>
+            <tr><td>27</td><td>推論モデルに CoT を追加</td><td>削除。o3/o4-mini/R1/Qwen3 thinking は内部で思考するため劣化する</td></tr>
+            <tr><td>28</td><td>複雑な出力の自己チェックなし</td><td>"Before finishing, verify output against the constraints above" を追加</td></tr>
+            <tr><td>29</td><td>セッション横断記憶を期待</td><td>Memory Block を常に再提供</td></tr>
+            <tr><td>30</td><td>先行決定と矛盾</td><td>フラグを立て解決した上で Memory Block に含める</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>
+        <span>Agentic パターン <span class="pattern-count">5</span></span>
+      </summary>
+      <div class="ve-table-wrap" style="border-radius:0 0 var(--radius-md) var(--radius-md); border-top:none">
+        <table>
+          <thead><tr><th>#</th><th>パターン</th><th>修正策</th></tr></thead>
+          <tbody>
+            <tr><td>31</td><td>開始状態なし</td><td>"Empty Node.js project, Express installed, <code>src/app.js</code> exists"</td></tr>
+            <tr><td>32</td><td>目標状態なし</td><td>具体的なファイルパス・エンドポイント・完了基準を明示</td></tr>
+            <tr><td>33</td><td>サイレントエージェント</td><td>"After each step output: ✅ [what was completed]" を追加</td></tr>
+            <tr><td>34</td><td>ファイルシステム無制限</td><td>"Only edit files inside <code>src/</code>" のスコープロックを追加</td></tr>
+            <tr><td>35</td><td>人間レビュートリガーなし</td><td>"Stop and ask before: deleting any file, adding any dependency, or touching the database schema"</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <section id="links" class="sec-head">6 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/nidhinjs/prompt-master" target="_blank" rel="noopener">GitHub: nidhinjs/prompt-master</a> — 本体リポジトリ</li>
+      <li><a href="https://claude.ai" target="_blank" rel="noopener">Claude.ai</a> — スキルアップロード先（推奨インストール方法）</li>
+    </ul>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>バージョン 1.5.0 の主な変更:</strong> ツールルーティング拡張（Agentic AI・3D Model AI 追加）、コピーライティング向けフィルイン可能プレースホルダー追加、出力からトークン推計を削除、インストラクションレイヤー追加。
+    </div>
+  </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'base' });
+</script>
+<script>
+(function() {
+  /* Scroll Spy */
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+
+  /* Mermaid zoom + pan */
+  var viewport = document.getElementById('mermaid-viewport');
+  var inner = document.getElementById('mermaid-inner');
+  if (!viewport || !inner) return;
+  var scale = 1, tx = 0, ty = 0;
+  var INITIAL = 1;
+  function applyTransform() {
+    inner.style.transform = 'scale(' + scale + ') translate(' + tx + 'px,' + ty + 'px)';
+  }
+  document.getElementById('btn-zoom-in').addEventListener('click', function() { scale = Math.min(scale + 0.2, 3); applyTransform(); });
+  document.getElementById('btn-zoom-out').addEventListener('click', function() { scale = Math.max(scale - 0.2, 0.4); applyTransform(); });
+  document.getElementById('btn-reset').addEventListener('click', function() { scale = INITIAL; tx = 0; ty = 0; applyTransform(); });
+  viewport.addEventListener('wheel', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      scale = Math.max(0.4, Math.min(3, scale - e.deltaY * 0.002));
+      applyTransform();
+    }
+  }, { passive: false });
+  var drag = false, startX, startY, startTx, startTy;
+  viewport.addEventListener('mousedown', function(e) { drag = true; startX = e.clientX; startY = e.clientY; startTx = tx; startTy = ty; viewport.classList.add('dragging'); });
+  window.addEventListener('mousemove', function(e) { if (!drag) return; tx = startTx + (e.clientX - startX) / scale; ty = startTy + (e.clientY - startY) / scale; applyTransform(); });
+  window.addEventListener('mouseup', function() { drag = false; viewport.classList.remove('dragging'); });
+})();
+</script>
+</body>
+</html>
