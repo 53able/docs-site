@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agent Skills 設計ベストプラクティス — 構造・メタデータ・検証</title>
-  <meta name="description" content="repos/skills-best-practices ベース。agentskills.io 想定のディレクトリ構成、YAML メタデータ、プログレッシブ開示、LLM 向け手順書、決定的スクリプト、4 段階の検証ワークフローと skill-creator サンプルの要点。">
+  <title>skills-best-practices リポジトリ要約 — README と skill/</title>
+  <meta name="description" content="repos/skills-best-practices 内の README.md と skill/ のみを根拠にした要約。ディレクトリ規約、メタデータ、プログレッシブ開示、検証手順、skill-creator サンプル、リポジトリ内ファイル対応表。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Agent Skills 設計ベストプラクティス — 構造・メタデータ・検証">
-  <meta property="og:description" content="repos/skills-best-practices ベース。agentskills.io 想定のディレクトリ構成、YAML メタデータ、プログレッシブ開示、LLM 向け手順書、決定的スクリプト、4 段階の検証ワークフローと skill-creator サンプルの要点。">
+  <meta property="og:title" content="skills-best-practices リポジトリ要約 — README と skill/">
+  <meta property="og:description" content="repos/skills-best-practices 内の README.md と skill/ のみを根拠にした要約。ディレクトリ規約、メタデータ、プログレッシブ開示、検証手順、skill-creator サンプル、リポジトリ内ファイル対応表。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/skills-best-practices.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Agent Skills 設計ベストプラクティス — 構造・メタデータ・検証">
-  <meta name="twitter:description" content="repos/skills-best-practices ベース。agentskills.io 想定のディレクトリ構成、YAML メタデータ、プログレッシブ開示、LLM 向け手順書、決定的スクリプト、4 段階の検証ワークフローと skill-creator サンプルの要点。">
+  <meta name="twitter:title" content="skills-best-practices リポジトリ要約 — README と skill/">
+  <meta name="twitter:description" content="repos/skills-best-practices 内の README.md と skill/ のみを根拠にした要約。ディレクトリ規約、メタデータ、プログレッシブ開示、検証手順、skill-creator サンプル、リポジトリ内ファイル対応表。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -220,22 +220,23 @@
     <a href="#validation">検証ワークフロー</a>
     <a href="#checklist">最終チェック</a>
     <a href="#sample">サンプル skill-creator</a>
-    <a href="#links">参考リンク</a>
+    <a href="#sources">リポジトリ内ソース</a>
   </nav>
 
   <div class="main">
-  <h1>Agent Skills 設計ベストプラクティス</h1>
-  <p class="subtitle">repos/skills-best-practices — agentskills.io 準拠のスキル設計・検証の要点</p>
+  <h1>skills-best-practices リポジトリ要約</h1>
+  <p class="subtitle">根拠は <code>repos/skills-best-practices/README.md</code> と <code>repos/skills-best-practices/skill/</code> のみ</p>
 
   <div class="ve-card ve-card--hero" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> この資料について</span>
-    <p>ワークスペース内 <code>repos/skills-best-practices</code> の README とサンプル <code>skill/</code>（<code>name: skill-creator</code>）に沿ったビジュアル解説。公式の網羅ドキュメントは <a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices" target="_blank" rel="noopener">Claude Docs — Agent skills best practices</a>、回帰防止には <a href="https://github.com/mgechev/skillgrade" target="_blank" rel="noopener">skillgrade</a>、ベンチマークの参照先として <a href="https://arxiv.org/abs/2602.12670" target="_blank" rel="noopener">SkillsBench</a> が README で言及されている。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> スコープ</span>
+    <p>この HTML は<strong>上記パスに存在するテキストだけ</strong>を要約・構造化する。docs-site 側の独自補足、別リポジトリの慣習、公式ドキュメントの転載はしない。<code>skill/SKILL.md</code> のフロントマターおよび本文では <code>agentskills.io</code> spec に従う旨が書かれているが、それもリポジトリ内の記述として扱う。</p>
+    <p>サンプルスキルは <code>name: skill-creator</code>（<code>skill/SKILL.md</code>）。</p>
   </div>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--elevated" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 設計思想</span>
-    <p>スキルはエージェントの「常時ロードされる脳」ではなく、<strong>YAML で発見され、必要なときだけ本文とリソースが読まれる手順書の束</strong>として扱う。README では <code>SKILL.md</code> をナビゲーションと高レベル手順の<strong>中枢</strong>としつつ、詳細は <code>references/</code>・<code>assets/</code> に逃がしてトークンを抑える。</p>
+    <p>README.md の語り口に合わせると、スキルはエージェント向けの手順書であり、<code>SKILL.md</code> はナビゲーションと高レベル手順の<strong>中枢（brain）</strong>、詳細は <code>references/</code>・<code>assets/</code> へ逃がしてコンテキスト窓を瘦せる、という位置づけ。</p>
     <div class="kpi-row">
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">&lt;500</span><span class="ve-kpi-card__label">SKILL.md 行数目安</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">サブdirの深さ</span></div>
@@ -380,7 +381,7 @@
           <tr><th>段階</th><th>目的（要約）</th></tr>
         </thead>
         <tbody>
-          <tr><td>Discovery Validation</td><td>YAML の <code>description</code> だけを新規チャットに渡し、<strong>確実に起動すべきプロンプト</strong>と<strong>似ているが起動してはいけないプロンプト</strong>を生成させ、記述の広さを批判的にレビューさせる（README は agentskills.io 前提のサンプルプロンプト付き）。</td></tr>
+          <tr><td>Discovery Validation</td><td>YAML の <code>description</code> だけを新規チャットに渡し、起動すべき／すべきでないプロンプトを生成させ、記述を批判的にレビューさせる。README.md には引用用のプロンプトブロックがあり、その文中で <code>agentskills.io</code> spec に言及している。</td></tr>
           <tr><td>Logic Validation</td><td>SKILL.md 全文とディレクトリツリーを渡し、具体リクエストに対して<strong>ステップごとの内部独白</strong>（何をしているか・どのファイルか・曖昧さによる推測箇所）を書かせる。</td></tr>
           <tr><td>Edge Case Testing</td><td>QA 役に切り替え、スクリプト失敗・非対応設定など<strong>攻撃的な質問</strong>を出させ、先に修正せず一覧させる。</td></tr>
           <tr><td>Architecture Refinement</td><td>上記の回答を踏まえ、SKILL.md を高レベル手順だけに残し、巨大ブロックを <code>references/</code> / <code>assets/</code> へ移す。必要なら Error Handling 節を追加する。</td></tr>
@@ -389,8 +390,8 @@
     </div>
   </div>
   <div class="ve-callout">
-    <strong>評価・回帰防止</strong><br>
-    README は変更の効果測定のために <a href="https://github.com/mgechev/skillgrade" target="_blank" rel="noopener">skillgrade</a> と <a href="https://arxiv.org/abs/2602.12670" target="_blank" rel="noopener">SkillsBench</a> を参照先として挙げている。
+    <strong>README.md の Validation Guide 冒頭</strong><br>
+    evals の重要性に触れたうえで、ベンチマークとして SkillsBench（arXiv）が一文で言及され、skillgrade へのリンク文もある。URL 文字列そのものはリポジトリの README.md を参照（当ページの主題ではない）。
   </div>
 
   <section id="checklist" class="sec-head">8 — 最終チェック（checklist.md）</section>
@@ -415,8 +416,8 @@
 
   <section id="sample" class="sec-head">9 — サンプル skill-creator</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> repos/skills-best-practices/skill/</span>
-    <p>サンプルは <code>name: skill-creator</code>。手順はリポジトリの <code>skill/SKILL.md</code> の Step 1〜5 に従う。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> skill/</span>
+    <p>サンプルは <code>name: skill-creator</code>。手順は <code>skill/SKILL.md</code> の Step 1〜5 に従う（パスはいずれも <code>repos/skills-best-practices</code> 直下）。</p>
     <ol style="font-size:0.9375rem; line-height:1.65;">
       <li><strong>Step 1</strong> — メタデータ定義 → <code>python3 scripts/validate-metadata.py --name "..." --description "..."</code>。エラー時は stderr を見て修正し再実行。</li>
       <li><strong>Step 2</strong> — 検証済み <code>name</code> でルートディレクトリを作り、<code>scripts/</code>・<code>references/</code>・<code>assets/</code> を用意（README 等は作らない）。</li>
@@ -426,17 +427,35 @@
     </ol>
     <div class="ve-callout" style="margin-top:1rem">
       <strong>Error Handling（サンプル SKILL.md）</strong><br>
-      メタデータ検証失敗時は stderr の種類（例: STYLE ERROR）に応じて書き換える。<strong>500 行超</strong>なら最大の手順ブロックを <code>references/</code> に移し、SKILL.md からはそのファイルを読む命令だけにする。
+      メタデータ検証失敗時は <code>stderr</code> を手掛かりに修正する（<code>validate-metadata.py</code> は <code>NAME ERROR</code> / <code>DESCRIPTION ERROR</code> / <code>STYLE WARNING</code> などを出して exit 1）。<strong>500 行超</strong>は最大ブロックを <code>references/</code> へ移す、と <code>skill/SKILL.md</code> の Error Handling にある（例示は "STYLE ERROR" とあるが、スクリプトの実メッセージは <code>STYLE WARNING</code>）。
     </div>
   </div>
 
-  <section id="links" class="sec-head">10 — 参考リンク</section>
+  <section id="sources" class="sec-head">10 — リポジトリ内ソース（根拠ファイル）</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> このページが参照するパス</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>パス（repos/skills-best-practices からの相対）</th><th>内容の役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>README.md</code></td><td>ディレクトリ規約、メタデータ、プログレッシブ開示、手順文体、scripts、Validation Guide 全文。</td></tr>
+          <tr><td><code>skill/SKILL.md</code></td><td>skill-creator の手順（Step 1〜5）、Error Handling。</td></tr>
+          <tr><td><code>skill/scripts/validate-metadata.py</code></td><td><code>name</code> / <code>description</code> の検証ロジック。</td></tr>
+          <tr><td><code>skill/references/checklist.md</code></td><td>デプロイ前監査チェックリスト。</td></tr>
+          <tr><td><code>skill/assets/SKILL.template.md</code></td><td>SKILL.md 執筆用テンプレ（SKILL.md 本文では <code>assets/skill-template.md</code> とあるが、実ファイル名はこちら）。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> README.md が本文中でリンクしている外部 URL</span>
+    <p>次はいずれも README.md に出てくる文字列のみの列挙（この HTML の主張の根拠ではなく、リポジトリが読者に渡している参照）。</p>
     <ul>
-      <li><a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices" target="_blank" rel="noopener">Claude Docs — Agent skills best practices</a> — 網羅的な公式ガイド（README が comprehensive doc として参照）。</li>
-      <li><a href="https://github.com/mgechev/skillgrade" target="_blank" rel="noopener">skillgrade</a> — 評価と回帰防止。</li>
-      <li><a href="https://arxiv.org/abs/2602.12670" target="_blank" rel="noopener">SkillsBench</a> — スキル向けベンチマーク（論文）。</li>
+      <li><code>https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices</code>（comprehensive documentation として）</li>
+      <li><code>https://github.com/mgechev/skillgrade</code>（評価・回帰防止の提案）</li>
+      <li><code>https://arxiv.org/abs/2602.12670</code>（SkillsBench）</li>
     </ul>
   </div>
   </div>
