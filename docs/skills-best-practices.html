@@ -4,20 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agent Skills 設計ベストプラクティス — 構造・メタデータ・検証</title>
-  <meta name="description" content="エージェント向けスキルのディレクトリ構成、YAML メタデータ、プログレッシブ開示、手順書の書き方、LLM による検証ワークフローの要約（repos/skills-best-practices ベース）。">
+  <meta name="description" content="repos/skills-best-practices ベース。agentskills.io 想定のディレクトリ構成、YAML メタデータ、プログレッシブ開示、LLM 向け手順書、決定的スクリプト、4 段階の検証ワークフローと skill-creator サンプルの要点。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Agent Skills 設計ベストプラクティス — 構造・メタデータ・検証">
-  <meta property="og:description" content="エージェント向けスキルのディレクトリ構成、YAML メタデータ、プログレッシブ開示、手順書の書き方、LLM による検証ワークフローの要約（repos/skills-best-practices ベース）。">
+  <meta property="og:description" content="repos/skills-best-practices ベース。agentskills.io 想定のディレクトリ構成、YAML メタデータ、プログレッシブ開示、LLM 向け手順書、決定的スクリプト、4 段階の検証ワークフローと skill-creator サンプルの要点。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/skills-best-practices.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Agent Skills 設計ベストプラクティス — 構造・メタデータ・検証">
-  <meta name="twitter:description" content="エージェント向けスキルのディレクトリ構成、YAML メタデータ、プログレッシブ開示、手順書の書き方、LLM による検証ワークフローの要約（repos/skills-best-practices ベース）。">
+  <meta name="twitter:description" content="repos/skills-best-practices ベース。agentskills.io 想定のディレクトリ構成、YAML メタデータ、プログレッシブ開示、LLM 向け手順書、決定的スクリプト、4 段階の検証ワークフローと skill-creator サンプルの要点。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <style>
     /* ============ THEME (Spell UI tokens + fonts) ============ */
     :root {
@@ -116,7 +117,7 @@
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
-    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
     .ve-table-wrap tbody tr:hover { background: var(--border); }
     .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
     .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
@@ -173,19 +174,33 @@
     .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
     .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
     .sec-head:first-of-type { margin-top: 0; }
-    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
     p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
-    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
     li { margin-bottom: 0.35rem; }
     a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
     a:hover { color: var(--chart-3); }
     .ve-section-label .ve-dot { background: var(--chart-1); }
     .ve-code-block { margin: 1rem 0; }
+    .ve-code-block.tall { max-height: 28rem; }
     code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
 
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
     .kpi-row .ve-kpi-card { min-width: 0; }
     @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Mermaid ============ */
+    .mermaid-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; margin: 1rem 0; }
+    .mermaid-controls { display: flex; gap: 0.5rem; align-self: flex-start; }
+    .mermaid-controls button {
+      background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 3px 10px; font-size: 0.75rem; font-family: var(--font-mono); cursor: pointer; color: var(--text);
+      transition: background 0.15s;
+    }
+    .mermaid-controls button:hover { background: var(--border); }
+    .mermaid-container { overflow: auto; max-width: 100%; width: 100%; }
+    .mermaid-inner { display: block; }
+    .mermaid { display: flex; justify-content: center; }
 
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
@@ -203,28 +218,29 @@
     <a href="#instructions">手順の書き方</a>
     <a href="#scripts">決定的スクリプト</a>
     <a href="#validation">検証ワークフロー</a>
-    <a href="#sample">サンプル skill</a>
+    <a href="#checklist">最終チェック</a>
+    <a href="#sample">サンプル skill-creator</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
   <h1>Agent Skills 設計ベストプラクティス</h1>
-  <p class="subtitle">repos/skills-best-practices — エージェント向けスキルの構造・メタデータ・検証の要点</p>
+  <p class="subtitle">repos/skills-best-practices — agentskills.io 準拠のスキル設計・検証の要点</p>
 
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> この資料について</span>
-    <p>ワークスペース内 <code>repos/skills-best-practices</code> の README とサンプル <code>skill/</code> を要約したビジュアル解説。Claude 公式のエージェントスキル解説への入口として、<strong>ディレクトリ規約</strong>・<strong>YAML の書き方</strong>・<strong>コンテキストを瘦せる考え方</strong>・<strong>LLM を使った検証手順</strong>を一枚に整理する。</p>
+    <p>ワークスペース内 <code>repos/skills-best-practices</code> の README とサンプル <code>skill/</code>（<code>name: skill-creator</code>）に沿ったビジュアル解説。公式の網羅ドキュメントは <a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices" target="_blank" rel="noopener">Claude Docs — Agent skills best practices</a>、回帰防止には <a href="https://github.com/mgechev/skillgrade" target="_blank" rel="noopener">skillgrade</a>、ベンチマークの参照先として <a href="https://arxiv.org/abs/2602.12670" target="_blank" rel="noopener">SkillsBench</a> が README で言及されている。</p>
   </div>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--elevated" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> ゴール</span>
-    <p>スキルはエージェントの「脳みそ」ではなく、<strong>必要なときだけ読み込む手順書とリソースの束</strong>として設計する。人間向けの長文 README やライブラリ本体をスキル内に詰め込まず、<strong>発見しやすいメタデータ</strong>と<strong>フラットな参照構造</strong>でルーティングとトークン消費を最適化する。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> 設計思想</span>
+    <p>スキルはエージェントの「常時ロードされる脳」ではなく、<strong>YAML で発見され、必要なときだけ本文とリソースが読まれる手順書の束</strong>として扱う。README では <code>SKILL.md</code> をナビゲーションと高レベル手順の<strong>中枢</strong>としつつ、詳細は <code>references/</code>・<code>assets/</code> に逃がしてトークンを抑える。</p>
     <div class="kpi-row">
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">&lt;500</span><span class="ve-kpi-card__label">SKILL.md 行数目安</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">参照の深さ（階層）</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">3rd</span><span class="ve-kpi-card__label">三人称命令形</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">JiT</span><span class="ve-kpi-card__label">Just-in-Time 読込</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">サブdirの深さ</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">3rd</span><span class="ve-kpi-card__label">三人称・命令形</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">JiT</span><span class="ve-kpi-card__label">明示的な読込指示</span></div>
     </div>
   </div>
 
@@ -234,33 +250,33 @@
     <div class="ve-code-block">
       <pre><code>skill-name/
 ├── SKILL.md              # 必須: メタデータ + 中核指示（&lt;500 行）
-├── scripts/              # 決定的な小さな CLI（Python / Bash 等）
-├── references/           # 補助コンテキスト（スキーマ、チートシート）
+├── scripts/              # 小さな CLI（Python / Bash 等）— ライブラリ置き場ではない
+├── references/           # 補助コンテキスト（スキーマ、チートシート）— 1 階層のみ
 └── assets/               # 出力用テンプレや静的ファイル</code></pre>
     </div>
     <ul>
-      <li><code>SKILL.md</code> … ナビゲーションと主要フロー。詳細は <code>references/</code> へ逃がす。</li>
-      <li><code>references/</code> … <strong>1 階層だけ</strong>（<code>references/foo/bar.md</code> のような深さは避ける）。</li>
-      <li><code>scripts/</code> … 毎回 LLM にパースを書かせない壊れやすい処理向け。<strong>ライブラリコードの置き場ではない</strong>。</li>
+      <li><code>references/</code> … <code>references/foo/bar.md</code> のようなネストは避け、<strong>フラットに 1 段だけ</strong>。</li>
+      <li><code>scripts/</code> … 毎回 LLM にパースを書かせると壊れやすい処理向け。<strong>リポジトリの本流ライブラリ</strong>はここに詰め込まない。</li>
+      <li><code>assets/</code> … JSON スキーマ、テンプレ、画像などエージェントがコピー・参照する成果物用。</li>
     </ul>
   </div>
   <div class="ve-callout" style="margin-top:1rem">
-    <strong>スキル内に置かないもの（README の指針）</strong><br>
-    人間向けの <code>README.md</code> / <code>CHANGELOG.md</code>、エージェントが既に安定してこなす冗長な指示、長寿命のライブラリ実装。
+    <strong>スキル内に置かないもの（README 明示）</strong><br>
+    人間向けの <code>README.md</code> / <code>CHANGELOG.md</code> / <code>INSTALLATION_GUIDE.md</code>、エージェント単体で既に安定している冗長な指示、長寿命のライブラリ実装。
   </div>
 
   <section id="frontmatter" class="sec-head">3 — メタデータ（フロントマター）</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> name / description</span>
-    <p>エージェントがスキルを読む<strong>前</strong>に見えるのは YAML の <code>name</code> と <code>description</code> だけ、という前提で書く。</p>
+    <p>トリガー前にエージェントが見えるのは、実質 <code>name</code> と <code>description</code> だけ、という前提で書く。曖昧だとスキルは「見えない」。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
           <tr><th>項目</th><th>ルール</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>name</code></td><td>1〜64 文字、小文字・数字・ハイフンのみ（連続ハイフン不可）。<strong>親ディレクトリ名と完全一致</strong>（例: <code>angular-testing/SKILL.md</code> なら <code>name: angular-testing</code>）。</td></tr>
-          <tr><td><code>description</code></td><td>最大 1,024 文字、<strong>三人称</strong>で能力を述べる。<strong>ネガティブトリガー</strong>（「使うな」条件）を含め、誤起動を減らす。</td></tr>
+          <tr><td><code>name</code></td><td>1〜64 文字、<code>a-z</code>・数字・単一ハイフンのみ（連続ハイフン不可）。<strong>親ディレクトリ名と完全一致</strong>（例: <code>angular-testing/SKILL.md</code> なら <code>name: angular-testing</code>）。</td></tr>
+          <tr><td><code>description</code></td><td>最大 1,024 文字、<strong>三人称</strong>で能力を述べる。<strong>ネガティブトリガー</strong>（「使うな」条件）を含め誤起動を減らす。</td></tr>
         </tbody>
       </table>
     </div>
@@ -271,8 +287,8 @@
           <tr><th>評価</th><th>例</th></tr>
         </thead>
         <tbody>
-          <tr><td>悪い</td><td>「React スキル」（広すぎてルーティング不能）</td></tr>
-          <tr><td>良い</td><td>Tailwind で React コンポーネントのスタイルと UI ロジックを更新する。Vue / Svelte / 素の CSS だけの案件では使わない、のように具体化。</td></tr>
+          <tr><td>悪い</td><td>「React スキル」— 広すぎてルーティング不能。</td></tr>
+          <tr><td>良い</td><td>Tailwind で React コンポーネントのスタイルと UI ロジックを更新する。ユーザーがスタイルや UI ロジックの更新を求めるときに使う。Vue / Svelte / 素の CSS のみの案件では使わない、まで具体化（README の英語例に準拠）。</td></tr>
         </tbody>
       </table>
     </div>
@@ -284,78 +300,188 @@
     <ul>
       <li><strong>SKILL.md は瘦せる</strong> … 500 行未満を目安に、手順の骨格と「いつどのファイルを読むか」に徹する。</li>
       <li><strong>明示的パス</strong> … 参照は常に相対パス・スラッシュ区切り（OS 依存の表記にしない）。</li>
-      <li><strong>JiT 読込の指示文</strong> … 例: 「エラーコード一覧は <code>references/auth-flow.md</code> を読め」と SKILL.md に書き、エージェントが必要時だけ開く。</li>
+      <li><strong>JiT 読込</strong> … 例: 「エラーコード一覧は <code>references/auth-flow.md</code> を読め」と SKILL.md に書き、エージェントが必要時だけ開く。</li>
     </ul>
+    <div class="mermaid-wrap">
+      <div class="mermaid-controls">
+        <button type="button" id="zoom-in-a">+</button>
+        <button type="button" id="zoom-out-a">−</button>
+        <button type="button" id="zoom-reset-a">reset</button>
+      </div>
+      <div class="mermaid-container" id="mermaid-container-a">
+        <div class="mermaid-inner" id="mermaid-inner-a">
+          <div class="mermaid">flowchart TD
+    A["YAML name / description"] -->|"ルーティング"| B["SKILL.md 本体"]
+    B -->|"番号付き手順"| C{"追加コンテキストが要る?"}
+    C -->|Yes| D["references/ または assets/"]
+    C -->|No| E["ツール実行・回答"]
+    D -->|"JiT で読む"| E
+    B -.->|"肥大時は分割"| D</div>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="ve-card ve-card--recessed" style="--i:1">
     <span class="ve-section-label"><span class="ve-dot"></span> 用語の一貫性</span>
-    <p>同じ概念に複数の言い回し（template / html / markup など）を混ぜない。ドメイン固有の正しい用語（Angular なら template など）に寄せると、エージェントのパターンマッチが安定する。</p>
+    <p>同じ概念に template / html / markup を混在させない。ドメイン固有の正しい用語（Angular なら template など）に寄せると、エージェントのパターンマッチが安定する（README の指針）。</p>
   </div>
 
   <section id="instructions" class="sec-head">5 — 手順の書き方</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> LLM 向け文体</span>
     <ul>
-      <li><strong>番号付きステップ</strong> … 時系列で一意に追える手順にする。分岐は「Step 2: 〜なら A、そうでなければ Step 3 へ」のように明示。</li>
-      <li><strong>三人称命令形</strong> … 「テキストを抽出せよ」— 一人称・二人称の説明口調は避ける。</li>
-      <li><strong>具体テンプレート</strong> … JSON や設定の形は文章で長く説明せず、<code>assets/</code> に置いて「構造をコピーせよ」と指示。</li>
+      <li><strong>番号付きステップ</strong> … 時系列で一意に追える手順にする。分岐は README の例のように「Step 2: 〜なら A、そうでなければ Step 3 へ」と明示。</li>
+      <li><strong>三人称命令形</strong> … 「テキストを抽出せよ」。<em>I will / You should</em> は避ける。</li>
+      <li><strong>具体テンプレート</strong> … JSON や設定の形は長文で説明せず、<code>assets/</code> に置き「構造をコピーせよ」と指示。エージェントはテンプレへのパターンマッチが強い。</li>
     </ul>
   </div>
 
   <section id="scripts" class="sec-head">6 — 決定的スクリプト</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> scripts/ の役割</span>
-    <p>複雑なパースや毎回同じボイラープレート生成は、テスト済みスクリプトに任せる。失敗時は <strong>stdout / stderr で人間が読めるメッセージ</strong>を返し、エージェントが自己修正しやすくする。</p>
-    <p>サンプル <code>skill/scripts/validate-metadata.py</code> は、<code>name</code> と <code>description</code> の検証用 CLI として README・SKILL.md の手順に登場する。</p>
+    <p>複雑なパースや毎回同じボイラープレートは、テスト済みの小さな CLI に任せる。成功・失敗は <strong>stdout / stderr</strong> で人間が読めるメッセージにし、エージェントが自己修正しやすくする。</p>
+    <h3><code>scripts/validate-metadata.py</code> が見ること</h3>
+    <ul>
+      <li><code>name</code> の長さ（1〜64）と <code>^[a-z0-9]+(-[a-z0-9]+)*$</code> 形式。</li>
+      <li><code>description</code> の長さ（1,024 文字以下）。</li>
+      <li>説明文に I / me / my / we / our / you / your が単語として含まれると <strong>STYLE WARNING</strong>（三人称推奨のヒューリスティック）。</li>
+    </ul>
+    <div class="ve-code-block">
+      <pre><code>python3 scripts/validate-metadata.py --name "my-skill" --description "Creates ... Don't use for ..."</code></pre>
+    </div>
   </div>
 
   <section id="validation" class="sec-head">7 — 検証ワークフロー</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> README に載る 4 段階</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> README の 4 段階</span>
+    <p>LLM がスキルの利用者になるため、ドラフト後は別チャットで次の順に洗う（README の Validation Guide）。</p>
+    <div class="mermaid-wrap">
+      <div class="mermaid-controls">
+        <button type="button" id="zoom-in-b">+</button>
+        <button type="button" id="zoom-out-b">−</button>
+        <button type="button" id="zoom-reset-b">reset</button>
+      </div>
+      <div class="mermaid-container" id="mermaid-container-b">
+        <div class="mermaid-inner" id="mermaid-inner-b">
+          <div class="mermaid">flowchart LR
+    V1["Discovery Validation"] --> V2["Logic Validation"]
+    V2 --> V3["Edge Case Testing"]
+    V3 --> V4["Architecture Refinement"]
+    V1 -.->|"description のみ貼付"| X1["誤検知・ブロードさを洗う"]
+    V2 -.->|"全文 + ツリー"| X2["ステップ実行をシミュレート"]
+    V3 -.->|"QA 役"| X3["失敗系・前提の穴を質問"]
+    V4 -.->|"プログレッシブ開示で再構成"| X4["SKILL.md を縮小"]</div>
+        </div>
+      </div>
+    </div>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>段階</th><th>目的</th></tr>
+          <tr><th>段階</th><th>目的（要約）</th></tr>
         </thead>
         <tbody>
-          <tr><td>Discovery Validation</td><td>description だけを別チャットに貼り、起動すべき／すべきでないプロンプトを生成させて誤検知を洗う。</td></tr>
-          <tr><td>Logic Validation</td><td>全文 SKILL.md とツリー構造を渡し、タスク実行をステップごとにシミュレートさせ、曖昧さによる「幻覚ギャップ」を列挙させる。</td></tr>
-          <tr><td>Edge Case Testing</td><td>QA 役に切り替え、スクリプト失敗・非対応設定など攻撃的な質問を出させる。</td></tr>
-          <tr><td>Architecture Refinement</td><td>プログレッシブ開示に沿って SKILL.md を分割し、肥大ブロックを <code>references/</code> / <code>assets/</code> へ移す。</td></tr>
+          <tr><td>Discovery Validation</td><td>YAML の <code>description</code> だけを新規チャットに渡し、<strong>確実に起動すべきプロンプト</strong>と<strong>似ているが起動してはいけないプロンプト</strong>を生成させ、記述の広さを批判的にレビューさせる（README は agentskills.io 前提のサンプルプロンプト付き）。</td></tr>
+          <tr><td>Logic Validation</td><td>SKILL.md 全文とディレクトリツリーを渡し、具体リクエストに対して<strong>ステップごとの内部独白</strong>（何をしているか・どのファイルか・曖昧さによる推測箇所）を書かせる。</td></tr>
+          <tr><td>Edge Case Testing</td><td>QA 役に切り替え、スクリプト失敗・非対応設定など<strong>攻撃的な質問</strong>を出させ、先に修正せず一覧させる。</td></tr>
+          <tr><td>Architecture Refinement</td><td>上記の回答を踏まえ、SKILL.md を高レベル手順だけに残し、巨大ブロックを <code>references/</code> / <code>assets/</code> へ移す。必要なら Error Handling 節を追加する。</td></tr>
         </tbody>
       </table>
     </div>
   </div>
   <div class="ve-callout">
-    <strong>ベンチマークの参照</strong><br>
-    README では <a href="https://arxiv.org/abs/2602.12670" target="_blank" rel="noopener">SkillsBench</a>（arXiv）や <a href="https://github.com/mgechev/skillgrade" target="_blank" rel="noopener">skillgrade</a> を、スキル品質の評価・回帰防止の参考として挙げている。
+    <strong>評価・回帰防止</strong><br>
+    README は変更の効果測定のために <a href="https://github.com/mgechev/skillgrade" target="_blank" rel="noopener">skillgrade</a> と <a href="https://arxiv.org/abs/2602.12670" target="_blank" rel="noopener">SkillsBench</a> を参照先として挙げている。
   </div>
 
-  <section id="sample" class="sec-head">8 — リポジトリ内サンプル（skill-creator）</section>
+  <section id="checklist" class="sec-head">8 — 最終チェック（checklist.md）</section>
   <div class="ve-card ve-card--recessed" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> skill/SKILL.md の流れ</span>
-    <p><code>repos/skills-best-practices/skill/</code> には、手順どおりにスキルを生成する例として <code>skill-creator</code> が入っている。</p>
-    <ol style="margin:0 0 1rem 1.25rem; font-size:0.9375rem; line-height:1.65;">
-      <li>メタデータ定義 → <code>python3 scripts/validate-metadata.py --name "..." --description "..."</code></li>
-      <li><code>scripts/</code>・<code>references/</code>・<code>assets/</code> を用意（人間向け README は作らない）</li>
-      <li><code>assets/SKILL.template.md</code> を起点に SKILL.md を執筆（本リポジトリの <code>skill/assets/</code> に同ファイルあり。サンプル SKILL.md 本文は <code>skill-template.md</code> 表記のままなので、パスは実ファイルに合わせる）</li>
-      <li>壊れやすい処理は scripts に閉じ込める</li>
-      <li>最終チェックで <code>references/checklist.md</code> と突き合わせ</li>
-    </ol>
-    <p>エラーハンドリング節では、メタデータ検証失敗時の修正と、500 行超過時の抽出・移動方針が短くまとまっている。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> skill/references/checklist.md</span>
+    <p>サンプル内のチェックリストは、デプロイ前にすべて Pass にする前提の監査項目。カテゴリごとの要点だけ抜粋する。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>カテゴリ</th><th>要点</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Metadata &amp; Discovery</td><td>ディレクトリ名一致、1,024 字以内、Use when / Don't use、I・you 系の回避。</td></tr>
+          <tr><td>File Structure</td><td><code>scripts/</code>・<code>references/</code>・<code>assets/</code> は 1 階層のみ、人間向け README 等なし、パスは <code>/</code>。</td></tr>
+          <tr><td>Logic</td><td>SKILL.md 500 行未満、番号付き決定的ステップ、大きな塊は references / assets へ。</td></tr>
+          <tr><td>Scripts</td><td>tiny CLI、成功は stdout・失敗は説明的 stderr、ライブラリ化しない。</td></tr>
+          <tr><td>Error Handling</td><td>よくある失敗と検証スクリプト実行ステップを SKILL.md に書く。</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <section id="links" class="sec-head">9 — 参考リンク</section>
+  <section id="sample" class="sec-head">9 — サンプル skill-creator</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> repos/skills-best-practices/skill/</span>
+    <p>サンプルは <code>name: skill-creator</code>。手順はリポジトリの <code>skill/SKILL.md</code> の Step 1〜5 に従う。</p>
+    <ol style="font-size:0.9375rem; line-height:1.65;">
+      <li><strong>Step 1</strong> — メタデータ定義 → <code>python3 scripts/validate-metadata.py --name "..." --description "..."</code>。エラー時は stderr を見て修正し再実行。</li>
+      <li><strong>Step 2</strong> — 検証済み <code>name</code> でルートディレクトリを作り、<code>scripts/</code>・<code>references/</code>・<code>assets/</code> を用意（README 等は作らない）。</li>
+      <li><strong>Step 3</strong> — テンプレを起点に SKILL.md を執筆。本文では <code>assets/skill-template.md</code> とあるが、<strong>実ファイル名は <code>assets/SKILL.template.md</code></strong>（大文字・拡張子の違いに注意）。</li>
+      <li><strong>Step 4</strong> — 壊れやすい処理は <code>scripts/</code> の単目的 CLI に閉じる。</li>
+      <li><strong>Step 5</strong> — 幻覚ギャップの確認、相対パスとスラッシュ、<code>references/checklist.md</code> と突合。</li>
+    </ol>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>Error Handling（サンプル SKILL.md）</strong><br>
+      メタデータ検証失敗時は stderr の種類（例: STYLE ERROR）に応じて書き換える。<strong>500 行超</strong>なら最大の手順ブロックを <code>references/</code> に移し、SKILL.md からはそのファイルを読む命令だけにする。
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">10 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
     <ul>
-      <li><a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices" target="_blank" rel="noopener">Claude Docs — Agent skills best practices</a> — 網羅的な公式ガイド</li>
-      <li><a href="https://github.com/mgechev/skillgrade" target="_blank" rel="noopener">skillgrade</a> — スキルの評価と回帰防止</li>
-      <li><a href="https://arxiv.org/abs/2602.12670" target="_blank" rel="noopener">SkillsBench</a> — スキル向けベンチマーク論文</li>
+      <li><a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices" target="_blank" rel="noopener">Claude Docs — Agent skills best practices</a> — 網羅的な公式ガイド（README が comprehensive doc として参照）。</li>
+      <li><a href="https://github.com/mgechev/skillgrade" target="_blank" rel="noopener">skillgrade</a> — 評価と回帰防止。</li>
+      <li><a href="https://arxiv.org/abs/2602.12670" target="_blank" rel="noopener">SkillsBench</a> — スキル向けベンチマーク（論文）。</li>
     </ul>
   </div>
   </div>
 </div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#f5f0eb',
+      primaryTextColor: '#1a1a1a',
+      primaryBorderColor: '#c2410c',
+      lineColor: '#888',
+      secondaryColor: '#e8f4f8',
+      tertiaryColor: '#f0fdf4',
+      fontSize: '14px'
+    }
+  });
+
+  function wireZoom(prefix) {
+    var zoom = 1;
+    var inner = document.getElementById('mermaid-inner-' + prefix);
+    var container = document.getElementById('mermaid-container-' + prefix);
+    if (!inner || !container) return;
+    function applyZ(z) {
+      zoom = Math.max(0.4, Math.min(3, z));
+      inner.style.zoom = zoom;
+    }
+    var btnIn = document.getElementById('zoom-in-' + prefix);
+    var btnOut = document.getElementById('zoom-out-' + prefix);
+    var btnReset = document.getElementById('zoom-reset-' + prefix);
+    if (btnIn) btnIn.addEventListener('click', function() { applyZ(zoom + 0.2); });
+    if (btnOut) btnOut.addEventListener('click', function() { applyZ(zoom - 0.2); });
+    if (btnReset) btnReset.addEventListener('click', function() { applyZ(1); });
+    container.addEventListener('wheel', function(e) {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        applyZ(e.deltaY < 0 ? zoom + 0.1 : zoom - 0.1);
+      }
+    }, { passive: false });
+  }
+  wireZoom('a');
+  wireZoom('b');
+</script>
 
 <script>
 (function() {
