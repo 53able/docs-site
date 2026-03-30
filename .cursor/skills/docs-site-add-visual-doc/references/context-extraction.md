@@ -1,6 +1,6 @@
 # Context Extraction — JiT 読み込み・構造化抽出ガイド
 
-このファイルは `SKILL.md` Phase 3 でコンテンツ変換に迷った時だけ読む（JiT ロード）。
+このファイルは **構造化抽出（コンテンツ変換）で迷った時だけ**読む（JiT ロード）。親は `docs-site-add-visual-doc` の `SKILL.md`。
 
 ---
 
