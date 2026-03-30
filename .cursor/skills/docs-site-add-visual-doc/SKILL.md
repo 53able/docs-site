@@ -1,47 +1,47 @@
 ---
 name: docs-site-add-visual-doc
-description: Adds Spell UI visual documentation pages to docs-site, links them from index, and opens draft PRs. Accepts a repository URL for cloning into repos/ or an existing repos/ path without a URL. Applies Think–Structure–Style guidance from bundled references and templates. Does not replace repo-to-visual-doc for non-docs-site pipelines, or standalone generic HTML diagrams outside this GitHub Pages site.
+description: >-
+  Adds Spell UI visual documentation pages to docs-site from repos/ sources: optional clone into repos/,
+  Context Engineering (JiT loading, structured extraction, self-refinement), scan-source.sh inventory,
+  Think–Structure–Style and templates, writes docs/<name>.html, links index.html, opens draft PRs.
+  Use when converting READMEs, SKILLs, or cloned repos under repos/ into docs-site pages.
+  Do not use for non-docs-site projects, source outside repos/, standalone generic HTML outside this site,
+  or large in-place rewrites of existing pages (do focused edits instead).
 ---
 
 # docs-site ビジュアル解説（統合スキル）
 
-docs-site リポジトリに Spell UI で統一したビジュアル解説ページを追加し、index との整合を取って **PR まで完了**させる。**ビジュアル設計（Think → Structure → Style）、Mermaid・テーブル・品質チェック**は旧 `visual-explainer-spell-ui` の内容を **本スキル配下の `references/`・`templates/`・`prompts/`** に集約している。別スキルディレクトリを参照しない。
+`repos/<name>/`（またはクローン取得）を **`docs/<name>.html`** にし、`index.html` を更新して **ドラフト PR まで**完了させる。旧 `repo-to-visual-doc` の **Context Engineering 三原則** と、旧 `docs-site-add-visual-doc` の **クローン・Spell UI・PR 手順** を一本化したもの。
+
+| 原則 | 適用 | 目的 |
+|------|------|------|
+| **JiT Loading** | ソース走査・参照読み込み | 必要な時だけ読み、コンテキストを汚染しない |
+| **Structured Extraction** | コンテンツ分類 → コンポーネント | 生ソースを視覚コンポーネントへ変換 |
+| **Self-Refinement** | 生成後の検証 | 既存 `docs/*.html` との整合で品質担保 |
+
+## スコープ
+
+- **対象**: docs-site リポジトリ内。解説の正は **`repos/<名前>/`**（URL クローン時は Step 0 で取得）。
+- **出力**: `<プロジェクトルート>/docs/<名前>.html`。汎用 Visual Explainer の `~/.agent/diagrams/` は **docs-site 作業では使わない**（`references/visual-explainer-core.md` 先頭の注記どおり）。
+- **ファイル名・ブランチ名**: 単語連結 **最大 4 つ**。
+
+### repos の可視性
+
+`repos/` は **`.gitignore` 対象**のため Glob で見えないことがある。`ls` や Read でパス直接確認する。
+
+---
 
 ## 入力
 
-- **リポジトリ URL（通常）**: HTTPS または SSH。Step 0 で `repos/` にクローンする。
-- **既存 `repos/<名前>/` のみ**: URL を渡さずパスだけ指定する場合は Step 0 をスキップし、そのディレクトリを解説ルートとする。必要なら `git -C repos/<名前> pull`。
-- **クローン先名（任意）**: URL クローン時のみ。省略時は URL から推測。**単語連結最大 4 つ**。
-
-## 前提
-
-- **取得**: 解説の元ネタは、URL クローン時は Step 0 で **`repos/` へ取り込んだディレクトリ**、既存のみのときは **その `repos/<名前>/`** を正とする（プロジェクト外パスは参照しない）。
-- **出力先**: 解説 HTML は **`<プロジェクトルート>/docs/<名前>.html`**。汎用 Visual Explainer 本文に出てくる `~/.agent/diagrams/` は **docs-site 作業では使わない**（`references/visual-explainer-core.md` 先頭の注記どおり）。
-- **main 直接コミット禁止**がある場合はブランチでコミットする。
-- ファイル名・ブランチ名は **単語連結最大 4 つ**。
-
-### repos の有無
-
-**`repos/` は `.gitignore` 対象のため**、Glob 等では見えないことがある。`ls` や Read でパス直接確認する。
+- **リポジトリ URL（通常）**: HTTPS または SSH → Step 0 で `repos/` にクローン。
+- **既存 `repos/<名前>/` のみ**: URL なしでパスだけなら Step 0 をスキップ。必要なら `git -C repos/<名前> pull`。
+- **クローン先名（任意）**: URL 時のみ。省略時は URL から推測。
 
 ---
 
-## ビジュアル設計（Step 3 の前に読む）
+## Phase 1: Source Acquisition（JiT — ディレクトリ優先）
 
-ページ生成前に次を行う。
-
-1. **`references/visual-explainer-core.md` を読む**（Think → Structure → Style、図タイプの選び方、品質チェック、Anti-Patterns）。長いが docs-site では Deliver の diagrams パスは無視する。
-2. **Spell UI 固定**: `references/spell-ui-integration.md`、`references/spell-ui-tokens.css`、`references/spell-ui-static.css` を把握する。実装の見た目は **プロジェクトの `index.html` と `docs/opentui.html` または `docs/react-grab.html`** を正とし、トークン・コンポーネントは既存ページに合わせる。
-3. **補助参照**（必要に応じて）: `references/css-patterns.md`、`references/libraries.md`（Mermaid・フォント）、`references/responsive-nav.md`（4+ セクションの TOC）、`templates/` 内の該当 HTML。
-4. **ASCII 表を避ける**: 複雑な表は HTML テーブル化する方針は `visual-explainer-core.md` に従う（docs-site では `docs/*.html` へ出力）。
-
----
-
-## ワークフロー
-
-### Step 0: リポジトリのクローン（URL を渡したとき）
-
-URL が無い場合はこの Step をスキップする。
+### Step 0: リポジトリのクローン（URL があるときのみ）
 
 1. プロジェクトルート（`docs/` と `index.html` がある階層）で作業する。
 2. `repos/<clone-dir>/` を決める（ユーザー指定 → URL から推測 → 長すぎる場合は短名を確認）。
@@ -50,30 +50,83 @@ URL が無い場合はこの Step をスキップする。
 5. 新規: `git clone <URL> repos/<clone-dir>`（任意で `--depth 1`）。
 6. `ls repos/<clone-dir>` で取得を確認。以降 **`repos/<clone-dir>` を解説ルート**とする。
 
-### Step 1: 解説対象のコード解析
+### Step 1a: スキャン（推奨）
 
-**`repos/`** 以下が元ネタのとき、**code-reading スキル**（`.cursor/skills/code-reading`）に従い解析する。Glob に頼らずパスで確認する。得た理解を Step 3 の本文に反映する。
+ワークスペースルートから:
 
-### Step 2: 参照取得（プロジェクト内）
+```bash
+bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone-dir>
+```
+
+出力を手がかりに、読むファイルの優先度を決める。
+
+### Step 1b: ソース読み取り順（固定。前段で足りれば後段を読まない）
+
+1. 優先度 1: ディレクトリ構造 → 責務を推測。
+2. 優先度 2: `README.md` → インターフェイスと目的。
+3. 優先度 3: メインエントリ（`SKILL.md` / `index.*` / `main.*`）→ 公開 API・手順。
+4. 優先度 4–6（JiT）: Step 3 で必要と判断した時のみ `references/` / `assets/` 等を読む。
+
+**Context Compression**: 読んだファイルから「タイトル・目的・主要構造・重要な制約」だけを内部に保持し、全文をコンテキストに載せ続けない。
+
+### Step 1c: 深い解析
+
+**code-reading スキル**（`.cursor/skills/code-reading`）に従い、Glob に頼らずパスで確認する。得た理解を HTML 本文に反映する。
+
+---
+
+## Phase 2: Reference Acquisition（JiT — Spell UI パターン）
+
+読むのは **2〜3 本＋本スキル補助**が基本。
 
 | 読むファイル | 目的 |
 |-------------|------|
 | `index.html` | Spell UI、`.doc-list`、Unfurl コメントとメタの並び |
-| `docs/opentui.html` または `docs/react-grab.html` のいずれか 1 件 | 1 ページ分の体裁・`<style>` 順序・コンポーネント |
+| `docs/react-grab.html` または `docs/defuddle.html` のいずれか 1 件 | `<style>` 順序・コンポーネント・体裁 |
 | `docs/defuddle.html` 末尾 | Scroll Spy（`active` は常に 1 件） |
 
 **本スキル配下の `references/` は補助**。見た目の正は **リポジトリの `index.html` と `docs/*.html`**。
 
-### Step 3: ビジュアル解説ページの生成
+ページ生成前に必ず次を踏む。
 
-**`references/visual-explainer-core.md` と Step 2 の既存 HTML を踏まえ、** 次を満たす `docs/<名前>.html` を新規作成する。
+1. **`references/visual-explainer-core.md`**（Think → Structure → Style、図タイプ、品質、Anti-Patterns）。Deliver の diagrams パスは無視。
+2. **Spell UI**: `references/spell-ui-integration.md`、`references/spell-ui-tokens.css`、`references/spell-ui-static.css`。既存ページ（`opentui.html` / `react-grab.html` 等）に合わせる。
+3. **必要時のみ JiT**: `references/context-extraction.md`（変換に迷った時）、`references/spell-ui-map.md`（コンポーネント選択に迷った時）、`references/css-patterns.md`、`references/libraries.md`、`references/responsive-nav.md`、`templates/`。
 
-1. **Unfurl**: 既存 `docs/*.html` と同形式。`<!-- Unfurl: Open Graph -->` / `<!-- Unfurl: Twitter Card -->`。`og:url` = `https://tadano-go.github.io/docs-site/docs/<ファイル名>.html`。
-2. **Spell UI**: Step 2 で流用した THEME → Spell UI static → Wrap+TOC → …。コンポーネントは `.ve-card`、`.ve-card--elevated`、`.ve-card--recessed`、`.ve-card--hero`、`.ve-section-label`、`.ve-code-block`、`.ve-table-wrap`、`.ve-kpi-card`、`.ve-callout` 等を内容に合わせて使う。
-3. **4 セクション以上**: `.wrap` / `.toc` / `.main`、`references/responsive-nav.md` の方針と `docs/defuddle.html` の Scroll Spy をコピー。
-4. **本文**: Step 1 の理解に基づき、概要・構成・使い方等を既存資料と同程度の粒度で書く。Mermaid・表・図の扱いは **`references/visual-explainer-core.md`** の Diagram Types と **`references/libraries.md`** に従う。
+---
 
-### Step 4: index.html へのリンク追加
+## Phase 3: Structured Extraction（コンテンツ変換）
+
+`references/context-extraction.md` を読み、ソースから **情報タイプ**を分類する（概念 / 手順 / 設定 / コード / 比較 / 注意）。
+
+- 情報タイプ → Spell UI へのマッピングは **`references/spell-ui-map.md`**。
+- セクション **4 本以上**なら TOC 付きレイアウト（`references/responsive-nav.md`、`docs/defuddle.html` の Scroll Spy）。
+- 審美: フォント・パレット・アクセントを選ぶ。**禁止**: Inter / Roboto / violet / cyan-magenta-pink（詳細は `spell-ui-map.md`）。
+- **ASCII 表を避ける**: 複雑な表は HTML テーブル化（`visual-explainer-core.md`）。
+
+---
+
+## Phase 4: Generation（`docs/<名前>.html`）
+
+`references/visual-explainer-core.md` と Phase 2 の既存 HTML を踏まえ、新規 `docs/<名前>.html` を作成する。`<名前>` はソースディレクトリ名と一致させる。
+
+1. **Unfurl**: 既存 `docs/*.html` と同形式。`og:url` = `https://tadano-go.github.io/docs-site/docs/<ファイル名>.html`。
+2. **Spell UI**: THEME → Spell UI static → Wrap+TOC → …。`.ve-card`、`ve-code-block`、`ve-table-wrap` 等は `spell-ui-map.md` と内容に合わせて使う。
+3. **4 セクション以上**: `.wrap` / `.toc` / `.main`、Scroll Spy を `defuddle.html` からコピー。
+4. **Mermaid・表・図**: `visual-explainer-core.md` の Diagram Types と **`references/libraries.md`**。
+
+---
+
+## Phase 5: Self-Refinement（整合検証）
+
+1. 生成 HTML を既存 1 ページと目視比較: フォント・パレット差別化、THEME トークン名、Scroll Spy の `toggle('active', s === current)`。
+2. **`references/checklist.md`** で一通り確認。
+
+---
+
+## Phase 6: index・コミット・PR
+
+### index.html へのリンク追加
 
 `.doc-list` に既存と同形式のリンクカードを 1 件追加する（コメント「追加する資料はここに」の直前が無難）。
 
@@ -86,26 +139,32 @@ URL が無い場合はこの Step をスキップする。
 </li>
 ```
 
-### Step 5: index の画面構成を Spell UI で揃える（任意）
+### index の画面構成を Spell UI で揃える（任意）
 
-ヒーロー・セクションラベル・コンテナ幅など。実施時は **別コミット**可。変更は `index.html` のみ。
+別コミット可。変更は `index.html` のみ。
 
-### Step 6: ブランチ・コミット
+### ブランチ・コミット
 
 1. `git branch --show-current`。main のまま直コミット禁止なら `git checkout -b docs/<名前>-link`。
 2. `git add docs/<新規>.html index.html` → `git commit -m "docs: ○○ ビジュアル解説追加と index リンク"`。**`repos/` はコミットに含めない。**
 
-### Step 7: Push とドラフト PR
+### Push とドラフト PR
 
-1. `git push -u origin docs/<名前>-link`
-2. `gh pr create --draft --base main`（`--assignee`・`--title`・`--body-file` はプロジェクトルールに合わせる）。本文に必ず **解説元**（クローンした URL または `repos/<名前>`）と **変更ファイル** を書く。詳細テンプレは **pr-creation スキル**を参照。絵文字禁止ルールがある場合は PR 本文にも入れない。
+1. `git push -u origin <branch>`
+2. `gh pr create --draft --base main`（`--title`・`--body-file` はプロジェクトルールに合わせる）。本文に **解説元**（URL または `repos/<名前>`）と **変更ファイル**。詳細は **pr-creation スキル**。絵文字禁止ルールがある場合は PR 本文にも入れない。
 3. 完了後 `git checkout main`
 
 ---
 
-## チェックリスト
+## Error Handling
 
-`references/checklist.md` を完了確認に使う。
+| 状況 | 対応 |
+|------|------|
+| `repos/<name>` が Glob で見つからない | `.gitignore` のため Glob 不可。`ls` または `Read` で直接確認 |
+| README が無い | メインエントリから直接読む |
+| Scroll Spy が動かない | `docs/defuddle.html` 末尾スクリプトを再コピー。`toggle` パターンを確認 |
+| `doc-list` の位置が分からない | `grep -n "doc-list" index.html` |
+| フォント・パレットが既存と被る | `references/spell-ui-map.md` の差別化チェック |
 
 ---
 
@@ -117,6 +176,15 @@ URL が無い場合はこの Step をスキップする。
 | コミット分割 | commit-diffs |
 | 複雑な PR | pr-creation |
 | index 変更の事前評価 | self-refine |
-| repos のみ・別パイプライン | repo-to-visual-doc（`.cursor/skills/repo-to-visual-doc`） |
 
-**本スキル内のビジュアル詳細**は `references/visual-explainer-core.md` と `references/spell-ui-integration.md` を正とする。
+**ビジュアル詳細**は `references/visual-explainer-core.md` と `references/spell-ui-integration.md` を正とする。
+
+---
+
+## JiT リファレンス一覧（迷った時だけ読む）
+
+| タイミング | ファイル |
+|-----------|---------|
+| コンテンツ変換 | `references/context-extraction.md` |
+| コンポーネント選択・フォント | `references/spell-ui-map.md` |
+| Phase 1 の整理 | `scripts/scan-source.sh` を実行 |

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # scan-source.sh — ソースディレクトリの構造・ファイル情報を出力する
 #
-# 使い方:
-#   bash scripts/scan-source.sh <source-dir>
+# 使い方（ワークスペースルートから）:
+#   bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh <source-dir>
 #
 # 出力:
 #   stdout: ディレクトリ構造 + ファイル情報（エージェントの Phase 1 判断用）
@@ -19,7 +19,7 @@ SOURCE_DIR="${1:-}"
 # ── Validation ──────────────────────────────────────────────
 if [[ -z "$SOURCE_DIR" ]]; then
   echo "ERROR: Source directory not specified." >&2
-  echo "Usage: bash scripts/scan-source.sh <source-dir>" >&2
+  echo "Usage: bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh <source-dir>" >&2
   exit 1
 fi
 
@@ -84,6 +84,6 @@ echo "--- Recommended Reading Order (JiT Priority) ---"
 echo "Priority 1 (always): Directory structure above"
 echo "Priority 2 (always): README.md if found"
 echo "Priority 3 (always): SKILL.md / index.* / main.* if found"
-echo "Priority 4-6 (JiT):  references/ assets/ scripts/ — read only if Phase 3 needs detail"
+echo "Priority 4-6 (JiT):  references/ assets/ scripts/ — read only if structured extraction needs detail"
 echo ""
 echo "=== END SCAN ==="
