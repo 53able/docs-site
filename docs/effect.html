@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Effect — TypeScript 関数型エフェクトシステム</title>
+  <meta name="description" content="Effect は TypeScript 向けの本格的な関数型エフェクトシステム。副作用管理・型安全な並行処理・依存性注入を一貫したプリミティブで提供する 30+ パッケージのモノレポ。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Effect — TypeScript 関数型エフェクトシステム">
+  <meta property="og:description" content="副作用管理・型安全な並行処理・依存性注入を一貫したプリミティブで提供する TypeScript エフェクトシステム。30+ パッケージのモノレポ解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/effect.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Effect — TypeScript 関数型エフェクトシステム">
+  <meta name="twitter:description" content="副作用管理・型安全な並行処理・依存性注入を一貫したプリミティブで提供する TypeScript エフェクトシステム。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME: Teal + Amber — Spell UI tokens ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.003 210);
+      --foreground: oklch(0.16 0.01 240);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.16 0.01 240);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.16 0.01 240);
+      --primary: oklch(0.50 0.15 195);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.96 0.008 210);
+      --secondary-foreground: oklch(0.16 0.01 240);
+      --muted: oklch(0.96 0.008 210);
+      --muted-foreground: oklch(0.52 0.02 220);
+      --accent: oklch(0.96 0.008 210);
+      --accent-foreground: oklch(0.16 0.01 240);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.90 0.01 210);
+      --input: oklch(0.90 0.01 210);
+      --ring: oklch(0.70 0.02 210);
+      /* Teal as chart-1, Amber as chart-2 */
+      --chart-1: oklch(0.50 0.15 195);
+      --chart-2: oklch(0.65 0.18 78);
+      --chart-3: oklch(0.38 0.10 195);
+      --chart-4: oklch(0.75 0.16 78);
+      --chart-5: oklch(0.60 0.12 155);
+      --code-bg: oklch(0.97 0.008 210);
+      --code-text: oklch(0.32 0.12 195);
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.115 0.01 220);
+        --foreground: oklch(0.965 0.005 210);
+        --card: oklch(0.185 0.01 220);
+        --card-foreground: oklch(0.965 0.005 210);
+        --popover: oklch(0.185 0.01 220);
+        --popover-foreground: oklch(0.965 0.005 210);
+        --primary: oklch(0.72 0.17 195);
+        --primary-foreground: oklch(0.115 0.01 220);
+        --secondary: oklch(0.235 0.012 220);
+        --secondary-foreground: oklch(0.965 0.005 210);
+        --muted: oklch(0.255 0.012 220);
+        --muted-foreground: oklch(0.65 0.02 210);
+        --accent: oklch(0.255 0.012 220);
+        --accent-foreground: oklch(0.965 0.005 210);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.50 0.05 210);
+        --chart-1: oklch(0.72 0.17 195);
+        --chart-2: oklch(0.80 0.18 78);
+        --chart-3: oklch(0.56 0.14 195);
+        --chart-4: oklch(0.88 0.14 78);
+        --chart-5: oklch(0.68 0.13 155);
+        --code-bg: oklch(0.14 0.01 220);
+        --code-text: oklch(0.80 0.15 195);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1.125rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.75; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block .code-header { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; color: var(--muted-foreground); padding: 0.5rem 1.125rem; border-bottom: 1px solid var(--border); background: var(--surface2); }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .ve-table-wrap td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: var(--muted); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.875rem; font-weight: 500; line-height: 1.1; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-2) 12%, transparent); color: var(--chart-2); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 70% 0%, oklch(0.50 0.15 195 / 0.07) 0%, transparent 50%),
+        radial-gradient(ellipse at 15% 85%, oklch(0.65 0.18 78 / 0.05) 0%, transparent 40%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 70% 0%, oklch(0.72 0.17 195 / 0.09) 0%, transparent 50%),
+          radial-gradient(ellipse at 15% 85%, oklch(0.80 0.18 78 / 0.06) 0%, transparent 40%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--chart-1); border-left-color: var(--chart-1); background: color-mix(in oklch, var(--chart-1) 8%, transparent); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); color: var(--chart-1); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.8125rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.0625rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 0.9375rem; font-weight: 600; margin: 0 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    p:last-child { margin-bottom: 0; }
+    ul { margin: 0 0 0.75rem; padding-left: 1.5rem; }
+    li { font-size: 0.875rem; line-height: 1.6; margin-bottom: 0.3rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8em; background: color-mix(in oklch, var(--chart-1) 10%, var(--muted)); color: var(--chart-1); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.875rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Type sig layout ============ */
+    .type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .type-grid { grid-template-columns: 1fr; } }
+    .type-param { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+    .type-param__label { font-family: var(--font-mono); font-size: 1.125rem; font-weight: 500; color: var(--chart-1); margin-bottom: 0.5rem; }
+    .type-param--e .type-param__label { color: oklch(0.60 0.20 22); }
+    .type-param--r .type-param__label { color: var(--chart-2); }
+    @media (prefers-color-scheme: dark) {
+      .type-param--e .type-param__label { color: oklch(0.75 0.20 22); }
+    }
+    .type-param__name { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.4rem; }
+    .type-param__desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+
+    /* ============ Module grid ============ */
+    .module-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .module-grid { grid-template-columns: 1fr; } }
+    .module-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+    .module-card__name { font-family: var(--font-mono); font-size: 0.9375rem; font-weight: 500; color: var(--chart-1); margin-bottom: 0.375rem; }
+    .module-card__desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+
+    /* ============ Package category badge ============ */
+    .pkg-cat { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+    .pkg-cat--core    { background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); }
+    .pkg-cat--ai      { background: color-mix(in oklch, var(--chart-2) 12%, transparent); color: var(--chart-2); }
+    .pkg-cat--platform{ background: color-mix(in oklch, var(--chart-5) 14%, transparent); color: var(--chart-5); }
+    .pkg-cat--sql     { background: color-mix(in oklch, oklch(0.55 0.14 155) 12%, transparent); color: oklch(0.55 0.14 155); }
+    .pkg-cat--tools   { background: color-mix(in oklch, oklch(0.55 0.12 300) 12%, transparent); color: oklch(0.55 0.12 300); }
+    @media (prefers-color-scheme: dark) {
+      .pkg-cat--sql  { color: oklch(0.72 0.14 155); background: color-mix(in oklch, oklch(0.72 0.14 155) 12%, transparent); }
+      .pkg-cat--tools{ color: oklch(0.72 0.12 300); background: color-mix(in oklch, oklch(0.72 0.12 300) 12%, transparent); }
+    }
+
+    /* ============ AI provider grid ============ */
+    .provider-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.875rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .provider-grid { grid-template-columns: 1fr; } }
+    .provider-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+    .provider-card__name { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .provider-card__pkg  { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.375rem; }
+    .provider-card__desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.5; }
+
+    /* ============ Step flow ============ */
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; display: flex; gap: 0.875rem; align-items: flex-start; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--chart-1); background: color-mix(in oklch, var(--chart-1) 10%, transparent); padding: 2px 8px; border-radius: 20px; flex-shrink: 0; margin-top: 2px; }
+    .step-card__body { min-width: 0; }
+    .step-card__title { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .step-card__desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.55; }
+
+    /* ============ Mermaid wrap ============ */
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .mermaid-controls { display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+    .mermaid-controls button { font-family: var(--font-mono); font-size: 10px; font-weight: 500; padding: 2px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--card); color: var(--text-dim); cursor: pointer; }
+    .mermaid-controls button:hover { background: var(--muted); color: var(--text); }
+    .mermaid-viewport { overflow: hidden; cursor: grab; touch-action: none; position: relative; }
+    .mermaid-viewport:active { cursor: grabbing; }
+    .mermaid-canvas { transform-origin: top center; display: flex; justify-content: center; padding: 1.5rem; transition: transform 0.1s ease; }
+
+    /* ============ Animation ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card, .type-param, .module-card, .provider-card, .step-card {
+      animation: fadeUp 0.35s ease-out both;
+      animation-delay: calc(var(--i, 0) * 0.05s);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#type-sig">型シグネチャ</a>
+    <a href="#core-modules">コアモジュール</a>
+    <a href="#packages">パッケージ群</a>
+    <a href="#ai-integration">AI統合</a>
+    <a href="#dev-workflow">開発ワークフロー</a>
+  </nav>
+
+  <div class="main">
+    <h1>Effect</h1>
+    <p class="subtitle">TypeScript 向け 本格的な関数型エフェクトシステム — effect-ts/effect</p>
+
+    <!-- ======================================== -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> What is Effect?</span>
+      <p>
+        <strong>Effect</strong> は TypeScript で堅牢なアプリケーションを構築するためのフルスタックフレームワーク。
+        副作用管理・型安全な並行処理・依存性注入・エラーハンドリングを一つの一貫したプリミティブ <code>Effect&lt;A, E, R&gt;</code> で表現する。
+        <a href="https://www.effect.website/" target="_blank" rel="noopener">公式サイト</a> と
+        <a href="https://effect-ts.github.io/effect/" target="_blank" rel="noopener">APIリファレンス</a> を参照。
+      </p>
+    </div>
+
+    <div class="kpi-row" style="margin-top:1rem;">
+      <div class="ve-kpi-card" style="--i:1">
+        <div class="ve-kpi-card__value">30+</div>
+        <div class="ve-kpi-card__label">パッケージ数</div>
+      </div>
+      <div class="ve-kpi-card" style="--i:2">
+        <div class="ve-kpi-card__value">175+</div>
+        <div class="ve-kpi-card__label">コアモジュール</div>
+      </div>
+      <div class="ve-kpi-card" style="--i:3">
+        <div class="ve-kpi-card__value">TS 5.4+</div>
+        <div class="ve-kpi-card__label">必要バージョン</div>
+      </div>
+      <div class="ve-kpi-card" style="--i:4">
+        <div class="ve-kpi-card__value">pnpm</div>
+        <div class="ve-kpi-card__label">パッケージマネージャ</div>
+      </div>
+    </div>
+
+    <div class="ve-callout">
+      <strong>要件：</strong> TypeScript 5.4 以上、<code>tsconfig.json</code> で <code>"strict": true</code> を必須とする。
+      インストールは <code>npm install effect</code> で OK。
+    </div>
+
+    <!-- ======================================== -->
+    <section id="type-sig" class="sec-head">2 — コア型シグネチャ</section>
+
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Effect の型</span>
+      <div class="ve-code-block">
+        <div class="code-header">TypeScript</div>
+        <pre><code>// Effect&lt;A, E, R&gt; — 3つの型パラメータ
+type Effect&lt;A, E, R&gt; = (services: Context&lt;R&gt;) =&gt; Promise&lt;Exit&lt;A, E&gt;&gt;
+
+// 簡単な例
+const program: Effect.Effect&lt;number, Error, never&gt; = Effect.succeed(42)
+const safeDivide = (a: number, b: number): Effect.Effect&lt;number, Error, never&gt; =&gt;
+  b === 0
+    ? Effect.fail(new Error("Division by zero"))
+    : Effect.succeed(a / b)
+
+// 依存サービスを要求する例
+interface Database { query: (sql: string) =&gt; Effect.Effect&lt;Row[], DbError, never&gt; }
+const DbTag = Context.GenericTag&lt;Database&gt;("Database")
+const fetchUsers: Effect.Effect&lt;Row[], DbError, Database&gt; =
+  Effect.flatMap(DbTag, (db) =&gt; db.query("SELECT * FROM users"))</code></pre>
+      </div>
+    </div>
+
+    <div class="type-grid">
+      <div class="type-param" style="--i:1">
+        <div class="type-param__label">A</div>
+        <div class="type-param__name">Success Value</div>
+        <div class="type-param__desc">Effect が正常終了したときに返す値の型。<code>Effect.succeed(42)</code> なら <code>A = number</code>。</div>
+      </div>
+      <div class="type-param type-param--e" style="--i:2">
+        <div class="type-param__label">E</div>
+        <div class="type-param__name">Error Channel</div>
+        <div class="type-param__desc">型安全なエラー。<code>Effect.fail(new Error())</code> なら <code>E = Error</code>。エラーが発生しない場合は <code>never</code>。</div>
+      </div>
+      <div class="type-param type-param--r" style="--i:3">
+        <div class="type-param__label">R</div>
+        <div class="type-param__name">Requirements</div>
+        <div class="type-param__desc">実行に必要な依存サービスの型（<code>Context&lt;R&gt;</code>）。依存なしの場合は <code>never</code>。</div>
+      </div>
+    </div>
+
+    <div class="mermaid-wrap" style="--i:4">
+      <div class="mermaid-controls">
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-right:auto;">Runtimeモデル</span>
+        <button id="zoom-in">+</button>
+        <button id="zoom-out">−</button>
+        <button id="zoom-reset">Reset</button>
+      </div>
+      <div class="mermaid-viewport" id="mermaid-vp">
+        <div class="mermaid-canvas" id="mermaid-canvas">
+          <div class="mermaid" id="runtime-diagram">
+flowchart TD
+    P["Effect&lt;A, E, R&gt;\nプログラム定義"]
+    L["Layer&lt;R&gt;\n依存サービス提供"]
+    RT["Runtime\nEffect.runSync\nEffect.runPromise\nEffect.runFork"]
+    S["Exit.Success&lt;A&gt;\n成功値"]
+    F["Exit.Failure\nCause&lt;E&gt;"]
+
+    P --> RT
+    L --> RT
+    RT -->|正常終了| S
+    RT -->|異常終了| F
+
+    classDef prog fill:#e0f2f1,stroke:#50b3a0,color:#1a4a44
+    classDef layer fill:#fff8e1,stroke:#d4a743,color:#5a3e00
+    classDef rt fill:#f5f5f5,stroke:#888,color:#333
+    classDef ok fill:#e8f5e9,stroke:#55a05a,color:#1b4a1f
+    classDef err fill:#fce8e8,stroke:#b05555,color:#4a1b1b
+    class P prog
+    class L layer
+    class RT rt
+    class S ok
+    class F err
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-callout" style="margin-top:1rem;">
+      <strong>Exit と Cause：</strong>
+      <code>Exit&lt;A, E&gt;</code> は実行結果の代数的データ型（<code>Success&lt;A&gt;</code> | <code>Failure&lt;E&gt;</code>）。
+      <code>Cause&lt;E&gt;</code> はエラーの構造を細かく表現し、予期されたエラー・予期せぬ欠陥・中断・複合エラーを区別できる。
+    </div>
+
+    <!-- ======================================== -->
+    <section id="core-modules" class="sec-head">3 — コアモジュール</section>
+
+    <div class="ve-card ve-card--recessed" style="--i:0;margin-bottom:1rem;">
+      <p style="font-size:0.875rem;color:var(--text-dim);margin:0;">
+        <code>effect</code> パッケージには 175+ モジュールが含まれる。以下は特に重要な 8 つのコアモジュール。
+      </p>
+    </div>
+
+    <div class="module-grid">
+      <div class="module-card" style="--i:1">
+        <div class="module-card__name">Effect</div>
+        <div class="module-card__desc">副作用・並行処理・エラーハンドリングを管理するコア抽象。<code>map</code>, <code>flatMap</code>, <code>zip</code>, <code>race</code>, <code>retry</code> など豊富な演算子を提供。</div>
+      </div>
+      <div class="module-card" style="--i:2">
+        <div class="module-card__name">Context</div>
+        <div class="module-card__desc">型安全な依存性注入。<code>Context.GenericTag</code> でサービスを識別し、直接参照なしに計算を通じてサービスを伝播させる。</div>
+      </div>
+      <div class="module-card" style="--i:3">
+        <div class="module-card__name">Layer</div>
+        <div class="module-card__desc">依存関係グラフを管理するシステム。モジュール式で合成可能なリソース確保のしくみ。複雑な DI をレイヤードアーキテクチャで表現。</div>
+      </div>
+      <div class="module-card" style="--i:4">
+        <div class="module-card__name">Fiber</div>
+        <div class="module-card__desc">リソースセーフなキャンセルを持つ軽量仮想スレッド。<code>Effect.fork</code> で並行実行、<code>Fiber.join</code> で結果を待機。Effect の並行処理の基盤。</div>
+      </div>
+      <div class="module-card" style="--i:5">
+        <div class="module-card__name">Stream</div>
+        <div class="module-card__desc">非同期・イベント駆動のデータ処理抽象。無限ストリーム・バックプレッシャー・リソース管理を型安全に扱える強力な API。</div>
+      </div>
+      <div class="module-card" style="--i:6">
+        <div class="module-card__name">Schedule</div>
+        <div class="module-card__desc">リトライ・繰り返しポリシーを合成可能なスケジュールで定義。指数バックオフ・最大試行回数・期限などを組み合わせ可能。</div>
+      </div>
+      <div class="module-card" style="--i:7">
+        <div class="module-card__name">Scope</div>
+        <div class="module-card__desc">リソースのライフサイクル管理。取得と解放のペアをスコープに結びつけ、リソースリークを防止。<code>acquireRelease</code> パターン。</div>
+      </div>
+      <div class="module-card" style="--i:8">
+        <div class="module-card__name">Schema</div>
+        <div class="module-card__desc">構造化データの定義・検証・変換ライブラリ。型安全なエンコード／デコード。Zod との比較は <a href="https://github.com/Effect-TS/effect/blob/main/packages/effect/schema-vs-zod.md" target="_blank" rel="noopener">schema-vs-zod.md</a> を参照。</div>
+      </div>
+    </div>
+
+    <!-- ======================================== -->
+    <section id="packages" class="sec-head">4 — パッケージ群</section>
+
+    <div class="ve-table-wrap" style="--i:0">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:38%">パッケージ</th>
+            <th style="width:12%">カテゴリ</th>
+            <th>説明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Core -->
+          <tr>
+            <td><code>effect</code></td>
+            <td><span class="pkg-cat pkg-cat--core">core</span></td>
+            <td>コアパッケージ。全 Effect アプリケーションの基盤となるプリミティブ群。</td>
+          </tr>
+          <!-- CLI -->
+          <tr>
+            <td><code>@effect/cli</code></td>
+            <td><span class="pkg-cat pkg-cat--tools">tools</span></td>
+            <td>型安全な CLI アプリケーション構築ユーティリティ。</td>
+          </tr>
+          <!-- Cluster -->
+          <tr>
+            <td><code>@effect/cluster</code></td>
+            <td><span class="pkg-cat pkg-cat--tools">tools</span></td>
+            <td>分散コンピューティング・クラスタリングツール。</td>
+          </tr>
+          <!-- Platform -->
+          <tr>
+            <td><code>@effect/platform</code></td>
+            <td><span class="pkg-cat pkg-cat--platform">platform</span></td>
+            <td>クロスプラットフォームランタイムユーティリティ（抽象インターフェース）。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/platform-browser</code></td>
+            <td><span class="pkg-cat pkg-cat--platform">platform</span></td>
+            <td>ブラウザ向けプラットフォームユーティリティ。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/platform-bun</code></td>
+            <td><span class="pkg-cat pkg-cat--platform">platform</span></td>
+            <td>Bun 向けプラットフォームユーティリティ。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/platform-node</code></td>
+            <td><span class="pkg-cat pkg-cat--platform">platform</span></td>
+            <td>Node.js 向けプラットフォームユーティリティ。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/platform-node-shared</code></td>
+            <td><span class="pkg-cat pkg-cat--platform">platform</span></td>
+            <td>Node.js 向け共有ユーティリティ。</td>
+          </tr>
+          <!-- SQL -->
+          <tr>
+            <td><code>@effect/sql</code></td>
+            <td><span class="pkg-cat pkg-cat--sql">sql</span></td>
+            <td>SQL データベースユーティリティ（ベース抽象）。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/sql-pg</code></td>
+            <td><span class="pkg-cat pkg-cat--sql">sql</span></td>
+            <td>postgres.js を使った PostgreSQL 実装。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/sql-mysql2</code></td>
+            <td><span class="pkg-cat pkg-cat--sql">sql</span></td>
+            <td>mysql2 ライブラリを使った MySQL 実装。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/sql-sqlite-node</code></td>
+            <td><span class="pkg-cat pkg-cat--sql">sql</span></td>
+            <td>better-sqlite3 を使った Node.js SQLite 実装。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/sql-sqlite-bun</code></td>
+            <td><span class="pkg-cat pkg-cat--sql">sql</span></td>
+            <td>bun:sqlite を使った Bun SQLite 実装。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/sql-sqlite-wasm</code></td>
+            <td><span class="pkg-cat pkg-cat--sql">sql</span></td>
+            <td>@sqlite.org/sqlite-wasm を使った WebAssembly 実装。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/sql-drizzle</code></td>
+            <td><span class="pkg-cat pkg-cat--sql">sql</span></td>
+            <td>Drizzle ORM との統合。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/sql-kysely</code></td>
+            <td><span class="pkg-cat pkg-cat--sql">sql</span></td>
+            <td>Kysely クエリビルダとの統合。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/sql-clickhouse</code></td>
+            <td><span class="pkg-cat pkg-cat--sql">sql</span></td>
+            <td>ClickHouse 向け実装。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/sql-d1</code></td>
+            <td><span class="pkg-cat pkg-cat--sql">sql</span></td>
+            <td>Cloudflare D1 向け実装。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/sql-mssql</code></td>
+            <td><span class="pkg-cat pkg-cat--sql">sql</span></td>
+            <td>mssql/tedious を使った SQL Server 実装。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/sql-libsql</code></td>
+            <td><span class="pkg-cat pkg-cat--sql">sql</span></td>
+            <td>@libsql/client を使った libSQL 実装（Turso 対応）。</td>
+          </tr>
+          <!-- Other tools -->
+          <tr>
+            <td><code>@effect/rpc</code></td>
+            <td><span class="pkg-cat pkg-cat--tools">tools</span></td>
+            <td>型安全な RPC（Remote Procedure Call）ユーティリティ。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/workflow</code></td>
+            <td><span class="pkg-cat pkg-cat--tools">tools</span></td>
+            <td>耐障害性のある永続ワークフロー（Durable Workflows）。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/opentelemetry</code></td>
+            <td><span class="pkg-cat pkg-cat--tools">tools</span></td>
+            <td>OpenTelemetry との統合（トレーシング・メトリクス）。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/typeclass</code></td>
+            <td><span class="pkg-cat pkg-cat--tools">tools</span></td>
+            <td>関数型プログラミングの型クラス（Functor, Monad 等）。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/vitest</code></td>
+            <td><span class="pkg-cat pkg-cat--tools">tools</span></td>
+            <td>Vitest 向けテストユーティリティ。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/printer</code> / <code>@effect/printer-ansi</code></td>
+            <td><span class="pkg-cat pkg-cat--tools">tools</span></td>
+            <td>汎用プリンタ / ANSI 対応プリンタユーティリティ。</td>
+          </tr>
+          <tr>
+            <td><code>@effect/experimental</code></td>
+            <td><span class="pkg-cat pkg-cat--tools">tools</span></td>
+            <td>実験的機能と新しい API のプレビュー。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ======================================== -->
+    <section id="ai-integration" class="sec-head">5 — AI統合</section>
+
+    <div class="ve-card ve-card--elevated" style="--i:0;margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> @effect/ai エコシステム</span>
+      <p>
+        <code>@effect/ai</code> は Effect の型安全なプリミティブを使って複数の AI プロバイダを統一 API で操作できるようにするパッケージ群。
+        テキスト生成・ツール呼び出し・ストリーミングを抽象化し、プロバイダを差し替えても同じコードが動作する。
+      </p>
+    </div>
+
+    <div class="provider-grid">
+      <div class="provider-card" style="--i:1">
+        <div class="provider-card__name">OpenAI</div>
+        <div class="provider-card__pkg">@effect/ai-openai</div>
+        <div class="provider-card__desc">GPT シリーズ・Embeddings・Function Calling を Effect プリミティブでラップ。</div>
+      </div>
+      <div class="provider-card" style="--i:2">
+        <div class="provider-card__name">Anthropic</div>
+        <div class="provider-card__pkg">@effect/ai-anthropic</div>
+        <div class="provider-card__desc">Claude シリーズとの統合。ツール呼び出し・ストリーミング対応。</div>
+      </div>
+      <div class="provider-card" style="--i:3">
+        <div class="provider-card__name">Amazon Bedrock</div>
+        <div class="provider-card__pkg">@effect/ai-amazon-bedrock</div>
+        <div class="provider-card__desc">AWS Bedrock 経由でマルチモデルを統一インターフェースで利用。</div>
+      </div>
+      <div class="provider-card" style="--i:4">
+        <div class="provider-card__name">Google AI</div>
+        <div class="provider-card__pkg">@effect/ai-google</div>
+        <div class="provider-card__desc">Gemini シリーズとの統合。マルチモーダル入力対応。</div>
+      </div>
+      <div class="provider-card" style="--i:5">
+        <div class="provider-card__name">OpenRouter</div>
+        <div class="provider-card__pkg">@effect/ai-openrouter</div>
+        <div class="provider-card__desc">OpenRouter 経由で 200+ モデルへアクセス。コスト最適化・フォールバック管理。</div>
+      </div>
+      <div class="provider-card" style="--i:6">
+        <div class="provider-card__name">@effect/ai（コア）</div>
+        <div class="provider-card__pkg">@effect/ai</div>
+        <div class="provider-card__desc">プロバイダ共通の抽象インターフェース。<code>AiModel</code>・<code>AiToolkit</code> 等の基礎型を定義。</div>
+      </div>
+    </div>
+
+    <div class="ve-code-block" style="--i:7">
+      <div class="code-header">TypeScript — プロバイダ差し替えの例</div>
+      <pre><code>import { Effect } from "effect"
+import * as Anthropic from "@effect/ai-anthropic"
+import * as OpenAI from "@effect/ai-openai"
+
+// ビジネスロジックはプロバイダに依存しない
+const summarize = (text: string) =&gt;
+  AiModel.generateText({ prompt: `Summarize: ${text}` })
+
+// Layer を差し替えるだけでプロバイダを変更
+const withAnthropic = summarize("...").pipe(
+  Effect.provide(Anthropic.Claude.layer({ model: "claude-opus-4-5" }))
+)
+const withOpenAI = summarize("...").pipe(
+  Effect.provide(OpenAI.Gpt.layer({ model: "gpt-4o" }))
+)</code></pre>
+    </div>
+
+    <!-- ======================================== -->
+    <section id="dev-workflow" class="sec-head">6 — 開発ワークフロー</section>
+
+    <div class="ve-card ve-card--recessed" style="--i:0;margin-bottom:1rem;">
+      <p style="font-size:0.875rem;color:var(--text-dim);margin:0;">
+        PR を出す前に以下のコマンドをすべて通す必要がある。<code>pnpm install</code> には pnpm 10.4.0 以上が必要。
+      </p>
+    </div>
+
+    <div class="step-flow">
+      <div class="step-card" style="--i:1">
+        <div class="step-card__num">01</div>
+        <div class="step-card__body">
+          <div class="step-card__title">セットアップ</div>
+          <div class="step-card__desc">Fork 後に <code>pnpm install</code>。<code>pnpm codegen</code> でパッケージエントリポイントを再生成（構造変更時）。</div>
+        </div>
+      </div>
+      <div class="step-card" style="--i:2">
+        <div class="step-card__body">
+          <div class="step-card__title">型チェック</div>
+          <div class="step-card__desc"><code>pnpm check</code> でコンパイルエラーがないことを確認。TS 5.4+ strict モードが対象。</div>
+        </div>
+        <div class="step-card__num" style="order:-1">02</div>
+      </div>
+      <div class="step-card" style="--i:3">
+        <div class="step-card__num">03</div>
+        <div class="step-card__body">
+          <div class="step-card__title">テスト実行</div>
+          <div class="step-card__desc"><code>pnpm test</code> で全ユニットテスト。<code>pnpm test-types</code> で tstyche による型レベルテストも実行。</div>
+        </div>
+      </div>
+      <div class="step-card" style="--i:4">
+        <div class="step-card__body">
+          <div class="step-card__title">品質チェック</div>
+          <div class="step-card__desc"><code>pnpm circular</code> で循環依存確認。<code>pnpm lint</code> でスタイル検査（自動修正は <code>pnpm lint-fix</code>）。</div>
+        </div>
+        <div class="step-card__num" style="order:-1">04</div>
+      </div>
+      <div class="step-card" style="--i:5">
+        <div class="step-card__num">05</div>
+        <div class="step-card__body">
+          <div class="step-card__title">Changeset</div>
+          <div class="step-card__desc"><code>pnpm changeset</code> で変更を記録。<strong>patch</strong>（小修正）・<strong>minor</strong>（新機能）・<strong>major</strong>（破壊的変更）から選択。</div>
+        </div>
+      </div>
+      <div class="step-card" style="--i:6">
+        <div class="step-card__body">
+          <div class="step-card__title">PR 提出先ブランチ</div>
+          <div class="step-card__desc"><code>main</code>（バグ修正・小パッチ）・<code>next-minor</code>（新機能）・<code>next-major</code>（破壊的変更）のいずれかに対して PR を出す。</div>
+        </div>
+        <div class="step-card__num" style="order:-1">06</div>
+      </div>
+    </div>
+
+    <div class="ve-table-wrap" style="--i:7;margin-top:1rem;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30%">コマンド</th>
+            <th>用途</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>pnpm install</code></td><td>依存パッケージをインストール（pnpm 10.4.0 以上が必要）</td></tr>
+          <tr><td><code>pnpm codegen</code></td><td>パッケージエントリポイントの再生成</td></tr>
+          <tr><td><code>pnpm check</code></td><td>TypeScript コンパイルエラーの確認</td></tr>
+          <tr><td><code>pnpm test</code></td><td>全ユニットテストの実行</td></tr>
+          <tr><td><code>pnpm test-types</code></td><td>tstyche による型レベルテストの実行</td></tr>
+          <tr><td><code>pnpm circular</code></td><td>循環 import の検出</td></tr>
+          <tr><td><code>pnpm lint</code></td><td>コーディングスタイルの検査</td></tr>
+          <tr><td><code>pnpm lint-fix</code></td><td>スタイル問題の自動修正</td></tr>
+          <tr><td><code>pnpm docgen</code></td><td>ドキュメントの生成・検証</td></tr>
+          <tr><td><code>pnpm changeset</code></td><td>変更ログの記録（patch / minor / major）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /.main -->
+</div><!-- /.wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+// Mermaid init
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#e0f2f1',
+    primaryTextColor: '#1a4a44',
+    primaryBorderColor: '#50b3a0',
+    lineColor: '#777',
+    secondaryColor: '#fff8e1',
+    tertiaryColor: '#f5f5f5',
+    fontFamily: "'Azeret Mono', 'SF Mono', Consolas, monospace",
+    fontSize: '13px',
+  },
+  flowchart: { curve: 'basis', padding: 20 }
+});
+
+// Mermaid zoom/pan
+(function() {
+  var vp = document.getElementById('mermaid-vp');
+  var canvas = document.getElementById('mermaid-canvas');
+  if (!vp || !canvas) return;
+  var scale = 1, startX = 0, startY = 0, transX = 0, transY = 0, dragging = false;
+
+  const applyTransform = function() {
+    canvas.style.transform = 'scale(' + scale + ') translate(' + transX + 'px, ' + transY + 'px)';
+  };
+  document.getElementById('zoom-in').addEventListener('click', function() { scale = Math.min(scale + 0.2, 3); applyTransform(); });
+  document.getElementById('zoom-out').addEventListener('click', function() { scale = Math.max(scale - 0.2, 0.4); applyTransform(); });
+  document.getElementById('zoom-reset').addEventListener('click', function() { scale = 1; transX = 0; transY = 0; applyTransform(); });
+
+  vp.addEventListener('wheel', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      scale = Math.min(Math.max(scale - e.deltaY * 0.001, 0.4), 3);
+      applyTransform();
+    }
+  }, { passive: false });
+
+  vp.addEventListener('mousedown', function(e) { dragging = true; startX = e.clientX - transX; startY = e.clientY - transY; });
+  window.addEventListener('mouseup', function() { dragging = false; });
+  window.addEventListener('mousemove', function(e) {
+    if (!dragging || scale <= 1) return;
+    transX = e.clientX - startX;
+    transY = e.clientY - startY;
+    applyTransform();
+  });
+})();
+
+// Scroll Spy
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  var updateActive = function() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var docTop = s.head.getBoundingClientRect().top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  };
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
