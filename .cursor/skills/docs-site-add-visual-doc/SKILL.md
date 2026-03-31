@@ -22,7 +22,7 @@ description: >-
 ## スコープ
 
 - **対象**: docs-site リポジトリ内。解説の正は **`repos/<名前>/`**（URL クローン時は Step 0 で取得）。
-- **出力**: `<プロジェクトルート>/docs/<名前>.html`。`assets/prompts/` 内のプロンプトが参照する `~/.agent/diagrams/` は **docs-site 作業では使わない**（standalone HTML 生成用）。
+- **出力**: `<プロジェクトルート>/docs/<名前>.html`。`assets/` 内の Markdown プロンプトが参照する `~/.agent/diagrams/` は **docs-site 作業では使わない**（standalone HTML 生成用）。
 - **ファイル名・ブランチ名**: 単語連結 **最大 4 つ**。
 
 > `repos/` は `.gitignore` 対象のため Glob で見えない。`ls` または Read でパス直接確認する。
