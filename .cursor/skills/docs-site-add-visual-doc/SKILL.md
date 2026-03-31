@@ -152,13 +152,15 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 
 ### ブランチ・コミット
 
-1. `git branch --show-current`。main のまま直コミット禁止なら `git checkout -b docs/<名前>-link`。
+1. `git branch --show-current`。main のまま直コミット禁止なら新規ブランチを作成する。
+   - ブランチ名は `git diff --name-only` の変更ファイルから対象を判断し、`docs/<対象名>` 形式で命名する。
 2. **commit-diffs スキル**（`.cursor/skills/commit-diffs/SKILL.md`）を読み、手順に従ってコミットを作成する。**`repos/` はコミットに含めない。**
 
 ### Push とドラフト PR
 
 1. `git push -u origin <branch>`
 2. **pr-creation スキル**（`.cursor/skills/pr-creation/SKILL.md`）を読み、手順に従ってドラフト PR を作成する。
+   - ベースブランチは MUST `main` にする。他は絶対に指定しない。
    - PR 本文に **解説元**（URL または `repos/<名前>`）と **変更ファイル**を含める。
    - 絵文字禁止ルールがある場合は PR 本文にも入れない。
 3. PR 作成を確認したら `git checkout main` でメインブランチへ戻る。
