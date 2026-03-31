@@ -11,7 +11,7 @@ description: >-
 
 # docs-site ビジュアル解説（統合スキル）
 
-`repos/<name>/`（またはクローン取得）を **`docs/<name>.html`** にし、`index.html` を更新して **ドラフト PR まで**完了させる。旧 `repo-to-visual-doc` の **Context Engineering 三原則** と、旧 `docs-site-add-visual-doc` の **クローン・Spell UI・PR 手順** を一本化したもの。
+`repos/<name>/`（またはクローン取得）を **`docs/<name>.html`** にし、`index.html` を更新して **ドラフト PR まで**完了させる。
 
 | 原則 | 適用 | 目的 |
 |------|------|------|
@@ -22,12 +22,10 @@ description: >-
 ## スコープ
 
 - **対象**: docs-site リポジトリ内。解説の正は **`repos/<名前>/`**（URL クローン時は Step 0 で取得）。
-- **出力**: `<プロジェクトルート>/docs/<名前>.html`。汎用 Visual Explainer の `~/.agent/diagrams/` は **docs-site 作業では使わない**（`references/visual-explainer-core.md` 先頭の注記どおり）。
+- **出力**: `<プロジェクトルート>/docs/<名前>.html`。`assets/prompts/` 内のプロンプトが参照する `~/.agent/diagrams/` は **docs-site 作業では使わない**（standalone HTML 生成用）。
 - **ファイル名・ブランチ名**: 単語連結 **最大 4 つ**。
 
-### repos の可視性
-
-`repos/` は **`.gitignore` 対象**のため Glob で見えないことがある。`ls` や Read でパス直接確認する。
+> `repos/` は `.gitignore` 対象のため Glob で見えない。`ls` または Read でパス直接確認する。
 
 ---
 
@@ -65,7 +63,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 1. 優先度 1: ディレクトリ構造 → 責務を推測。
 2. 優先度 2: `README.md` → インターフェイスと目的。
 3. 優先度 3: メインエントリ（`SKILL.md` / `index.*` / `main.*`）→ 公開 API・手順。
-4. 優先度 4–6（JiT）: Step 3 で必要と判断した時のみ `references/` / `assets/` 等を読む。
+4. 優先度 4–6（JiT）: Phase 3 で必要と判断した時のみ `references/` / `assets/` 等を読む。
 
 **Context Compression**: 読んだファイルから「タイトル・目的・主要構造・重要な制約」だけを内部に保持し、全文をコンテキストに載せ続けない。
 
@@ -77,21 +75,21 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 
 ## Phase 2: Reference Acquisition（JiT — Spell UI パターン）
 
-読むのは **2〜3 本＋本スキル補助**が基本。
+読むのは **必須 2〜3 本 ＋ 本スキル補助（JiT）**。
+
+**必ず読む:**
 
 | 読むファイル | 目的 |
 |-------------|------|
 | `index.html` | Spell UI、`.doc-list`、Unfurl コメントとメタの並び |
 | `docs/react-grab.html` または `docs/defuddle.html` のいずれか 1 件 | `<style>` 順序・コンポーネント・体裁 |
-| `docs/defuddle.html` 末尾 | Scroll Spy（`active` は常に 1 件） |
+| `docs/defuddle.html` 末尾 | Scroll Spy（`active` は常に 1 件、セクション 4 本以上の場合） |
+| `references/visual-explainer-core.md` | Think → Structure → Style、品質、Anti-Patterns |
+| `references/spell-ui-integration.md` + `references/spell-ui-tokens.css` + `references/spell-ui-static.css` | Spell UI 実装仕様 |
 
 **本スキル配下の `references/` は補助**。見た目の正は **リポジトリの `index.html` と `docs/*.html`**。
 
-ページ生成前に必ず次を踏む。
-
-1. **`references/visual-explainer-core.md`**（Think → Structure → Style、図タイプ、品質、Anti-Patterns）。Deliver の diagrams パスは無視。
-2. **Spell UI**: `references/spell-ui-integration.md`、`references/spell-ui-tokens.css`、`references/spell-ui-static.css`。既存ページ（`opentui.html` / `react-grab.html` 等）に合わせる。
-3. **必要時のみ JiT**: `references/context-extraction.md`（変換に迷った時）、`references/spell-ui-map.md`（コンポーネント選択に迷った時）、`references/css-patterns.md`、`references/libraries.md`、`references/responsive-nav.md`、`templates/`。
+> `visual-explainer-core.md` の Deliver セクションにある `~/.agent/diagrams/` パスは無視する（docs-site では `docs/<名前>.html` が出力先）。
 
 ---
 
@@ -114,6 +112,19 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 2. **Spell UI**: THEME → Spell UI static → Wrap+TOC → …。`.ve-card`、`ve-code-block`、`ve-table-wrap` 等は `spell-ui-map.md` と内容に合わせて使う。
 3. **4 セクション以上**: `.wrap` / `.toc` / `.main`、Scroll Spy を `defuddle.html` からコピー。
 4. **Mermaid・表・図**: `visual-explainer-core.md` の Diagram Types と **`references/libraries.md`**。
+
+### テンプレート選択（`assets/`）
+
+テンプレートは **ゼロから書くよりも参考程度**に使う。既存 `docs/*.html` の体裁を正とする。
+
+| ソースの性質 | 参照テンプレート |
+|------------|----------------|
+| アーキテクチャ・構成図が中心 | `assets/architecture.html` |
+| テーブル・設定値・比較が主体 | `assets/data-table.html` |
+| フロー・状態遷移が主体 | `assets/mermaid-flowchart.html` |
+| スライド形式で説明したい | `assets/slide-deck.html` |
+
+> スライド形式に特化した詳細は `references/slide-patterns.md` を JiT 参照。
 
 ---
 
@@ -139,10 +150,6 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 </li>
 ```
 
-### index の画面構成を Spell UI で揃える（任意）
-
-別コミット可。変更は `index.html` のみ。
-
 ### ブランチ・コミット
 
 1. `git branch --show-current`。main のまま直コミット禁止なら `git checkout -b docs/<名前>-link`。
@@ -151,8 +158,10 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 ### Push とドラフト PR
 
 1. `git push -u origin <branch>`
-2. `gh pr create --draft --base main`（`--title`・`--body-file` はプロジェクトルールに合わせる）。本文に **解説元**（URL または `repos/<名前>`）と **変更ファイル**。詳細は **pr-creation スキル**。絵文字禁止ルールがある場合は PR 本文にも入れない。
-3. 完了後 `git checkout main`
+2. **pr-creation スキル**（`.cursor/skills/pr-creation/SKILL.md`）を読み、手順に従ってドラフト PR を作成する。
+   - PR 本文に **解説元**（URL または `repos/<名前>`）と **変更ファイル**を含める。
+   - 絵文字禁止ルールがある場合は PR 本文にも入れない。
+3. PR 作成を確認したら `git checkout main` でメインブランチへ戻る。
 
 ---
 
@@ -163,7 +172,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 | `repos/<name>` が Glob で見つからない | `.gitignore` のため Glob 不可。`ls` または `Read` で直接確認 |
 | README が無い | メインエントリから直接読む |
 | Scroll Spy が動かない | `docs/defuddle.html` 末尾スクリプトを再コピー。`toggle` パターンを確認 |
-| `doc-list` の位置が分からない | `grep -n "doc-list" index.html` |
+| `doc-list` の位置が分からない | `rg -n "doc-list" index.html` |
 | フォント・パレットが既存と被る | `references/spell-ui-map.md` の差別化チェック |
 
 ---
@@ -177,14 +186,19 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 | 複雑な PR | pr-creation |
 | index 変更の事前評価 | self-refine |
 
-**ビジュアル詳細**は `references/visual-explainer-core.md` と `references/spell-ui-integration.md` を正とする。
-
 ---
 
 ## JiT リファレンス一覧（迷った時だけ読む）
 
 | タイミング | ファイル |
 |-----------|---------|
-| コンテンツ変換 | `references/context-extraction.md` |
+| Phase 1 のファイル一覧把握 | `scripts/scan-source.sh` を実行 |
+| コンテンツ変換で迷った時 | `references/context-extraction.md` |
 | コンポーネント選択・フォント | `references/spell-ui-map.md` |
-| Phase 1 の整理 | `scripts/scan-source.sh` を実行 |
+| CSS カスタムパターン | `references/css-patterns.md` |
+| Mermaid・外部ライブラリ | `references/libraries.md` |
+| TOC 付きレスポンシブナビ | `references/responsive-nav.md` |
+| スライド形式の詳細 | `references/slide-patterns.md` |
+| AS-IS/TO-BE 比較スタイル | `references/as-is-to-be-spell-ui-style.md` |
+| HTML テンプレート参考 | `assets/architecture.html` / `assets/data-table.html` / `assets/mermaid-flowchart.html` / `assets/slide-deck.html` |
+| 汎用 HTML 生成プロンプト（docs-site 外） | `assets/generate-visual-plan.md` / `assets/generate-web-diagram.md` 等 |
