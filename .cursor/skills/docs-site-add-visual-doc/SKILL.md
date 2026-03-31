@@ -153,7 +153,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 ### ブランチ・コミット
 
 1. `git branch --show-current`。main のまま直コミット禁止なら `git checkout -b docs/<名前>-link`。
-2. `git add docs/<新規>.html index.html` → `git commit -m "docs: ○○ ビジュアル解説追加と index リンク"`。**`repos/` はコミットに含めない。**
+2. **commit-diffs スキル**（`.cursor/skills/commit-diffs/SKILL.md`）を読み、手順に従ってコミットを作成する。**`repos/` はコミットに含めない。**
 
 ### Push とドラフト PR
 
@@ -182,8 +182,8 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 | 用途 | 参照先 |
 |------|--------|
 | repos 内の解析 | code-reading（`.cursor/skills/code-reading`） |
-| コミット分割 | commit-diffs |
-| 複雑な PR | pr-creation |
+| コミット作成 | commit-diffs（`.cursor/skills/commit-diffs/SKILL.md`） |
+| PR 作成 | pr-creation（`.cursor/skills/pr-creation/SKILL.md`） |
 | index 変更の事前評価 | self-refine |
 
 ---
