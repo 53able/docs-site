@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenWork — OpenCode のオープンソース GUI デスクトップクライアント</title>
+  <meta name="description" content="OpenCode エンジン上に構築されたオープンソースの Claude Cowork 代替。ローカルファースト・拡張可能なエージェントワークフロー GUI。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="OpenWork — OpenCode のオープンソース GUI デスクトップクライアント">
+  <meta property="og:description" content="OpenCode エンジン上に構築されたオープンソースの Claude Cowork 代替。ローカルファースト・拡張可能なエージェントワークフロー GUI。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/openwork.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="OpenWork — OpenCode のオープンソース GUI デスクトップクライアント">
+  <meta name="twitter:description" content="OpenCode エンジン上に構築されたオープンソースの Claude Cowork 代替。ローカルファースト・拡張可能なエージェントワークフロー GUI。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      /* Indigo-blue accent palette — distinct from existing pages */
+      --chart-1: oklch(0.55 0.22 265);
+      --chart-2: oklch(0.65 0.15 200);
+      --chart-3: oklch(0.42 0.12 240);
+      --chart-4: oklch(0.78 0.14 170);
+      --chart-5: oklch(0.72 0.18 300);
+      --code-bg: var(--muted);
+      --code-text: #1e3a5f;
+      --font-body: 'Lexend Deca', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.68 0.22 265);
+        --chart-2: oklch(0.72 0.15 200);
+        --chart-3: oklch(0.58 0.15 240);
+        --chart-4: oklch(0.82 0.14 170);
+        --chart-5: oklch(0.76 0.18 300);
+        --code-bg: #0a0f1a;
+        --code-text: #a5b4fc;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 24rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.55 0.22 265 / 0.12); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 80% 0%, oklch(0.55 0.22 265 / 0.07) 0%, transparent 45%),
+        radial-gradient(ellipse at 10% 100%, oklch(0.65 0.15 200 / 0.05) 0%, transparent 40%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 80% 0%, oklch(0.68 0.22 265 / 0.09) 0%, transparent 45%),
+          radial-gradient(ellipse at 10% 100%, oklch(0.72 0.15 200 / 0.06) 0%, transparent 40%);
+      }
+    }
+
+    /* ============ Wrap + TOC (responsive nav) ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Mode comparison cards */
+    .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    @media (max-width: 700px) { .mode-grid { grid-template-columns: 1fr; } }
+    .mode-card { border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 1.25rem 1.5rem; }
+    .mode-card--a { background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%); border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%); }
+    .mode-card--b { background: color-mix(in oklch, var(--card) 92%, var(--chart-2) 8%); border-color: color-mix(in oklch, var(--border) 60%, var(--chart-2) 40%); }
+    .mode-badge { display: inline-block; font-family: var(--font-mono); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; margin-bottom: 0.75rem; }
+    .mode-badge--a { background: oklch(0.55 0.22 265 / 0.15); color: var(--chart-1); }
+    .mode-badge--b { background: oklch(0.65 0.15 200 / 0.15); color: var(--chart-2); }
+
+    /* Component diagram */
+    .diagram-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; overflow-x: auto; }
+    .diagram-block pre { font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.65; color: var(--code-text); white-space: pre; margin: 0; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#runtime-modes">ランタイムモード</a>
+    <a href="#extensibility">拡張機能</a>
+    <a href="#quickstart">セットアップ</a>
+    <a href="#contributing">コントリビューション</a>
+  </nav>
+
+  <div class="main">
+  <h1>OpenWork</h1>
+  <p class="subtitle">OpenCode エンジン上に構築されたオープンソース GUI デスクトップクライアント — Claude Cowork のオープンな代替</p>
+
+  <!-- ===================== 1. 概要 ===================== -->
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ミッション</span>
+    <p><strong>OpenWork</strong> は、Claude Cowork / Codex に相当するオープンソースのデスクトップアプリ。<em>OpenCode</em> をエンジンとして使い、UI・オンボーディング・安全性・権限管理・進捗表示を担うエクスペリエンス層として機能する。ローカルファースト・クラウド対応・ロックインなし。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Local</span><span class="ve-kpi-card__label">ファースト</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Tauri</span><span class="ve-kpi-card__label">デスクトップシェル</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">SSE</span><span class="ve-kpi-card__label">リアルタイム</span></div>
+    </div>
+    <p style="margin-bottom:0"><strong>OpenCode = エンジン / OpenWork = エクスペリエンス</strong>。OpenCode が持つすべての API・SDK・プリミティブをそのまま活用し、カスタム実装を最小限に抑える設計思想。</p>
+  </div>
+  <div class="ve-card" style="--i:1; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> コア哲学</span>
+    <ul>
+      <li><strong>Local-first, cloud-ready</strong>: ワンクリックでローカル起動、必要に応じてリモート接続。</li>
+      <li><strong>Composable</strong>: デスクトップアプリ・WhatsApp/Slack/Telegram コネクタ・サーバー CLI を自由に組み合わせ。</li>
+      <li><strong>Ejectable</strong>: OpenCode が動くことはすべて OpenWork でも動く。UI がなくても OK。</li>
+      <li><strong>Sharing is caring</strong>: localhost ソロからはじめ、必要なときだけリモート共有に opt-in。</li>
+      <li><strong>Predictable &gt; Clever</strong>: ヒューリスティック自動検出より明示的設定を優先。逃げ道と失敗理由を常に提示。</li>
+    </ul>
+  </div>
+  <div class="ve-callout" style="margin-top: 1rem;">
+    <strong>Non-Goals:</strong> OpenCode CLI/TUI を置き換えない。OpenCode API にマップしない「マジック機能」を作らない。
+  </div>
+
+  <!-- ===================== 2. アーキテクチャ ===================== -->
+  <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> リポジトリ構成</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>パス</th><th>役割</th></tr></thead>
+        <tbody>
+          <tr><td><code>/apps/app/</code></td><td>OpenWork UI — デスクトップ・モバイル・Web クライアントの体験層</td></tr>
+          <tr><td><code>/apps/desktop/</code></td><td>Tauri シェル。ネイティブプロセスのライフサイクルと <code>engine_*</code> / <code>orchestrator_*</code> コマンドを管理</td></tr>
+          <tr><td><code>/apps/server/</code></td><td>OpenWork サーバー — UI が消費する API・コントロール層。FS 操作と OpenCode へのプロキシが中心</td></tr>
+          <tr><td><code>/apps/orchestrator/</code></td><td>CLI デーモン。host モードで OpenWork server + OpenCode + opencode-router を管理</td></tr>
+          <tr><td><code>/apps/opencode-router/</code></td><td>Slack/Telegram メッセージブリッジ。<code>(channel, identityId, peerId) → directory</code> でルーティング</td></tr>
+          <tr><td><code>/apps/share/</code></td><td>OpenWork バンドルのシェアリンク公開サービス</td></tr>
+          <tr><td><code>/ee/apps/den-*</code></td><td>クラウド制御プレーン (den-api)・プロキシ (den-worker-proxy)・ランタイム (den-worker-runtime)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> FS ミューテーション方針</span>
+    <p>すべてのファイルシステム変更は <strong>OpenWork サーバーを経由する</strong>。これにより、ローカル・リモート問わず権限チェック・承認・監査ログが一元化される。Tauri のネイティブ FS 操作はホストモードのフォールバックであり、主要な機能サーフェスではない。</p>
+    <div class="ve-callout" style="margin-top: 0.75rem;">
+      <strong>Reload-required フロー:</strong> <code>opencode.json</code> / <code>.opencode/skills/**</code> / MCP 定義などの変更後は <code>markReloadRequired(reason, trigger)</code> を呼び出し、共通のリロードポップアップに委ねる。機能ごとに個別バナーを作らない。
+    </div>
+  </div>
+
+  <!-- ===================== 3. ランタイムモード ===================== -->
+  <section id="runtime-modes" class="sec-head">3 — ランタイムモード</section>
+  <div class="mode-grid">
+    <div class="mode-card mode-card--a">
+      <span class="mode-badge mode-badge--a">Mode A — Desktop</span>
+      <h3 style="margin-top:0.25rem">ローカルホスト</h3>
+      <p style="font-size:0.875rem; line-height:1.6;">OpenWork が OpenWork サーバーをローカルで起動。OpenCode は <code>127.0.0.1:4096</code> で稼働。リモート共有は明示的 opt-in で <code>0.0.0.0</code> にリバインド。</p>
+      <ul style="font-size:0.8125rem; padding-left:1.25rem; margin:0;">
+        <li>デフォルトランタイム: <code>openwork-orchestrator</code></li>
+        <li>フォールバック: <code>direct</code>（Tauri が OpenCode を直接起動）</li>
+        <li>ポート範囲: <code>48000–51000</code>（ワークスペースごとに固定）</li>
+      </ul>
+    </div>
+    <div class="mode-card mode-card--b">
+      <span class="mode-badge mode-badge--b">Mode B — Web / Cloud</span>
+      <h3 style="margin-top:0.25rem">クラウドワーカー</h3>
+      <p style="font-size:0.875rem; line-height:1.6;">ホスト型 Web コントロールサーフェスにサインイン後、クラウドワーカーを起動。<code>/w/ws_*</code> URL + アクセストークンで OpenWork アプリから接続。</p>
+      <ul style="font-size:0.8125rem; padding-left:1.25rem; margin:0;">
+        <li>den-api がワーカーのプロビジョニングを管理</li>
+        <li>den-worker-proxy が Daytona APIキーをサーバーサイドに保持</li>
+        <li>モバイルクライアントからも同じ接続フローを利用</li>
+      </ul>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Desktop アーキテクチャ図</span>
+    <div class="diagram-block">
+      <pre>/apps/app UI
+    |
+    v
+/apps/desktop (Tauri シェル)
+    |
+    +--&gt; /apps/orchestrator (daemon / start/serve host)
+    |          |
+    |          v
+    |        OpenCode (loopback)
+    |
+    +--&gt; /apps/server (OpenWork API + proxy)
+    |          |
+    |          +--&gt; OpenCode
+    |          +--&gt; /apps/opencode-router (optional)
+    |
+    +--&gt; /apps/opencode-router (optional local child)</pre>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> OpenCode Router（メッセージングブリッジ）</span>
+    <p>Slack / Telegram からのメッセージを OpenCode セッションに転送する。ルーティングキーは <code>(channel, identityId, peerId) → directory</code>。ディレクトリはルートの外に出られず、予測可能なスコープを維持。</p>
+    <div class="diagram-block" style="margin-top: 0.75rem;">
+      <pre>Telegram / Slack
+      |
+      v
+adapter (channel, identityId, peerId)
+      |
+      v
+router state (bindings / sessions)
+      |
+      v
+directory resolution
+      |
+      v
+OpenCode session.prompt
+      |
+      v
+reply to same chat</pre>
+    </div>
+  </div>
+
+  <!-- ===================== 4. 拡張機能 ===================== -->
+  <section id="extensibility" class="sec-head">4 — 拡張機能</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> OpenCode プリミティブの選択指針</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>プリミティブ</th><th>ユースケース</th><th>特徴・注意点</th></tr></thead>
+        <tbody>
+          <tr><td><strong>MCP</strong></td><td>OAuth が必要なサードパーティ連携</td><td>認証 + ケーパビリティの境界が明確。サーバーの露出範囲に制限あり</td></tr>
+          <tr><td><strong>Skills</strong></td><td>繰り返し可能なプレーンテキストパターン</td><td>反復性と可読性が高い。Plugins/CLI と組み合わせると強力</td></tr>
+          <tr><td><strong>Plugins</strong></td><td>コードレベルのツールが必要なとき</td><td>CLI より安全、MCP より柔軟。権限スコープ付き</td></tr>
+          <tr><td><strong>Agents</strong></td><td>別モデルで実行するサブタスク</td><td>メインモデルと異なるコンテキスト・MCP を持てる</td></tr>
+          <tr><td><strong>Commands</strong></td><td><code>/</code>コマンドでツールをトリガー</td><td><code>.opencode/commands/</code> に Markdown で定義</td></tr>
+          <tr><td><strong>Bash / CLI</strong></td><td>上級者・内部パワーワークフロー</td><td>最高リスク。コンテキスト・権限クリープに注意</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> Skills Manager</span>
+    <p>インストール済みの <code>.opencode/skills</code> フォルダを一覧表示し、ローカルスキルフォルダを <code>.opencode/skills/&lt;skill-name&gt;</code> にインポートできる UI。将来的にはレジストリ検索・キュレーションリスト同期・サインアップ不要の公開に対応予定。</p>
+  </div>
+  <div class="ve-card" style="--i:2; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> Plugins（OpenCode）</span>
+    <p>プラグインは <code>opencode.json</code> で管理される。OpenWork は設定ファイルに書き込んだ後、<code>POST /workspace/:id/engine/reload</code> でエンジンにリロードを伝える。</p>
+    <div class="ve-code-block">
+      <pre><code>{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["opencode-wakatime"]
+}</code></pre>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:3; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> フォルダ認証モデル</span>
+    <p>2 層構造: <strong>OpenWork UI</strong> がネイティブピッカーで許可ルートを明示管理し、<strong>OpenCode サーバー</strong>がセッションレベルの権限要求を処理。"Allow once" は永続スコープを拡張しない。"Always allow" は明示的かつ取り消し可能。</p>
+  </div>
+
+  <!-- ===================== 5. セットアップ ===================== -->
+  <section id="quickstart" class="sec-head">5 — セットアップ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 必要環境</span>
+    <ul>
+      <li>Node.js + <code>pnpm@10.27.0</code></li>
+      <li>Bun 1.3.9 以上（<code>bun --version</code> で確認）</li>
+      <li>Rust ツールチェーン（Tauri 用）: <code>curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</code></li>
+      <li>Tauri CLI: <code>cargo install tauri-cli</code></li>
+      <li>PATH 上に <code>opencode</code> CLI がインストール済み</li>
+    </ul>
+  </div>
+  <div class="ve-card" style="--i:1; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> インストール &amp; 起動</span>
+    <div class="ve-code-block">
+      <pre><code># クローン後、依存関係をインストール
+pnpm install --frozen-lockfile
+
+# デスクトップアプリ起動（dev-mode 隔離 ON）
+pnpm dev
+
+# Web UI のみ起動（Tauri なし）
+pnpm dev:ui</code></pre>
+    </div>
+    <p style="margin-top: 0.75rem;">サンティチェック（1 分）:</p>
+    <div class="ve-code-block">
+      <pre><code>git checkout dev && git pull --ff-only origin dev
+pnpm install --frozen-lockfile
+which bun && bun --version
+pnpm --filter @openwork/desktop exec tauri --version</code></pre>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:2; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> Orchestrator（CLI ホスト）</span>
+    <p>デスクトップ UI なしで OpenCode + OpenWork サーバーを実行する場合:</p>
+    <div class="ve-code-block">
+      <pre><code>npm install -g openwork-orchestrator
+openwork start --workspace /path/to/workspace --approval auto</code></pre>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:3; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> よく使うコマンド</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>コマンド</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>pnpm dev</code></td><td>デスクトップアプリ開発サーバー起動</td></tr>
+          <tr><td><code>pnpm dev:ui</code></td><td>Web UI のみ起動</td></tr>
+          <tr><td><code>pnpm typecheck</code></td><td>型チェック</td></tr>
+          <tr><td><code>pnpm build</code></td><td>プロダクションビルド</td></tr>
+          <tr><td><code>pnpm build:ui</code></td><td>Web UI ビルド</td></tr>
+          <tr><td><code>pnpm test:e2e</code></td><td>E2E テスト</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-callout" style="margin-top: 1rem;">
+    <strong>Linux / Wayland (Hyprland):</strong> WebKitGTK エラーで起動に失敗する場合は <code>WEBKIT_DISABLE_DMABUF_RENDERER=1 openwork</code> または <code>WEBKIT_DISABLE_COMPOSITING_MODE=1 openwork</code> を試す。
+  </div>
+
+  <!-- ===================== 6. コントリビューション ===================== -->
+  <section id="contributing" class="sec-head">6 — コントリビューション</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> はじめる前に</span>
+    <ul>
+      <li><code>AGENTS.md</code> / <code>VISION.md</code> / <code>PRINCIPLES.md</code> / <code>PRODUCT.md</code> / <code>ARCHITECTURE.md</code> を読む</li>
+      <li>Node.js・pnpm・Rust ツールチェーン・<code>opencode</code> が揃っていることを確認</li>
+      <li><code>pnpm install</code> → <code>pnpm typecheck</code> → <code>pnpm test:e2e</code> でベースラインを確認</li>
+    </ul>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> PR チェックリスト</span>
+    <ul>
+      <li>Issue リンクとスコープが明確</li>
+      <li>動作変更にはテストを追加・更新</li>
+      <li>PR 本文に実行コマンドと結果を記載</li>
+      <li>UI 変更にはスクリーンショット・動画を添付</li>
+      <li>CI 失敗はコード起因かインフラ/外部起因かを分類</li>
+      <li>新しい PRD は <code>apps/app/pr/&lt;name&gt;.md</code> に追加</li>
+    </ul>
+  </div>
+  <div class="ve-card" style="--i:2; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> リンク集</span>
+    <ul>
+      <li><a href="https://github.com/different-ai/openwork" target="_blank" rel="noopener">GitHub: different-ai/openwork</a></li>
+      <li><a href="https://openworklabs.com/download" target="_blank" rel="noopener">ダウンロードページ</a></li>
+      <li><a href="https://opencode.ai" target="_blank" rel="noopener">OpenCode 公式サイト</a></li>
+      <li><a href="https://github.com/different-ai/openwork/releases" target="_blank" rel="noopener">リリース一覧</a></li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
