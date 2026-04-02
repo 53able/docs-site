@@ -75,17 +75,15 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 
 ## Phase 2: Reference Acquisition（JiT — Spell UI パターン）
 
-読むのは **必須 2〜3 本 ＋ 本スキル補助（JiT）**。
+読むのは **必須 3 本のみ**。残りは下の JiT 表を参照。
 
 **必ず読む:**
 
 | 読むファイル | 目的 |
 |-------------|------|
-| `index.html` | Spell UI、`.doc-list`、Unfurl コメントとメタの並び |
-| `docs/react-grab.html` または `docs/defuddle.html` のいずれか 1 件 | `<style>` 順序・コンポーネント・体裁 |
-| `docs/defuddle.html` 末尾 | Scroll Spy（`active` は常に 1 件、セクション 4 本以上の場合） |
+| `index.html` | `.doc-list` の形式・Unfurl コメントとメタの並び |
+| `docs/defuddle.html`（末尾スクリプト含む） | `<style>` 順序・コンポーネント・体裁・Scroll Spy パターン |
 | `references/visual-explainer-core.md` | Think → Structure → Style、品質、Anti-Patterns |
-| `references/spell-ui-integration.md` + `references/spell-ui-tokens.css` + `references/spell-ui-static.css` | Spell UI 実装仕様 |
 
 **本スキル配下の `references/` は補助**。見た目の正は **リポジトリの `index.html` と `docs/*.html`**。
 
@@ -130,8 +128,18 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 
 ## Phase 5: Self-Refinement（整合検証）
 
-1. 生成 HTML を既存 1 ページと目視比較: フォント・パレット差別化、THEME トークン名、Scroll Spy の `toggle('active', s === current)`。
-2. **`references/checklist.md`** で一通り確認。
+生成した HTML を出荷前に以下の項目で検証する。すべて通過してから Phase 6 に進む。
+
+**インライン検証（必須）:**
+
+1. `docs/<名前>.html` が存在し、ブラウザで開ける構造になっている。
+2. `<head>` に `og:title` / `og:url` / `og:description` / `twitter:card` がコメント付きで揃っている。
+3. `index.html` の `.doc-list` にリンクカードが追加されている。
+4. 4 セクション以上の場合、Scroll Spy スクリプトが `defuddle.html` のパターン（`toggle('active', s === current)`）と一致している。
+5. フォントとアクセントカラーが既存 `docs/*.html` と被っていない（`references/spell-ui-map.md` の差別化チェック）。
+6. `git status` で `repos/` がステージングされていない。
+
+**全項目チェック:** `references/checklist.md` を読んで残りの項目を確認する。
 
 ---
 
@@ -154,15 +162,23 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 
 1. `git branch --show-current`。main のまま直コミット禁止なら新規ブランチを作成する。
    - ブランチ名は `git diff --name-only` の変更ファイルから対象を判断し、`docs/<対象名>` 形式で命名する。
-2. **commit-diffs スキル**（`.cursor/skills/commit-diffs/SKILL.md`）を読み、手順に従ってコミットを作成する。**`repos/` はコミットに含めない。**
+2. **commit-diffs スキル**の全手順を実行する:
+   - `.cursor/skills/commit-diffs/SKILL.md` を読み、環境検出コマンドを実行する。
+   - `.cursor/skills/commit-diffs/classification.md` を読み、変更カテゴリを特定する。
+   - ヒアドキュメント形式でコミットを作成する。**`repos/` はステージングに含めない。**
 
 ### Push とドラフト PR
 
 1. `git push -u origin <branch>`
-2. **pr-creation スキル**（`.cursor/skills/pr-creation/SKILL.md`）を読み、手順に従ってドラフト PR を作成する。
-   - ベースブランチは MUST `main` にする。他は絶対に指定しない。
-   - PR 本文に **解説元**（URL または `repos/<名前>`）と **変更ファイル**を含める。
-   - 絵文字禁止ルールがある場合は PR 本文にも入れない。
+2. **pr-creation スキル**の全手順を実行する（ショートカット禁止）:
+   - `.cursor/skills/pr-creation/SKILL.md` を読み、環境検出コマンドを実行する。
+   - `.cursor/skills/pr-creation/templates.md` を読み、PR タイトルと本文を生成する。
+     - ベースブランチは MUST `main`。他は絶対に指定しない。
+     - PR 本文に **解説元**（URL または `repos/<名前>`）と **変更ファイル**を含める。
+     - 絵文字は使用しない。
+   - `.cursor/skills/pr-creation/decision-logic.md` を読み、ベースブランチとタイトル形式を確認する。
+   - `.cursor/skills/pr-creation/safety-checks.md` を読み、Self-Refine 評価を実施する。
+   - **「評価完了」と宣言してから** `gh pr create` を実行する。
 3. PR 作成を確認したら `git checkout main` でメインブランチへ戻る。
 
 ---
@@ -176,6 +192,8 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 | Scroll Spy が動かない | `docs/defuddle.html` 末尾スクリプトを再コピー。`toggle` パターンを確認 |
 | `doc-list` の位置が分からない | `rg -n "doc-list" index.html` |
 | フォント・パレットが既存と被る | `references/spell-ui-map.md` の差別化チェック |
+| `repos/` がステージに混入した | `git reset HEAD repos/` で除外してからコミット |
+| commit-diffs または pr-creation スキルを部分的に読んで実行した | スキル内のすべての参照ファイルを読み直し、未実施ステップを実行する |
 
 ---
 
@@ -184,8 +202,8 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 | 用途 | 参照先 |
 |------|--------|
 | repos 内の解析 | code-reading（`.cursor/skills/code-reading`） |
-| コミット作成 | commit-diffs（`.cursor/skills/commit-diffs/SKILL.md`） |
-| PR 作成 | pr-creation（`.cursor/skills/pr-creation/SKILL.md`） |
+| コミット作成 | commit-diffs（`.cursor/skills/commit-diffs/SKILL.md` + `classification.md`） |
+| PR 作成 | pr-creation（`.cursor/skills/pr-creation/SKILL.md` + `templates.md` + `decision-logic.md` + `safety-checks.md`） |
 | index 変更の事前評価 | self-refine |
 
 ---
@@ -197,6 +215,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 | Phase 1 のファイル一覧把握 | `scripts/scan-source.sh` を実行 |
 | コンテンツ変換で迷った時 | `references/context-extraction.md` |
 | コンポーネント選択・フォント | `references/spell-ui-map.md` |
+| Spell UI 実装仕様（CSS 詳細） | `references/spell-ui-integration.md` + `references/spell-ui-tokens.css` + `references/spell-ui-static.css` |
 | CSS カスタムパターン | `references/css-patterns.md` |
 | Mermaid・外部ライブラリ | `references/libraries.md` |
 | TOC 付きレスポンシブナビ | `references/responsive-nav.md` |
