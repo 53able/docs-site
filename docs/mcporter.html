@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCPorter — MCP TypeScript ランタイム &amp; CLI ツールキット</title>
+  <meta name="description" content="Model Context Protocol サーバーを TypeScript や CLI から呼び出すゼロ設定ランタイム。ディスカバリ・型付きプロキシ・CLI 生成・OAuth サポートを一手に担う。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="MCPorter — MCP TypeScript ランタイム &amp; CLI ツールキット">
+  <meta property="og:description" content="Model Context Protocol サーバーを TypeScript や CLI から呼び出すゼロ設定ランタイム。ディスカバリ・型付きプロキシ・CLI 生成・OAuth サポートを一手に担う。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/mcporter.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="MCPorter — MCP TypeScript ランタイム &amp; CLI ツールキット">
+  <meta name="twitter:description" content="Model Context Protocol サーバーを TypeScript や CLI から呼び出すゼロ設定ランタイム。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + IBM Plex / teal-slate) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+
+      /* teal / slate accent palette */
+      --chart-1: oklch(0.56 0.13 200);   /* teal */
+      --chart-2: oklch(0.44 0.10 220);   /* deep slate-blue */
+      --chart-3: oklch(0.72 0.10 184);   /* muted teal */
+      --chart-4: oklch(0.65 0.12 165);   /* sage */
+      --chart-5: oklch(0.48 0.09 240);   /* ink blue */
+
+      --code-bg: oklch(0.975 0 0);
+      --code-text: #0a3d52;
+
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+
+        --chart-1: oklch(0.66 0.13 200);
+        --chart-2: oklch(0.54 0.10 220);
+        --chart-3: oklch(0.76 0.09 184);
+        --chart-4: oklch(0.68 0.10 165);
+        --chart-5: oklch(0.58 0.09 240);
+
+        --code-bg: oklch(0.14 0 0);
+        --code-text: #7ed8f6;
+
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.25rem; font-weight: 500; line-height: 1.2; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.4rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.75rem; background: oklch(0.56 0.13 200 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 70% 0%, oklch(0.56 0.13 200 / 0.07) 0%, transparent 55%),
+        radial-gradient(ellipse at 0% 80%, oklch(0.44 0.10 220 / 0.04) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 70% 0%, oklch(0.66 0.13 200 / 0.09) 0%, transparent 55%),
+          radial-gradient(ellipse at 0% 80%, oklch(0.54 0.10 220 / 0.05) 0%, transparent 50%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 0.9375rem; font-weight: 600; margin: 1.25rem 0 0.6rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    p:last-child { margin-bottom: 0; }
+    ul { margin: 0.5rem 0 0.75rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.4rem; font-size: 0.9rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+
+    /* ============ KPI grid ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.875rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Pipeline / flow ============ */
+    .flow-strip { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; font-size: 0.8rem; }
+    .flow-strip .fs-step { background: color-mix(in oklch, var(--muted) 85%, var(--chart-1) 15%); padding: 0.3rem 0.65rem; border-radius: var(--radius-sm); font-family: var(--font-mono); border: 1px solid var(--border); }
+    .flow-strip .fs-arrow { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* ============ Two-col card grid ============ */
+    .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    @media (max-width: 640px) { .card-grid { grid-template-columns: 1fr; } }
+
+    /* ============ Code header label ============ */
+    .code-header { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); padding: 0.5rem 1rem 0; letter-spacing: 0.05em; }
+
+    /* ============ Badge ============ */
+    .badge { display: inline-block; font-size: 0.6875rem; font-weight: 600; padding: 1px 7px; border-radius: 4px; font-family: var(--font-mono); }
+    .badge--flag { background: color-mix(in oklch, var(--muted) 70%, var(--chart-1) 30%); color: var(--chart-2); }
+
+    /* ============ Animations ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+
+    /* ============ Spacing helpers ============ */
+    .mt-1 { margin-top: 1rem; }
+    .gap-1 { gap: 1rem; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#quickstart">Quick Start</a>
+    <a href="#runtime">Runtime API</a>
+    <a href="#codegen">コード生成</a>
+    <a href="#config">設定管理</a>
+    <a href="#daemon">デーモン</a>
+  </nav>
+
+  <div class="main">
+    <h1>MCPorter 🧳</h1>
+    <p class="subtitle">TypeScript runtime &amp; CLI toolkit for the Model Context Protocol · v0.8.1</p>
+
+    <!-- ====== 1 — 概要 ====== -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> MCPorter とは</span>
+      <p><strong>MCPorter</strong> は、Cursor・Claude・Codex・VS Code などで設定済みの MCP（Model Context Protocol）サーバーを、TypeScript コードや CLI から<strong>ゼロ設定で</strong>呼び出すためのランタイムおよびツールキット。サーバー探索・型付きクライアント生成・スタンドアロン CLI 生成・OAuth 管理を一手に担う。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Zero Config</span><span class="ve-kpi-card__label">エディタ設定を自動取得</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Typed Proxy</span><span class="ve-kpi-card__label">camelCase メソッドで呼び出し</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">CLI Gen</span><span class="ve-kpi-card__label">任意 MCP をCLIに変換</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">OAuth</span><span class="ve-kpi-card__label">ブラウザ認証を自動化</span></div>
+      </div>
+    </div>
+
+    <div class="card-grid" style="margin-top: 1rem;">
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> ディスカバリ</span>
+        <p><code>createRuntime()</code> は <code>~/.mcporter/mcporter.json</code>・プロジェクト設定・Cursor/Claude/Codex/Windsurf/VS Code のインポートをマージし、<code>${ENV}</code> 変数展開・接続プールを透過的に行う。</p>
+      </div>
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> 対応プラットフォーム</span>
+        <ul>
+          <li>macOS · Linux · Windows（Node ≥ 20.11）</li>
+          <li>HTTP / SSE / stdio トランスポート統一 API</li>
+          <li><code>npx mcporter</code> でインストール不要即時実行</li>
+          <li>Homebrew tap 経由のバイナリ配布にも対応</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ====== 2 — Quick Start ====== -->
+    <section id="quickstart" class="sec-head">2 — Quick Start &amp; CLI</section>
+
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 呼び出しスタイルの比較</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>スタイル</th><th>例</th><th>特徴</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>colon-flag</code></td>
+              <td><code>linear.create_comment issueId:ENG-123 body:'Hi'</code></td>
+              <td>シェルスクリプト向け。<code>key=value</code> / <code>key:value</code> 両対応。</td>
+            </tr>
+            <tr>
+              <td><code>function-call</code></td>
+              <td><code>'linear.create_comment(issueId: "ENG-123", body: "Hi")'</code></td>
+              <td><code>mcporter list</code> のシグネチャをそのままコピペ可能。</td>
+            </tr>
+            <tr>
+              <td><code>HTTP selector</code></td>
+              <td><code>https://mcp.linear.app/mcp.list_issues</code></td>
+              <td>URL + ツール名を直接指定。config 不要。</td>
+            </tr>
+            <tr>
+              <td><code>shorthand</code></td>
+              <td><code>mcporter linear.list_issues</code></td>
+              <td>動詞を省略。dotted token は <code>call</code> に自動解釈。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card-grid" style="margin-top: 1rem;">
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> list — サーバー確認</span>
+        <div class="ve-code-block">
+          <div class="code-header">bash</div>
+          <pre><code># 全サーバー一覧
+npx mcporter list
+
+# TypeScript 形式のシグネチャ表示
+npx mcporter list context7 --schema
+
+# 全パラメータを展開
+npx mcporter list linear --all-parameters
+
+# JSON 出力（スクリプト連携）
+npx mcporter list --json</code></pre>
+        </div>
+      </div>
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> call — ツール実行</span>
+        <div class="ve-code-block">
+          <div class="code-header">bash</div>
+          <pre><code># Context7 でドキュメント取得
+npx mcporter call context7.resolve-library-id \
+  libraryName=react
+
+# Linear にコメント投稿
+npx mcporter call \
+  'linear.create_comment(issueId: "LNR-123", body: "Hello")'
+
+# Chrome DevTools スナップショット
+npx mcporter call chrome-devtools.take_snapshot
+
+# 未設定サーバーにアドホック接続
+npx mcporter call \
+  --stdio "bun run ./local-server.ts" --name local</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:3; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> list が返す TypeScript 形式シグネチャ</span>
+      <div class="ve-code-block">
+        <div class="code-header">typescript — mcporter list linear の出力例</div>
+        <pre><code>linear - Hosted Linear MCP
+  23 tools · 1654ms · HTTP https://mcp.linear.app/mcp
+
+  /**
+   * Create a comment on a specific Linear issue
+   * @param issueId The issue ID
+   * @param body    The content of the comment as Markdown
+   * @param parentId? A parent comment ID to reply to
+   */
+  function create_comment(issueId: string, body: string, parentId?: string): Comment;
+  // optional (3): notifySubscribers, labelIds, mentionIds</code></pre>
+      </div>
+      <div class="ve-callout" style="margin-top: 0.75rem;">
+        <strong>オートコレクト:</strong> ツール名をタイポすると MCPorter がカタログを検索し、編集距離が小さければ自動補正、大きければ <code>Did you mean …?</code> ヒントを表示する。
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:4; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 主な CLI フラグ</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>フラグ</th><th>対象コマンド</th><th>説明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>--config &lt;path&gt;</code></td><td>全般</td><td>config ファイルを明示指定</td></tr>
+            <tr><td><code>--http-url &lt;url&gt;</code></td><td>list / call / auth</td><td>アドホック HTTP MCP サーバー指定</td></tr>
+            <tr><td><code>--stdio "cmd"</code></td><td>list / call / auth</td><td>アドホック stdio サーバー指定</td></tr>
+            <tr><td><code>--persist &lt;path&gt;</code></td><td>list / call</td><td>アドホック定義を config に保存</td></tr>
+            <tr><td><code>--all-parameters</code></td><td>list</td><td>省略された任意パラメータを全展開</td></tr>
+            <tr><td><code>--output json|raw</code></td><td>call</td><td>JSON / 生テキスト出力</td></tr>
+            <tr><td><code>--tail-log</code></td><td>call</td><td>レスポンスのログファイルを末尾表示</td></tr>
+            <tr><td><code>--raw-strings</code></td><td>call</td><td>数値的引数を文字列として保持</td></tr>
+            <tr><td><code>--oauth-timeout &lt;ms&gt;</code></td><td>call / auth</td><td>OAuth ブラウザ待機時間を変更</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ====== 3 — Runtime API ====== -->
+    <section id="runtime" class="sec-head">3 — Runtime API</section>
+
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> callOnce — ワンショット呼び出し</span>
+      <p>最もシンプルな API。サーバー探索・OAuth・トランスポートの開閉を自動処理する。単発スクリプトやエージェントのツールフックに適している。</p>
+      <div class="ve-code-block">
+        <div class="code-header">typescript</div>
+        <pre><code>import { callOnce } from "mcporter";
+
+const result = await callOnce({
+  server: "firecrawl",
+  toolName: "crawl",
+  args: { url: "https://anthropic.com" },
+});
+
+console.log(result); // 生 MCP エンベロープ</code></pre>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> createRuntime — 接続プール</span>
+      <p>複数回呼び出す場合やストリーミングが必要な場合は <code>createRuntime()</code> を使う。OAuth トークンのリフレッシュ・トランスポート再利用を内包する。</p>
+      <div class="ve-code-block">
+        <div class="code-header">typescript</div>
+        <pre><code>import { createRuntime } from "mcporter";
+
+const runtime = await createRuntime();
+
+const tools  = await runtime.listTools("context7");
+const result = await runtime.callTool("context7", "resolve-library-id", {
+  args: { libraryName: "react" },
+});
+
+console.log(result);
+await runtime.close(); // トランスポートとセッションを終了</code></pre>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:2; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> createServerProxy — 型付きプロキシ</span>
+      <p>ツール名を camelCase メソッドとして呼び出せる人間向け API。引数マッピング・JSON スキーマデフォルト適用・<code>CallResult</code> でラップが自動で行われる。</p>
+      <div class="ve-code-block">
+        <div class="code-header">typescript</div>
+        <pre><code>import { createRuntime, createServerProxy } from "mcporter";
+
+const runtime = await createRuntime();
+const chrome  = createServerProxy(runtime, "chrome-devtools");
+const linear  = createServerProxy(runtime, "linear");
+
+// takeSnapshot → take_snapshot に自動マッピング
+const snapshot = await chrome.takeSnapshot();
+console.log(snapshot.text());
+
+// CallResult ヘルパー: .text() .json() .images() .markdown() .content() .raw
+const docs = await linear.searchDocumentation({ query: "automations" });
+console.log(docs.json());
+
+await runtime.close();</code></pre>
+      </div>
+    </div>
+
+    <!-- ====== 4 — コード生成 ====== -->
+    <section id="codegen" class="sec-head">4 — コード生成</section>
+
+    <div class="card-grid">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> generate-cli — CLI 生成</span>
+        <p>任意の MCP サーバー定義をスタンドアロン CLI に変換する。生成物にはリジェネレーション用メタデータが埋め込まれる。</p>
+        <div class="ve-code-block">
+          <div class="code-header">bash</div>
+          <pre><code># HTTP MCP を CLI に変換
+npx mcporter generate-cli \
+  --command https://mcp.context7.com/mcp
+# → context7.ts / context7.js を出力
+
+# stdio MCP を Bun コンパイル済みバイナリに
+npx mcporter generate-cli \
+  "npx -y chrome-devtools-mcp@latest" \
+  --compile
+
+# 特定ツールだけ含める
+npx mcporter generate-cli linear \
+  --include-tools list_issues,create_issue
+
+# 既存 CLI を最新 mcporter でリジェネ
+npx mcporter generate-cli \
+  --from dist/context7.js</code></pre>
+        </div>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> emit-ts — 型クライアント生成</span>
+        <p><code>mcporter list</code> と同じシグネチャ・Doc ブロックから <code>.d.ts</code> インターフェースまたはクライアントラッパーを生成する。</p>
+        <div class="ve-code-block">
+          <div class="code-header">bash</div>
+          <pre><code># 型定義のみ（.d.ts）
+npx mcporter emit-ts linear \
+  --out types/linear-tools.d.ts
+
+# クライアントラッパー（.d.ts + .ts）
+npx mcporter emit-ts linear \
+  --mode client --out clients/linear.ts
+
+# 任意パラメータも含む
+npx mcporter emit-ts linear \
+  --mode client --include-optional \
+  --out clients/linear-full.ts
+
+# JSON サマリ出力（スクリプト連携）
+npx mcporter emit-ts linear --json</code></pre>
+        </div>
+        <div class="ve-callout" style="margin-top: 0.75rem;">
+          <strong>--mode client</strong> を指定すると <code>createRuntime</code> / <code>createServerProxy</code> をラップしたファクトリ関数も一緒に出力される。
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 5 — 設定管理 ====== -->
+    <section id="config" class="sec-head">5 — 設定管理</section>
+
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> config ファイル形式（JSONC）</span>
+      <div class="ve-code-block">
+        <div class="code-header">config/mcporter.json</div>
+        <pre><code>{
+  "$schema": "https://raw.githubusercontent.com/steipete/mcporter/main/mcporter.schema.json",
+  "mcpServers": {
+    "context7": {
+      "description": "Context7 docs MCP",
+      "baseUrl": "https://mcp.context7.com/mcp",
+      "headers": { "Authorization": "$env:CONTEXT7_API_KEY" }
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"],
+      "env": { "npm_config_loglevel": "error" }
+    }
+  },
+  "imports": ["cursor", "claude-code", "claude-desktop", "codex", "windsurf", "opencode", "vscode"]
+}</code></pre>
+      </div>
+      <div class="ve-callout" style="margin-top: 0.75rem;">
+        <code>${VAR}</code> / <code>${VAR:-fallback}</code> / <code>$env:VAR</code> の変数展開に対応。インラインコメント（<code>//</code> / <code>/* */</code>）と末尾カンマも許可される JSONC 形式。
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 解決優先度</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>優先度</th><th>ソース</th><th>備考</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td><code>--http-url</code> / <code>--stdio</code> / ベア URL</td><td>最高優先。<code>--persist</code> がない限りキャッシュされない。</td></tr>
+            <tr><td>2</td><td><code>config/mcporter.json</code>（または <code>--config</code> 指定）</td><td>プロジェクトルートのローカル設定。</td></tr>
+            <tr><td>3</td><td><code>~/.mcporter/mcporter.json</code></td><td>ホームディレクトリのグローバル設定。プロジェクト設定とマージされる。</td></tr>
+            <tr><td>4</td><td><code>imports</code> リストのエディタ設定</td><td>Cursor / Claude / Codex / Windsurf / VS Code など。読み取り専用スナップショット。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:2; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> config サブコマンド</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>サブコマンド</th><th>説明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>config list [filter]</code></td><td>ローカルエントリを表示。<code>--source import</code> でインポート元を表示。</td></tr>
+            <tr><td><code>config get &lt;name&gt;</code></td><td>単一サーバーの解決済み定義とソースパスを表示。</td></tr>
+            <tr><td><code>config add &lt;name&gt; [target]</code></td><td>サーバーを config に永続化（URL または stdio コマンド）。</td></tr>
+            <tr><td><code>config remove &lt;name&gt;</code></td><td>ローカルエントリを削除。インポート由来のエントリはコピー後に削除可能。</td></tr>
+            <tr><td><code>config import &lt;kind&gt;</code></td><td>cursor / claude-code / codex などの設定を表示・コピー。</td></tr>
+            <tr><td><code>config login &lt;name|url&gt;</code></td><td>OAuth / auth フローを完了し <code>~/.mcporter/&lt;name&gt;/</code> にキャッシュ。</td></tr>
+            <tr><td><code>config logout &lt;name&gt;</code></td><td>OAuth トークンキャッシュを削除。<code>--all</code> で全消去。</td></tr>
+            <tr><td><code>config doctor</code></td><td>config ファイルの共通ミスを検証（開発中）。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ====== 6 — デーモン ====== -->
+    <section id="daemon" class="sec-head">6 — デーモン（keep-alive）</section>
+
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ステートフルサーバーの維持</span>
+      <p><code>chrome-devtools</code> や <code>mobile-mcp</code> のようなステートフル stdio サーバーは、初回呼び出し時に per-login デーモンが自動起動し、Chrome タブやデバイスセッションを複数の呼び出し間で維持する。</p>
+      <div class="ve-code-block">
+        <div class="code-header">bash</div>
+        <pre><code># デーモンの状態確認（接続中サーバー一覧）
+mcporter daemon status
+
+# デーモンを明示的に起動
+mcporter daemon start
+
+# 起動しつつログをファイルに出力
+mcporter daemon start --log --log-file /tmp/daemon.log
+
+# 設定変更後にバウンス
+mcporter daemon restart
+
+# デーモン停止
+mcporter daemon stop</code></pre>
+      </div>
+    </div>
+
+    <div class="card-grid" style="margin-top: 1rem;">
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> lifecycle 設定</span>
+        <p>サーバーエントリに <code>"lifecycle": "keep-alive"</code> を追加するか、<code>MCPORTER_KEEPALIVE=name</code> 環境変数で指定するとデーモン管理対象になる。逆に <code>"lifecycle": "ephemeral"</code> または <code>MCPORTER_DISABLE_KEEPALIVE=name</code> でオプトアウト可能。</p>
+        <div class="ve-callout" style="margin-top: 0.75rem;">
+          アドホック接続（<code>--stdio</code> / <code>--http-url</code>）はデーモン管理外。<code>--persist</code> で config に書き込んでから lifecycle を設定する。
+        </div>
+      </div>
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> デバッグ手法</span>
+        <ul>
+          <li><code>MCPORTER_DEBUG_HANG=1</code> — ハングしたトランスポートの詳細ログを出力</li>
+          <li><code>--log-level debug</code> — 全コマンドで詳細ログを有効化</li>
+          <li><code>--log-servers &lt;name&gt;</code> — 特定サーバーの呼び出しトレースのみ出力</li>
+          <li><code>tmux new-session -- pnpm mcporter:list</code> — バックグラウンドで長時間セッションを維持しつつ調査</li>
+          <li>ハング調査の詳細は <code>docs/hang-debug.md</code> と <code>docs/tmux.md</code> を参照</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:3; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 関連リンク</span>
+      <ul>
+        <li><a href="https://github.com/steipete/mcporter" target="_blank" rel="noopener">GitHub: steipete/mcporter</a> — ソースコード</li>
+        <li><a href="https://www.npmjs.com/package/mcporter" target="_blank" rel="noopener">npm: mcporter</a> — パッケージページ</li>
+        <li><a href="https://github.com/steipete/mcporter/blob/main/docs/call-syntax.md" target="_blank" rel="noopener">docs/call-syntax.md</a> — 呼び出し構文の詳細</li>
+        <li><a href="https://github.com/steipete/mcporter/blob/main/docs/adhoc.md" target="_blank" rel="noopener">docs/adhoc.md</a> — アドホック接続と OAuth の詳細</li>
+        <li><a href="https://github.com/steipete/mcporter/blob/main/docs/emit-ts.md" target="_blank" rel="noopener">docs/emit-ts.md</a> — emit-ts フラグ全リファレンス</li>
+        <li><a href="https://github.com/steipete/mcporter/blob/main/docs/config.md" target="_blank" rel="noopener">docs/config.md</a> — 設定解決・インポートの詳細</li>
+      </ul>
+    </div>
+
+  </div><!-- /.main -->
+</div><!-- /.wrap -->
+
+<script>
+  (function() {
+    const toc = document.getElementById('toc');
+    const links = toc ? Array.from(toc.querySelectorAll('a')) : [];
+    const sections = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+    const toggle = (a, cls, on) => on ? a.classList.add(cls) : a.classList.remove(cls);
+
+    function update() {
+      const mid = window.scrollY + window.innerHeight / 3;
+      let current = sections[0];
+      for (const s of sections) { if (s.getBoundingClientRect().top + window.scrollY <= mid) current = s; }
+      links.forEach((a, i) => toggle(a, 'active', sections[i] === current));
+    }
+
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+  })();
+</script>
+</body>
+</html>
