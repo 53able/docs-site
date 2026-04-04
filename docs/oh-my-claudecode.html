@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>oh-my-claudecode — Claude Code マルチエージェント・オーケストレーション</title>
+  <meta name="description" content="Claude Code 向けマルチエージェント・オーケストレーションシステム。Team・Autopilot・Ultrawork・Ralph など 8 つの実行モード、19 専門エージェント、31 スキルを図解。ゼロ設定・30-50% コスト削減。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="oh-my-claudecode — Claude Code マルチエージェント・オーケストレーション">
+  <meta property="og:description" content="Claude Code 向けマルチエージェント・オーケストレーション。19 専門エージェント・31 スキル・スマートモデルルーティングを図解。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/oh-my-claudecode.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="oh-my-claudecode — Claude Code マルチエージェント・オーケストレーション">
+  <meta name="twitter:description" content="19 専門エージェント・31 スキル・8 実行モードを備えた Claude Code オーケストレーション。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ Spell UI tokens — Blueprint palette ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+
+      --background: oklch(0.975 0.006 240);
+      --foreground: oklch(0.115 0.025 240);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.115 0.025 240);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.115 0.025 240);
+      --primary: oklch(0.28 0.13 248);
+      --primary-foreground: oklch(0.98 0 0);
+      --secondary: oklch(0.95 0.01 240);
+      --secondary-foreground: oklch(0.28 0.13 248);
+      --muted: oklch(0.94 0.01 240);
+      --muted-foreground: oklch(0.50 0.05 240);
+      --accent: oklch(0.94 0.01 240);
+      --accent-foreground: oklch(0.115 0.025 240);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.875 0.02 240);
+      --input: oklch(0.875 0.02 240);
+      --ring: oklch(0.50 0.09 248);
+
+      /* Blueprint: deep navy + gold */
+      --chart-1: oklch(0.35 0.13 248);
+      --chart-2: oklch(0.70 0.18 76);
+      --chart-3: oklch(0.52 0.11 195);
+      --chart-4: oklch(0.58 0.13 155);
+      --chart-5: oklch(0.62 0.15 40);
+
+      --code-bg: oklch(0.93 0.012 240);
+      --code-text: oklch(0.22 0.12 248);
+
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.10 0.015 240);
+        --foreground: oklch(0.94 0.005 240);
+        --card: oklch(0.145 0.018 240);
+        --card-foreground: oklch(0.94 0.005 240);
+        --popover: oklch(0.145 0.018 240);
+        --popover-foreground: oklch(0.94 0.005 240);
+        --primary: oklch(0.80 0.09 240);
+        --primary-foreground: oklch(0.145 0.018 240);
+        --secondary: oklch(0.20 0.018 240);
+        --secondary-foreground: oklch(0.94 0.005 240);
+        --muted: oklch(0.22 0.018 240);
+        --muted-foreground: oklch(0.62 0.04 240);
+        --accent: oklch(0.22 0.018 240);
+        --accent-foreground: oklch(0.94 0.005 240);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.52 0.09 248);
+        --chart-1: oklch(0.62 0.16 248);
+        --chart-2: oklch(0.78 0.19 76);
+        --chart-3: oklch(0.65 0.13 195);
+        --chart-4: oklch(0.68 0.13 155);
+        --chart-5: oklch(0.68 0.14 40);
+        --code-bg: oklch(0.11 0.016 240);
+        --code-text: oklch(0.68 0.15 248);
+      }
+    }
+
+    /* ============ Spell UI static components ============ */
+    .ve-card {
+      background: var(--card);
+      color: var(--card-foreground);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+    }
+    .ve-card--elevated {
+      background: var(--accent);
+      color: var(--accent-foreground);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .ve-card--recessed {
+      background: var(--muted);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 89%, var(--chart-1) 11%);
+      box-shadow: 0 6px 28px rgba(0,0,0,0.09);
+      border-color: color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-section-label {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-size: 0.72rem; font-weight: 700; line-height: 1;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      margin-bottom: 0.875rem; color: var(--muted-foreground);
+    }
+    .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-dot--gold { background: var(--chart-2); }
+    .ve-callout {
+      border-left: 3px solid var(--chart-2);
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-2) 10%);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      padding: 0.875rem 1.25rem;
+      font-size: 0.875rem;
+      line-height: 1.6;
+    }
+    .ve-code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .ve-code-block pre {
+      margin: 0; padding: 1rem 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem; line-height: 1.65;
+      white-space: pre-wrap; overflow-x: auto;
+      color: var(--code-text);
+    }
+    .ve-table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.855rem; }
+    .ve-table-wrap th {
+      background: var(--muted); color: var(--muted-foreground);
+      font-weight: 700; font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: 0.07em; padding: 0.625rem 1rem;
+      text-align: left; border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .ve-table-wrap td {
+      padding: 0.6rem 1rem; border-bottom: 1px solid var(--border);
+      vertical-align: top; line-height: 1.5;
+    }
+    .ve-table-wrap tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tr:nth-child(even) td {
+      background: color-mix(in oklch, var(--card) 96%, var(--muted) 4%);
+    }
+    .ve-table-wrap tr:hover td {
+      background: color-mix(in oklch, var(--card) 91%, var(--chart-1) 9%);
+    }
+
+    /* ============ Page layout ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--background);
+      background-image:
+        radial-gradient(ellipse at 70% -5%, oklch(0.35 0.13 248 / 0.07) 0%, transparent 55%),
+        radial-gradient(ellipse at 10% 80%, oklch(0.70 0.18 76 / 0.04) 0%, transparent 45%);
+      color: var(--foreground);
+      font-family: var(--font-body);
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 70% -5%, oklch(0.62 0.16 248 / 0.10) 0%, transparent 55%),
+          radial-gradient(ellipse at 10% 80%, oklch(0.78 0.19 76 / 0.06) 0%, transparent 45%);
+      }
+    }
+
+    .wrap {
+      max-width: 1080px; margin: 0 auto;
+      display: grid; grid-template-columns: 210px 1fr;
+      gap: 2.25rem; padding: 2rem 1.5rem;
+      align-items: start;
+    }
+    @media (max-width: 760px) {
+      .wrap { grid-template-columns: 1fr; padding: 1rem; gap: 1rem; }
+      .toc { display: none; }
+    }
+
+    /* ---- TOC ---- */
+    .toc { position: sticky; top: 1.5rem; }
+    .toc-title {
+      font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--muted-foreground);
+      margin-bottom: 0.75rem; padding-left: 0.75rem;
+    }
+    .toc ul { list-style: none; }
+    .toc li { margin-bottom: 0.05rem; }
+    .toc a {
+      display: block; padding: 0.35rem 0.75rem;
+      font-size: 0.82rem; color: var(--muted-foreground);
+      text-decoration: none; border-left: 2px solid transparent;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      line-height: 1.4;
+    }
+    .toc a:hover { color: var(--foreground); background: var(--muted); }
+    .toc a.active {
+      color: var(--chart-1); font-weight: 600;
+      border-left-color: var(--chart-1);
+      background: color-mix(in oklch, var(--background) 88%, var(--chart-1) 12%);
+    }
+
+    /* ---- Main ---- */
+    .main { min-width: 0; display: flex; flex-direction: column; gap: 1.25rem; }
+
+    /* Section headers */
+    .sec-head {
+      font-size: 1.05rem; font-weight: 700;
+      color: var(--foreground);
+      padding: 0.45rem 0 0.45rem 0.875rem;
+      border-left: 3px solid var(--chart-1);
+      scroll-margin-top: 1.5rem;
+    }
+
+    /* ---- Hero ---- */
+    .hero-title {
+      font-size: 1.95rem; font-weight: 800;
+      letter-spacing: -0.04em; margin-bottom: 0.35rem;
+      line-height: 1.1;
+    }
+    .hero-sub {
+      font-size: 1rem; font-weight: 500;
+      color: var(--muted-foreground); margin-bottom: 0.6rem;
+      font-style: italic;
+    }
+    .hero-tagline {
+      font-size: 0.9rem; line-height: 1.6;
+      color: var(--muted-foreground); margin-bottom: 1rem;
+    }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.25rem; }
+    .hero-badge {
+      display: inline-flex; align-items: center;
+      background: color-mix(in oklch, var(--card) 85%, var(--chart-1) 15%);
+      border: 1px solid color-mix(in oklch, var(--border) 45%, var(--chart-1) 55%);
+      color: var(--chart-1); font-family: var(--font-mono);
+      font-size: 0.75rem; font-weight: 500;
+      padding: 0.2rem 0.6rem; border-radius: 99px;
+    }
+    .hero-badge--gold {
+      background: color-mix(in oklch, var(--card) 85%, var(--chart-2) 15%);
+      border-color: color-mix(in oklch, var(--border) 45%, var(--chart-2) 55%);
+      color: color-mix(in oklch, var(--chart-2) 85%, var(--foreground) 15%);
+    }
+
+    /* KPI row */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.625rem; margin-top: 1rem; }
+    @media (max-width: 560px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+    .ve-kpi-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 0.875rem 1rem; text-align: center;
+    }
+    .kpi-value {
+      font-size: 1.55rem; font-weight: 800;
+      color: var(--chart-1); line-height: 1;
+      font-family: var(--font-mono);
+    }
+    .kpi-value--gold { color: var(--chart-2); }
+    .kpi-label {
+      font-size: 0.7rem; color: var(--muted-foreground);
+      margin-top: 0.3rem; font-weight: 600; line-height: 1.3;
+    }
+
+    /* Step flow */
+    .step-flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    @media (max-width: 560px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 1rem 1.125rem;
+    }
+    .step-num {
+      font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700;
+      color: var(--chart-1); text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 0.3rem;
+    }
+    .step-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.4rem; }
+    .step-body { font-size: 0.82rem; color: var(--muted-foreground); line-height: 1.5; }
+    .step-code {
+      font-family: var(--font-mono); font-size: 0.74rem;
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 0.5rem 0.75rem;
+      margin-top: 0.5rem; white-space: pre; overflow-x: auto;
+      color: var(--code-text); display: block;
+    }
+
+    /* Mode badge */
+    .mode-badge {
+      display: inline-block; font-family: var(--font-mono);
+      font-size: 0.73rem; font-weight: 600;
+      padding: 0.18rem 0.5rem; border-radius: var(--radius-sm);
+      background: color-mix(in oklch, var(--muted) 75%, var(--chart-1) 25%);
+      color: var(--chart-1);
+      border: 1px solid color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+      white-space: nowrap;
+    }
+    .mode-badge--gold {
+      background: color-mix(in oklch, var(--muted) 75%, var(--chart-2) 25%);
+      color: color-mix(in oklch, var(--chart-2) 85%, var(--foreground) 15%);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-2) 45%);
+    }
+
+    /* Lane label */
+    .lane-badge {
+      display: inline-flex; align-items: center;
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; padding: 0.18rem 0.55rem;
+      border-radius: 99px; white-space: nowrap;
+    }
+    .lane-badge--build { background: color-mix(in oklch, var(--muted) 70%, var(--chart-1) 30%); color: var(--chart-1); }
+    .lane-badge--review { background: color-mix(in oklch, var(--muted) 70%, var(--chart-3) 30%); color: var(--chart-3); }
+    .lane-badge--domain { background: color-mix(in oklch, var(--muted) 70%, var(--chart-4) 30%); color: var(--chart-4); }
+    .lane-badge--coord { background: color-mix(in oklch, var(--muted) 70%, var(--chart-5) 30%); color: var(--chart-5); }
+
+    /* Mermaid */
+    .mermaid-wrap {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 1.125rem 1.25rem;
+      overflow: hidden;
+    }
+    .mermaid-caption {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.09em; color: var(--muted-foreground);
+      margin-bottom: 0.75rem;
+    }
+    .mermaid-center { display: flex; justify-content: center; }
+
+    /* Skill scope grid */
+    .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.875rem; }
+    @media (max-width: 480px) { .scope-grid { grid-template-columns: 1fr; } }
+
+    /* Stagger animation */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .ve-card { animation: fadeUp 0.3s ease both; }
+    .ve-card:nth-child(1) { animation-delay: 0.04s; }
+    .ve-card:nth-child(2) { animation-delay: 0.09s; }
+    .ve-card:nth-child(3) { animation-delay: 0.14s; }
+    .ve-card:nth-child(4) { animation-delay: 0.19s; }
+    @media (prefers-reduced-motion: reduce) { .ve-card { animation: none !important; } }
+
+    /* Typography utils */
+    code {
+      font-family: var(--font-mono); font-size: 0.83em;
+      background: var(--code-bg); padding: 0.15em 0.4em;
+      border-radius: 3px; color: var(--code-text);
+    }
+    a { color: var(--chart-1); }
+    p { line-height: 1.65; }
+    ul { padding-left: 1.3rem; }
+    li { margin-bottom: 0.3rem; line-height: 1.6; }
+    strong { font-weight: 600; }
+    h3 { font-size: 0.92rem; font-weight: 700; margin: 0.875rem 0 0.5rem; }
+    small { font-size: 0.8em; color: var(--muted-foreground); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ====== TOC ====== -->
+  <nav class="toc" id="toc" aria-label="目次">
+    <p class="toc-title">目次</p>
+    <ul>
+      <li><a href="#overview">概要</a></li>
+      <li><a href="#quickstart">クイックスタート</a></li>
+      <li><a href="#modes">オーケストレーションモード</a></li>
+      <li><a href="#architecture">アーキテクチャ</a></li>
+      <li><a href="#agents">エージェント一覧</a></li>
+      <li><a href="#skills">スキル &amp; キーワード</a></li>
+      <li><a href="#state">状態管理 &amp; ユーティリティ</a></li>
+    </ul>
+  </nav>
+
+  <!-- ====== Main ====== -->
+  <div class="main">
+
+    <!-- 1. Overview -->
+    <section id="overview" class="sec-head">概要</section>
+
+    <div class="ve-card ve-card--hero">
+      <h1 class="hero-title">oh-my-claudecode</h1>
+      <p class="hero-sub">"Don't learn Claude Code. Just use OMC."</p>
+      <p class="hero-tagline">
+        Claude Code 向けマルチエージェント・オーケストレーション。ゼロ設定・ゼロ学習コスト。<br>
+        npm パッケージ名は <code>oh-my-claude-sisyphus</code>、Claude Marketplace では <code>oh-my-claudecode</code>。
+      </p>
+      <div class="badge-row">
+        <span class="hero-badge">v4.10.1</span>
+        <span class="hero-badge hero-badge--gold">⭐ 11k stars</span>
+        <span class="hero-badge">MIT</span>
+        <span class="hero-badge">Node ≥ 20</span>
+      </div>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <div class="kpi-value">19</div>
+          <div class="kpi-label">専門エージェント</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="kpi-value">31</div>
+          <div class="kpi-label">スキル (動作注入)</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="kpi-value kpi-value--gold">30–50%</div>
+          <div class="kpi-label">トークンコスト削減</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="kpi-value">8</div>
+          <div class="kpi-label">実行モード</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> なぜ OMC か</span>
+      <ul>
+        <li><strong>ゼロ設定</strong> — インストール後すぐ使えるインテリジェントなデフォルト設定</li>
+        <li><strong>チームファースト</strong> — <code>/team N:executor "..."</code> が正規のマルチエージェント実行面。<code>plan → prd → exec → verify → fix</code> の 5 ステージパイプライン</li>
+        <li><strong>自然言語インターフェース</strong> — コマンドを覚えなくてよい。やりたいことを書くだけ</li>
+        <li><strong>自動並列化</strong> — 複雑なタスクを専門エージェントへ自動分散。Haiku / Sonnet / Opus を目的で使い分け</li>
+        <li><strong>永続実行</strong> — ralph モードは <code>verifier</code> が完了を確認するまで絶対に停止しない</li>
+        <li><strong>スキル学習</strong> — セッションから問題解決パターンを抽出し、次回セッションで自動インジェクション</li>
+        <li><strong>リアルタイム可視化</strong> — HUD ステータスバーでオーケストレーション状況を常時確認</li>
+      </ul>
+    </div>
+
+    <!-- 2. Quick Start -->
+    <section id="quickstart" class="sec-head">クイックスタート</section>
+
+    <div class="step-flow">
+      <div class="step-card">
+        <div class="step-num">Step 1 — インストール</div>
+        <div class="step-title">Marketplace (推奨)</div>
+        <code class="step-code">/plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
+/plugin install oh-my-claudecode</code>
+        <div class="step-body" style="margin-top:0.5rem;">または npm から直接</div>
+        <code class="step-code">npm i -g oh-my-claude-sisyphus@latest</code>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 2 — セットアップ</div>
+        <div class="step-title">初期設定ウィザード</div>
+        <code class="step-code">/setup
+/omc-setup</code>
+        <div class="step-body" style="margin-top:0.5rem;">更新後にキャッシュを消したい場合</div>
+        <code class="step-code">/omc-doctor</code>
+      </div>
+      <div class="step-card">
+        <div class="step-num">Step 3 — ビルド</div>
+        <div class="step-title">そのまま話しかける</div>
+        <code class="step-code">autopilot: build a REST API for managing tasks</code>
+        <div class="step-body" style="margin-top:0.5rem;">要件が曖昧なら Socratic インタビューから</div>
+        <code class="step-code">/deep-interview "アイデア"</code>
+      </div>
+    </div>
+
+    <div class="ve-callout">
+      <strong>tmux 必須:</strong> <code>omc team</code>（tmux CLI ワーカー）・レート制限自動再開などは tmux が必要。
+      macOS → <code>brew install tmux</code>、Windows → <code>winget install psmux</code>（WSL 不要のネイティブ実装）。
+    </div>
+
+    <!-- 3. Orchestration Modes -->
+    <section id="modes" class="sec-head">オーケストレーションモード</section>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> 実行モード一覧</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>モード</th><th>呼び出し例</th><th>内容</th><th>最適用途</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="mode-badge mode-badge--gold">Team</span></td>
+              <td><code>/team 3:executor "..."</code></td>
+              <td>5 ステージパイプライン<br><small>plan→prd→exec→verify→fix</small></td>
+              <td>複数 Claude エージェントが共有タスクリストで協調する場合（<strong>推奨</strong>）</td>
+            </tr>
+            <tr>
+              <td><span class="mode-badge">omc team</span></td>
+              <td><code>omc team 2:codex "..."</code></td>
+              <td>tmux CLI ワーカー<br><small>claude/codex/gemini を実プロセスで起動</small></td>
+              <td>Codex・Gemini CLI タスク。完了後に自動終了してリソース消費なし</td>
+            </tr>
+            <tr>
+              <td><span class="mode-badge">autopilot</span></td>
+              <td><code>autopilot: ...</code></td>
+              <td>5 フェーズ自律パイプライン<br><small>expand→plan→exec→qa→validate</small></td>
+              <td>アイデアから動くコードまで自動生成。エンド・ツー・エンド</td>
+            </tr>
+            <tr>
+              <td><span class="mode-badge">ralph</span></td>
+              <td><code>ralph: ...</code></td>
+              <td>完了まで絶対停止しないループ<br><small>verifier が確認するまで継続</small></td>
+              <td>サイレントな部分完了を許せないタスク。ultrawork を自動包含</td>
+            </tr>
+            <tr>
+              <td><span class="mode-badge">ultrawork</span></td>
+              <td><code>ulw ...</code></td>
+              <td>最大並列実行（非 Team）</td>
+              <td>Team 不要なバースト並列修正・リファクタリング</td>
+            </tr>
+            <tr>
+              <td><span class="mode-badge">ccg</span></td>
+              <td><code>/ccg ...</code></td>
+              <td>3 モデル統合<br><small>/ask codex + /ask gemini → Claude が統合</small></td>
+              <td>バックエンド(Codex) + UI(Gemini) を同時レビューして Claude が統合</td>
+            </tr>
+            <tr>
+              <td><span class="mode-badge">ralplan</span></td>
+              <td><code>ralplan ...</code></td>
+              <td>Planner・Architect・Critic の合意ループ</td>
+              <td>計画の反復的コンセンサス形成</td>
+            </tr>
+            <tr>
+              <td><span class="mode-badge">pipeline</span></td>
+              <td>明示指定</td>
+              <td>順次・段階的処理</td>
+              <td>厳密な順序が必要な多段変換</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 4. Architecture -->
+    <section id="architecture" class="sec-head">アーキテクチャ</section>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> 4 つの基幹システム</span>
+      <p style="font-size:0.88rem; margin-bottom:1rem; line-height:1.65;">
+        OMC は <strong>Hooks・Skills・Agents・State</strong> の 4 システムが連鎖して動作する。
+        フックがライフサイクルイベントを検出し、スキルが動作を注入し、エージェントがタスクを実行し、ステートが進捗を永続化する。
+      </p>
+      <div class="mermaid-wrap">
+        <div class="mermaid-caption">システム全体フロー</div>
+        <div class="mermaid-center">
+          <pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryTextColor': '#1e3a5f', 'primaryBorderColor': '#93c5fd', 'lineColor': '#3b82f6', 'edgeLabelBackground': '#f0f7ff', 'fontSize': '15px'}}}%%
+flowchart LR
+    A["User\nInput"] --> B["Hooks\n(event detection)"]
+    B --> C["Skills\n(behavior injection)"]
+    C --> D["Agents\n(task execution)"]
+    D --> E["State\n(.omc/)"]
+    E -. "notepad / memory" .-> C</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> Hooks — ライフサイクルイベント</span>
+      <p style="font-size:0.875rem; margin-bottom:0.875rem; line-height:1.6;">
+        Claude Code の 11 ライフサイクルイベントにフックを登録。<code>&lt;system-reminder&gt;</code> タグで追加コンテキストをインジェクション。
+      </p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>フック名</th><th>イベント</th><th>役割</th></tr></thead>
+          <tbody>
+            <tr><td><code>keyword-detector</code></td><td>UserPromptSubmit</td><td>マジックキーワード検出 → <code>[MAGIC KEYWORD: ...]</code> でスキルを有効化</td></tr>
+            <tr><td><code>persistent-mode</code></td><td>Stop</td><td>ralph/ultrawork がアクティブな間は停止をブロック。<em>"The boulder never stops"</em></td></tr>
+            <tr><td><code>pre-compact</code></td><td>PreCompact</td><td>コンパクション前に重要情報を <code>notepad.md</code> へ保存し、コンテキストリセット後も継続</td></tr>
+            <tr><td><code>subagent-tracker</code></td><td>SubagentStart/Stop</td><td>実行中エージェントを追跡し、停止時に出力を検証</td></tr>
+            <tr><td><code>context-guard-stop</code></td><td>Stop</td><td>コンテキスト使用量を監視し、上限接近を警告</td></tr>
+            <tr><td><code>code-simplifier</code></td><td>Stop</td><td>（任意）停止時に変更ファイルを自動簡素化。デフォルト無効</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> Skills — 3 層スタック</span>
+      <div class="mermaid-wrap" style="margin-bottom:0.875rem;">
+        <div class="mermaid-caption">スキル合成レイヤー（上から下へ重ねる）</div>
+        <div class="mermaid-center">
+          <pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#fef9c3', 'primaryTextColor': '#78350f', 'primaryBorderColor': '#fbbf24', 'lineColor': '#d97706', 'fontSize': '14px'}}}%%
+flowchart TD
+    G["Guarantee Layer\nralph — 完了まで停止しない"] --> E["Enhancement Layer\nultrawork, git-master, frontend-ui-ux …"]
+    E --> X["Execution Layer\ndefault, orchestrate, planner"]</pre>
+        </div>
+      </div>
+      <div class="ve-callout">
+        <strong>例:</strong> <code>ultrawork: refactor API with proper commits</code><br>
+        → <code>ultrawork</code> + <code>default</code> + <code>git-master</code> の 3 スキルが同時活性化<br>
+        <strong>式:</strong> <code>[Execution Skill] + [0-N Enhancements] + [Optional Guarantee]</code>
+      </div>
+    </div>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> Team パイプライン — 5 ステージ</span>
+      <div class="mermaid-wrap">
+        <div class="mermaid-caption">/team コマンド実行フロー</div>
+        <div class="mermaid-center">
+          <pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#dbeafe', 'primaryTextColor': '#1e3a5f', 'primaryBorderColor': '#93c5fd', 'lineColor': '#3b82f6', 'fontSize': '14px'}}}%%
+flowchart LR
+    P["team-plan"] --> R["team-prd"] --> EX["team-exec"] --> V["team-verify"] --> F["team-fix"]
+    F -. "issues remain" .-> EX</pre>
+        </div>
+      </div>
+      <p style="font-size:0.82rem; margin-top:0.75rem; color:var(--muted-foreground); line-height:1.55;">
+        Claude Code native teams を有効化するには <code>~/.claude/settings.json</code> に
+        <code>"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"</code> を設定。
+        無効の場合は OMC が警告し非チーム実行にフォールバック。
+      </p>
+    </div>
+
+    <!-- 5. Agents -->
+    <section id="agents" class="sec-head">エージェント一覧（19 専門エージェント）</section>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> Build / Analysis レーン</span>
+      <p style="font-size:0.85rem; margin-bottom:0.75rem; line-height:1.6;">
+        探索から検証まで開発ライフサイクル全体をカバーする 8 エージェント。
+      </p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>エージェント</th><th>モデル</th><th>役割</th></tr></thead>
+          <tbody>
+            <tr><td><code>explore</code></td><td>haiku</td><td>コードベース探索・ファイル/シンボルマッピング</td></tr>
+            <tr><td><code>analyst</code></td><td>opus</td><td>要件分析・隠れた制約の発見</td></tr>
+            <tr><td><code>planner</code></td><td>opus</td><td>タスクシーケンス作成・実行計画立案</td></tr>
+            <tr><td><code>architect</code></td><td>opus</td><td>システム設計・インターフェース定義・トレードオフ分析</td></tr>
+            <tr><td><code>debugger</code></td><td>sonnet</td><td>根本原因分析・ビルドエラー解消</td></tr>
+            <tr><td><code>executor</code></td><td>sonnet</td><td>コード実装・リファクタリング</td></tr>
+            <tr><td><code>verifier</code></td><td>sonnet</td><td>完了検証・テスト十分性の確認</td></tr>
+            <tr><td><code>tracer</code></td><td>sonnet</td><td>エビデンス駆動の因果追跡・競合仮説分析</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> Review / Domain / Coordination レーン</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>レーン</th><th>エージェント</th><th>モデル</th><th>役割</th></tr></thead>
+          <tbody>
+            <tr>
+              <td rowspan="2"><span class="lane-badge lane-badge--review">Review</span></td>
+              <td><code>security-reviewer</code></td><td>sonnet</td><td>脆弱性・トラストバウンダリ・認証/認可レビュー</td>
+            </tr>
+            <tr>
+              <td><code>code-reviewer</code></td><td>opus</td><td>包括的コードレビュー・API 契約・後方互換性確認</td>
+            </tr>
+            <tr>
+              <td rowspan="7"><span class="lane-badge lane-badge--domain">Domain</span></td>
+              <td><code>test-engineer</code></td><td>sonnet</td><td>テスト戦略・カバレッジ・フレイキーテスト対策</td>
+            </tr>
+            <tr><td><code>designer</code></td><td>sonnet</td><td>UI/UX アーキテクチャ・インタラクションデザイン</td></tr>
+            <tr><td><code>writer</code></td><td>haiku</td><td>ドキュメント・マイグレーションノート作成</td></tr>
+            <tr><td><code>qa-tester</code></td><td>sonnet</td><td>tmux 経由での CLI/サービスランタイム検証</td></tr>
+            <tr><td><code>scientist</code></td><td>sonnet</td><td>データ分析・統計調査</td></tr>
+            <tr><td><code>git-master</code></td><td>sonnet</td><td>Git 操作・コミット・リベース・履歴管理</td></tr>
+            <tr><td><code>code-simplifier</code></td><td>opus</td><td>コードの明確化・単純化・保守性向上</td></tr>
+            <tr>
+              <td><span class="lane-badge lane-badge--coord">Coord</span></td>
+              <td><code>critic</code></td><td>opus</td><td>計画・設計のギャップ分析（多角的レビュー）。Gap がなくなるまでループ</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>モデルルーティング — 3 ティア</h3>
+      <div class="ve-table-wrap" style="margin-top:0.5rem;">
+        <table>
+          <thead><tr><th>ティア</th><th>モデル</th><th>特性</th><th>割り当てエージェント</th></tr></thead>
+          <tbody>
+            <tr><td>LOW</td><td>haiku</td><td>高速・低コスト</td><td>explore, writer</td></tr>
+            <tr><td>MEDIUM</td><td>sonnet</td><td>バランス</td><td>executor, debugger, test-engineer, designer …</td></tr>
+            <tr><td>HIGH</td><td>opus</td><td>最高品質推論</td><td>architect, planner, critic, code-reviewer, analyst</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ve-callout" style="margin-top:0.875rem;">
+        <strong>典型ワークフロー:</strong>
+        <code>explore</code> → <code>analyst</code> → <code>planner</code> → <code>critic</code> → <code>executor</code> → <code>verifier</code>
+      </div>
+    </div>
+
+    <!-- 6. Skills & Keywords -->
+    <section id="skills" class="sec-head">スキル &amp; マジックキーワード</section>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> カスタムスキル — 学習して再利用</span>
+      <p style="font-size:0.875rem; margin-bottom:0.875rem; line-height:1.65;">
+        セッションで獲得したデバッグ知識をポータブルな YAML スキルファイルに抽出。
+        関連するときにコンテキストへ自動インジェクションされ、手動リコールは不要。
+      </p>
+      <div class="ve-code-block">
+        <pre><code># .omc/skills/fix-proxy-crash.md
+---
+name: Fix Proxy Crash
+description: aiohttp proxy crashes on ClientDisconnectedError
+triggers: ["proxy", "aiohttp", "disconnected"]
+source: extracted
+---
+Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pre>
+      </div>
+      <div class="scope-grid">
+        <div class="ve-card ve-card--recessed">
+          <div class="ve-section-label" style="margin-bottom:0.4rem;"><span class="ve-dot"></span> プロジェクトスコープ</div>
+          <code>.omc/skills/</code>
+          <p style="font-size:0.8rem; margin-top:0.35rem; color:var(--muted-foreground);">バージョン管理・チーム共有。優先度 高（ユーザースコープを上書き）</p>
+        </div>
+        <div class="ve-card ve-card--recessed">
+          <div class="ve-section-label" style="margin-bottom:0.4rem;"><span class="ve-dot"></span> ユーザースコープ</div>
+          <code>~/.omc/skills/</code>
+          <p style="font-size:0.8rem; margin-top:0.35rem; color:var(--muted-foreground);">全プロジェクト共通。優先度 低（フォールバック）</p>
+        </div>
+      </div>
+      <div style="margin-top:0.875rem; font-size:0.855rem; line-height:1.55;">
+        <strong>管理コマンド:</strong> <code>/skill list | add | remove | edit | search</code><br>
+        <strong>自動学習:</strong> <code>/learner</code> で厳格な品質ゲート付きパターン抽出
+      </div>
+    </div>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> マジックキーワード一覧</span>
+      <p style="font-size:0.855rem; margin-bottom:0.875rem; line-height:1.6;">
+        プロンプトにキーワードを含めるだけで対応スキルが自動起動。
+        <code>autopilot</code>・<code>ralph</code>・<code>ccg</code> はフックにハードコードされており config では変更不可。
+      </p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>キーワード</th><th>効果</th><th>使用例</th></tr></thead>
+          <tbody>
+            <tr><td><span class="mode-badge mode-badge--gold">team</span></td><td>Team オーケストレーション（正規 API）</td><td><code>/team 3:executor "fix TypeScript errors"</code></td></tr>
+            <tr><td><span class="mode-badge">omc team</span></td><td>tmux CLI ワーカー</td><td><code>omc team 2:codex "security review"</code></td></tr>
+            <tr><td><span class="mode-badge">ccg</span></td><td>3 モデル統合アドバイス</td><td><code>/ccg review this PR</code></td></tr>
+            <tr><td><span class="mode-badge">autopilot</span></td><td>完全自律実行パイプライン</td><td><code>autopilot: build a todo app</code></td></tr>
+            <tr><td><span class="mode-badge">ralph</span></td><td>永続モード（完了まで停止しない）</td><td><code>ralph: refactor auth</code></td></tr>
+            <tr><td><span class="mode-badge">ulw</span></td><td>最大並列実行（ultrawork）</td><td><code>ulw fix all errors</code></td></tr>
+            <tr><td><span class="mode-badge">ralplan</span></td><td>反復的計画コンセンサス</td><td><code>ralplan this feature</code></td></tr>
+            <tr><td><span class="mode-badge">deep-interview</span></td><td>Socratic 式要件明確化</td><td><code>/deep-interview "vague idea"</code></td></tr>
+            <tr><td><span class="mode-badge">ultrathink</span></td><td>深い推論モード</td><td><code>ultrathink about this architecture</code></td></tr>
+            <tr><td><span class="mode-badge">tdd</span></td><td>テスト駆動開発ワークフロー</td><td><code>tdd: implement payment flow</code></td></tr>
+            <tr><td><span class="mode-badge">stopomc</span></td><td>アクティブモードを即時停止</td><td><code>stopomc</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 7. State & Utilities -->
+    <section id="state" class="sec-head">状態管理 &amp; ユーティリティ</section>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> .omc/ ディレクトリ構造</span>
+      <div class="ve-code-block">
+        <pre><code>.omc/
+├── state/
+│   ├── autopilot-state.json   # autopilot フェーズ進捗
+│   ├── ralph-state.json       # ralph ループ状態
+│   └── sessions/{sessionId}/  # セッション別ステート
+├── notepad.md                 # コンパクション耐性メモパッド
+├── project-memory.json        # プロジェクト知識ストア (セッション横断)
+├── plans/                     # 実行計画ファイル
+├── notepads/{plan-name}/
+│   ├── learnings.md           # 成功パターン・規約
+│   ├── decisions.md           # 設計判断と根拠
+│   ├── issues.md              # 問題・ブロッカー
+│   └── problems.md            # 技術的負債・注意点
+├── autopilot/spec.md          # autopilot 仕様書
+├── artifacts/ask/             # omc ask の出力 Markdown
+└── logs/                      # 実行ログ</code></pre>
+      </div>
+      <div class="ve-callout" style="margin-top:0.875rem;">
+        <strong>コンパクション耐性:</strong> <code>PreCompact</code> フックが重要情報を <code>notepad.md</code> に保存。
+        コンパクション後も再インジェクションされ文脈が継続。
+        <code>&lt;remember priority&gt;...</code> タグで永続メモを作成可能。
+      </div>
+      <p style="font-size:0.82rem; margin-top:0.75rem; color:var(--muted-foreground); line-height:1.55;">
+        ワークツリー削除後も状態を保持するには <code>export OMC_STATE_DIR="$HOME/.claude/omc"</code> を設定。
+        プロジェクト識別子は Git リモート URL のハッシュなので同リポジトリで共有される。
+      </p>
+    </div>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> ユーティリティコマンド</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>コマンド</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td><code>omc ask claude "..."</code></td><td>ローカル Claude CLI を呼び出し結果を <code>.omc/artifacts/ask/</code> に Markdown 保存</td></tr>
+            <tr><td><code>omc ask codex|gemini "..."</code></td><td>Codex / Gemini CLI へのプロキシ + 結果保存</td></tr>
+            <tr><td><code>omc wait --start</code></td><td>レート制限リセット時の自動再開デーモン（tmux 必須）</td></tr>
+            <tr><td><code>omc hud</code></td><td>HUD ライブレンダリング。オーケストレーション状況をステータスバーに表示</td></tr>
+            <tr><td><code>omc team status &lt;name&gt;</code></td><td>実行中チームタスクの状態確認</td></tr>
+            <tr><td><code>omc team shutdown &lt;name&gt;</code></td><td>指定チームを停止</td></tr>
+            <tr><td><code>/omc-doctor</code></td><td>インストール診断・プラグインキャッシュクリア</td></tr>
+            <tr><td><code>/learner</code></td><td>セッションから再利用可能スキルを品質ゲート付きで抽出</td></tr>
+            <tr><td><code>/deepinit</code></td><td>プロジェクトの階層的 AGENTS.md を自動生成</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed">
+      <span class="ve-section-label"><span class="ve-dot ve-dot--gold"></span> 通知 &amp; OpenClaw</span>
+      <p style="font-size:0.875rem; line-height:1.65; margin-bottom:0.625rem;">
+        セッション完了サマリーを Telegram・Discord・Slack へ自動送信。
+        <code>omc config-stop-callback telegram --enable --token &lt;tok&gt; --chat &lt;id&gt; --tag-list "@alice"</code> で設定。
+      </p>
+      <p style="font-size:0.875rem; line-height:1.65;">
+        <strong>OpenClaw Gateway:</strong> Claude Code セッションイベント（session-start, stop, keyword-detector など 6 種）を
+        外部エージェントへフォワード。<code>/oh-my-claudecode:configure-notifications</code> でウィザード起動。
+      </p>
+    </div>
+
+  </div><!-- .main -->
+</div><!-- .wrap -->
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: true, theme: 'base' });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
