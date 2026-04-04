@@ -162,6 +162,8 @@
     .ve-table-wrap td {
       padding: 0.6rem 1rem; border-bottom: 1px solid var(--border);
       vertical-align: top; line-height: 1.5;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     .ve-table-wrap tr:last-child td { border-bottom: none; }
     .ve-table-wrap tr:nth-child(even) td {
@@ -173,6 +175,9 @@
 
     /* ============ Page layout ============ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html {
+      overflow-x: clip;
+    }
     body {
       background: var(--background);
       background-image:
@@ -191,12 +196,16 @@
     }
 
     .wrap {
-      max-width: 1080px; margin: 0 auto;
-      display: grid; grid-template-columns: 210px 1fr;
-      gap: 2.25rem; padding: 2rem 1.5rem;
+      width: 100%;
+      max-width: 1080px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 210px minmax(0, 1fr);
+      gap: 2.25rem;
+      padding: 2rem clamp(1rem, 4vw, 1.5rem);
       align-items: start;
     }
-    @media (max-width: 760px) {
+    @media (max-width: 900px) {
       .wrap { grid-template-columns: 1fr; padding: 1rem; gap: 1rem; }
       .toc { display: none; }
     }
@@ -226,7 +235,19 @@
     }
 
     /* ---- Main ---- */
-    .main { min-width: 0; display: flex; flex-direction: column; gap: 1.25rem; }
+    .main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    /**
+     * Flex 子の既定 min-width: auto だと、テーブル・pre・Mermaid で親が横に押し広がる。
+     * 子を幅コンテナ内で折り返し・スクロール可能にする。
+     */
+    .main > * {
+      min-width: 0;
+    }
 
     /* Section headers */
     .sec-head {
@@ -239,9 +260,10 @@
 
     /* ---- Hero ---- */
     .hero-title {
-      font-size: 1.95rem; font-weight: 800;
+      font-size: clamp(1.35rem, 4vw, 1.95rem);
+      font-weight: 800;
       letter-spacing: -0.04em; margin-bottom: 0.35rem;
-      line-height: 1.1;
+      line-height: 1.15;
     }
     .hero-sub {
       font-size: 1rem; font-weight: 500;
@@ -267,9 +289,13 @@
       color: color-mix(in oklch, var(--chart-2) 85%, var(--foreground) 15%);
     }
 
-    /* KPI row */
-    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.625rem; margin-top: 1rem; }
-    @media (max-width: 560px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+    /* KPI row — RAM: 狭い幅では自動で折り返し、列は minmax(0) でグリッド膨張を防ぐ */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+      gap: 0.625rem;
+      margin-top: 1rem;
+    }
     .ve-kpi-card {
       background: var(--card); border: 1px solid var(--border);
       border-radius: var(--radius-md); padding: 0.875rem 1rem; text-align: center;
@@ -285,10 +311,14 @@
       margin-top: 0.3rem; font-weight: 600; line-height: 1.3;
     }
 
-    /* Step flow */
-    .step-flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
-    @media (max-width: 560px) { .step-flow { grid-template-columns: 1fr; } }
+    /* Step flow — auto-fit + minmax で中間幅でも破綻しにくく */
+    .step-flow {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
+      gap: 0.75rem;
+    }
     .step-card {
+      min-width: 0;
       background: var(--card); border: 1px solid var(--border);
       border-radius: var(--radius-md); padding: 1rem 1.125rem;
     }
@@ -303,7 +333,12 @@
       font-family: var(--font-mono); font-size: 0.74rem;
       background: var(--code-bg); border: 1px solid var(--border);
       border-radius: var(--radius-sm); padding: 0.5rem 0.75rem;
-      margin-top: 0.5rem; white-space: pre; overflow-x: auto;
+      margin-top: 0.5rem;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      overflow-x: auto;
+      max-width: 100%;
       color: var(--code-text); display: block;
     }
 
@@ -335,22 +370,41 @@
     .lane-badge--domain { background: color-mix(in oklch, var(--muted) 70%, var(--chart-4) 30%); color: var(--chart-4); }
     .lane-badge--coord { background: color-mix(in oklch, var(--muted) 70%, var(--chart-5) 30%); color: var(--chart-5); }
 
-    /* Mermaid */
+    /* Mermaid — 横はみ出しはスクロール、SVG は縮小 */
     .mermaid-wrap {
       background: var(--card); border: 1px solid var(--border);
       border-radius: var(--radius-md); padding: 1.125rem 1.25rem;
-      overflow: hidden;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      max-width: 100%;
     }
     .mermaid-caption {
       font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.09em; color: var(--muted-foreground);
       margin-bottom: 0.75rem;
     }
-    .mermaid-center { display: flex; justify-content: center; }
+    .mermaid-center {
+      display: flex;
+      justify-content: center;
+      min-width: 0;
+      width: 100%;
+    }
+    .mermaid-wrap .mermaid svg {
+      max-width: 100%;
+      height: auto;
+    }
 
     /* Skill scope grid */
-    .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.875rem; }
-    @media (max-width: 480px) { .scope-grid { grid-template-columns: 1fr; } }
+    .scope-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+      gap: 0.75rem;
+      margin-top: 0.875rem;
+    }
+    .scope-grid > * {
+      min-width: 0;
+    }
 
     /* Stagger animation */
     @keyframes fadeUp {
