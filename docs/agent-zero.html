@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Zero — パーソナル AI エージェントフレームワーク</title>
+  <meta name="description" content="自己増殖・自己学習するオープンソースの AI エージェントフレームワーク。階層的マルチエージェント・永続メモリ・SKILL.md 標準に対応。アーキテクチャと主要コンポーネントの技術概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Agent Zero — パーソナル AI エージェントフレームワーク">
+  <meta property="og:description" content="自己増殖・自己学習する AI エージェントフレームワーク。階層的マルチエージェント・永続メモリ・SKILL.md 標準の技術概要。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/agent-zero.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Agent Zero — パーソナル AI エージェントフレームワーク">
+  <meta name="twitter:description" content="自己増殖・自己学習する AI エージェントフレームワーク。階層的マルチエージェント・永続メモリ・SKILL.md 標準の技術概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME — Blueprint (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+
+      --background: oklch(0.975 0.008 248);
+      --foreground: oklch(0.12 0.04 248);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.12 0.04 248);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.12 0.04 248);
+      --primary: oklch(0.33 0.13 248);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.955 0.01 248);
+      --secondary-foreground: oklch(0.12 0.04 248);
+      --muted: oklch(0.955 0.01 248);
+      --muted-foreground: oklch(0.48 0.04 248);
+      --accent: oklch(0.955 0.01 248);
+      --accent-foreground: oklch(0.12 0.04 248);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.02 248);
+      --input: oklch(0.88 0.02 248);
+      --ring: oklch(0.68 0.06 248);
+      /* Blueprint palette */
+      --chart-1: oklch(0.33 0.13 248);
+      --chart-2: oklch(0.62 0.15 76);
+      --chart-3: oklch(0.45 0.10 200);
+      --chart-4: oklch(0.55 0.10 155);
+      --chart-5: oklch(0.50 0.12 30);
+      --code-bg: oklch(0.965 0.012 248);
+      --code-text: oklch(0.33 0.13 248);
+      --font-body: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, 'Courier New', monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.92 0.01 248);
+        --card: oklch(0.17 0.02 248);
+        --card-foreground: oklch(0.92 0.01 248);
+        --popover: oklch(0.17 0.02 248);
+        --popover-foreground: oklch(0.92 0.01 248);
+        --primary: oklch(0.58 0.14 248);
+        --primary-foreground: oklch(0.10 0 0);
+        --secondary: oklch(0.22 0.03 248);
+        --secondary-foreground: oklch(0.92 0.01 248);
+        --muted: oklch(0.22 0.03 248);
+        --muted-foreground: oklch(0.62 0.04 248);
+        --accent: oklch(0.22 0.03 248);
+        --accent-foreground: oklch(0.92 0.01 248);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.42 0.08 248);
+        --chart-1: oklch(0.58 0.14 248);
+        --chart-2: oklch(0.72 0.17 76);
+        --chart-3: oklch(0.55 0.12 200);
+        --chart-4: oklch(0.60 0.10 155);
+        --chart-5: oklch(0.62 0.12 30);
+        --code-bg: oklch(0.14 0.02 248);
+        --code-text: oklch(0.72 0.14 248);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; font-family: var(--font-mono); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-section-label .ve-dot--amber { background: var(--chart-2); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; font-family: var(--font-mono); }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--border) 50%, transparent 50%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.5rem; line-height: 1.1; font-weight: 600; color: var(--chart-1); }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.9375rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.75rem; background: oklch(0.62 0.15 76 / 0.12); color: var(--chart-2); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 20% 0%, oklch(0.33 0.13 248 / 0.06) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 100%, oklch(0.62 0.15 76 / 0.04) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 20% 0%, oklch(0.58 0.14 248 / 0.08) 0%, transparent 55%),
+          radial-gradient(ellipse at 80% 100%, oklch(0.72 0.17 76 / 0.05) 0%, transparent 50%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--chart-1); border-left-color: var(--chart-1); background: color-mix(in oklch, var(--chart-1) 8%, transparent 92%); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2.25rem; font-weight: 400; font-style: italic; letter-spacing: -0.01em; margin-bottom: 0.5rem; text-wrap: balance; line-height: 1.2; }
+    h1 strong { font-weight: 400; font-style: normal; color: var(--chart-1); }
+    .subtitle { color: var(--text-dim); font-size: 0.8125rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.5; }
+    .sec-head { font-size: 1.0625rem; font-weight: 400; font-style: italic; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); color: var(--chart-1); font-family: var(--font-body); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.0625rem; font-weight: 400; font-style: italic; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 1rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.4rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    strong { font-weight: 700; }
+
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Component grid ============ */
+    .comp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; }
+    @media (max-width: 640px) { .comp-grid { grid-template-columns: 1fr; } }
+    .comp-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem 1.25rem; background: var(--card); }
+    .comp-card__num { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--chart-1); margin-bottom: 0.5rem; }
+    .comp-card__title { font-size: 1rem; font-weight: 400; font-style: italic; margin-bottom: 0.4rem; }
+    .comp-card__body { font-size: 0.8125rem; line-height: 1.6; color: var(--text-dim); }
+    .comp-card__body code { font-size: 0.75rem; }
+
+    /* ============ Step flow ============ */
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; background: var(--card); display: grid; grid-template-columns: 2rem 1fr; gap: 0 0.75rem; align-items: start; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: var(--chart-1); padding-top: 0.1rem; }
+    .step-card__title { font-size: 0.9375rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .step-card__body { font-size: 0.8125rem; line-height: 1.6; color: var(--text-dim); grid-column: 2; }
+    .step-card__body code { font-size: 0.75rem; }
+
+    /* ============ Memory cards ============ */
+    .memory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.875rem; margin: 1rem 0; }
+    @media (max-width: 700px) { .memory-grid { grid-template-columns: 1fr; } }
+    .memory-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; background: var(--card); border-top: 3px solid var(--chart-1); }
+    .memory-card--amber { border-top-color: var(--chart-2); }
+    .memory-card--teal { border-top-color: var(--chart-3); }
+    .memory-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.5rem; color: var(--chart-1); }
+    .memory-card--amber .memory-card__label { color: var(--chart-2); }
+    .memory-card--teal .memory-card__label { color: var(--chart-3); }
+    .memory-card__title { font-size: 0.9375rem; font-style: italic; margin-bottom: 0.35rem; }
+    .memory-card__body { font-size: 0.8125rem; line-height: 1.6; color: var(--text-dim); }
+
+    /* ============ Mermaid wrapper ============ */
+    .mermaid-wrap { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .mermaid-wrap .mermaid { display: flex; justify-content: center; padding: 1.5rem 1rem; cursor: grab; overflow: hidden; min-height: 320px; align-items: center; }
+    .mermaid-wrap .mermaid.zoomed { cursor: grabbing; }
+    .mz-controls { position: absolute; top: 10px; right: 10px; display: flex; gap: 4px; z-index: 10; }
+    .mz-btn { background: var(--muted); border: 1px solid var(--border); border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-family: var(--font-mono); font-size: 14px; color: var(--text-dim); transition: background 0.15s, color 0.15s; user-select: none; }
+    .mz-btn:hover { background: var(--accent); color: var(--text); }
+
+    /* ============ Pipeline row ============ */
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; font-size: 0.8125rem; font-family: var(--font-mono); }
+    .pipeline .step { background: var(--muted); padding: 0.3rem 0.55rem; border-radius: var(--radius-sm); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    /* ============ Inline badge ============ */
+    .badge { display: inline-block; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 4px; vertical-align: middle; }
+    .badge--blue { background: color-mix(in oklch, var(--chart-1) 14%, transparent 86%); color: var(--chart-1); }
+    .badge--amber { background: color-mix(in oklch, var(--chart-2) 14%, transparent 86%); color: var(--chart-2); }
+
+    /* ============ Animation ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card, .comp-card, .step-card, .memory-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#hierarchy">エージェント階層</a>
+    <a href="#components">コアコンポーネント</a>
+    <a href="#memory">メモリシステム</a>
+    <a href="#skills">スキル標準</a>
+    <a href="#customize">カスタマイズ</a>
+    <a href="#setup">セットアップ</a>
+  </nav>
+
+  <div class="main">
+    <h1><strong>Agent Zero</strong> — <em>パーソナル AI エージェント</em></h1>
+    <p class="subtitle">agent0ai/agent-zero · Python · Docker · SKILL.md compatible · github.com/agent0ai/agent-zero</p>
+
+    <!-- ===================== 1. 概要 ===================== -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+      <p>
+        <strong>Agent Zero</strong> は「定義済みのワークフローを持たない」汎用 AI エージェントフレームワーク。
+        タスクを与えると、必要なツールを自分で作り、サブエージェントを起動し、過去の解決策を記憶しながら成長し続ける。
+        コードベース全体が読みやすく、プロンプト・ツール・拡張の一切がオープンで変更可能。
+      </p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">動的</span><span class="ve-kpi-card__label">ハードコードなし</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">透過的</span><span class="ve-kpi-card__label">全プロンプト公開</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Docker</span><span class="ve-kpi-card__label">ワンコマンド起動</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">SKILL.md</span><span class="ve-kpi-card__label">クロスプラットフォーム</span></div>
+      </div>
+      <p>
+        OS をツールとして使い、Terminal・Python・Node.js を直接実行できる。デフォルトツールは検索・メモリ・通信・コード実行のみで、残りはエージェント自身が必要に応じて生成・習得する。
+      </p>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 実際のユースケース</span>
+      <ul>
+        <li><strong>財務分析 &amp; チャート生成</strong> — Bitcoin 価格トレンドと主要ニュースを相関付けてアノテーション付きチャートを出力</li>
+        <li><strong>Excel 自動化パイプライン</strong> — 受信ディレクトリのスプレッドシートを検証・クリーニングして経営レポートを生成</li>
+        <li><strong>API 統合の学習と記憶</strong> — Gemini API スニペットを一度与えると、次回以降はメモリから参照して再利用</li>
+        <li><strong>定期サーバー監視</strong> — 30 分ごとに CPU・ディスク・メモリを確認し、閾値超過をアラート</li>
+        <li><strong>マルチクライアントプロジェクト</strong> — クライアントごとに隔離されたメモリ・シークレット・プロジェクト空間</li>
+      </ul>
+    </div>
+
+    <!-- ===================== 2. エージェント階層 ===================== -->
+    <section id="hierarchy" class="sec-head">2 — エージェント階層</section>
+
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 階層構造</span>
+      <p>すべてのエージェントは「上位エージェントからタスクを受け取り、必要に応じてサブエージェントを生成し、結果を返す」という同一パターンで動作する。Agent 0 にとっての上位エージェントはユーザー自身。</p>
+    </div>
+
+    <div class="mermaid-wrap">
+      <div class="mz-controls">
+        <button class="mz-btn" id="mz-plus" title="拡大">+</button>
+        <button class="mz-btn" id="mz-minus" title="縮小">−</button>
+        <button class="mz-btn" id="mz-reset" title="リセット">⟳</button>
+      </div>
+      <div class="mermaid" id="mz-diagram">
+flowchart TD
+    USER["ユーザー\n上位エージェント"]
+    A0["Agent 0\n最上位エージェント"]
+    SA1["Sub-Agent 1\nタスク A"]
+    SA2["Sub-Agent 2\nタスク B"]
+    TOOLS["ツール群\n検索 / コード実行 / 通信"]
+    MEM[("メモリ\nVectorDB")]
+    KNOW[("知識ベース\nRAG")]
+    SKILL[("スキル\nSKILL.md")]
+
+    USER -- 指示 --> A0
+    A0 -- タスク委譲 --> SA1
+    A0 -- タスク委譲 --> SA2
+    A0 <-- 読み書き --> MEM
+    A0 <-- 参照 --> KNOW
+    A0 <-- ロード --> SKILL
+    SA1 -- 実行 --> TOOLS
+    SA2 -- 実行 --> TOOLS
+    SA1 -- 結果 --> A0
+    SA2 -- 結果 --> A0
+    A0 -- 最終報告 --> USER
+
+    classDef user fill:#1e3a5f,stroke:#1e3a5f,color:#fff,rx:8
+    classDef agent fill:#2d4a6f,stroke:#3d6a9f,color:#fff,rx:6
+    classDef sub fill:#334f72,stroke:#4a7aaa,color:#e8f0ff,rx:6
+    classDef tools fill:#3d5f3a,stroke:#5a8f56,color:#e8ffe5,rx:6
+    classDef store fill:#5f4a1a,stroke:#9f7a2a,color:#fff8e1,rx:6
+
+    class USER user
+    class A0 agent
+    class SA1,SA2 sub
+    class TOOLS tools
+    class MEM,KNOW,SKILL store
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot--amber ve-dot"></span> メッセージ構造</span>
+      <p>エージェント間の通信はプロンプトテンプレートに従う構造化メッセージで行われる。</p>
+      <div class="ve-table-wrap" style="margin-top:0.75rem">
+        <table>
+          <thead><tr><th>フィールド</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td><code>Thoughts:</code></td><td>Chain of Thought と計画プロセス</td></tr>
+            <tr><td><code>Tool name:</code></td><td>使用するツールの名前</td></tr>
+            <tr><td><code>Responses / Queries:</code></td><td>ツールや他のエージェントからの結果・質問</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===================== 3. コアコンポーネント ===================== -->
+    <section id="components" class="sec-head">3 — コアコンポーネント</section>
+
+    <div class="comp-grid">
+      <div class="comp-card" style="--i:0">
+        <div class="comp-card__num">01 — Agents</div>
+        <div class="comp-card__title">エージェント</div>
+        <p class="comp-card__body">コアアクター。指示を受け、思考し、ツールを使い、サブエージェントを生成する。同一インターフェースで階層を無制限に構築できる。上位エージェントは常に存在し、Agent 0 の場合はユーザーが上位。</p>
+      </div>
+      <div class="comp-card" style="--i:1">
+        <div class="comp-card__num">02 — Tools</div>
+        <div class="comp-card__title">ツール</div>
+        <p class="comp-card__body">デフォルト: <code>code_execution_tool</code> / <code>call_subordinate</code> / <code>memory_tool</code> / <code>response_tool</code> / <code>behavior_adjustment</code>。検索は SearXNG 統合（プライバシー重視メタ検索）。カスタムツールはプロンプトで定義可能。</p>
+      </div>
+      <div class="comp-card" style="--i:2">
+        <div class="comp-card__num">03 — Memory</div>
+        <div class="comp-card__title">メモリシステム</div>
+        <p class="comp-card__body">VectorDB ベースの永続メモリ。Fragments（会話の断片）・Solutions（成功した解決策）を自動管理。Embedding はローカル小型モデルで生成。コンテキストウィンドウは動的圧縮で最適化。</p>
+      </div>
+      <div class="comp-card" style="--i:3">
+        <div class="comp-card__num">04 — Prompts</div>
+        <div class="comp-card__title">プロンプトシステム</div>
+        <p class="comp-card__body">行動全体を <code>prompts/</code> フォルダ内の Markdown で定義。エージェントプロファイルごとに <code>{{include original}}</code> でデフォルトを継承しつつオーバーライド可能。実行時の振る舞い調整も <code>behaviour.md</code> で永続化。</p>
+      </div>
+      <div class="comp-card" style="--i:4">
+        <div class="comp-card__num">05 — Skills</div>
+        <div class="comp-card__title">スキル（SKILL.md 標準）</div>
+        <p class="comp-card__body">コンテキストに応じて動的ロードされる専門知識。システムプロンプトに常駐しないのでトークン効率が高い。Claude Code / Cursor / Goose など他プラットフォームと互換。</p>
+      </div>
+      <div class="comp-card" style="--i:5">
+        <div class="comp-card__num">06 — Extensions</div>
+        <div class="comp-card__title">拡張</div>
+        <p class="comp-card__body"><code>python/extensions/</code> の Python ファイル。アルファベット順に実行されるためファイル名の数値プレフィックスで順序を制御。Message Loop / Memory Management / System Integration の 3 種類。</p>
+      </div>
+    </div>
+
+    <!-- ===================== 4. メモリシステム ===================== -->
+    <section id="memory" class="sec-head">4 — メモリシステム</section>
+
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ハイブリッドメモリモデル</span>
+      <p>メモリはフレームワークが自動管理する部分とユーザーが手動で挿入できる部分のハイブリッド。各エントリには ID・タイムスタンプ等のメタデータが付与され、意味的検索でフィルタリングできる。</p>
+    </div>
+
+    <div class="memory-grid">
+      <div class="memory-card" style="--i:0">
+        <div class="memory-card__label">Fragments</div>
+        <div class="memory-card__title">会話の断片</div>
+        <p class="memory-card__body">過去の会話から重要な情報を自動抽出・更新。人間が細かいことを忘れるように、Agent Zero もノイズを除いて要点だけを保持する。</p>
+      </div>
+      <div class="memory-card memory-card--amber" style="--i:1">
+        <div class="memory-card__label">Solutions</div>
+        <div class="memory-card__title">成功した解決策</div>
+        <p class="memory-card__body">過去に成功したコード・手順・統合方法を保存。次回同種タスクに遭遇したとき、学習済みの方法を再利用して時間を短縮する。</p>
+      </div>
+      <div class="memory-card memory-card--teal" style="--i:2">
+        <div class="memory-card__label">User-Provided</div>
+        <div class="memory-card__title">ユーザー提供情報</div>
+        <p class="memory-card__body">名前・API キー・プロジェクト固有の事実など。「覚えておいて」と伝えるだけで保存され、以降のすべての会話で参照可能。</p>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> 動的コンテキスト圧縮</span>
+      <p>長い会話でもコンテキストウィンドウを超えないよう、多段階の圧縮戦略を採用している。</p>
+      <div class="pipeline" style="margin:0.75rem 0">
+        <span class="step">最新メッセージ（原文保持）</span>
+        <span class="arrow">→</span>
+        <span class="step">古いメッセージ（要約）</span>
+        <span class="arrow">→</span>
+        <span class="step">さらに古い（高圧縮要約）</span>
+        <span class="arrow">→</span>
+        <span class="step">トピックまとめ</span>
+      </div>
+      <p>要約はユーティリティモデルが担当。埋め込みはローカル小型モデルで生成するためプライバシーと速度を両立。</p>
+      <div class="ve-callout" style="margin-top:0.875rem">
+        <strong>ベストプラクティス:</strong> 重要なセッション後は <code>"memorize learning opportunities from the current session"</code> とエージェントに依頼すること。長期継続のワークフローでは、重要知識をプロンプト化して明示的に埋め込むと信頼性が上がる。
+      </div>
+    </div>
+
+    <!-- ===================== 5. スキル標準 ===================== -->
+    <section id="skills" class="sec-head">5 — スキル（SKILL.md 標準）</section>
+
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> SKILL.md とは</span>
+      <p>
+        Anthropic が策定したオープンな SKILL.md 標準に準拠した、コンテキスト依存型の専門知識ファイル。
+        <span class="badge badge--blue">Claude Code</span>
+        <span class="badge badge--blue">Cursor</span>
+        <span class="badge badge--blue">Goose</span>
+        <span class="badge badge--blue">Codex CLI</span>
+        <span class="badge badge--blue">GitHub Copilot</span>
+        と互換性があり、ポータブルに再利用できる。
+      </p>
+      <p style="margin-top:0.5rem">システムプロンプトに常駐せず、関連するコンテキストが検出されたときだけ動的にロードされる。これによりトークンを節約しながら必要時だけ高度な専門知識を提供できる。</p>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> SKILL.md フォーマット</span>
+      <div class="ve-code-block">
+        <pre><code>---
+name: "my-skill"
+description: "このスキルが何をするか・いつ使うか"
+version: "1.0.0"
+author: "Your Name"
+tags: ["category", "purpose"]
+---
+
+# スキルの手順
+
+詳細な指示をここに記述...
+
+## 例
+- 使用例 1
+- 使用例 2</code></pre>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> スキルの追加手順</span>
+      <div class="step-flow">
+        <div class="step-card">
+          <div class="step-card__num">01</div>
+          <div>
+            <div class="step-card__title">フォルダを作成</div>
+            <p class="step-card__body"><code>usr/skills/my-skill/</code> ディレクトリを作成する。</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">02</div>
+          <div>
+            <div class="step-card__title">SKILL.md を配置</div>
+            <p class="step-card__body">YAML frontmatter（name / description / tags）は必須フィールド。</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">03</div>
+          <div>
+            <div class="step-card__title">スクリプトを追加（任意）</div>
+            <p class="step-card__body"><code>.sh / .py / .js / .ts</code> などを同フォルダに配置してスキルから参照できる。</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">04</div>
+          <div>
+            <div class="step-card__title">自動検出</div>
+            <p class="step-card__body">エージェントは description / tags に基づいて自動的にスキルを発見・ロードする。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== 6. カスタマイズ ===================== -->
+    <section id="customize" class="sec-head">6 — カスタマイズ</section>
+
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> プロンプトシステム</span>
+      <p><code>prompts/default/</code> にあるすべての Markdown ファイルがエージェントの行動を定義する。エージェントプロファイル（<code>agents/&lt;profile&gt;/prompts/</code>）に同名ファイルを置くと自動でマージされる。</p>
+      <div class="ve-table-wrap" style="margin-top:0.75rem">
+        <table>
+          <thead><tr><th>プロンプトファイル</th><th>役割</th></tr></thead>
+          <tbody>
+            <tr><td><code>agent.system.main.role.md</code></td><td>エージェントの全体的な役割と能力定義</td></tr>
+            <tr><td><code>agent.system.main.communication.md</code></td><td>通信スタイルの指定</td></tr>
+            <tr><td><code>agent.system.main.solving.md</code></td><td>タスクへのアプローチ方法</td></tr>
+            <tr><td><code>agent.system.main.specifics.md</code></td><td>プロファイル固有の追加指示（デフォルト空）</td></tr>
+            <tr><td><code>agent.system.tools.md</code></td><td>ツールプロンプトのエントリポイント</td></tr>
+            <tr><td><code>agent.system.tool.*.md</code></td><td>個別ツールの指示</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> プロンプト継承</span>
+      <p><code>{{include original}}</code> を使うとデフォルトプロンプトを継承しつつ差分だけ追記できる。将来のデフォルト更新も自動で取り込める。</p>
+      <div class="ve-code-block">
+        <pre><code>{{include original}}
+
+- always explain your reasoning
+- include code snippets in responses</code></pre>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot--amber ve-dot"></span> 動的振る舞い調整</span>
+      <p>実行中に「UK 英語で返答して」などと伝えると、<code>behaviour_adjustment</code> ツールが呼ばれ、ルールが <code>behaviour.md</code> に永続化されて次回以降の会話にも適用される。</p>
+      <ul>
+        <li>重複・矛盾するルールは自動マージ</li>
+        <li>コアプロンプトを変更せずに挙動を調整できる</li>
+        <li>拡張側（<code>_20_behaviour_prompt.py</code>）がシステムプロンプトの先頭にルールを注入</li>
+      </ul>
+    </div>
+
+    <!-- ===================== 7. セットアップ ===================== -->
+    <section id="setup" class="sec-head">7 — セットアップ</section>
+
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> クイックスタート</span>
+      <p>Docker が一番シンプル。ホストマシンへの直接インストールには Python / Conda 環境と RFC 設定が必要。</p>
+
+      <h3>macOS / Linux</h3>
+      <div class="ve-code-block">
+        <pre><code>curl -fsSL https://bash.agent-zero.ai | bash</code></pre>
+      </div>
+
+      <h3>Windows (PowerShell)</h3>
+      <div class="ve-code-block">
+        <pre><code>irm https://ps.agent-zero.ai | iex</code></pre>
+      </div>
+
+      <h3>Docker</h3>
+      <div class="ve-code-block">
+        <pre><code>docker run -p 80:80 agent0ai/agent-zero</code></pre>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> ディレクトリ構成（主要）</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>パス</th><th>用途</th></tr></thead>
+          <tbody>
+            <tr><td><code>prompts/</code></td><td>システム・ツールプロンプトの Markdown テンプレート</td></tr>
+            <tr><td><code>agents/&lt;profile&gt;/</code></td><td>エージェントプロファイル（プロンプト・ツール・拡張）</td></tr>
+            <tr><td><code>python/tools/</code></td><td>組み込みツールの実装</td></tr>
+            <tr><td><code>python/extensions/</code></td><td>モジュール型拡張（Message Loop / Memory / System）</td></tr>
+            <tr><td><code>python/helpers/</code></td><td>ユーティリティ関数</td></tr>
+            <tr><td><code>skills/</code></td><td>デフォルトスキル（SKILL.md 形式）</td></tr>
+            <tr><td><code>usr/skills/</code></td><td>ユーザーカスタムスキル</td></tr>
+            <tr><td><code>knowledge/custom/main/</code></td><td>カスタム知識ベース（.txt / .pdf / .md 等）</td></tr>
+            <tr><td><code>webui/</code></td><td>Web インターフェース（CSS / JS / Public assets）</td></tr>
+            <tr><td><code>conf/model_providers.yaml</code></td><td>モデルプロバイダーのデフォルト設定</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-callout" style="--i:2">
+      <strong>セキュリティ注意:</strong> Agent Zero はコードを実行し、ファイルを操作し、インターネットにアクセスする。必ず <strong>Docker などの隔離環境</strong>で動作させること。本番データや重要なシステムに直接アクセスできる環境での実行は推奨しない。
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:3" style="margin-top:1rem">
+      <span class="ve-section-label"><span class="ve-dot"></span> 参考リンク</span>
+      <ul>
+        <li><a href="https://github.com/agent0ai/agent-zero" target="_blank" rel="noopener">GitHub: agent0ai/agent-zero</a> — 本体リポジトリ</li>
+        <li><a href="https://agent-zero.ai" target="_blank" rel="noopener">公式サイト agent-zero.ai</a></li>
+        <li><a href="https://deepwiki.com/agent0ai/agent-zero" target="_blank" rel="noopener">DeepWiki 生成ドキュメント</a></li>
+        <li><a href="https://discord.gg/B8KZKNsPpj" target="_blank" rel="noopener">Discord コミュニティ</a></li>
+        <li><a href="https://www.youtube.com/@AgentZeroFW" target="_blank" rel="noopener">YouTube チュートリアル</a></li>
+      </ul>
+    </div>
+  </div><!-- .main -->
+</div><!-- .wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+/* ---- Mermaid init ---- */
+(function() {
+  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: prefersDark ? '#2d4a6f' : '#d4e3f7',
+      primaryTextColor: prefersDark ? '#e8f0ff' : '#0f2040',
+      primaryBorderColor: prefersDark ? '#3d6a9f' : '#4a78b0',
+      lineColor: prefersDark ? '#5a8acd' : '#4a78b0',
+      secondaryColor: prefersDark ? '#3d5f3a' : '#d9f0d4',
+      tertiaryColor: prefersDark ? '#22303c' : '#eef4fc',
+      background: prefersDark ? '#1a2a3a' : '#f5f8ff',
+      mainBkg: prefersDark ? '#2d4a6f' : '#d4e3f7',
+      nodeBorder: prefersDark ? '#4a7aaa' : '#3a68a0',
+      clusterBkg: prefersDark ? '#1e2e3e' : '#eef4fc',
+      fontSize: '14px'
+    }
+  });
+  mermaid.run({ nodes: [document.getElementById('mz-diagram')] });
+})();
+
+/* ---- Mermaid zoom / pan ---- */
+(function() {
+  var wrap = document.querySelector('.mermaid-wrap');
+  var el = document.getElementById('mz-diagram');
+  var scale = 1;
+  var tx = 0, ty = 0;
+  var dragging = false;
+  var startX, startY, startTx, startTy;
+
+  function applyTransform() {
+    el.style.transformOrigin = '50% 50%';
+    el.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+  }
+
+  document.getElementById('mz-plus').addEventListener('click', function() { scale = Math.min(scale * 1.3, 5); applyTransform(); });
+  document.getElementById('mz-minus').addEventListener('click', function() { scale = Math.max(scale / 1.3, 0.3); applyTransform(); });
+  document.getElementById('mz-reset').addEventListener('click', function() { scale = 1; tx = 0; ty = 0; applyTransform(); });
+
+  el.addEventListener('wheel', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      scale = Math.max(0.3, Math.min(5, scale * (e.deltaY < 0 ? 1.15 : 0.87)));
+      applyTransform();
+    }
+  }, { passive: false });
+
+  el.addEventListener('mousedown', function(e) { dragging = true; startX = e.clientX; startY = e.clientY; startTx = tx; startTy = ty; el.classList.add('zoomed'); });
+  window.addEventListener('mousemove', function(e) { if (!dragging) return; tx = startTx + (e.clientX - startX); ty = startTy + (e.clientY - startY); applyTransform(); });
+  window.addEventListener('mouseup', function() { dragging = false; el.classList.remove('zoomed'); });
+})();
+
+/* ---- Scroll Spy ---- */
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
