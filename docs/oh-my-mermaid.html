@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>oh-my-mermaid — AI が生成するアーキテクチャ図管理 CLI</title>
+  <meta name="description" content="Mermaid 図でコードベースの構造を自動ドキュメント化する CLI ツール。AI コーディングツールと連携し、.omm/ ディレクトリにパースペクティブ駆動のアーキテクチャ文書を蓄積する。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="oh-my-mermaid — AI が生成するアーキテクチャ図管理 CLI">
+  <meta property="og:description" content="Mermaid 図でコードベースの構造を自動ドキュメント化する CLI ツール。AI コーディングツールと連携し、.omm/ ディレクトリにパースペクティブ駆動のアーキテクチャ文書を蓄積する。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/oh-my-mermaid.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="oh-my-mermaid — AI が生成するアーキテクチャ図管理 CLI">
+  <meta name="twitter:description" content="Mermaid 図でコードベースの構造を自動ドキュメント化する CLI ツール。AI コーディングツールと連携し .omm/ を蓄積。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inconsolata:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    /* ============ THEME (Spell UI tokens + Sora) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      /* Purple accent — mermaid */
+      --chart-1: oklch(0.55 0.22 285);
+      --chart-2: oklch(0.62 0.16 230);
+      --chart-3: oklch(0.42 0.18 285);
+      --chart-4: oklch(0.72 0.15 310);
+      --chart-5: oklch(0.65 0.20 255);
+      --code-bg: var(--muted);
+      --code-text: #3b1d8c;
+      --font-body: 'Sora', system-ui, sans-serif;
+      --font-mono: 'Inconsolata', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.72 0.18 285);
+        --chart-2: oklch(0.65 0.14 230);
+        --chart-3: oklch(0.55 0.20 285);
+        --chart-4: oklch(0.78 0.13 310);
+        --chart-5: oklch(0.68 0.18 255);
+        --code-bg: #0f0f0f;
+        --code-text: #c4b5fd;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.875rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.55 0.22 285 / 0.12); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 25% 0%, oklch(0.55 0.22 285 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 25% 0%, oklch(0.72 0.18 285 / 0.09) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Mermaid */
+    .mermaid-wrap {
+      position: relative; overflow: hidden;
+      border: 1px solid var(--border); border-radius: var(--radius-md);
+      background: color-mix(in oklch, var(--muted) 85%, var(--chart-1) 5%);
+      margin: 1rem 0;
+    }
+    .mermaid-wrap .mermaid { display: flex; justify-content: center; padding: 1.25rem; }
+    .mermaid-wrap svg { max-width: 100%; height: auto; }
+
+    /* .omm/ tree */
+    .omm-tree { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.9; color: var(--text); background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; overflow-x: auto; }
+    .omm-tree .dir { color: var(--chart-1); font-weight: 700; }
+    .omm-tree .file { color: var(--text-dim); }
+    .omm-tree .comment { color: var(--chart-2); font-style: italic; }
+
+    /* field grid */
+    .field-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem; margin: 0.75rem 0; }
+    .field-chip { background: color-mix(in oklch, var(--muted) 80%, var(--chart-1) 10%); border: 1px solid color-mix(in oklch, var(--border) 70%, var(--chart-1) 20%); border-radius: var(--radius-sm); padding: 0.4rem 0.75rem; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; color: var(--chart-3); }
+
+    /* pipeline */
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 0.75rem 0; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    /* badge */
+    .badge { display: inline-block; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 3px; vertical-align: middle; }
+    .badge--local { background: oklch(0.55 0.22 285 / 0.12); color: var(--chart-1); }
+    .badge--query { background: oklch(0.62 0.16 230 / 0.12); color: var(--chart-2); }
+    .badge--cloud { background: oklch(0.72 0.15 310 / 0.12); color: var(--chart-4); }
+    .badge--integration { background: oklch(0.65 0.20 255 / 0.12); color: var(--chart-5); }
+
+    /* card gap */
+    .ve-card + .ve-card { margin-top: 0.75rem; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#arch">アーキテクチャ</a>
+    <a href="#commands">コマンド & スキル</a>
+    <a href="#dataflow">データフロー</a>
+    <a href="#cloud">クラウド連携</a>
+    <a href="#quickstart">クイックスタート</a>
+  </nav>
+
+  <div class="main">
+  <h1>oh-my-mermaid</h1>
+  <p class="subtitle">omm — Architecture mirror for vibe coding</p>
+
+  <!-- ===== 1. 概要 ===== -->
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何を解決するか</span>
+    <p><strong>oh-my-mermaid</strong>（omm）は、AI コーディングツール（Claude Code / Codex / Cursor など）と連携し、コードベースの構造を <strong>Mermaid 図 + テキストフィールド</strong> で継続的に文書化する CLI ツール。</p>
+    <blockquote style="border-left:3px solid var(--chart-1);padding:0.5rem 1rem;margin:0.75rem 0;font-style:italic;color:var(--text-dim);">
+      AI writes code in seconds. Humans understand it in hours.<br>
+      But skip understanding, the codebase becomes a black box — even to you.
+    </blockquote>
+    <p>omm はこのギャップを埋める。AI に <code>/omm-scan</code> スキルを実行させると、コードベースから <strong>パースペクティブ</strong>（複数の視点）が生成され、プロジェクトルートの <code>.omm/</code> ディレクトリに蓄積される。</p>
+    <div class="kpi-row" style="margin-top:1.25rem">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">7</span><span class="ve-kpi-card__label">フィールド / 要素</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">∞</span><span class="ve-kpi-card__label">ネスト深さ</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">5+</span><span class="ve-kpi-card__label">対応 AI ツール</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:1;margin-top:0.75rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> .omm/ ディレクトリ構造</span>
+    <p>各パースペクティブはサブディレクトリ。さらにその中に <strong>ネスト要素</strong>（子ディレクトリ）を持てる。ビュワーはファイルシステムのツリーを自動解析してグループを展開表示する。</p>
+    <div class="omm-tree">
+      <span class="dir">.omm/</span><br>
+      ├── <span class="dir">overall-architecture/</span>  <span class="comment">← perspective</span><br>
+      │&nbsp;&nbsp; ├── description.md<br>
+      │&nbsp;&nbsp; ├── diagram.mmd<br>
+      │&nbsp;&nbsp; ├── context.md<br>
+      │&nbsp;&nbsp; ├── <span class="dir">cli/</span>  <span class="comment">← nested element</span><br>
+      │&nbsp;&nbsp; │&nbsp;&nbsp; ├── description.md<br>
+      │&nbsp;&nbsp; │&nbsp;&nbsp; └── diagram.mmd<br>
+      │&nbsp;&nbsp; └── <span class="dir">server/</span>  <span class="comment">← deeper nesting</span><br>
+      │&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; └── ...<br>
+      ├── <span class="dir">data-flow/</span><br>
+      └── <span class="dir">command-surface/</span><br>
+    </div>
+    <p style="margin-top:0.75rem">各要素が持てる 7 つのフィールド:</p>
+    <div class="field-grid">
+      <span class="field-chip">description</span>
+      <span class="field-chip">diagram</span>
+      <span class="field-chip">context</span>
+      <span class="field-chip">constraint</span>
+      <span class="field-chip">concern</span>
+      <span class="field-chip">todo</span>
+      <span class="field-chip">note</span>
+    </div>
+  </div>
+
+  <!-- ===== 2. アーキテクチャ ===== -->
+  <section id="arch" class="sec-head">2 — アーキテクチャ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> コンポーネント全体像</span>
+    <p>omm 自身が <code>/omm-scan</code> でスキャンした <code>overall-architecture</code> パースペクティブ。CLI が各コマンドへ振り分け、コマンドはストア・クラウド・解析エンジン群を呼び出す。</p>
+    <div class="mermaid-wrap">
+      <div class="mermaid" id="arch-diagram">
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#ede9fe", "primaryTextColor": "#3b1d8c", "primaryBorderColor": "#8b5cf6", "lineColor": "#8b5cf6", "secondaryColor": "#f5f3ff", "tertiaryColor": "#fdf4ff", "fontFamily": "Sora, system-ui, sans-serif", "fontSize": "13px"}}}%%
+graph LR
+    cli["CLI Dispatcher\nsrc/cli.ts"]
+    commands["Commands\nsrc/commands/"]
+    store["Store\nsrc/lib/store.ts"]
+    cloud["Cloud Client\nsrc/lib/cloud.ts"]
+    diff-engine["Diff Engine\nsrc/lib/diff.ts"]
+    refs["Ref Tracker\nsrc/lib/refs.ts"]
+    validator["Validator\nsrc/lib/validate.ts"]
+    meta["Meta Tracker\nsrc/lib/meta.ts"]
+    cloud-paths["Cloud Paths\nsrc/lib/cloud-paths.ts"]
+    platforms["Platform Integrations\nsrc/lib/platforms/"]
+    server["Web Viewer\nsrc/server/"]
+    public-api["Public API\nsrc/index.ts"]
+
+    cli -->|"dispatches args"| commands
+    commands -->|"read/write .omm/"| store
+    commands -->|"push/pull REST"| cloud
+    commands -->|"compare diagrams"| diff-engine
+    commands -->|"cross-references"| refs
+    commands -->|"validate mermaid"| validator
+    commands -->|"register skills"| platforms
+    commands -->|"start HTTP server"| server
+    store -->|"update timestamps"| meta
+    cloud -->|"safe path resolve"| cloud-paths
+    server -->|"read classes"| store
+    server -->|"compare diagrams"| diff-engine
+    server -->|"resolve refs"| refs
+    public-api -->|"re-exports"| store
+    public-api -->|"re-exports"| diff-engine
+    public-api -->|"re-exports"| refs
+    public-api -->|"re-exports"| validator
+
+    classDef entry fill:#ddd6fe,stroke:#8b5cf6,color:#3b1d8c
+    classDef store fill:#d1fae5,stroke:#059669,color:#064e3b
+    class cli,public-api entry
+    class store store
+      </div>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1;margin-top:0.75rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 主要モジュール</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>モジュール</th><th>ファイル</th><th>役割</th></tr></thead>
+        <tbody>
+          <tr><td><code>cli.ts</code></td><td>src/cli.ts</td><td>引数パース・コマンドディスパッチ</td></tr>
+          <tr><td><code>store.ts</code></td><td>src/lib/store.ts</td><td>.omm/ の読み書き・メタ更新・ネスト管理</td></tr>
+          <tr><td><code>cloud.ts</code></td><td>src/lib/cloud.ts</td><td>ohmymermaid.com REST API クライアント</td></tr>
+          <tr><td><code>diff.ts</code></td><td>src/lib/diff.ts</td><td>Mermaid ノード/エッジの差分検出</td></tr>
+          <tr><td><code>refs.ts</code></td><td>src/lib/refs.ts</td><td>図間クロスリファレンス追跡</td></tr>
+          <tr><td><code>validate.ts</code></td><td>src/lib/validate.ts</td><td>Mermaid 構文・規約バリデーション</td></tr>
+          <tr><td><code>meta.ts</code></td><td>src/lib/meta.ts</td><td>created/updated/git_commit メタ管理</td></tr>
+          <tr><td><code>platforms/</code></td><td>src/lib/platforms/</td><td>各 AI ツールへのスキル登録</td></tr>
+          <tr><td><code>server/</code></td><td>src/server/</td><td>インタラクティブ Web ビュワー (SSE)</td></tr>
+          <tr><td><code>index.ts</code></td><td>src/index.ts</td><td>パブリック API（store/diff/refs/validator を再エクスポート）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== 3. コマンド & スキル ===== -->
+  <section id="commands" class="sec-head">3 — コマンド & スキル</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> コマンドサーフェス</span>
+    <div class="mermaid-wrap">
+      <div class="mermaid">
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#ede9fe", "primaryTextColor": "#3b1d8c", "primaryBorderColor": "#8b5cf6", "lineColor": "#8b5cf6", "secondaryColor": "#f5f3ff", "fontFamily": "Sora, system-ui, sans-serif", "fontSize": "12px"}}}%%
+graph TD
+    omm["omm\nCLI entry"]
+
+    omm -->|"local"| init["init\nomm init"]
+    omm -->|"local"| list["list\nomm list"]
+    omm -->|"local"| show["show\nomm show &lt;class&gt;"]
+    omm -->|"local"| delete["delete\nomm delete &lt;class&gt;"]
+    omm -->|"local"| status["status\nomm status"]
+    omm -->|"query"| diff["diff\nomm diff &lt;class&gt;"]
+    omm -->|"query"| refs["refs\nomm refs &lt;class&gt;"]
+    omm -->|"query"| validate["validate\nomm validate"]
+    omm -->|"viewer"| view["view\nomm view [--port N]"]
+    omm -->|"cloud"| login["login\nomm login"]
+    omm -->|"cloud"| link["link\nomm link [org/slug]"]
+    omm -->|"cloud"| push["push\nomm push"]
+    omm -->|"cloud"| pull["pull\nomm pull"]
+    omm -->|"cloud"| share["share\nomm share"]
+    omm -->|"cloud"| org["org\nomm org &lt;sub&gt;"]
+    omm -->|"integration"| setup["setup\nomm setup [platform]"]
+    omm -->|"integration"| update["update\nomm update"]
+    omm -->|"rw"| rw["read/write\nomm &lt;path&gt; &lt;field&gt;"]
+
+    classDef entry fill:#ddd6fe,stroke:#8b5cf6,color:#3b1d8c
+    class omm entry
+      </div>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:1;margin-top:0.75rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> CLI コマンド一覧</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>コマンド</th><th>カテゴリ</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td><code>omm setup [platform]</code></td><td><span class="badge badge--integration">integration</span></td><td>AI ツールにスキルを登録。省略時は自動検出</td></tr>
+          <tr><td><code>omm view [--port N]</code></td><td><span class="badge badge--local">local</span></td><td>インタラクティブ Web ビュワーを起動 (default: 3000)</td></tr>
+          <tr><td><code>omm list</code></td><td><span class="badge badge--local">local</span></td><td>パースペクティブ一覧表示</td></tr>
+          <tr><td><code>omm tree &lt;path&gt;</code></td><td><span class="badge badge--local">local</span></td><td>要素ツリーを表示</td></tr>
+          <tr><td><code>omm show &lt;path&gt;</code></td><td><span class="badge badge--local">local</span></td><td>要素の全フィールドを表示</td></tr>
+          <tr><td><code>omm status</code></td><td><span class="badge badge--local">local</span></td><td>全要素の概要を表示</td></tr>
+          <tr><td><code>omm diff &lt;path&gt;</code></td><td><span class="badge badge--query">query</span></td><td>現在と前回の図を比較</td></tr>
+          <tr><td><code>omm refs &lt;path&gt;</code></td><td><span class="badge badge--query">query</span></td><td>クロスリファレンスを表示</td></tr>
+          <tr><td><code>omm validate [path]</code></td><td><span class="badge badge--query">query</span></td><td>Mermaid 構文・規約を検証</td></tr>
+          <tr><td><code>omm push / pull</code></td><td><span class="badge badge--cloud">cloud</span></td><td>.omm/ をクラウドへ同期</td></tr>
+          <tr><td><code>omm link [org/slug]</code></td><td><span class="badge badge--cloud">cloud</span></td><td>プロジェクトをクラウド slug に紐付け</td></tr>
+          <tr><td><code>omm share</code></td><td><span class="badge badge--cloud">cloud</span></td><td>共有 URL を表示</td></tr>
+          <tr><td><code>omm config language &lt;code&gt;</code></td><td><span class="badge badge--local">local</span></td><td>コンテンツ言語を設定（例: ja, ko, zh）</td></tr>
+          <tr><td><code>omm read &lt;path&gt; &lt;field&gt;</code></td><td><span class="badge badge--local">local</span></td><td>フィールドを stdout に出力</td></tr>
+          <tr><td><code>omm write &lt;path&gt; &lt;field&gt; -</code></td><td><span class="badge badge--local">local</span></td><td>stdin からフィールドを書き込み</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:2;margin-top:0.75rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> AI スキル（/ コマンド）</span>
+    <p>スキルはターミナルではなく <strong>AI コーディングツール内</strong> で実行するコマンド。<code>omm setup</code> で登録される。</p>
+    <div class="ve-table-wrap" style="margin-top:0.75rem">
+      <table>
+        <thead><tr><th>スキル</th><th>動作</th></tr></thead>
+        <tbody>
+          <tr><td><code>/omm-scan</code></td><td>コードベースを解析し、パースペクティブ駆動の再帰的なアーキテクチャ文書を生成・更新する</td></tr>
+          <tr><td><code>/omm-push</code></td><td>ログイン → リンク → クラウドへプッシュをワンステップで実行</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="margin-top:0.75rem">
+      <strong>パスの形式:</strong> <code>omm write overall-architecture/cli description - &lt;&lt;'EOF'</code> のようにスラッシュで階層を指定。Element IDs は kebab-case で、ディレクトリ名と一致させる。
+    </div>
+  </div>
+
+  <!-- ===== 4. データフロー ===== -->
+  <section id="dataflow" class="sec-head">4 — データフロー</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 3 つの主要フロー</span>
+    <p>omm のデータは 3 経路で流れる: <strong>書き込みパス</strong>（AI → store → .omm/）、<strong>解析パス</strong>（.omm/ → validator/diff/refs）、<strong>同期パス</strong>（.omm/ ↔ クラウド、Web ビュワー SSE）。</p>
+    <div class="mermaid-wrap">
+      <div class="mermaid">
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#ede9fe", "primaryTextColor": "#3b1d8c", "primaryBorderColor": "#8b5cf6", "lineColor": "#8b5cf6", "secondaryColor": "#f5f3ff", "tertiaryColor": "#fdf4ff", "fontFamily": "Sora, system-ui, sans-serif", "fontSize": "12px"}}}%%
+graph LR
+    ai-assistant["AI Assistant\nClaude Code / Codex"]
+    cli-input["CLI Input\nomm write"]
+    store-engine["Store Engine\nsrc/lib/store.ts"]
+    omm-dir[".omm/ Directory\nFilesystem"]
+    meta-tracker["Meta Tracker\nsrc/lib/meta.ts"]
+    validator["Validator\nsrc/lib/validate.ts"]
+    diff-engine["Diff Engine\nsrc/lib/diff.ts"]
+    ref-tracker["Ref Tracker\nsrc/lib/refs.ts"]
+    cloud-api["Cloud API\nohmymermaid.com"]
+    web-viewer["Web Viewer\nlocalhost:3000"]
+    credentials["Credentials\n~/.omm/credentials.json"]
+
+    ai-assistant -->|"omm write"| cli-input
+    cli-input -->|"writeField()"| store-engine
+    store-engine -->|"field files"| omm-dir
+    store-engine -->|"save prev_diagram"| omm-dir
+    store-engine -->|"updateMeta()"| meta-tracker
+    meta-tracker -->|"meta.yaml + git info"| omm-dir
+    omm-dir -->|"readField()"| store-engine
+    store-engine -->|"diagram text"| validator
+    store-engine -->|"diagram text"| diff-engine
+    store-engine -->|"diagram text"| ref-tracker
+    omm-dir -->|"push all files"| cloud-api
+    cloud-api -->|"pull files"| omm-dir
+    credentials -->|"Bearer token"| cloud-api
+    omm-dir -->|"fs.watch + SSE"| web-viewer
+    web-viewer -->|"REST reads"| store-engine
+
+    classDef ext fill:#e2e8f0,stroke:#94a3b8,color:#334155
+    classDef entry fill:#ddd6fe,stroke:#8b5cf6,color:#3b1d8c
+    classDef storage fill:#d1fae5,stroke:#059669,color:#064e3b
+    class ai-assistant,cloud-api ext
+    class cli-input entry
+    class omm-dir,credentials storage
+      </div>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1;margin-top:0.75rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 書き込みパス詳細</span>
+    <div class="pipeline">
+      <span class="step">AI が omm write 実行</span>
+      <span class="arrow">→</span>
+      <span class="step">cli.ts でコマンド解析</span>
+      <span class="arrow">→</span>
+      <span class="step">writeNodeField()</span>
+      <span class="arrow">→</span>
+      <span class="step">prev_diagram を meta.yaml に保存</span>
+      <span class="arrow">→</span>
+      <span class="step">field file 書き込み</span>
+      <span class="arrow">→</span>
+      <span class="step">meta.yaml 更新（created / updated / git_commit）</span>
+      <span class="arrow">→</span>
+      <span class="step">親要素の children リスト更新</span>
+    </div>
+    <p style="margin-top:0.75rem"><code>meta.yaml</code> は <code>created</code>, <code>updated</code>, <code>update_count</code>, <code>last_field</code>, <code>git_commit</code>, <code>prev_diagram</code>, <code>children</code> などを保持し、<code>omm diff</code> や変更履歴追跡に利用される。</p>
+  </div>
+
+  <!-- ===== 5. クラウド連携 ===== -->
+  <section id="cloud" class="sec-head">5 — クラウド連携</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ohmymermaid.com</span>
+    <p><code>.omm/</code> をクラウドに同期することで、チーム共有や公開 URL の発行が可能になる。認証トークンは <code>~/.omm/credentials.json</code>（パーミッション 0600）に保存される。</p>
+    <div class="ve-code-block">
+      <pre><code>omm login                    # ブラウザ認証
+omm link myorg/my-project    # プロジェクトを slug に紐付け
+omm push                     # .omm/ をアップロード
+omm share                    # 共有 URL を表示
+omm pull                     # クラウドから取得</code></pre>
+    </div>
+    <p>デフォルトは <strong>プライベート</strong>。公開共有リンクは <code>omm share</code> で取得できる（例: <a href="https://ohmymermaid.com/share/c47e20a7063c231760361ed9cb9ec4b6" target="_blank" rel="noopener">ohmymermaid.com/share/…</a>）。</p>
+  </div>
+
+  <div class="ve-card" style="--i:1;margin-top:0.75rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 組織管理</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>コマンド</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td><code>omm org list</code></td><td>所属組織の一覧</td></tr>
+          <tr><td><code>omm org switch &lt;slug&gt;</code></td><td>デフォルト組織を切り替え</td></tr>
+          <tr><td><code>omm org members [slug]</code></td><td>メンバー一覧をブラウザで表示</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="margin-top:0.75rem">
+      <strong>Cloud Paths:</strong> <code>src/lib/cloud-paths.ts</code> がパスの安全な解決を担当し、ディレクトリトラバーサルを防ぐ。
+    </div>
+  </div>
+
+  <!-- ===== 6. クイックスタート ===== -->
+  <section id="quickstart" class="sec-head">6 — クイックスタート</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> インストールと初回スキャン</span>
+    <div class="ve-code-block">
+      <pre><code># 1. インストール
+npm install -g oh-my-mermaid
+
+# 2. AI ツールへスキルを登録
+omm setup         # 全ツールを自動検出
+omm setup cursor  # Cursor に限定
+
+# 3. AI ツール内でスキャン実行
+/omm-scan
+
+# 4. ブラウザでビュワーを開く
+omm view</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:1;margin-top:0.75rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 対応 AI ツール</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>プラットフォーム</th><th>セットアップコマンド</th></tr></thead>
+        <tbody>
+          <tr><td>Claude Code</td><td><code>omm setup claude</code></td></tr>
+          <tr><td>Codex</td><td><code>omm setup codex</code></td></tr>
+          <tr><td>Cursor</td><td><code>omm setup cursor</code></td></tr>
+          <tr><td>OpenClaw</td><td><code>omm setup openclaw</code></td></tr>
+          <tr><td>Antigravity</td><td><code>omm setup antigravity</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:2;margin-top:0.75rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> Web ビュワー</span>
+    <p><code>omm view</code> で <code>localhost:3000</code> にインタラクティブな Web ビュワーが起動する。<code>fs.watch</code> + SSE でファイルの変更を検知しリアルタイムに更新。Mermaid 図はクリックで展開・縮小でき、ネストされた子要素をインタラクティブに探索できる。</p>
+    <div class="ve-code-block" style="max-height:none">
+      <pre><code># カスタムポートで起動
+omm view --port 8080
+
+# バージョン確認
+omm --version
+
+# 更新
+omm update</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:3;margin-top:0.75rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 参考リンク</span>
+    <ul>
+      <li><a href="https://www.npmjs.com/package/oh-my-mermaid" target="_blank" rel="noopener">npm: oh-my-mermaid</a></li>
+      <li><a href="https://github.com/oh-my-mermaid/oh-my-mermaid" target="_blank" rel="noopener">GitHub: oh-my-mermaid/oh-my-mermaid</a></li>
+      <li><a href="https://ohmymermaid.com" target="_blank" rel="noopener">ohmymermaid.com</a> — クラウドサービス</li>
+      <li><a href="https://mermaid.js.org" target="_blank" rel="noopener">Mermaid.js</a> — 図の記述言語</li>
+    </ul>
+  </div>
+  </div><!-- /.main -->
+</div><!-- /.wrap -->
+
+<script>
+(function() {
+  var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: isDark ? {
+      primaryColor: '#3b0764',
+      primaryTextColor: '#e9d5ff',
+      primaryBorderColor: '#7c3aed',
+      lineColor: '#7c3aed',
+      secondaryColor: '#1e1b2e',
+      tertiaryColor: '#1a1130',
+      fontFamily: 'Sora, system-ui, sans-serif',
+      fontSize: '13px',
+      background: '#0f0f0f',
+      mainBkg: '#1e1b2e',
+      nodeBorder: '#7c3aed',
+      clusterBkg: '#1a1130',
+      titleColor: '#e9d5ff',
+      edgeLabelBackground: '#1e1b2e',
+      textColor: '#e9d5ff'
+    } : {
+      primaryColor: '#ede9fe',
+      primaryTextColor: '#3b1d8c',
+      primaryBorderColor: '#8b5cf6',
+      lineColor: '#8b5cf6',
+      secondaryColor: '#f5f3ff',
+      tertiaryColor: '#fdf4ff',
+      fontFamily: 'Sora, system-ui, sans-serif',
+      fontSize: '13px'
+    }
+  });
+})();
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
