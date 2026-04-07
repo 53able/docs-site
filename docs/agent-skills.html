@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Skills — AI エージェント向けプロダクションエンジニアリングスキル集</title>
+  <meta name="description" content="19 のエンジニアリングスキルを 6 フェーズ（Define → Plan → Build → Verify → Review → Ship）に整理し、Claude Code / Cursor / Gemini CLI 等に導入できる OSS。各スキルは手順・検証ゲート・アンチ合理化表を内包。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Agent Skills — AI エージェント向けプロダクションエンジニアリングスキル集">
+  <meta property="og:description" content="19 のエンジニアリングスキルを 6 フェーズに整理。AI エージェントがシニアエンジニアと同じ規律でコードを書けるようにするワークフロー集。Claude Code / Cursor / Gemini CLI 対応。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/agent-skills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Agent Skills — AI エージェント向けプロダクションエンジニアリングスキル集">
+  <meta name="twitter:description" content="19 スキル・6 フェーズ・7 コマンド。AI エージェントをシニアエンジニア品質のワークフローで動かす OSS。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    /* ============ THEME (Spell UI tokens — indigo palette) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+
+      /* Indigo palette */
+      --chart-1: oklch(0.55 0.18 265);
+      --chart-2: oklch(0.72 0.14 265);
+      --chart-3: oklch(0.40 0.13 265);
+      --chart-4: oklch(0.65 0.12 230);
+      --chart-5: oklch(0.78 0.10 280);
+
+      --code-bg: var(--muted);
+      --code-text: #2d2a8a;
+
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.70 0.16 265);
+        --chart-2: oklch(0.82 0.10 265);
+        --chart-3: oklch(0.58 0.14 265);
+        --chart-4: oklch(0.68 0.10 230);
+        --chart-5: oklch(0.80 0.08 280);
+        --code-bg: #0f0f1a;
+        --code-text: #a5b4fc;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--border) 50%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 15%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 70% 0%, oklch(0.55 0.18 265 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 70% 0%, oklch(0.70 0.16 265 / 0.09) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    /* KPI row */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Phase badge */
+    .phase-badge {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 2px 8px; border-radius: 999px;
+      background: color-mix(in oklch, var(--chart-1) 12%, transparent);
+      color: var(--chart-1);
+      border: 1px solid color-mix(in oklch, var(--chart-1) 25%, transparent);
+      font-family: var(--font-mono);
+    }
+
+    /* Command grid */
+    .cmd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.75rem; }
+    .cmd-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 1rem 1.125rem; transition: box-shadow 0.15s, border-color 0.15s;
+    }
+    .cmd-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); border-color: color-mix(in oklch, var(--chart-1) 35%, var(--border)); }
+    .cmd-name { font-family: var(--font-mono); font-size: 0.9375rem; font-weight: 500; color: var(--chart-1); margin-bottom: 0.25rem; }
+    .cmd-principle { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); margin-bottom: 0.5rem; font-family: var(--font-mono); }
+    .cmd-desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.5; }
+
+    /* Persona grid */
+    .persona-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
+    .persona-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 1rem 1.125rem;
+    }
+    .persona-role { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--chart-1); margin-bottom: 0.25rem; font-family: var(--font-mono); }
+    .persona-name { font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .persona-desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.5; }
+
+    /* Mermaid wrapper */
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; overflow-x: auto; }
+    .mermaid { font-family: var(--font-mono) !important; }
+
+    /* Pipeline */
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+    .pipeline .step { background: color-mix(in oklch, var(--chart-1) 10%, var(--muted)); padding: 0.35rem 0.7rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.75rem; color: var(--chart-1); font-weight: 500; }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    /* Tool pill list */
+    .tool-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+    .tool-pill {
+      font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500;
+      padding: 3px 10px; border-radius: 999px;
+      background: var(--muted); border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+
+    /* Phase section row */
+    .phase-row { margin-bottom: 1.5rem; }
+    .phase-header { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.625rem; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#lifecycle">ライフサイクル</a>
+    <a href="#skills">19 スキル</a>
+    <a href="#commands">コマンド</a>
+    <a href="#personas">ペルソナ</a>
+    <a href="#setup">セットアップ</a>
+  </nav>
+
+  <div class="main">
+    <h1>Agent Skills</h1>
+    <p class="subtitle">Production-grade engineering skills for AI coding agents. — addyosmani/agent-skills</p>
+
+    <!-- ===== 1 — 概要 ===== -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+      <p><strong>Agent Skills</strong> は、AI コーディングエージェントがシニアエンジニアと同じ品質規律でソフトウェアを開発できるように設計されたワークフロー集。各スキルは「手順（Process）・アンチ合理化表（Rationalizations）・検証要件（Verification）」の 3 要素で構成され、エージェントが最短ルートを選んで仕様・テスト・セキュリティレビューをスキップする問題を防ぐ。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">19</span><span class="ve-kpi-card__label">コアスキル</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">6</span><span class="ve-kpi-card__label">開発フェーズ</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">7</span><span class="ve-kpi-card__label">スラッシュコマンド</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">エージェントペルソナ</span></div>
+      </div>
+      <div class="ve-callout">
+        <strong>設計哲学:</strong> スキルは「参照ドキュメント」ではなく「エージェントが従うワークフロー」。手順・チェックポイント・終了条件を持ち、<code>SKILL.md</code> がエントリポイント。サポート参照はトークン節約のために必要時だけロードする Progressive Disclosure を採用。
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> スキルの解剖学</span>
+      <p>すべてのスキルは一貫した構造を持つ。</p>
+      <div class="ve-code-block">
+        <pre><code>┌─────────────────────────────────────────────┐
+│  SKILL.md                                   │
+│                                             │
+│  ┌─ Frontmatter ─────────────────────────┐  │
+│  │ name: lowercase-hyphen-name           │  │
+│  │ description: Use when [trigger]       │  │
+│  └───────────────────────────────────────┘  │
+│                                             │
+│  Overview         → 何をするスキルか           │
+│  When to Use      → 発動条件                  │
+│  Process          → ステップバイステップの手順   │
+│  Rationalizations → スキップ言い訳 + 反論      │
+│  Red Flags        → 問題のサイン               │
+│  Verification     → 証拠要件（証明が必要）      │
+└─────────────────────────────────────────────┘</code></pre>
+      </div>
+    </div>
+
+    <!-- ===== 2 — ライフサイクル ===== -->
+    <section id="lifecycle" class="sec-head">2 — 開発ライフサイクル</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 6 フェーズ</span>
+      <div class="pipeline" style="margin-bottom:1rem">
+        <span class="step">DEFINE</span>
+        <span class="arrow">→</span>
+        <span class="step">PLAN</span>
+        <span class="arrow">→</span>
+        <span class="step">BUILD</span>
+        <span class="arrow">→</span>
+        <span class="step">VERIFY</span>
+        <span class="arrow">→</span>
+        <span class="step">REVIEW</span>
+        <span class="arrow">→</span>
+        <span class="step">SHIP</span>
+      </div>
+      <p>フルフィーチャーの標準的なスキル実行順:</p>
+      <div class="ve-code-block">
+        <pre><code> 1. idea-refine                 → アイデアを精錬
+ 2. spec-driven-development     → 何を作るか定義
+ 3. planning-and-task-breakdown → 検証可能な粒度に分解
+ 4. context-engineering         → 正しいコンテキストをロード
+ 5. incremental-implementation  → スライスごとに実装
+ 6. test-driven-development     → 各スライスを証明
+ 7. code-review-and-quality     → マージ前レビュー
+ 8. git-workflow-and-versioning → クリーンなコミット履歴
+ 9. documentation-and-adrs      → 意思決定を記録
+10. shipping-and-launch         → 安全にデプロイ</code></pre>
+      </div>
+      <div class="ve-callout">
+        <strong>柔軟な適用:</strong> すべてのタスクがすべてのスキルを必要とするわけではない。バグ修正なら <code>debugging-and-error-recovery</code> → <code>test-driven-development</code> → <code>code-review-and-quality</code> の 3 スキルで十分なことが多い。
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> スキル選択ツリー</span>
+      <p>タスクが届いたとき、どのスキルを使うかを判定するデシジョンツリー。</p>
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+flowchart TD
+    T["タスク到着"] --> A{"フェーズ判定"}
+    A --> D1["曖昧なアイデア<br/>→ idea-refine"]
+    A --> D2["新機能・新プロジェクト<br/>→ spec-driven-development"]
+    A --> D3["仕様あり・タスク分解<br/>→ planning-and-task-breakdown"]
+    A --> D4{"実装フェーズ"}
+    D4 --> B1["コード実装<br/>incremental-implementation"]
+    D4 --> B2["UI 作業<br/>frontend-ui-engineering"]
+    D4 --> B3["API 設計<br/>api-and-interface-design"]
+    D4 --> B4["コンテキスト不足<br/>context-engineering"]
+    A --> D5{"検証フェーズ"}
+    D5 --> V1["テスト<br/>test-driven-development"]
+    D5 --> V2["ブラウザ検証<br/>browser-testing-with-devtools"]
+    D5 --> V3["障害対応<br/>debugging-and-error-recovery"]
+    A --> D6{"レビューフェーズ"}
+    D6 --> R1["コードレビュー<br/>code-review-and-quality"]
+    D6 --> R2["セキュリティ<br/>security-and-hardening"]
+    D6 --> R3["パフォーマンス<br/>performance-optimization"]
+    A --> D7{"出荷フェーズ"}
+    D7 --> S1["Git / コミット<br/>git-workflow-and-versioning"]
+    D7 --> S2["CI/CD<br/>ci-cd-and-automation"]
+    D7 --> S3["ドキュメント<br/>documentation-and-adrs"]
+    D7 --> S4["デプロイ<br/>shipping-and-launch"]
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 3 — 19 スキル ===== -->
+    <section id="skills" class="sec-head">3 — 19 スキル</section>
+
+    <!-- Define -->
+    <div class="phase-row">
+      <div class="phase-header">
+        <span class="phase-badge">Define</span>
+        <span style="font-size:0.8125rem;color:var(--text-dim)">何を作るかを明確にする</span>
+      </div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>スキル</th><th>何をするか</th><th>いつ使うか</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>idea-refine</code></td>
+              <td>発散・収束の構造思考で曖昧なアイデアを具体的な提案に変換</td>
+              <td>荒削りなコンセプトをブラッシュアップしたいとき</td>
+            </tr>
+            <tr>
+              <td><code>spec-driven-development</code></td>
+              <td>コードの前に目的・コマンド・構造・テスト・境界を網羅した PRD を書く</td>
+              <td>新プロジェクト・機能・重大な変更を始めるとき</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Plan -->
+    <div class="phase-row">
+      <div class="phase-header">
+        <span class="phase-badge">Plan</span>
+        <span style="font-size:0.8125rem;color:var(--text-dim)">実装可能な粒度に分解</span>
+      </div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>スキル</th><th>何をするか</th><th>いつ使うか</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>planning-and-task-breakdown</code></td>
+              <td>仕様を小さく検証可能なタスクに分解し、受け入れ基準と依存関係を整理</td>
+              <td>仕様があり、実装単位に落としたいとき</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Build -->
+    <div class="phase-row">
+      <div class="phase-header">
+        <span class="phase-badge">Build</span>
+        <span style="font-size:0.8125rem;color:var(--text-dim)">コードを書く</span>
+      </div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>スキル</th><th>何をするか</th><th>いつ使うか</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>incremental-implementation</code></td>
+              <td>薄い垂直スライスで実装・テスト・検証・コミット。フィーチャーフラグ・安全なデフォルト</td>
+              <td>複数ファイルにまたがる変更</td>
+            </tr>
+            <tr>
+              <td><code>test-driven-development</code></td>
+              <td>Red-Green-Refactor・テストピラミッド (80/15/5)・DAMP over DRY・Beyonce Rule</td>
+              <td>ロジック実装・バグ修正・動作変更</td>
+            </tr>
+            <tr>
+              <td><code>context-engineering</code></td>
+              <td>適切な情報を適切なタイミングでエージェントに渡す — rules ファイル・コンテキストパッキング・MCP 統合</td>
+              <td>セッション開始時・タスク切り替え時・出力品質が低下したとき</td>
+            </tr>
+            <tr>
+              <td><code>frontend-ui-engineering</code></td>
+              <td>コンポーネントアーキテクチャ・デザインシステム・状態管理・WCAG 2.1 AA アクセシビリティ</td>
+              <td>ユーザー向けインターフェースの構築・変更</td>
+            </tr>
+            <tr>
+              <td><code>api-and-interface-design</code></td>
+              <td>コントラクトファースト設計・Hyrum's Law・One-Version Rule・エラーセマンティクス・境界バリデーション</td>
+              <td>API・モジュール境界・公開インターフェースの設計</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Verify -->
+    <div class="phase-row">
+      <div class="phase-header">
+        <span class="phase-badge">Verify</span>
+        <span style="font-size:0.8125rem;color:var(--text-dim)">動作を証明する</span>
+      </div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>スキル</th><th>何をするか</th><th>いつ使うか</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>browser-testing-with-devtools</code></td>
+              <td>Chrome DevTools MCP でライブランタイムデータを取得 — DOM・コンソール・ネットワーク・プロファイル</td>
+              <td>ブラウザで動くものの構築・デバッグ</td>
+            </tr>
+            <tr>
+              <td><code>debugging-and-error-recovery</code></td>
+              <td>5 ステップトリアージ: 再現 → 局所化 → 縮小 → 修正 → ガード。Stop-the-line ルール</td>
+              <td>テスト失敗・ビルド破損・予期しない動作</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Review -->
+    <div class="phase-row">
+      <div class="phase-header">
+        <span class="phase-badge">Review</span>
+        <span style="font-size:0.8125rem;color:var(--text-dim)">マージ前の品質ゲート</span>
+      </div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>スキル</th><th>何をするか</th><th>いつ使うか</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>code-review-and-quality</code></td>
+              <td>5 軸レビュー・変更サイズ (~100 行)・重大度ラベル (Nit/Optional/FYI)・分割戦略</td>
+              <td>変更をマージする前</td>
+            </tr>
+            <tr>
+              <td><code>code-simplification</code></td>
+              <td>Chesterton's Fence・Rule of 500・動作を保ちながら複雑性を削減</td>
+              <td>コードは動くが読みにくい・保守しにくい</td>
+            </tr>
+            <tr>
+              <td><code>security-and-hardening</code></td>
+              <td>OWASP Top 10 防止・認証パターン・シークレット管理・依存関係監査・3 層境界システム</td>
+              <td>ユーザー入力・認証・データストレージ・外部統合</td>
+            </tr>
+            <tr>
+              <td><code>performance-optimization</code></td>
+              <td>計測ファースト — Core Web Vitals 目標・プロファイリング・バンドル分析・アンチパターン検出</td>
+              <td>パフォーマンス要件がある・リグレッションが疑われる</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Ship -->
+    <div class="phase-row">
+      <div class="phase-header">
+        <span class="phase-badge">Ship</span>
+        <span style="font-size:0.8125rem;color:var(--text-dim)">自信を持ってデプロイ</span>
+      </div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>スキル</th><th>何をするか</th><th>いつ使うか</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>git-workflow-and-versioning</code></td>
+              <td>トランクベース開発・アトミックコミット・変更サイズ管理・コミット=セーブポイントパターン</td>
+              <td>コード変更のたびに（常に）</td>
+            </tr>
+            <tr>
+              <td><code>ci-cd-and-automation</code></td>
+              <td>Shift Left・Faster is Safer・フィーチャーフラグ・品質ゲートパイプライン・フィードバックループ</td>
+              <td>ビルド・デプロイパイプラインの設定・変更</td>
+            </tr>
+            <tr>
+              <td><code>deprecation-and-migration</code></td>
+              <td>コード=負債の考え方・強制 vs 勧告の廃止・マイグレーションパターン・ゾンビコード除去</td>
+              <td>旧システム除去・ユーザー移行・機能サンセット</td>
+            </tr>
+            <tr>
+              <td><code>documentation-and-adrs</code></td>
+              <td>Architecture Decision Records・API ドキュメント・インラインドキュメント標準 — <em>why</em> を記録</td>
+              <td>アーキテクチャ決定時・API 変更時・機能出荷時</td>
+            </tr>
+            <tr>
+              <td><code>shipping-and-launch</code></td>
+              <td>出荷前チェックリスト・フィーチャーフラグライフサイクル・段階的ロールアウト・ロールバック手順・監視設定</td>
+              <td>プロダクションへのデプロイ準備</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== 4 — コマンド ===== -->
+    <section id="commands" class="sec-head">4 — 7 スラッシュコマンド</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 開発ライフサイクルにマップされたコマンド</span>
+      <p>スラッシュコマンドはエントリポイント。内部で適切なスキルを自動的にアクティベートする。</p>
+      <div class="cmd-grid">
+        <div class="cmd-card">
+          <div class="cmd-name">/spec</div>
+          <div class="cmd-principle">Spec before code</div>
+          <div class="cmd-desc">何を作るかを定義する。spec-driven-development スキルを起動。</div>
+        </div>
+        <div class="cmd-card">
+          <div class="cmd-name">/plan</div>
+          <div class="cmd-principle">Small, atomic tasks</div>
+          <div class="cmd-desc">実装方法を計画する。planning-and-task-breakdown スキルを起動。</div>
+        </div>
+        <div class="cmd-card">
+          <div class="cmd-name">/build</div>
+          <div class="cmd-principle">One slice at a time</div>
+          <div class="cmd-desc">インクリメンタルにコードを書く。実装系スキルを自動選択。</div>
+        </div>
+        <div class="cmd-card">
+          <div class="cmd-name">/test</div>
+          <div class="cmd-principle">Tests are proof</div>
+          <div class="cmd-desc">動作を証明する。test-driven-development スキルを起動。</div>
+        </div>
+        <div class="cmd-card">
+          <div class="cmd-name">/review</div>
+          <div class="cmd-principle">Improve code health</div>
+          <div class="cmd-desc">マージ前にレビュー。code-review-and-quality スキルを起動。</div>
+        </div>
+        <div class="cmd-card">
+          <div class="cmd-name">/code-simplify</div>
+          <div class="cmd-principle">Clarity over cleverness</div>
+          <div class="cmd-desc">コードを簡潔にする。code-simplification スキルを起動。</div>
+        </div>
+        <div class="cmd-card">
+          <div class="cmd-name">/ship</div>
+          <div class="cmd-principle">Faster is safer</div>
+          <div class="cmd-desc">プロダクションへデプロイ。shipping-and-launch スキルを起動。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 自動スキル選択</span>
+      <p>コマンドを使わなくても、何をしているかに基づいてスキルが自動的にアクティベートされる。API 設計をしていれば <code>api-and-interface-design</code> が、UI を構築していれば <code>frontend-ui-engineering</code> が動く。</p>
+    </div>
+
+    <!-- ===== 5 — ペルソナ ===== -->
+    <section id="personas" class="sec-head">5 — エージェントペルソナ &amp; リファレンス</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> スペシャリストペルソナ</span>
+      <p>特定の観点で集中的なレビューを行うために事前設定された専門家エージェント。</p>
+      <div class="persona-grid">
+        <div class="persona-card">
+          <div class="persona-role">Senior Staff Engineer</div>
+          <div class="persona-name">code-reviewer</div>
+          <div class="persona-desc">5 軸コードレビュー。「スタッフエンジニアがこれを承認するか？」が判断基準。</div>
+        </div>
+        <div class="persona-card">
+          <div class="persona-role">QA Specialist</div>
+          <div class="persona-name">test-engineer</div>
+          <div class="persona-desc">テスト戦略・カバレッジ分析・Prove-It パターン。</div>
+        </div>
+        <div class="persona-card">
+          <div class="persona-role">Security Engineer</div>
+          <div class="persona-name">security-auditor</div>
+          <div class="persona-desc">脆弱性検出・脅威モデリング・OWASP アセスメント。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> リファレンスチェックリスト</span>
+      <p>スキルが必要に応じて参照するクイックリファレンス素材。4 種類を収録。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>リファレンス</th><th>カバー範囲</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>testing-patterns.md</code></td><td>テスト構造・命名・モッキング・React/API/E2E の例・アンチパターン</td></tr>
+            <tr><td><code>security-checklist.md</code></td><td>コミット前チェック・認証・入力検証・ヘッダー・CORS・OWASP Top 10</td></tr>
+            <tr><td><code>performance-checklist.md</code></td><td>Core Web Vitals 目標・フロントエンド/バックエンドのチェックリスト・計測コマンド</td></tr>
+            <tr><td><code>accessibility-checklist.md</code></td><td>キーボードナビ・スクリーンリーダー・ビジュアルデザイン・ARIA・テストツール</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> コアオペレーティング行動</span>
+      <p>すべてのスキルにまたがって常に適用される非交渉的な行動規範（<code>using-agent-skills</code> より）。</p>
+      <ul>
+        <li><strong>仮定の表面化:</strong> 非自明な実装の前に仮定を明示し、承認を求めてから進む。</li>
+        <li><strong>混乱の積極的管理:</strong> 不整合や矛盾に直面したら STOP し、具体的な問いを立てて解消する。</li>
+        <li><strong>適切なプッシュバック:</strong> 問題のあるアプローチには直接指摘し、代替案を提案する。同意マシンにならない。</li>
+        <li><strong>シンプルさの強制:</strong> 実装前に「これはより少ない行数でできるか？」を確認する。</li>
+        <li><strong>スコープ規律:</strong> 指示されたものだけに触れる。近隣コードの無許可リファクタは行わない。</li>
+        <li><strong>検証の非省略:</strong> すべてのスキルには検証ステップがある。「それっぽい」は証拠にならない。</li>
+      </ul>
+    </div>
+
+    <!-- ===== 6 — セットアップ ===== -->
+    <section id="setup" class="sec-head">6 — セットアップ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 対応ツール</span>
+      <p>Agent Skills は Markdown のスキルファイルで構成されており、システムプロンプトや指示ファイルを受け付けるあらゆるエージェントで動作する。</p>
+      <div class="tool-list">
+        <span class="tool-pill">Claude Code</span>
+        <span class="tool-pill">Cursor</span>
+        <span class="tool-pill">Gemini CLI</span>
+        <span class="tool-pill">Windsurf</span>
+        <span class="tool-pill">GitHub Copilot</span>
+        <span class="tool-pill">OpenAI Codex</span>
+        <span class="tool-pill">その他エージェント</span>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> Claude Code（推奨）</span>
+      <h3>Marketplace インストール</h3>
+      <div class="ve-code-block">
+        <pre><code>/plugin marketplace add addyosmani/agent-skills
+/plugin install agent-skills@addy-agent-skills</code></pre>
+      </div>
+      <h3>ローカル / 開発</h3>
+      <div class="ve-code-block">
+        <pre><code>git clone https://github.com/addyosmani/agent-skills.git
+claude --plugin-dir /path/to/agent-skills</code></pre>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> Cursor</span>
+      <p>任意の <code>SKILL.md</code> を <code>.cursor/rules/</code> にコピーするか、<code>skills/</code> ディレクトリ全体を参照する。</p>
+      <div class="ve-code-block">
+        <pre><code># 特定スキルだけ使う場合
+cp skills/spec-driven-development/SKILL.md .cursor/rules/spec.md
+
+# ディレクトリ参照（推奨）
+# .cursor/rules/ に skills/ を追加して全スキルを有効化</code></pre>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> Gemini CLI / Windsurf / Copilot</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>ツール</th><th>インストール方法</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Gemini CLI</td>
+              <td><code>gemini skills install https://github.com/addyosmani/agent-skills.git</code><br><span style="font-size:0.75rem;color:var(--text-dim)">またはネイティブスキルとして自動検出</span></td>
+            </tr>
+            <tr>
+              <td>Windsurf</td>
+              <td>スキル内容を Windsurf のルール設定に追加。<code>docs/windsurf-setup.md</code> 参照。</td>
+            </tr>
+            <tr>
+              <td>GitHub Copilot</td>
+              <td><code>agents/</code> の定義を Copilot ペルソナとして、スキル内容を <code>.github/copilot-instructions.md</code> に追加。</td>
+            </tr>
+            <tr>
+              <td>その他エージェント</td>
+              <td>スキルはプレーン Markdown。システムプロンプトや指示ファイルとして渡す。<code>docs/getting-started.md</code> 参照。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:4">
+      <span class="ve-section-label"><span class="ve-dot"></span> Session Hooks</span>
+      <p><code>hooks/session-start.sh</code> によるセッション開始フック。セッション開始時に自動的にスキルのコンテキストを設定し、エージェントがどのスキルを適用すべきかを認識できるようにする。</p>
+      <div class="ve-callout">
+        <strong>Contributing:</strong> スキルは <strong>具体的</strong>（実行可能な手順・曖昧なアドバイスではない）・<strong>検証可能</strong>（明確な終了基準）・<strong>実戦検証済み</strong>・<strong>最小限</strong>であることが求められる。<code>docs/skill-anatomy.md</code> と <code>CONTRIBUTING.md</code> を参照。
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'neutral', fontFamily: 'JetBrains Mono, monospace', fontSize: 13 });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
