@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>graphify — あらゆる入力をナレッジグラフへ変換する AI コーディングスキル</title>
+  <meta name="description" content="コード・ドキュメント・論文・画像をナレッジグラフに変換。コミュニティ検出・信頼性監査・HTML/JSON/GraphML 出力。71.5x トークン削減。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="graphify — あらゆる入力をナレッジグラフへ変換する AI コーディングスキル">
+  <meta property="og:description" content="コード・ドキュメント・論文・画像をナレッジグラフに変換。コミュニティ検出・信頼性監査・HTML/JSON/GraphML 出力。71.5x トークン削減。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/graphify.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="graphify — あらゆる入力をナレッジグラフへ変換する AI コーディングスキル">
+  <meta name="twitter:description" content="コード・ドキュメント・論文・画像をナレッジグラフに変換。コミュニティ検出・信頼性監査。71.5x トークン削減。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      /* Teal + Amber — technical / data-focused */
+      --chart-1: oklch(0.45 0.12 200);   /* teal */
+      --chart-2: oklch(0.65 0.15 80);    /* amber/gold */
+      --chart-3: oklch(0.35 0.10 210);   /* deep teal */
+      --chart-4: oklch(0.75 0.12 90);    /* warm gold */
+      --chart-5: oklch(0.55 0.08 250);   /* slate */
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.58 0.14 200);
+        --chart-2: oklch(0.72 0.16 80);
+        --chart-3: oklch(0.48 0.12 210);
+        --chart-4: oklch(0.80 0.13 90);
+        --chart-5: oklch(0.65 0.09 250);
+        --code-bg: #0f0f0f;
+        --code-text: #79e0d9;
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.65 0.15 80 / 0.12); color: var(--chart-2); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 70% 0%, oklch(0.45 0.12 200 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 70% 0%, oklch(0.58 0.14 200 / 0.10) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Pipeline ============ */
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+    .pipeline .step { background: color-mix(in oklch, var(--muted) 80%, var(--chart-1) 20%); border: 1px solid color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%); padding: 0.4rem 0.7rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.75rem; color: var(--text); }
+    .pipeline .arrow { color: var(--chart-1); font-weight: 700; }
+
+    /* ============ Confidence badges ============ */
+    .badge { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; padding: 2px 7px; border-radius: 4px; vertical-align: middle; }
+    .badge--extracted { background: oklch(0.45 0.12 200 / 0.12); color: var(--chart-1); border: 1px solid oklch(0.45 0.12 200 / 0.3); }
+    .badge--inferred { background: oklch(0.65 0.15 80 / 0.12); color: var(--chart-2); border: 1px solid oklch(0.65 0.15 80 / 0.3); }
+    .badge--ambiguous { background: oklch(0.577 0.245 27.325 / 0.1); color: var(--destructive); border: 1px solid oklch(0.577 0.245 27.325 / 0.25); }
+
+    /* ============ Output cards grid ============ */
+    .output-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 0.75rem; }
+    @media (max-width: 640px) { .output-grid { grid-template-columns: 1fr; } }
+    .output-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+    .output-card__file { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 500; color: var(--chart-1); margin-bottom: 0.375rem; }
+    .output-card__desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+
+    /* ============ Animations ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.06s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+
+    /* ============ Mermaid wrap ============ */
+    .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; }
+    .mermaid-wrap svg { max-width: 100%; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#pipeline">パイプライン</a>
+    <a href="#install">インストール</a>
+    <a href="#commands">コマンド</a>
+    <a href="#outputs">出力形式</a>
+    <a href="#tech">テクスタック</a>
+    <a href="#links">リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>graphify</h1>
+    <p class="subtitle">any input → knowledge graph → clustered communities → HTML + JSON + audit report</p>
+
+    <!-- ============ 1. 概要 ============ -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+      <p>
+        <strong>graphify</strong> は AI コーディングアシスタント向けスキル。Claude Code・Codex・OpenCode・OpenClaw・Factory Droid で <code>/graphify</code> とタイプするだけで、コード・ドキュメント・論文・画像など任意のファイル群を読み取り、<strong>ナレッジグラフ</strong>として構造化する。知らなかったつながりが見えてくる。
+      </p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">71.5x</span>
+          <span class="ve-kpi-card__label">トークン削減（大規模コーパス）</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">Multi</span>
+          <span class="ve-kpi-card__label">コード / Docs / PDF / 画像</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">3.10+</span>
+          <span class="ve-kpi-card__label">Python バージョン</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">Local</span>
+          <span class="ve-kpi-card__label">サーバー不要・完全ローカル</span>
+        </div>
+      </div>
+      <p>
+        Andrej Karpathy の <code>/raw</code> フォルダワークフロー（論文・ツイート・スクリーンショット・コードをひとつの場所に集める）の問題を解決するツール。グラフは永続化されセッション跨ぎでクエリできる。すべてのエッジは <span class="badge badge--extracted">EXTRACTED</span>（根拠あり）/ <span class="badge badge--inferred">INFERRED</span>（推論・信頼スコア付き）/ <span class="badge badge--ambiguous">AMBIGUOUS</span>（要確認）で区別され、何が見つかったのか・何が推測なのかが常に分かる。
+      </p>
+    </div>
+
+    <!-- ============ 2. パイプライン ============ -->
+    <section id="pipeline" class="sec-head">2 — パイプライン</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 処理フロー</span>
+      <p>7 段階のパイプラインで構成される。各ステージは独立したモジュールの単一関数として実装され、<strong>共有ステートなし・副作用なし</strong>（<code>graphify-out/</code> 外へ書き出さない）の設計。</p>
+      <div class="pipeline">
+        <span class="step">detect()</span>
+        <span class="arrow">→</span>
+        <span class="step">extract()</span>
+        <span class="arrow">→</span>
+        <span class="step">build_graph()</span>
+        <span class="arrow">→</span>
+        <span class="step">cluster()</span>
+        <span class="arrow">→</span>
+        <span class="step">analyze()</span>
+        <span class="arrow">→</span>
+        <span class="step">report()</span>
+        <span class="arrow">→</span>
+        <span class="step">export()</span>
+      </div>
+    </div>
+    <div class="ve-card ve-card--elevated" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 2 パス抽出</span>
+      <p>
+        <strong>Pass 1 — AST（決定論的、LLM コスト不要）:</strong> tree-sitter でコードファイルを構文解析し、クラス・関数・インポート・コールグラフ・ドックストリング・rationale コメントを抽出。<br>
+        <strong>Pass 2 — セマンティック（Claude サブエージェント・並列）:</strong> ドキュメント・論文・画像をサブエージェントが並列処理し、概念・関係・設計意図を抽出。SHA256 キャッシュにより変更ファイルのみ再処理。
+      </p>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>クラスタリングはグラフトポロジー基盤。</strong>Leiden コミュニティ検出はエッジ密度で動作する。Claude が抽出したセマンティック類似エッジ（<code>semantically_similar_to</code>、INFERRED）がグラフ構造の中に含まれるため、エンベディングや別のベクター DB は不要。
+      </div>
+    </div>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> モジュール一覧</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>モジュール</th><th>関数</th><th>入力 → 出力</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>detect.py</code></td><td><code>collect_files(root)</code></td><td>ディレクトリ → <code>[Path]</code> フィルタ済みリスト</td></tr>
+            <tr><td><code>extract.py</code></td><td><code>extract(path)</code></td><td>ファイルパス → <code>{nodes, edges}</code> dict</td></tr>
+            <tr><td><code>build.py</code></td><td><code>build_graph(extractions)</code></td><td>抽出 dict リスト → <code>nx.Graph</code></td></tr>
+            <tr><td><code>cluster.py</code></td><td><code>cluster(G)</code></td><td>グラフ → <code>community</code> 属性付きグラフ</td></tr>
+            <tr><td><code>analyze.py</code></td><td><code>analyze(G)</code></td><td>グラフ → 分析 dict（god nodes・surprises・questions）</td></tr>
+            <tr><td><code>report.py</code></td><td><code>render_report(G, analysis)</code></td><td>グラフ + 分析 → GRAPH_REPORT.md 文字列</td></tr>
+            <tr><td><code>export.py</code></td><td><code>export(G, out_dir, ...)</code></td><td>グラフ → Obsidian vault / graph.json / graph.html / graph.svg</td></tr>
+            <tr><td><code>ingest.py</code></td><td><code>ingest(url, ...)</code></td><td>URL → コーパスディレクトリへ保存</td></tr>
+            <tr><td><code>cache.py</code></td><td><code>check / save_semantic_cache</code></td><td>ファイル群 → (キャッシュ済み, 未処理) 分割</td></tr>
+            <tr><td><code>security.py</code></td><td>バリデーションヘルパー群</td><td>URL / パス / ラベル → 検証済みまたは例外</td></tr>
+            <tr><td><code>validate.py</code></td><td><code>validate_extraction(data)</code></td><td>抽出 dict → スキーマエラー時に例外</td></tr>
+            <tr><td><code>serve.py</code></td><td><code>start_server(graph_path)</code></td><td>グラフファイルパス → MCP stdio サーバー起動</td></tr>
+            <tr><td><code>watch.py</code></td><td><code>watch(root, flag_path)</code></td><td>ディレクトリ → 変更時フラグファイルに書き出し</td></tr>
+            <tr><td><code>benchmark.py</code></td><td><code>run_benchmark(graph_path)</code></td><td>グラフファイル → コーパス vs サブグラフ トークン比較</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> 抽出スキーマ</span>
+      <div class="ve-code-block">
+        <pre><code>{
+  "nodes": [
+    { "id": "unique_string", "label": "human name",
+      "source_file": "path", "source_location": "L42" }
+  ],
+  "edges": [
+    { "source": "id_a", "target": "id_b",
+      "relation": "calls|imports|uses|semantically_similar_to|rationale_for|...",
+      "confidence": "EXTRACTED|INFERRED|AMBIGUOUS",
+      "confidence_score": 1.0 }
+  ]
+}</code></pre>
+      </div>
+      <p style="font-size:0.8125rem; color: var(--text-dim); margin-top:0.5rem;">EXTRACTED エッジは <code>confidence_score = 1.0</code> 固定。INFERRED は 0.4–0.95 の範囲でモデルが根拠から個別推論。AMBIGUOUS は 0.1–0.3。</p>
+    </div>
+
+    <!-- ============ 3. インストール ============ -->
+    <section id="install" class="sec-head">3 — インストール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 前提条件</span>
+      <p>Python 3.10+ と、対応する AI コーディングアシスタント（Claude Code / Codex / OpenCode / OpenClaw / Factory Droid）のいずれか。</p>
+      <div class="ve-code-block">
+        <pre><code>pip install graphifyy && graphify install</code></pre>
+      </div>
+      <div class="ve-callout">
+        <strong>注:</strong> PyPI パッケージ名は <code>graphifyy</code>（名前返還手続き中）。CLI と スキルコマンドは <code>graphify</code> のまま。
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> プラットフォーム対応</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>プラットフォーム</th><th>インストールコマンド</th><th>並列処理</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Claude Code (Linux/Mac)</td><td><code>graphify install</code></td><td>並列（推奨）</td></tr>
+            <tr><td>Claude Code (Windows)</td><td><code>graphify install --platform windows</code></td><td>並列（推奨）</td></tr>
+            <tr><td>Codex</td><td><code>graphify install --platform codex</code></td><td>並列（<code>multi_agent = true</code> 設定要）</td></tr>
+            <tr><td>OpenCode</td><td><code>graphify install --platform opencode</code></td><td>並列</td></tr>
+            <tr><td>OpenClaw</td><td><code>graphify install --platform claw</code></td><td>逐次（並列サポート初期段階）</td></tr>
+            <tr><td>Factory Droid</td><td><code>graphify install --platform droid</code></td><td>並列（<code>Task</code> ツール使用）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card ve-card--elevated" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> Always-On 統合（推奨）</span>
+      <p>グラフ構築後に一度実行することで、アシスタントがアーキテクチャ質問の前に常にグラフを参照するよう設定できる。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>プラットフォーム</th><th>コマンド</th><th>仕組み</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Claude Code</td><td><code>graphify claude install</code></td><td>CLAUDE.md + PreToolUse フック（Glob/Grep 前にグラフ確認）</td></tr>
+            <tr><td>Codex / OpenCode / OpenClaw / Factory Droid</td><td><code>graphify &lt;platform&gt; install</code></td><td>AGENTS.md に常時ルールを書き込む</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============ 4. コマンド ============ -->
+    <section id="commands" class="sec-head">4 — コマンド</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> スキルコマンド（AI アシスタント内）</span>
+      <div class="ve-code-block">
+        <pre><code>/graphify .                        # カレントディレクトリ → グラフ生成
+/graphify ./raw                    # 指定フォルダ
+/graphify ./raw --mode deep        # INFERRED エッジをより積極的に抽出
+/graphify ./raw --update           # 変更ファイルのみ増分再抽出・マージ
+/graphify ./raw --cluster-only     # 既存グラフを再クラスタリング
+/graphify ./raw --no-viz           # HTML スキップ、レポート + JSON のみ
+/graphify ./raw --obsidian         # Obsidian vault も生成（オプトイン）
+/graphify ./raw --wiki             # コミュニティごとの wiki（index.md + 記事）
+/graphify ./raw --watch            # ファイル変更を監視して自動同期
+/graphify ./raw --svg              # graph.svg も出力
+/graphify ./raw --graphml          # graph.graphml（Gephi / yEd 向け）
+/graphify ./raw --neo4j            # cypher.txt 生成
+/graphify ./raw --neo4j-push bolt://localhost:7687  # Neo4j に直接 Push
+/graphify ./raw --mcp              # MCP stdio サーバー起動
+
+/graphify add &lt;url&gt;               # URL 取得してコーパスに追加・グラフ更新
+/graphify add &lt;url&gt; --author "Name"
+/graphify add &lt;url&gt; --contributor "Name"
+
+/graphify query "attention と optimizer を繋ぐものは？"
+/graphify query "..." --dfs        # DFS: 特定パスを追う
+/graphify query "..." --budget 1500  # トークン上限指定
+/graphify path "DigestAuth" "Response"  # 2 ノード間の最短パス
+/graphify explain "SwinTransformer"     # ノードの平易な説明</code></pre>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> CLI コマンド（ターミナル）</span>
+      <div class="ve-code-block">
+        <pre><code># git フック（コミット / ブランチ切替ごとにグラフ自動再ビルド）
+graphify hook install
+graphify hook uninstall
+graphify hook status
+
+# always-on 統合
+graphify claude install     # CLAUDE.md + PreToolUse フック
+graphify claude uninstall
+graphify codex install      # AGENTS.md (Codex)
+graphify opencode install   # AGENTS.md (OpenCode)
+graphify claw install       # AGENTS.md (OpenClaw)
+graphify droid install      # AGENTS.md (Factory Droid)</code></pre>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> .graphifyignore</span>
+      <p><code>.gitignore</code> と同じ構文でグラフ生成から除外するファイルやディレクトリを指定できる。</p>
+      <div class="ve-code-block">
+        <pre><code># .graphifyignore
+vendor/
+node_modules/
+dist/
+*.generated.py</code></pre>
+      </div>
+    </div>
+
+    <!-- ============ 5. 出力形式 ============ -->
+    <section id="outputs" class="sec-head">5 — 出力形式</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> graphify-out/ の構成</span>
+      <div class="output-grid">
+        <div class="output-card">
+          <div class="output-card__file">graph.html</div>
+          <div class="output-card__desc">インタラクティブグラフ。ノードをクリック・検索・コミュニティでフィルタ。ブラウザで開くだけ（サーバー不要）。vis.js 使用。5,000 ノード超では自動スキップ。</div>
+        </div>
+        <div class="output-card">
+          <div class="output-card__file">GRAPH_REPORT.md</div>
+          <div class="output-card__desc">プレーンテキストの監査レポート。God Nodes（最高次数ノード）・Surprising Connections（驚くべき接続）・Suggested Questions・トークンコストを含む。</div>
+        </div>
+        <div class="output-card">
+          <div class="output-card__file">graph.json</div>
+          <div class="output-card__desc">永続化グラフ（NetworkX node-link 形式）。セッション跨ぎでクエリ可能。GraphRAG ワークフローの入力として使用できる。</div>
+        </div>
+        <div class="output-card">
+          <div class="output-card__file">cache/</div>
+          <div class="output-card__desc">SHA256 ベースのキャッシュ。変更ファイルのみ再処理。大規模コーパスの更新コストを最小化。</div>
+        </div>
+        <div class="output-card">
+          <div class="output-card__file">obsidian/</div>
+          <div class="output-card__desc">オプトイン（<code>--obsidian</code>）。コミュニティごとの Markdown ノート + graph.canvas。Obsidian で vault として開くと構造レイアウトを確認できる。</div>
+        </div>
+        <div class="output-card">
+          <div class="output-card__file">cypher.txt / graph.graphml / graph.svg</div>
+          <div class="output-card__desc">Neo4j（<code>--neo4j</code>）/ Gephi・yEd（<code>--graphml</code>）/ SVG 埋め込み（<code>--svg</code>）向けの追加エクスポート形式。</div>
+        </div>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> グラフが提供するもの</span>
+      <ul>
+        <li><strong>God Nodes</strong> — 最も多くのノードと接続する概念。すべてがそこを経由する。</li>
+        <li><strong>Surprising Connections</strong> — コード-論文間のエッジを最高スコアとした複合スコアでランク付け。各結果に平易な説明付き。</li>
+        <li><strong>Suggested Questions</strong> — このグラフだから答えられる 4–5 個の質問。</li>
+        <li><strong>Rationale Nodes</strong> — <code># NOTE:</code> <code># WHY:</code> <code># HACK:</code> などのコメントや設計意図ドキュメントを <code>rationale_for</code> エッジ付きノードとして抽出。コードが<em>なぜ</em>書かれたかを保存。</li>
+        <li><strong>Hyperedges</strong> — 共通プロトコルを実装する全クラス、認証フローの全関数など、2 点間エッジでは表現できない 3+ ノードのグループ関係。</li>
+        <li><strong>Confidence Scores</strong> — INFERRED エッジは個別の確信度スコア（0.0–1.0）を持つ。何が推測かが定量的に分かる。</li>
+        <li><strong>Token Benchmark</strong> — 実行後自動でコーパス全体 vs グラフのトークン比を算出・表示。</li>
+      </ul>
+    </div>
+
+    <!-- ============ 6. テクスタック ============ -->
+    <section id="tech" class="sec-head">6 — テクスタック</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> コア依存</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>ライブラリ</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>networkx</code></td><td>グラフ構造・クエリ・エクスポートの中核</td></tr>
+            <tr><td><code>graspologic</code> (leiden)</td><td>Leiden コミュニティ検出（オプション）</td></tr>
+            <tr><td><code>tree-sitter</code> + 各言語パッケージ</td><td>AST ベースのコード構造抽出（Python / TS / JS / Go / Rust / Java / C / C++ / Ruby / C# / Kotlin / Scala / PHP / Swift / Lua / Zig / PS1）</td></tr>
+            <tr><td>vis.js（CDN）</td><td>インタラクティブ HTML グラフの描画</td></tr>
+            <tr><td>Claude / GPT-4 / etc.</td><td>ドキュメント・論文・画像のセマンティック抽出（プラットフォームの API を使用）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> オプション依存</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>エクストラ</th><th>インストール</th><th>追加機能</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>leiden</code></td><td><code>pip install graphifyy[leiden]</code></td><td>graspologic — Leiden コミュニティ検出</td></tr>
+            <tr><td><code>mcp</code></td><td><code>pip install graphifyy[mcp]</code></td><td>MCP stdio サーバー（<code>--mcp</code> フラグ）</td></tr>
+            <tr><td><code>neo4j</code></td><td><code>pip install graphifyy[neo4j]</code></td><td>Neo4j への直接 Push</td></tr>
+            <tr><td><code>pdf</code></td><td><code>pip install graphifyy[pdf]</code></td><td>PDF 引用マイニング・概念抽出</td></tr>
+            <tr><td><code>watch</code></td><td><code>pip install graphifyy[watch]</code></td><td>watchdog — ファイル変更監視</td></tr>
+            <tr><td><code>office</code></td><td><code>pip install graphifyy[office]</code></td><td>python-docx / openpyxl — .docx / .xlsx サポート</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> セキュリティ</span>
+      <p>外部入力はすべて <code>graphify/security.py</code> を経由してバリデーション:</p>
+      <ul>
+        <li>URL → <code>validate_url()</code>（http/https のみ）+ <code>_NoFileRedirectHandler</code>（file:// リダイレクトをブロック）</li>
+        <li>取得コンテンツ → サイズ上限・タイムアウト</li>
+        <li>グラフファイルパス → <code>graphify-out/</code> 内に解決されることを検証</li>
+        <li>ノードラベル → 制御文字除去・256 文字上限・HTML エスケープ</li>
+      </ul>
+      <p style="margin-top:0.5rem; font-size:0.8125rem; color: var(--text-dim);">コードファイルは tree-sitter AST のみでローカル処理。ファイル内容がネットワークに送信されるのは LLM セマンティック抽出（Docs / 論文 / 画像）のみ。テレメトリ・使用状況追跡はなし。</p>
+    </div>
+
+    <!-- ============ 7. リンク ============ -->
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/safishamsi/graphify" target="_blank" rel="noopener">GitHub: safishamsi/graphify</a> — 本体リポジトリ（Python）</li>
+        <li><a href="https://pypi.org/project/graphifyy/" target="_blank" rel="noopener">PyPI: graphifyy</a> — パッケージ配布ページ</li>
+        <li><a href="https://github.com/safishamsi/graphify/blob/v3/ARCHITECTURE.md" target="_blank" rel="noopener">ARCHITECTURE.md</a> — モジュール責務・言語追加の手順</li>
+        <li><a href="https://github.com/safishamsi/graphify/blob/v3/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a> — 脅威モデル・セキュリティ設計</li>
+        <li><a href="https://github.com/safishamsi/graphify/tree/v3/worked" target="_blank" rel="noopener">worked/</a> — Karpathy リポジトリ・論文・画像を使ったサンプル出力（71.5x 結果の再現可能な証拠）</li>
+      </ul>
+    </div>
+  </div><!-- /.main -->
+</div><!-- /.wrap -->
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
