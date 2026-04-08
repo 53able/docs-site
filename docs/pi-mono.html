@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pi-mono — AI agent toolkit（badlogic）</title>
-  <meta name="description" content="badlogic の AI agent ツールキット pi-mono の紹介。">
+  <meta name="description" content="badlogic の AI agent ツールキット pi-mono の紹介。公式サイト・パッケージ・セッション共有・コントリビューション方法をまとめたビジュアル解説。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="pi-mono — AI agent toolkit（badlogic）">
-  <meta property="og:description" content="badlogic の AI agent ツールキット pi-mono の紹介。">
+  <meta property="og:description" content="badlogic の AI agent ツールキット pi-mono の紹介。公式サイト・パッケージ・セッション共有・コントリビューション方法をまとめたビジュアル解説。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/pi-mono.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="pi-mono — AI agent toolkit（badlogic）">
-  <meta name="twitter:description" content="badlogic の AI agent ツールキット pi-mono の紹介。">
+  <meta name="twitter:description" content="badlogic の AI agent ツールキット pi-mono の紹介。公式サイト・パッケージ・セッション共有・コントリビューション方法をまとめたビジュアル解説。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -188,6 +188,16 @@
     .kpi-row .ve-kpi-card { min-width: 0; }
     @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
 
+    /* ============ Step list ============ */
+    .step-list { list-style: none; padding: 0; margin: 0.75rem 0 1rem; }
+    .step-list li { display: flex; gap: 0.875rem; align-items: flex-start; margin-bottom: 0.75rem; font-size: 0.9rem; line-height: 1.55; }
+    .step-num { flex-shrink: 0; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: color-mix(in oklch, var(--chart-1) 15%, transparent); color: var(--chart-1); font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 0.1rem; }
+
+    /* ============ Badge row ============ */
+    .badge-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); }
+    .badge--accent { background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); border-color: color-mix(in oklch, var(--chart-1) 30%, transparent); }
+
     /* ============ Animation ============ */
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
@@ -200,7 +210,9 @@
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
     <a href="#packages">パッケージ</a>
+    <a href="#sessions">セッション共有</a>
     <a href="#development">開発</a>
+    <a href="#contributing">コントリビューション</a>
     <a href="#links">リンク</a>
   </nav>
 
@@ -208,23 +220,32 @@
   <h1>pi-mono</h1>
   <p class="subtitle">AI agent toolkit: coding agent CLI, unified LLM API, TUI &amp; web UI, Slack bot, vLLM pods — badlogic</p>
 
+  <!-- ===================== 1 概要 ===================== -->
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-    <p><strong>pi-mono</strong> は、AI エージェントの構築と LLM デプロイの管理のためのモノレポ。コーディングエージェント CLI・統一 LLM API・TUI / Web UI ライブラリ・Slack ボット・vLLM ポッド管理まで、一連のツールがパッケージとしてまとまっている。</p>
+    <div class="badge-row">
+      <span class="badge badge--accent">shittycodingagent.ai</span>
+      <span class="badge">MIT</span>
+      <span class="badge">TypeScript</span>
+      <span class="badge">Discord</span>
+    </div>
+    <p><strong>pi-mono</strong> は AI エージェントの構築と LLM デプロイ管理のためのモノレポ。コーディングエージェント CLI・統一 LLM API・TUI / Web UI ライブラリ・Slack ボット・vLLM ポッド管理まで、一連のツールがパッケージとしてまとまっている。</p>
+    <p>公式サイトは <a href="https://shittycodingagent.ai" target="_blank" rel="noopener">shittycodingagent.ai</a>。<code>pi.dev</code> ドメインは <a href="https://exe.dev" target="_blank" rel="noopener">exe.dev</a> が提供している。</p>
     <div class="kpi-row">
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">7</span><span class="ve-kpi-card__label">パッケージ数</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">TypeScript</span><span class="ve-kpi-card__label">メイン言語</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">20+</span><span class="ve-kpi-card__label">LLM プロバイダー</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">pi</span><span class="ve-kpi-card__label">コーディングエージェント</span></div>
     </div>
     <p>コーディングエージェント本体は <strong>packages/coding-agent</strong>。インストールや使い方はそちらの README を参照する。</p>
   </div>
 
+  <!-- ===================== 2 パッケージ ===================== -->
   <section id="packages" class="sec-head">2 — パッケージ一覧</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 一覧</span>
-    <p>モノレポ内の主要パッケージ。LLM API の統一・エージェントランタイム・CLI・Slack 連携・UI ライブラリ・vLLM ポッド管理までカバーしている。</p>
+    <p>LLM API の統一・エージェントランタイム・CLI・Slack 連携・UI ライブラリ・vLLM ポッド管理まで 7 パッケージでカバーしている。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
@@ -236,7 +257,7 @@
         <tbody>
           <tr>
             <td><code>@mariozechner/pi-ai</code></td>
-            <td>Unified multi-provider LLM API（OpenAI, Anthropic, Google など）</td>
+            <td>Unified multi-provider LLM API（OpenAI, Anthropic, Google, Mistral, xAI, Bedrock など 20+ プロバイダー）</td>
           </tr>
           <tr>
             <td><code>@mariozechner/pi-agent-core</code></td>
@@ -265,28 +286,96 @@
         </tbody>
       </table>
     </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>pi-ai の対応プロバイダー（抜粋）:</strong> OpenAI・Azure OpenAI・Anthropic・Google・Vertex AI・Mistral・Groq・Cerebras・xAI・OpenRouter・GitHub Copilot・Amazon Bedrock・Ollama / vLLM など OpenAI 互換 API。OAuth 対応プロバイダー（OpenAI Codex・GitHub Copilot・Gemini CLI・Antigravity）も含む。
+    </div>
   </div>
 
-  <section id="development" class="sec-head">3 — 開発</section>
+  <!-- ===================== 3 セッション共有 ===================== -->
+  <section id="sessions" class="sec-head">3 — セッション共有</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> pi-share-hf</span>
+    <p>OSS コーディングセッションを Hugging Face にアップロードして共有することが推奨されている。実際のタスク・ツール呼び出し・失敗と修正のデータは、コーディングエージェントの改善に役立つ。</p>
+    <div class="ve-callout" style="margin-bottom:1rem">
+      <strong>なぜ共有するのか:</strong> ベンチマークではなく実際の OSS 作業データを集めることで、コーディングエージェントの品質を上げるため。
+    </div>
+    <p>共有ツールは <a href="https://github.com/badlogic/pi-share-hf" target="_blank" rel="noopener">badlogic/pi-share-hf</a>。セットアップは Hugging Face アカウントと HF CLI が必要。手順は pi-share-hf の README を参照する。</p>
+    <p>作者自身のセッションは Hugging Face で公開されている: <a href="https://huggingface.co/datasets/badlogicgames/pi-mono" target="_blank" rel="noopener">badlogicgames/pi-mono</a></p>
+  </div>
+
+  <!-- ===================== 4 開発 ===================== -->
+  <section id="development" class="sec-head">4 — 開発</section>
   <div class="ve-card ve-card--recessed" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> ビルド・テスト</span>
-    <p>リポジトリルートで以下を実行する。<code>npm run check</code> は <code>npm run build</code> を先に実行しておく必要がある（web-ui が依存の .d.ts を必要とする）。</p>
+    <p>リポジトリルートで以下を実行する。<code>npm run check</code> は <code>npm run build</code> を先に実行しておく必要がある（web-ui が依存の <code>.d.ts</code> を必要とする）。</p>
     <div class="ve-code-block">
       <pre><code>npm install          # 依存関係のインストール
 npm run build        # 全パッケージのビルド
 npm run check        # Lint / format / 型チェック
 ./test.sh            # テスト（API キーなしなら LLM 依存テストはスキップ）
-./pi-test.sh         # ソースから pi を実行（リポジトリルートで実行）</code></pre>
+./pi-test.sh         # ソースから pi を実行（任意のディレクトリから実行可）</code></pre>
     </div>
     <div class="ve-callout">
       <strong>注意:</strong> コーディングエージェントのインストール・使い方は <strong>packages/coding-agent</strong> の README を参照。
     </div>
   </div>
 
-  <section id="links" class="sec-head">4 — リンク</section>
+  <div class="ve-card" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> OSS Weekend</span>
+    <p><strong>OSS Weekend</strong> は、メンテナーが内部リファクタリングに集中するための期間。この期間中は未承認コントリビューターからの新しい Issue・PR が自動クローズされる。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>モード</th><th>コマンド</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>有効化</td>
+            <td><code>node scripts/oss-weekend.mjs --mode=close --end-date=YYYY-MM-DD --git</code></td>
+          </tr>
+          <tr>
+            <td>終了</td>
+            <td><code>node scripts/oss-weekend.mjs --mode=open --git</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:0.75rem">スクリプトは <code>README.md</code>・<code>packages/coding-agent/README.md</code>・<code>.github/oss-weekend.json</code> を更新し、自動でコミット＆プッシュする。</p>
+  </div>
+
+  <!-- ===================== 5 コントリビューション ===================== -->
+  <section id="contributing" class="sec-head">5 — コントリビューション</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 承認ゲート</span>
+    <p>初回コントリビューターには承認ゲートが設けられている。AI が低品質な PR を大量生成するのを防ぐための仕組み。</p>
+    <ol class="step-list">
+      <li><span class="step-num">1</span>変更したい内容と理由を簡潔に説明する Issue を立てる（1 画面に収まる分量）</li>
+      <li><span class="step-num">2</span>メンテナーが <code>lgtm</code> とコメントしたら承認</li>
+      <li><span class="step-num">3</span>承認後に PR を出す</li>
+    </ol>
+    <div class="ve-callout">
+      <strong>唯一のルール:</strong> 自分のコードを理解していること。AI でコードを書くのは問題ないが、変更内容とその影響を説明できない PR はクローズされる。
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> PR 提出前チェック</span>
+    <div class="ve-code-block">
+      <pre><code>npm run check   # エラー・警告・info すべて解消すること
+./test.sh       # テストがパスすること</code></pre>
+    </div>
+    <p style="margin-top:0.75rem"><code>CHANGELOG.md</code> は直接編集しない（メンテナーが管理）。新しい LLM プロバイダーを追加する場合は <code>AGENTS.md</code> を参照して必要なテストファイルを確認する。</p>
+  </div>
+
+  <!-- ===================== 6 リンク ===================== -->
+  <section id="links" class="sec-head">6 — リンク</section>
   <div class="ve-callout" style="margin-top:0;">
+    <p><strong>公式サイト</strong>: <a href="https://shittycodingagent.ai" target="_blank" rel="noopener">shittycodingagent.ai</a></p>
     <p><strong>リポジトリ</strong>: <a href="https://github.com/badlogic/pi-mono" target="_blank" rel="noopener">badlogic/pi-mono</a></p>
+    <p><strong>Discord</strong>: <a href="https://discord.com/invite/3cU7Bz4UPx" target="_blank" rel="noopener">discord.com/invite/3cU7Bz4UPx</a></p>
     <p><strong>コーディングエージェント</strong>: リポジトリ内 <code>packages/coding-agent</code></p>
+    <p><strong>セッション共有ツール</strong>: <a href="https://github.com/badlogic/pi-share-hf" target="_blank" rel="noopener">badlogic/pi-share-hf</a></p>
+    <p><strong>公開セッション</strong>: <a href="https://huggingface.co/datasets/badlogicgames/pi-mono" target="_blank" rel="noopener">HuggingFace: badlogicgames/pi-mono</a></p>
     <p><strong>CONTRIBUTING</strong>: <a href="https://github.com/badlogic/pi-mono/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a></p>
     <p><strong>AGENTS.md</strong>: 人間・エージェント向けプロジェクトルール — <a href="https://github.com/badlogic/pi-mono/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a></p>
   </div>
@@ -308,10 +397,10 @@ npm run check        # Lint / format / 型チェック
   const observer = new IntersectionObserver(function(entries) {
     entries.forEach(function(entry) {
       if (entry.isIntersecting) {
-        links.forEach(function(l) { l.classList.remove('active'); });
+        links.forEach(function(l) { l.classList.toggle('active', false); });
         const match = sections.find(function(s) { return s.el === entry.target; });
         if (match) {
-          match.link.classList.add('active');
+          match.link.classList.toggle('active', true);
           if (window.innerWidth <= 1000) {
             match.link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
           }
