@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>azure-cli-dev-tools (azdev) — Azure CLI 開発者向けツールキット</title>
+  <meta name="description" content="Azure CLI のコマンドモジュール・拡張機能開発を支援する azdev ツールの技術概要。セットアップ・コマンド一覧・開発ワークフロー・拡張機能管理をビジュアルで解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="azure-cli-dev-tools (azdev) — Azure CLI 開発者向けツールキット">
+  <meta property="og:description" content="Azure CLI のコマンドモジュール・拡張機能開発を支援する azdev ツールの技術概要。セットアップ・コマンド一覧・開発ワークフロー・拡張機能管理をビジュアルで解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/azure-cli-dev-tools.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="azure-cli-dev-tools (azdev) — Azure CLI 開発者向けツールキット">
+  <meta name="twitter:description" content="Azure CLI のコマンドモジュール・拡張機能開発を支援する azdev ツールの技術概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inconsolata:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens — Blueprint/Azure) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.003 240);
+      --foreground: oklch(0.13 0.015 240);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.13 0.015 240);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.13 0.015 240);
+      --primary: oklch(0.28 0.06 240);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.95 0.005 240);
+      --secondary-foreground: oklch(0.28 0.06 240);
+      --muted: oklch(0.95 0.005 240);
+      --muted-foreground: oklch(0.52 0.02 240);
+      --accent: oklch(0.93 0.01 240);
+      --accent-foreground: oklch(0.28 0.06 240);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.9 0.008 240);
+      --input: oklch(0.9 0.008 240);
+      --ring: oklch(0.65 0.02 240);
+      /* Azure teal accent */
+      --chart-1: oklch(0.45 0.14 213);
+      --chart-2: oklch(0.72 0.16 76);
+      --chart-3: oklch(0.62 0.10 155);
+      --chart-4: oklch(0.35 0.12 240);
+      --chart-5: oklch(0.60 0.18 25);
+      --code-bg: oklch(0.955 0.007 240);
+      --code-text: oklch(0.28 0.08 213);
+      --font-body: 'Karla', system-ui, sans-serif;
+      --font-mono: 'Inconsolata', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.115 0.015 240);
+        --foreground: oklch(0.94 0.007 240);
+        --card: oklch(0.18 0.015 240);
+        --card-foreground: oklch(0.94 0.007 240);
+        --popover: oklch(0.18 0.015 240);
+        --popover-foreground: oklch(0.94 0.007 240);
+        --primary: oklch(0.87 0.01 240);
+        --primary-foreground: oklch(0.18 0.015 240);
+        --secondary: oklch(0.24 0.018 240);
+        --secondary-foreground: oklch(0.94 0.007 240);
+        --muted: oklch(0.26 0.018 240);
+        --muted-foreground: oklch(0.65 0.015 240);
+        --accent: oklch(0.26 0.018 240);
+        --accent-foreground: oklch(0.94 0.007 240);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 9%);
+        --input: oklch(1 0 0 / 12%);
+        --ring: oklch(0.5 0.02 240);
+        --chart-1: oklch(0.62 0.18 213);
+        --chart-2: oklch(0.76 0.17 76);
+        --chart-3: oklch(0.68 0.14 155);
+        --chart-4: oklch(0.60 0.14 240);
+        --chart-5: oklch(0.70 0.20 25);
+        --code-bg: oklch(0.14 0.015 240);
+        --code-text: oklch(0.72 0.18 213);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.09);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.75rem 1rem; border-bottom: 2px solid var(--ring); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.03em; }
+    .ve-table-wrap td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 60%, transparent 40%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-size: 1.75rem; line-height: 1.1; font-weight: 600; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 10%, transparent 90%); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .ve-callout--amber { border-left-color: var(--chart-2); }
+    .ve-callout--amber code { background: color-mix(in oklch, var(--chart-2) 10%, transparent 90%); color: var(--chart-2); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 20% 0%, oklch(0.45 0.14 213 / 0.07) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 100%, oklch(0.72 0.16 76 / 0.05) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 20% 0%, oklch(0.62 0.18 213 / 0.10) 0%, transparent 55%),
+          radial-gradient(ellipse at 80% 100%, oklch(0.76 0.17 76 / 0.06) 0%, transparent 50%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); background: color-mix(in oklch, var(--chart-1) 7%, transparent 93%); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.0625rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: -0.01em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.6rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { opacity: 0.8; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+
+    /* KPI row */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Pipeline / workflow diagram */
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 0.75rem 0; }
+    .pipeline .step { background: color-mix(in oklch, var(--chart-1) 10%, var(--muted) 90%); border: 1px solid color-mix(in oklch, var(--chart-1) 25%, var(--border) 75%); padding: 0.35rem 0.7rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.75rem; color: var(--chart-1); font-weight: 500; }
+    .pipeline .step.alt { background: color-mix(in oklch, var(--chart-2) 10%, var(--muted) 90%); border-color: color-mix(in oklch, var(--chart-2) 25%, var(--border) 75%); color: var(--chart-2); }
+    .pipeline .arrow { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.875rem; }
+
+    /* Step flow grid */
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 0.75rem 0; }
+    .step-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; display: flex; gap: 0.75rem; align-items: flex-start; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--chart-1); background: color-mix(in oklch, var(--chart-1) 12%, transparent 88%); border: 1px solid color-mix(in oklch, var(--chart-1) 30%, transparent 70%); border-radius: var(--radius-sm); padding: 2px 7px; flex-shrink: 0; margin-top: 1px; }
+    .step-card__title { font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem; }
+    .step-card__body { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+    @media (max-width: 640px) { .step-flow { grid-template-columns: 1fr; } }
+
+    /* Category badge for command table */
+    .cat-badge { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; padding: 1px 6px; border-radius: 4px; font-weight: 600; }
+    .cat-badge--core { background: color-mix(in oklch, var(--chart-1) 12%, transparent 88%); color: var(--chart-1); }
+    .cat-badge--ext { background: color-mix(in oklch, var(--chart-3) 12%, transparent 88%); color: var(--chart-3); }
+    .cat-badge--verify { background: color-mix(in oklch, var(--chart-2) 12%, transparent 88%); color: var(--chart-2); }
+    .cat-badge--change { background: color-mix(in oklch, var(--chart-5) 12%, transparent 88%); color: var(--chart-5); }
+    .cat-badge--perf { background: color-mix(in oklch, var(--chart-4) 14%, transparent 86%); color: var(--chart-4); }
+
+    /* Animations */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#setup">セットアップ</a>
+    <a href="#commands">コマンド一覧</a>
+    <a href="#workflow">開発フロー</a>
+    <a href="#extensions">拡張機能管理</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>azure-cli-dev-tools</h1>
+    <p class="subtitle">azdev — Azure CLI コマンドモジュール・拡張機能の開発支援ツールキット</p>
+
+    <!-- ===== Section 1: Overview ===== -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+      <p><strong>azdev</strong> は、<a href="https://github.com/Azure/azure-cli" target="_blank" rel="noopener">Azure CLI</a> のコマンドモジュールや<a href="https://github.com/Azure/azure-cli-extensions" target="_blank" rel="noopener">拡張機能</a>を開発・テスト・公開するためのオールインワン CLI ツール。スタイルチェック・静的解析・テスト実行・バージョン管理・拡張機能ビルドをひとつのコマンド体系にまとめている。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">30+</span><span class="ve-kpi-card__label">コマンド数</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Python</span><span class="ve-kpi-card__label">PyPI: azdev</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">knack</span><span class="ve-kpi-card__label">CLI フレームワーク</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+      </div>
+      <p>開発者は <code>azdev style</code> → <code>azdev linter</code> → <code>azdev test</code> という標準ループで品質を担保し、<code>azdev extension publish</code> で拡張機能を Azure CLI Extension Index に公開できる。また <code>azdev command-change</code> サブグループで API の破壊的変更を検出できる。</p>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 構成</span>
+      <p>リポジトリは <code>azdev/</code> 本体と <code>azure-cli-diff-tool/</code> サブパッケージで構成される。<code>azdev/operations/</code> 配下に各コマンドグループの実装が格納され、<code>azdev/commands.py</code> で knack の <code>CommandGroup</code> を使ってコマンドテーブルに登録している。</p>
+    </div>
+
+    <!-- ===== Section 2: Setup ===== -->
+    <section id="setup" class="sec-head">2 — セットアップ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> インストール手順</span>
+      <div class="step-flow">
+        <div class="step-card">
+          <span class="step-card__num">01</span>
+          <div>
+            <p class="step-card__title">Python 仮想環境を作成</p>
+            <p class="step-card__body">Python 3.8+ を使い、<code>python -m venv env</code> で venv を作成。<code>source env/bin/activate</code>（Linux/macOS）または <code>env\Scripts\activate.bat</code>（Windows）で有効化。</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <span class="step-card__num">02</span>
+          <div>
+            <p class="step-card__title">リポジトリをフォーク・クローン</p>
+            <p class="step-card__body">azure-cli（および必要なら azure-cli-extensions）をフォークし、<code>git remote add upstream</code> でアップストリームを登録する。</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <span class="step-card__num">03</span>
+          <div>
+            <p class="step-card__title">azdev をインストール</p>
+            <p class="step-card__body"><code>pip install azdev</code> で PyPI から取得。Linux では事前に <code>gcc python3-dev</code>（apt）または <code>gcc python3-devel</code>（rpm）が必要。</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <span class="step-card__num">04</span>
+          <div>
+            <p class="step-card__title">azdev setup を実行</p>
+            <p class="step-card__body"><code>azdev setup</code> で対話的セットアップ。非対話的には <code>azdev setup --cli /path/to/azure-cli --repo /path/to/extensions</code>。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> コマンド・モジュールの雛形作成</span>
+      <p>CLI モジュールや拡張機能の雛形は以下で生成できる。<a href="https://github.com/Azure/aaz-dev-tools" target="_blank" rel="noopener">aaz-dev-tools</a> を使うと REST API スペックからコマンドを自動生成できる。</p>
+      <div class="ve-code-block">
+        <pre><code># 拡張機能の雛形を作成
+azdev extension create &lt;extension-name&gt;
+
+# CLI モジュールの雛形を作成
+azdev cli create &lt;module-name&gt;
+
+# 拡張機能をソースからインストール（開発時）
+azdev extension add &lt;extension-name&gt;</code></pre>
+      </div>
+    </div>
+
+    <!-- ===== Section 3: Commands ===== -->
+    <section id="commands" class="sec-head">3 — コマンド一覧</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 全コマンド</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>コマンド</th>
+              <th>カテゴリ</th>
+              <th>説明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>azdev setup</code></td>
+              <td><span class="cat-badge cat-badge--core">core</span></td>
+              <td>開発環境の初期セットアップ。CLI/拡張機能リポジトリのリンクを確立する</td>
+            </tr>
+            <tr>
+              <td><code>azdev style &lt;target&gt;</code></td>
+              <td><span class="cat-badge cat-badge--core">core</span></td>
+              <td>Pylint + PEP8 によるコードスタイルチェック</td>
+            </tr>
+            <tr>
+              <td><code>azdev linter &lt;target&gt;</code></td>
+              <td><span class="cat-badge cat-badge--core">core</span></td>
+              <td>CLI コマンドテーブルの静的解析（命名・引数・ヘルプ等）</td>
+            </tr>
+            <tr>
+              <td><code>azdev test &lt;target&gt;</code></td>
+              <td><span class="cat-badge cat-badge--core">core</span></td>
+              <td>CLI テストを記録(once)/再生(playback)/ライブで実行。<code>--live</code> で強制ライブ</td>
+            </tr>
+            <tr>
+              <td><code>azdev cmdcov</code></td>
+              <td><span class="cat-badge cat-badge--core">core</span></td>
+              <td>コマンドのテストカバレッジを計測</td>
+            </tr>
+            <tr>
+              <td><code>azdev scan</code></td>
+              <td><span class="cat-badge cat-badge--core">core</span></td>
+              <td>シークレット（認証情報等）のスキャン</td>
+            </tr>
+            <tr>
+              <td><code>azdev mask</code></td>
+              <td><span class="cat-badge cat-badge--core">core</span></td>
+              <td>シークレットのマスク処理</td>
+            </tr>
+            <tr>
+              <td><code>azdev generate-breaking-change-report</code></td>
+              <td><span class="cat-badge cat-badge--change">change</span></td>
+              <td>将来の破壊的変更レポートを生成</td>
+            </tr>
+            <tr>
+              <td><code>azdev command-change meta-export</code></td>
+              <td><span class="cat-badge cat-badge--change">change</span></td>
+              <td>コマンドメタデータを JSON にエクスポート</td>
+            </tr>
+            <tr>
+              <td><code>azdev command-change meta-diff</code></td>
+              <td><span class="cat-badge cat-badge--change">change</span></td>
+              <td>2 つのメタデータ JSON を比較して差分を検出</td>
+            </tr>
+            <tr>
+              <td><code>azdev command-change tree-export</code></td>
+              <td><span class="cat-badge cat-badge--change">change</span></td>
+              <td>コマンドツリーをエクスポート</td>
+            </tr>
+            <tr>
+              <td><code>azdev statistics list-command-table</code></td>
+              <td><span class="cat-badge cat-badge--core">core</span></td>
+              <td>コマンドテーブルの一覧を表示</td>
+            </tr>
+            <tr>
+              <td><code>azdev statistics diff-command-tables</code></td>
+              <td><span class="cat-badge cat-badge--core">core</span></td>
+              <td>2 ブランチ間のコマンドテーブル差分を表示</td>
+            </tr>
+            <tr>
+              <td><code>azdev verify history</code></td>
+              <td><span class="cat-badge cat-badge--verify">verify</span></td>
+              <td>HISTORY.rst の変更ログを検証</td>
+            </tr>
+            <tr>
+              <td><code>azdev verify document-map</code></td>
+              <td><span class="cat-badge cat-badge--verify">verify</span></td>
+              <td>ドキュメントマップの整合性チェック</td>
+            </tr>
+            <tr>
+              <td><code>azdev verify license</code></td>
+              <td><span class="cat-badge cat-badge--verify">verify</span></td>
+              <td>ソースファイルのライセンスヘッダーを検証</td>
+            </tr>
+            <tr>
+              <td><code>azdev cli check-versions</code></td>
+              <td><span class="cat-badge cat-badge--verify">verify</span></td>
+              <td>PyPI の CLI パッケージバージョンを検証</td>
+            </tr>
+            <tr>
+              <td><code>azdev cli generate-docs</code></td>
+              <td><span class="cat-badge cat-badge--verify">verify</span></td>
+              <td>CLI リファレンスドキュメントを生成</td>
+            </tr>
+            <tr>
+              <td><code>azdev latest-index generate</code></td>
+              <td><span class="cat-badge cat-badge--verify">verify</span></td>
+              <td>最新拡張機能インデックスを生成</td>
+            </tr>
+            <tr>
+              <td><code>azdev latest-index verify</code></td>
+              <td><span class="cat-badge cat-badge--verify">verify</span></td>
+              <td>インデックスが最新か検証（CI 対応・非ゼロ終了）</td>
+            </tr>
+            <tr>
+              <td><code>azdev perf load-times</code></td>
+              <td><span class="cat-badge cat-badge--perf">perf</span></td>
+              <td>CLI モジュールのロード時間を計測</td>
+            </tr>
+            <tr>
+              <td><code>azdev perf benchmark</code></td>
+              <td><span class="cat-badge cat-badge--perf">perf</span></td>
+              <td>コマンド実行ベンチマーク（プレビュー）</td>
+            </tr>
+            <tr>
+              <td><code>azdev extension add/remove/list</code></td>
+              <td><span class="cat-badge cat-badge--ext">extension</span></td>
+              <td>拡張機能のソースインストール・削除・一覧</td>
+            </tr>
+            <tr>
+              <td><code>azdev extension build</code></td>
+              <td><span class="cat-badge cat-badge--ext">extension</span></td>
+              <td>拡張機能 wheel をビルド</td>
+            </tr>
+            <tr>
+              <td><code>azdev extension publish</code></td>
+              <td><span class="cat-badge cat-badge--ext">extension</span></td>
+              <td>拡張機能を Azure CLI Extension Index に公開</td>
+            </tr>
+            <tr>
+              <td><code>azdev extension update-index</code></td>
+              <td><span class="cat-badge cat-badge--ext">extension</span></td>
+              <td>拡張機能インデックスを更新</td>
+            </tr>
+            <tr>
+              <td><code>azdev extension cal-next-version</code></td>
+              <td><span class="cat-badge cat-badge--ext">extension</span></td>
+              <td>次バージョン番号を計算</td>
+            </tr>
+            <tr>
+              <td><code>azdev extension show</code></td>
+              <td><span class="cat-badge cat-badge--ext">extension</span></td>
+              <td>拡張機能の詳細情報を表示</td>
+            </tr>
+            <tr>
+              <td><code>azdev extension repo add/remove/list</code></td>
+              <td><span class="cat-badge cat-badge--ext">extension</span></td>
+              <td>拡張機能リポジトリの登録・削除・一覧</td>
+            </tr>
+            <tr>
+              <td><code>azdev extension generate-docs</code></td>
+              <td><span class="cat-badge cat-badge--ext">extension</span></td>
+              <td>拡張機能リファレンスドキュメントを生成</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== Section 4: Dev Workflow ===== -->
+    <section id="workflow" class="sec-head">4 — 開発フロー</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 標準開発サイクル</span>
+      <p>コードを変更したら、以下の順番でチェックを回す。CI パイプライン（<code>azure-pipelines.yml</code>）でも同じ順序で実行される。</p>
+      <div class="pipeline">
+        <span class="step">azdev style</span>
+        <span class="arrow">→</span>
+        <span class="step">azdev linter</span>
+        <span class="arrow">→</span>
+        <span class="step">azdev test</span>
+        <span class="arrow">→</span>
+        <span class="step alt">azdev cmdcov</span>
+        <span class="arrow">→</span>
+        <span class="step alt">azdev verify license</span>
+      </div>
+      <h3>テストモード</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>モード</th><th>挙動</th><th>用途</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>once</code>（デフォルト）</td>
+              <td>記録ファイルなし → ライブ実行して YAML 生成。あり → プレイバック</td>
+              <td>初回記録 &amp; 通常の CI</td>
+            </tr>
+            <tr>
+              <td><code>--live</code></td>
+              <td>常に Azure に接続してライブ実行、記録を再生成</td>
+              <td>API 仕様変更後の再記録</td>
+            </tr>
+            <tr>
+              <td>playback のみ</td>
+              <td>記録済み YAML をリプレイ。Azure 接続不要</td>
+              <td>オフライン CI・高速検証</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 破壊的変更の検出フロー</span>
+      <p><code>command-change</code> サブグループを使って API 変更を追跡する。<code>azure-cli-diff-tool</code>（<code>azure_cli_diff_tool/meta_change_detect.py</code>）が差分解析のコアを担う。</p>
+      <div class="pipeline">
+        <span class="step">meta-export (before)</span>
+        <span class="arrow">→</span>
+        <span class="step">meta-export (after)</span>
+        <span class="arrow">→</span>
+        <span class="step">meta-diff</span>
+        <span class="arrow">→</span>
+        <span class="step alt">generate-breaking-change-report</span>
+      </div>
+    </div>
+    <div class="ve-callout ve-callout--amber" style="margin-top: 1rem;">
+      <strong>記録ファイルの場所:</strong> テスト記録は YAML 形式で保存される。<code>--live</code> を付けずに実行した場合、既存の YAML が見つかれば常にプレイバックモードになる。再記録するには <code>--live</code> フラグが必要。
+    </div>
+
+    <!-- ===== Section 5: Extensions ===== -->
+    <section id="extensions" class="sec-head">5 — 拡張機能管理</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 拡張機能の開発から公開まで</span>
+      <div class="pipeline">
+        <span class="step">extension create</span>
+        <span class="arrow">→</span>
+        <span class="step">extension add</span>
+        <span class="arrow">→</span>
+        <span class="step">style / linter / test</span>
+        <span class="arrow">→</span>
+        <span class="step">extension build</span>
+        <span class="arrow">→</span>
+        <span class="step alt">extension publish</span>
+      </div>
+      <h3>主要コマンド詳細</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>コマンド</th><th>説明</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>azdev extension create &lt;name&gt;</code></td>
+              <td>拡張機能の雛形ディレクトリを生成。<code>azext_&lt;name&gt;/</code> 以下に <code>__init__.py</code>・<code>commands.py</code>・<code>_params.py</code> 等を自動作成</td>
+            </tr>
+            <tr>
+              <td><code>azdev extension add &lt;name&gt;</code></td>
+              <td>ソースコードから拡張機能を開発用インストール。<code>az &lt;cmd&gt;</code> で即テスト可能な状態になる</td>
+            </tr>
+            <tr>
+              <td><code>azdev extension build &lt;name&gt;</code></td>
+              <td>wheel ファイルをビルド。<code>dist/</code> 以下に <code>.whl</code> が生成される</td>
+            </tr>
+            <tr>
+              <td><code>azdev extension publish &lt;name&gt;</code></td>
+              <td>Azure Blob にアップロードし、<code>azure-cli-extensions</code> リポジトリの <code>index.json</code> を更新。PR 作成まで自動化できる</td>
+            </tr>
+            <tr>
+              <td><code>azdev extension cal-next-version &lt;name&gt;</code></td>
+              <td>semver ルールに基づき次バージョン番号を計算（<code>command-change meta-diff</code> の結果を利用）</td>
+            </tr>
+            <tr>
+              <td><code>azdev extension repo add &lt;path&gt;</code></td>
+              <td>拡張機能が含まれる追加リポジトリを登録。複数リポジトリ横断での開発に使う</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top: 1rem;">
+      <strong>最新インデックスの検証:</strong> <code>azdev latest-index verify</code> は生成済みインデックスとチェックイン済みファイルを比較し、差異があれば非ゼロ終了する。CI に組み込むと PR で自動検証できる。
+    </div>
+
+    <!-- ===== Section 6: Links ===== -->
+    <section id="links" class="sec-head">6 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/Azure/azure-cli-dev-tools" target="_blank" rel="noopener">GitHub: Azure/azure-cli-dev-tools</a> — 本リポジトリ</li>
+        <li><a href="https://pypi.org/project/azdev/" target="_blank" rel="noopener">PyPI: azdev</a> — <code>pip install azdev</code></li>
+        <li><a href="https://github.com/Azure/azure-cli" target="_blank" rel="noopener">GitHub: Azure/azure-cli</a> — CLI 本体</li>
+        <li><a href="https://github.com/Azure/azure-cli-extensions" target="_blank" rel="noopener">GitHub: Azure/azure-cli-extensions</a> — 拡張機能リポジトリ</li>
+        <li><a href="https://github.com/Azure/azure-cli/tree/dev/doc/authoring_command_modules" target="_blank" rel="noopener">Authoring Command Modules</a> — コマンドモジュールの書き方</li>
+        <li><a href="https://github.com/Azure/azure-cli/blob/dev/doc/extensions/authoring.md" target="_blank" rel="noopener">Authoring Extensions</a> — 拡張機能の書き方</li>
+        <li><a href="https://github.com/Azure/azure-cli/blob/dev/doc/authoring_tests.md" target="_blank" rel="noopener">Authoring Tests</a> — テストの書き方</li>
+        <li><a href="https://github.com/Azure/aaz-dev-tools" target="_blank" rel="noopener">aaz-dev-tools</a> — REST API スペックからコマンドを自動生成</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
