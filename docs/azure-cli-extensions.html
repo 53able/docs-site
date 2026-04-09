@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Azure CLI Extensions — マルチ拡張機能モノリポ解説</title>
+  <meta name="description" content="Azure CLI 拡張機能モノリポの全体像：208 拡張機能の索引管理・拡張機能の構成・azdev 開発フロー・CI/CD パイプライン・コントリビューション手順を視覚的に解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Azure CLI Extensions — マルチ拡張機能モノリポ解説">
+  <meta property="og:description" content="Azure CLI 拡張機能モノリポの全体像：208 拡張機能の索引管理・拡張機能の構成・azdev 開発フロー・CI/CD パイプライン・コントリビューション手順を視覚的に解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/azure-cli-extensions.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Azure CLI Extensions — マルチ拡張機能モノリポ解説">
+  <meta name="twitter:description" content="Azure CLI 拡張機能モノリポ：208 拡張機能の索引管理・azdev 開発フロー・CI/CD パイプライン・コントリビューション手順。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens — Azure blue / teal palette) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      /* Azure blue + teal accents */
+      --chart-1: oklch(0.52 0.155 240);   /* Azure deep blue */
+      --chart-2: oklch(0.60 0.12 177);    /* teal */
+      --chart-3: oklch(0.76 0.14 82);     /* amber highlight */
+      --chart-4: oklch(0.58 0.13 300);    /* muted slate-purple */
+      --chart-5: oklch(0.52 0.16 25);     /* rust red */
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.68 0.15 240);
+        --chart-2: oklch(0.72 0.12 177);
+        --chart-3: oklch(0.80 0.14 82);
+        --chart-4: oklch(0.66 0.10 300);
+        --chart-5: oklch(0.68 0.16 25);
+        --code-bg: #0d1117;
+        --code-text: #79c0ff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 91%, var(--chart-1) 9%);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1.125rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.75; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.8125rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.875rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.52 0.155 240 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 70% 0%, oklch(0.52 0.155 240 / 0.05) 0%, transparent 55%),
+                        radial-gradient(ellipse at 0% 80%, oklch(0.60 0.12 177 / 0.04) 0%, transparent 45%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image: radial-gradient(ellipse at 70% 0%, oklch(0.68 0.15 240 / 0.07) 0%, transparent 55%),
+                          radial-gradient(ellipse at 0% 80%, oklch(0.72 0.12 177 / 0.05) 0%, transparent 45%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    ul li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    ol li { margin-bottom: 0.4rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); color: var(--code-text); padding: 2px 6px; border-radius: var(--radius-sm); }
+    @media (prefers-color-scheme: dark) {
+      code { background: oklch(0.26 0 0); color: var(--code-text); }
+    }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+
+    /* KPI row */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Step flow */
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--chart-1); margin-bottom: 0.375rem; }
+    .step-card__title { font-weight: 600; font-size: 0.875rem; margin-bottom: 0.375rem; }
+    .step-card__body { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+
+    /* Directory tree */
+    .dir-tree code { display: block; }
+    .dir-tree .dir   { color: var(--chart-1); font-weight: 500; }
+    .dir-tree .file-main { color: var(--chart-2); }
+    .dir-tree .comment { color: var(--muted-foreground); font-style: italic; }
+
+    /* Pipeline flow */
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.75rem; margin: 0.875rem 0; }
+    .pipeline .step { background: var(--muted); border: 1px solid var(--border); padding: 0.3rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); white-space: nowrap; }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    /* Workflow badge */
+    .wf-badge { display: inline-block; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; padding: 2px 7px; border-radius: 3px; background: oklch(0.52 0.155 240 / 0.08); color: var(--chart-1); border: 1px solid oklch(0.52 0.155 240 / 0.2); white-space: nowrap; }
+    .wf-badge--teal { background: oklch(0.60 0.12 177 / 0.08); color: var(--chart-2); border-color: oklch(0.60 0.12 177 / 0.2); }
+    .wf-badge--amber { background: oklch(0.76 0.14 82 / 0.1); color: oklch(0.55 0.14 55); border-color: oklch(0.76 0.14 82 / 0.25); }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.625rem 0; }
+
+    /* Checklist */
+    .check-list { list-style: none; padding: 0; margin: 0.75rem 0; }
+    .check-list li { display: flex; gap: 0.625rem; align-items: flex-start; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; line-height: 1.55; }
+    .check-list li:last-child { border-bottom: none; }
+    .check-mark { flex-shrink: 0; width: 16px; height: 16px; border-radius: 3px; background: oklch(0.52 0.155 240 / 0.1); color: var(--chart-1); font-family: var(--font-mono); font-size: 0.625rem; display: flex; align-items: center; justify-content: center; font-weight: 700; margin-top: 2px; }
+
+    /* Cards grid */
+    .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .card-grid { grid-template-columns: 1fr; } }
+
+    /* Animations */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#structure">ディレクトリ構造</a>
+    <a href="#index">拡張機能インデックス</a>
+    <a href="#anatomy">拡張機能の構成</a>
+    <a href="#devflow">開発フロー</a>
+    <a href="#cicd">CI/CD とリリース</a>
+    <a href="#contrib">コントリビューション</a>
+  </nav>
+
+  <div class="main">
+  <h1>Azure CLI Extensions</h1>
+  <p class="subtitle">azure-cli-extensions — マルチ拡張機能モノリポ（公式 Azure CLI 拡張エコシステム）</p>
+
+  <!-- ===== 1 概要 ===== -->
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> リポジトリの目的</span>
+    <p>
+      <strong>azure-cli-extensions</strong> は Microsoft 公式の Azure CLI 拡張機能モノリポジトリ。
+      2 つの独立した目的を持つ：① 拡張機能ソースコードのホスト（<code>src/</code> ディレクトリ）、
+      ② 公開インデックス（<code>src/index.json</code>）への登録によるグローバルな配信。
+    </p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">208</span><span class="ve-kpi-card__label">公開拡張機能数</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Python</span><span class="ve-kpi-card__label">3.6+ 対応</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">azdev</span><span class="ve-kpi-card__label">開発ツールチェーン</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">数分</span><span class="ve-kpi-card__label">index.json 同期間隔</span></div>
+    </div>
+    <p>
+      インデックスは <a href="https://aka.ms/azure-cli-extension-index-v1" target="_blank" rel="noopener">https://aka.ms/azure-cli-extension-index-v1</a> へ数分おきに同期され、
+      <code>az extension add --name NAME</code> による名前指定インストールが可能になる。
+      ソースコードをこのリポジトリに置く必要はなく、外部リポジトリにホストして index.json のみ登録することも可能。
+    </p>
+  </div>
+
+  <div class="card-grid" style="margin-top: 1rem;">
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> インデックス経由のインストール</span>
+      <div class="ve-code-block">
+        <pre><code># 名前指定インストール（index.json 登録済み）
+az extension add --name NAME
+
+# 利用可能な拡張機能一覧
+az extension list-available
+
+# 更新
+az extension update --name NAME</code></pre>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> 外部ホスト（非インデックス）</span>
+      <div class="ve-code-block">
+        <pre><code># URL 指定でインストール
+az extension add \
+  --source https://contoso.com/myext.whl
+
+# ※ 名前指定・list-available 不可
+# ※ 更新は remove → add で手動対応</code></pre>
+      </div>
+      <p style="font-size:0.8125rem; color: var(--text-dim); margin: 0.5rem 0 0;">外部ホストでもソースコードは本リポジトリに置ける。インデックス登録だけ任意。</p>
+    </div>
+  </div>
+
+  <!-- ===== 2 ディレクトリ構造 ===== -->
+  <section id="structure" class="sec-head">2 — ディレクトリ構造</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> トップレベル</span>
+    <div class="ve-code-block dir-tree">
+      <pre><code><span class="dir">azure-cli-extensions/</span>
+├── <span class="dir">src/</span>                    <span class="comment"># 拡張機能ソース & 公開インデックス</span>
+│   ├── <span class="file-main">index.json</span>          <span class="comment"># 208 拡張機能の公開インデックス</span>
+│   ├── <span class="dir">aks-preview/</span>        <span class="comment"># 例: AKS プレビュー拡張（v20.0.0b1）</span>
+│   ├── <span class="dir">spring/</span>
+│   └── <span class="comment">... 202 ディレクトリ ...</span>
+├── <span class="dir">scripts/</span>
+│   ├── <span class="dir">ci/</span>                 <span class="comment"># CI チェックスクリプト（test_index.py 等）</span>
+│   ├── <span class="dir">automation/</span>         <span class="comment"># リリース自動化</span>
+│   └── <span class="dir">refdoc/</span>             <span class="comment"># リファレンスドキュメント生成</span>
+├── <span class="dir">docs/</span>                   <span class="comment"># リポジトリ内ドキュメント</span>
+├── <span class="dir">.azure-pipelines/</span>       <span class="comment"># Azure Pipelines 定義（CredScan 等）</span>
+├── <span class="dir">.github/</span>
+│   ├── <span class="dir">workflows/</span>          <span class="comment"># GitHub Actions（13 ワークフロー）</span>
+│   ├── <span class="file-main">CODEOWNERS</span>         <span class="comment"># 拡張機能ごとのオーナー定義</span>
+│   └── <span class="file-main">pull_request_template.md</span>
+├── <span class="dir">.devcontainer/</span>          <span class="comment"># 開発コンテナ（azdev 自動セットアップ）</span>
+├── <span class="dir">.githooks/</span>             <span class="comment"># pre-commit / pre-push フック</span>
+├── <span class="file-main">azure-pipelines.yml</span>     <span class="comment"># メイン CI パイプライン</span>
+├── <span class="file-main">linter_exclusions.yml</span>   <span class="comment"># リポジトリ全体のリンター除外</span>
+└── <span class="file-main">policy.json</span>            <span class="comment"># ポリシーチェック設定</span></code></pre>
+    </div>
+  </div>
+
+  <!-- ===== 3 拡張機能インデックス ===== -->
+  <section id="index" class="sec-head">3 — 拡張機能インデックス（index.json）</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> index.json の役割</span>
+    <p>
+      <code>src/index.json</code> はリポジトリの「公開ディレクトリ」。
+      マージされた PR から自動パイプラインが WHL をビルドしてアップロードした後、
+      <strong>index.json の更新 PR を自動作成</strong>する仕組みになっている。
+      開発者は setup.py のバージョンを上げるだけで、index.json を手動で編集する必要はない。
+    </p>
+    <div class="ve-callout">
+      <strong>注意：</strong> index.json に登録された拡張機能はすべて<strong>公開</strong>になり、全ユーザーが利用可能になる。
+      プライベートな配布には外部ホスト方式を使うこと。
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:1; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> エントリ構造</span>
+    <div class="ve-code-block">
+      <pre><code>{
+  "extensions": {
+    "aks-preview": [           // 拡張機能名（キー）
+      {
+        "downloadUrl": "https://azcliprod.blob.core.windows.net/...",
+        "filename": "aks_preview-20.0.0b1-py3-none-any.whl",
+        "metadata": {
+          "azext.isPreview": true,
+          "azext.minCliCoreVersion": "2.70.0",
+          "version": "20.0.0b1",
+          "summary": "Provides a preview for upcoming AKS features",
+          "classifiers": ["Development Status :: 4 - Beta", ...]
+        },
+        "sha256Digest": "abc123..."   // 小文字で記載必須
+      }
+    ]
+  },
+  "formatVersion": "1"
+}</code></pre>
+    </div>
+    <div class="ve-callout" style="margin-top: 0.875rem;">
+      <strong>SHA256 の生成：</strong> <code>azdev extension update-index &lt;URL&gt;</code> を使うと自動計算される。
+      手動では macOS: <code>shasum -a 256 path.whl</code>、Windows: <code>Get-FileHash path.whl -Algorithm SHA256</code>。
+      <strong>ハッシュは小文字必須</strong>（大文字だと CI 失敗）。
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:2; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> 主要拡張機能サンプル</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>拡張機能名</th>
+            <th>概要</th>
+            <th>ステータス</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>aks-preview</code></td>
+            <td>AKS の Preview 機能を先行提供。azure-cli の aks コマンドをオーバーライド</td>
+            <td><span class="wf-badge">Preview</span></td>
+          </tr>
+          <tr>
+            <td><code>spring</code></td>
+            <td>Azure Spring Apps の管理コマンド</td>
+            <td><span class="wf-badge--teal wf-badge">GA</span></td>
+          </tr>
+          <tr>
+            <td><code>ssh</code></td>
+            <td>Azure VM / Arc Server への SSH 接続</td>
+            <td><span class="wf-badge--teal wf-badge">GA</span></td>
+          </tr>
+          <tr>
+            <td><code>alias</code></td>
+            <td>CLI コマンドのエイリアス管理</td>
+            <td><span class="wf-badge">Preview</span></td>
+          </tr>
+          <tr>
+            <td><code>ai-examples</code></td>
+            <td>ヘルプコンテンツへ AI 生成例を追加</td>
+            <td><span class="wf-badge">Preview</span></td>
+          </tr>
+          <tr>
+            <td><code>aks-agent</code></td>
+            <td>AI 搭載のインタラクティブ AKS デバッグツール</td>
+            <td><span class="wf-badge">Preview</span></td>
+          </tr>
+          <tr>
+            <td><code>amg</code></td>
+            <td>Azure Managed Grafana の管理</td>
+            <td><span class="wf-badge--teal wf-badge">GA</span></td>
+          </tr>
+          <tr>
+            <td><code>storage-preview</code></td>
+            <td>Azure Storage のプレビュー機能</td>
+            <td><span class="wf-badge">Preview</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== 4 拡張機能の構成 ===== -->
+  <section id="anatomy" class="sec-head">4 — 拡張機能の構成（アナトミー）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 標準ディレクトリ構造</span>
+    <div class="ve-code-block dir-tree">
+      <pre><code><span class="dir">src/&lt;extension-name&gt;/</span>
+├── <span class="file-main">setup.py</span>              <span class="comment"># パッケージメタデータ・バージョン定義</span>
+├── <span class="file-main">setup.cfg</span>             <span class="comment"># 追加パッケージ設定</span>
+├── <span class="file-main">README.rst</span>            <span class="comment"># 拡張機能の説明・使い方</span>
+├── <span class="file-main">HISTORY.rst</span>           <span class="comment"># 変更履歴（バージョンごと）</span>
+├── <span class="file-main">linter_exclusions.yml</span> <span class="comment"># リンター個別除外設定</span>
+└── <span class="dir">azext_&lt;name&gt;/</span>         <span class="comment"># メインパッケージ（ハイフン→アンダースコア）</span>
+    ├── <span class="file-main">__init__.py</span>       <span class="comment"># コマンドローダー登録</span>
+    ├── <span class="file-main">_params.py</span>        <span class="comment"># CLI パラメータ定義</span>
+    ├── <span class="file-main">_help.py</span>          <span class="comment"># ヘルプテキスト</span>
+    ├── <span class="file-main">_validators.py</span>    <span class="comment"># 入力バリデーター</span>
+    ├── <span class="file-main">commands.py</span>       <span class="comment"># コマンド登録（load_command_table）</span>
+    ├── <span class="file-main">custom.py</span>         <span class="comment"># カスタムコマンド実装</span>
+    ├── <span class="file-main">_client_factory.py</span> <span class="comment"># SDK クライアント生成</span>
+    └── <span class="dir">vendored_sdks/</span>    <span class="comment"># AutoRest 生成 SDK（静的解析除外）</span></code></pre>
+    </div>
+    <div class="ve-callout" style="margin-top: 0.875rem;">
+      <strong>vendored_sdks について：</strong> AutoRest で生成した SDK は CI の静的解析（flake8/pylint）を通過しないことが多い。
+      <code>azext_*/vendored_sdks/</code> に配置することで自動的に静的解析から除外される。
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> setup.py の重要フィールド</span>
+    <div class="ve-code-block">
+      <pre><code>from setuptools import find_packages, setup
+
+VERSION = "20.0.0b1"   # ← バージョンはここだけ更新（index.json は触らない）
+
+CLASSIFIERS = [
+    "Development Status :: 4 - Beta",   # Preview の場合
+    # "Development Status :: 5 - Production/Stable",  # GA の場合
+    "Programming Language :: Python :: 3",
+]
+
+setup(
+    name="aks-preview",
+    version=VERSION,
+    description="Provides a preview for upcoming AKS features",
+    long_description=README,
+    classifiers=CLASSIFIERS,
+    packages=find_packages(),
+    install_requires=DEPENDENCIES,
+)</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:2; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> azext_metadata.json（任意）</span>
+    <p style="font-size:0.8125rem; color: var(--text-dim);">
+      拡張機能ルートに <code>azext_metadata.json</code> を置くと追加メタデータを定義できる。
+      <code>azext.isPreview</code>・<code>azext.minCliCoreVersion</code>・<code>azext.isExperimental</code> などを指定可能。
+      index.json のエントリと一致していないと CI が失敗する。
+    </p>
+  </div>
+
+  <!-- ===== 5 開発フロー ===== -->
+  <section id="devflow" class="sec-head">5 — 開発フロー（azdev）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> azdev — 開発ツールチェーン</span>
+    <p>
+      <a href="https://github.com/Azure/azure-cli-dev-tools" target="_blank" rel="noopener">azure-cli-dev-tools（azdev）</a> が
+      スタイルチェック・リンター・テスト・インデックス更新をまとめて提供する。
+      開発コンテナ（<code>.devcontainer/</code>）を使えば azdev が自動セットアップされる。
+    </p>
+    <div class="step-flow">
+      <div class="step-card">
+        <div class="step-card__num">Step 01</div>
+        <div class="step-card__title">環境セットアップ</div>
+        <div class="step-card__body"><code>pip install azdev</code><br>または Dev Container を開く</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">Step 02</div>
+        <div class="step-card__title">スタイルチェック</div>
+        <div class="step-card__body"><code>azdev style &lt;YOUR_EXT&gt;</code><br>flake8 + pylint でコードスタイル検証</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">Step 03</div>
+        <div class="step-card__title">リンター実行</div>
+        <div class="step-card__body"><code>azdev linter &lt;YOUR_EXT&gt;</code><br>コマンド設計ルール・命名規約の検証</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">Step 04</div>
+        <div class="step-card__title">インデックス検証</div>
+        <div class="step-card__body"><code>python scripts/ci/test_index.py -q</code><br>(<code>pip install wheel==0.30.0</code> 必要)</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">Step 05</div>
+        <div class="step-card__title">バージョン更新</div>
+        <div class="step-card__body"><code>setup.py</code> の <code>VERSION</code> を更新<br><code>HISTORY.rst</code> に変更内容を記載</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">Step 06</div>
+        <div class="step-card__title">index 更新（任意）</div>
+        <div class="step-card__body"><code>azdev extension update-index &lt;URL&gt;</code><br>外部ホスト時に手動で index.json を更新</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot" style="background: var(--chart-2)"></span> Git フック</span>
+    <p style="font-size:0.8125rem; color: var(--text-dim);">
+      <code>.githooks/</code> に pre-commit・pre-push フックが用意されている。
+      <code>azdev_active.sh</code>（macOS/Linux）または <code>azdev_active.ps1</code>（Windows）で有効化できる。
+      フックは azdev がアクティブな環境でのみ動作する。
+    </p>
+  </div>
+
+  <!-- ===== 6 CI/CD とリリース ===== -->
+  <section id="cicd" class="sec-head">6 — CI/CD とリリース</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 自動リリースパイプライン</span>
+    <p>main ブランチへのマージをトリガーに以下が自動実行される：</p>
+    <div class="pipeline">
+      <span class="step">PR マージ（main）</span>
+      <span class="arrow">→</span>
+      <span class="step">WHL ビルド</span>
+      <span class="arrow">→</span>
+      <span class="step">Azure Blob へアップロード</span>
+      <span class="arrow">→</span>
+      <span class="step">index.json 更新 PR 自動作成</span>
+      <span class="arrow">→</span>
+      <span class="step">index 更新 PR マージ</span>
+      <span class="arrow">→</span>
+      <span class="step">aka.ms URL へ同期（数分）</span>
+    </div>
+    <div class="ve-callout" style="margin-top: 0.875rem;">
+      <strong>開発者の作業範囲：</strong> <code>setup.py</code> のバージョン更新と <code>HISTORY.rst</code> の記載のみ。
+      <code>src/index.json</code> を <strong>直接編集してはいけない</strong>（CI 失敗の原因になる）。
+    </div>
+  </div>
+
+  <div class="card-grid" style="margin-top: 1rem;">
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> Azure Pipelines チェック</span>
+      <div class="badge-row">
+        <span class="wf-badge">CredScan</span>
+        <span class="wf-badge">PolicyCheck</span>
+        <span class="wf-badge">BreakingChangeTests</span>
+        <span class="wf-badge">SyncAlias</span>
+      </div>
+      <ul style="font-size:0.8125rem; margin: 0.5rem 0 0; color: var(--text-dim);">
+        <li><strong>CredScan</strong>: 認証情報・シークレットの混入チェック</li>
+        <li><strong>PolicyCheck</strong>: Microsoft ポリシー準拠チェック</li>
+        <li><strong>BreakingChangeTests</strong>: 後方互換性の検証</li>
+      </ul>
+    </div>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot" style="background: var(--chart-2)"></span> GitHub Actions ワークフロー（13）</span>
+      <div class="badge-row">
+        <span class="wf-badge--teal wf-badge">AzdevLinter</span>
+        <span class="wf-badge--teal wf-badge">AzdevStyle</span>
+        <span class="wf-badge--teal wf-badge">TriggerExtensionRelease</span>
+        <span class="wf-badge--teal wf-badge">CreateReleaseTag</span>
+        <span class="wf-badge--amber wf-badge">BlockPRMerge</span>
+        <span class="wf-badge--amber wf-badge">CCOA</span>
+        <span class="wf-badge--amber wf-badge">AddPRComment</span>
+        <span class="wf-badge--teal wf-badge">ProcessCodeReview</span>
+      </div>
+      <p style="font-size:0.8125rem; color: var(--text-dim); margin: 0.5rem 0 0;">
+        リンター・スタイル検証は PR 単位で自動実行。リリーストリガーはマージ後に実行。
+        PR オープン/マージ時の自動コメント通知も含む。
+      </p>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:3; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> バージョニング規約</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ステータス</th><th>バージョン形式</th><th>Development Status Classifier</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="wf-badge">Preview</span></td>
+            <td><code>X.Y.ZbN</code>（例: <code>20.0.0b1</code>）</td>
+            <td><code>Development Status :: 4 - Beta</code></td>
+          </tr>
+          <tr>
+            <td><span class="wf-badge--teal wf-badge">GA</span></td>
+            <td><code>X.Y.Z</code>（例: <code>2.8.1</code>）</td>
+            <td><code>Development Status :: 5 - Production/Stable</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:0.8125rem; color: var(--text-dim); margin: 0.625rem 0 0;">
+      詳細は <a href="https://github.com/Azure/azure-cli/blob/release/doc/extensions/versioning_guidelines.md" target="_blank" rel="noopener">Extension version schema</a> を参照。
+    </p>
+  </div>
+
+  <!-- ===== 7 コントリビューション ===== -->
+  <section id="contrib" class="sec-head">7 — コントリビューション</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> PR チェックリスト</span>
+    <ul class="check-list">
+      <li>
+        <span class="check-mark">1</span>
+        <span><code>azdev style &lt;YOUR_EXT&gt;</code> をローカルで実行済み（<code>pip install azdev</code> 必要）</span>
+      </li>
+      <li>
+        <span class="check-mark">2</span>
+        <span><code>python scripts/ci/test_index.py -q</code> をローカルで実行済み（<code>pip install wheel==0.30.0</code> 必要）</span>
+      </li>
+      <li>
+        <span class="check-mark">3</span>
+        <span>バージョンが <a href="https://github.com/Azure/azure-cli/blob/release/doc/extensions/versioning_guidelines.md" target="_blank" rel="noopener">Extension version schema</a> に準拠している</span>
+      </li>
+      <li>
+        <span class="check-mark">4</span>
+        <span>新規拡張の場合: description/summary が <a href="https://github.com/Azure/azure-cli/blob/dev/doc/extensions/extension_summary_guidelines.md" target="_blank" rel="noopener">Summary Guidelines</a> に準拠している</span>
+      </li>
+      <li>
+        <span class="check-mark">5</span>
+        <span><code>.github/CODEOWNERS</code> に拡張機能のオーナーを追加した</span>
+      </li>
+      <li>
+        <span class="check-mark">6</span>
+        <span><code>src/index.json</code> を直接編集していない（自動更新されるため）</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-grid" style="margin-top: 1rem;">
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> CLA（貢献者ライセンス合意）</span>
+      <p style="font-size:0.8125rem; line-height: 1.6;">
+        初めて PR を出すと CLA ボットが自動でコメントし、
+        <a href="https://cla.microsoft.com" target="_blank" rel="noopener">cla.microsoft.com</a> での署名を促す。
+        一度署名すれば同じ CLA を使う全リポジトリで有効になる。
+        Microsoft Open Source Code of Conduct に従う。
+      </p>
+    </div>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot" style="background: var(--chart-2)"></span> ソースコードを別リポジトリでホストする場合</span>
+      <p style="font-size:0.8125rem; line-height: 1.6;">
+        ソースコードを外部リポジトリに置いたまま index.json のみ登録できる。
+        その場合は WHL を PyPI または Azure Blob などにアップロードし、
+        <code>azdev extension update-index &lt;URL&gt;</code> でエントリを生成して PR を出す。
+      </p>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:3; margin-top: 1rem;">
+    <span class="ve-section-label"><span class="ve-dot"></span> 参考リンク</span>
+    <ul style="font-size:0.875rem;">
+      <li><a href="https://github.com/Azure/azure-cli/tree/master/doc/extensions" target="_blank" rel="noopener">Extension Documentation</a> — 拡張機能作成の公式ドキュメント</li>
+      <li><a href="https://github.com/Azure/azure-cli/blob/dev/doc/extensions/authoring.md" target="_blank" rel="noopener">Authoring Guide</a> — 開発・テスト・パブリッシュの詳細手順</li>
+      <li><a href="https://github.com/Azure/azure-cli/blob/dev/doc/command_guidelines.md" target="_blank" rel="noopener">Command Guidelines</a> — コマンド設計ルール</li>
+      <li><a href="https://github.com/Azure/azure-cli/blob/dev/doc/extensions/metadata.md" target="_blank" rel="noopener">Extension Metadata</a> — azext_metadata.json の仕様</li>
+      <li><a href="https://github.com/Azure/azure-cli-dev-tools" target="_blank" rel="noopener">azure-cli-dev-tools（azdev）</a> — 開発ツールチェーン</li>
+      <li><a href="https://aka.ms/azure-cli-extension-index-v1" target="_blank" rel="noopener">https://aka.ms/azure-cli-extension-index-v1</a> — 公開インデックス（数分おき同期）</li>
+    </ul>
+  </div>
+
+  </div><!-- .main -->
+</div><!-- .wrap -->
+
+<script>
+  // Scroll Spy
+  (function () {
+    const toc = document.getElementById('toc');
+    const links = Array.from(toc.querySelectorAll('a'));
+    const secs = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        const idx = secs.indexOf(e.target);
+        if (idx < 0) return;
+        links[idx].classList.toggle('active', e.isIntersecting);
+      });
+    }, { rootMargin: '-10% 0px -80% 0px' });
+    secs.forEach(s => io.observe(s));
+  })();
+</script>
+</body>
+</html>
