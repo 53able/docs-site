@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>caveman — AI トークン圧縮スキル</title>
+  <meta name="description" content="AI エージェントの出力トークンを最大 75% 削減する Caveman スキル。技術的な正確さを保ちながら原始人語で応答させる Claude Code / Cursor / Copilot 向けプラグイン。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="caveman — AI トークン圧縮スキル">
+  <meta property="og:description" content="AI エージェントの出力トークンを最大 75% 削減。Claude Code / Cursor / Copilot など 40 以上のエージェントに対応。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/caveman.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="caveman — AI トークン圧縮スキル">
+  <meta name="twitter:description" content="AI エージェントの出力トークンを最大 75% 削減。Claude Code / Cursor / Copilot 対応。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.008 75);
+      --foreground: oklch(0.14 0.01 70);
+      --card: oklch(1 0.004 75);
+      --card-foreground: oklch(0.14 0.01 70);
+      --popover: oklch(1 0.004 75);
+      --popover-foreground: oklch(0.14 0.01 70);
+      --primary: oklch(0.55 0.16 42);
+      --primary-foreground: oklch(0.98 0 0);
+      --secondary: oklch(0.96 0.01 75);
+      --secondary-foreground: oklch(0.14 0.01 70);
+      --muted: oklch(0.96 0.01 75);
+      --muted-foreground: oklch(0.52 0.03 70);
+      --accent: oklch(0.96 0.01 75);
+      --accent-foreground: oklch(0.14 0.01 70);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.90 0.02 75);
+      --input: oklch(0.90 0.02 75);
+      --ring: oklch(0.70 0.03 75);
+      --chart-1: oklch(0.55 0.16 42);
+      --chart-2: oklch(0.44 0.10 155);
+      --chart-3: oklch(0.50 0.13 200);
+      --chart-4: oklch(0.70 0.14 80);
+      --chart-5: oklch(0.62 0.14 55);
+      --code-bg: oklch(0.95 0.015 75);
+      --code-text: oklch(0.36 0.10 42);
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.01 55);
+        --foreground: oklch(0.96 0.005 70);
+        --card: oklch(0.18 0.01 55);
+        --card-foreground: oklch(0.96 0.005 70);
+        --popover: oklch(0.18 0.01 55);
+        --popover-foreground: oklch(0.96 0.005 70);
+        --primary: oklch(0.72 0.18 42);
+        --primary-foreground: oklch(0.14 0.01 70);
+        --secondary: oklch(0.22 0.01 55);
+        --secondary-foreground: oklch(0.96 0.005 70);
+        --muted: oklch(0.24 0.01 55);
+        --muted-foreground: oklch(0.65 0.02 70);
+        --accent: oklch(0.24 0.01 55);
+        --accent-foreground: oklch(0.96 0.005 70);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.50 0.03 55);
+        --chart-1: oklch(0.72 0.18 42);
+        --chart-2: oklch(0.68 0.12 155);
+        --chart-3: oklch(0.65 0.15 200);
+        --chart-4: oklch(0.82 0.16 80);
+        --chart-5: oklch(0.75 0.16 55);
+        --code-bg: oklch(0.16 0.01 55);
+        --code-text: oklch(0.82 0.12 80);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-family: var(--font-mono); color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.55 0.16 42 / 0.12); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 88% 0%, oklch(0.55 0.16 42 / 0.08) 0%, transparent 52%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 88% 0%, oklch(0.72 0.18 42 / 0.10) 0%, transparent 52%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); color: var(--text); }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-5); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Before / After ============ */
+    .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    @media (max-width: 640px) { .before-after { grid-template-columns: 1fr; } }
+    .ba-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem 1.25rem; background: var(--card); }
+    .ba-card--normal { border-top: 3px solid var(--muted-foreground); }
+    .ba-card--caveman { border-top: 3px solid var(--chart-1); }
+    .ba-label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.75rem; }
+    .ba-label--caveman { color: var(--chart-1); }
+    .ba-text { font-size: 0.875rem; line-height: 1.65; color: var(--text-dim); }
+    .ba-text--caveman { color: var(--text); font-weight: 500; }
+    .ba-footer { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.875rem; }
+    .ba-tokens { display: inline-block; font-family: var(--font-mono); font-size: 0.75rem; padding: 2px 8px; background: var(--muted); border-radius: var(--radius-sm); color: var(--text-dim); }
+    .ba-tokens--saved { background: oklch(0.55 0.16 42 / 0.13); color: var(--chart-1); font-weight: 600; }
+
+    /* ============ Intensity level cards ============ */
+    .level-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .level-grid { grid-template-columns: 1fr; } }
+    .level-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; background: var(--card); }
+    .level-name { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--chart-1); margin-bottom: 0.375rem; }
+    .level-trigger { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.625rem; }
+    .level-example { font-size: 0.8125rem; color: var(--text); line-height: 1.55; padding: 0.625rem 0.875rem; background: var(--muted); border-radius: var(--radius-sm); border-left: 2px solid var(--chart-1); }
+
+    /* ============ Step flow ============ */
+    .step-flow { display: grid; gap: 0.625rem; margin: 0.875rem 0; }
+    .step-card { display: grid; grid-template-columns: 1.875rem 1fr; gap: 0.75rem; align-items: start; padding: 0.875rem 1rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+    .step-card__num { display: flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; border-radius: 50%; background: color-mix(in oklch, var(--chart-1) 80%, var(--background) 20%); color: oklch(1 0 0); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+    .step-card__body { min-width: 0; }
+    .step-card__title { font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem; }
+    .step-card__desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.5; }
+
+    /* ============ Skill grid ============ */
+    .skill-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    @media (max-width: 700px) { .skill-grid { grid-template-columns: 1fr; } }
+
+    /* ============ Saved % colors ============ */
+    .saved-high { color: var(--chart-1); font-weight: 700; }
+    .saved-med  { color: var(--chart-4); font-weight: 600; }
+    .saved-low  { color: var(--text-dim); }
+
+    /* ============ Animations ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#before-after">Before / After</a>
+    <a href="#levels">強度レベル</a>
+    <a href="#install">インストール</a>
+    <a href="#skills">スキル</a>
+    <a href="#compress">Compress</a>
+    <a href="#benchmarks">ベンチマーク</a>
+  </nav>
+
+  <div class="main">
+    <h1>caveman</h1>
+    <p class="subtitle">github.com/JuliusBrussee/caveman — AI スキル / プラグイン</p>
+
+    <!-- 1 概要 -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+      <p>
+        <strong>caveman</strong> は、AI エージェントの応答を「原始人語」にするスキル / プラグイン。
+        技術的な正確さを 100% 保ちながら、フィラー・丁寧語・ヘッジングを除去し、出力トークンを最大 <strong>~75%</strong> 削減する。
+        Claude Code・Cursor・GitHub Copilot・Cline・Windsurf・Codex など 40 以上のエージェントに対応。
+      </p>
+      <p style="margin-bottom: 0;">
+        2026 年 3 月の論文
+        <a href="https://arxiv.org/abs/2604.00025" target="_blank" rel="noopener">Brevity Constraints Reverse Performance Hierarchies</a>
+        によれば、簡潔な応答制約は特定ベンチマークで精度を <strong>26 ポイント</strong> 向上させた。口を小さくしても、頭は小さくならない。
+      </p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">~75%</div>
+          <div class="ve-kpi-card__label">出力トークン削減</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">100%</div>
+          <div class="ve-kpi-card__label">技術的正確さ</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">~3x</div>
+          <div class="ve-kpi-card__label">応答速度向上</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">6</div>
+          <div class="ve-kpi-card__label">強度モード数</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 Before / After -->
+    <section id="before-after" class="sec-head">2 — Before / After</section>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 比較</span>
+      <div class="before-after">
+        <div class="ba-card ba-card--normal">
+          <div class="ba-label">Normal Claude</div>
+          <div class="ba-text">"The reason your React component is re-rendering is likely because you're creating a new object reference on each render cycle. When you pass an inline object as a prop, React's shallow comparison sees it as a different object every time, which triggers a re-render. I'd recommend using useMemo to memoize the object."</div>
+          <div class="ba-footer"><span class="ba-tokens">69 tokens</span></div>
+        </div>
+        <div class="ba-card ba-card--caveman">
+          <div class="ba-label ba-label--caveman">Caveman Claude</div>
+          <div class="ba-text ba-text--caveman">"New object ref each render. Inline object prop = new ref = re-render. Wrap in <code>useMemo</code>."</div>
+          <div class="ba-footer">
+            <span class="ba-tokens">19 tokens</span>
+            <span class="ba-tokens ba-tokens--saved">-73%</span>
+          </div>
+        </div>
+      </div>
+      <div class="before-after">
+        <div class="ba-card ba-card--normal">
+          <div class="ba-label">Normal Claude</div>
+          <div class="ba-text">"Sure! I'd be happy to help you with that. The issue you're experiencing is most likely caused by your authentication middleware not properly validating the token expiry. Let me take a look and suggest a fix."</div>
+          <div class="ba-footer"><span class="ba-tokens">51 tokens</span></div>
+        </div>
+        <div class="ba-card ba-card--caveman">
+          <div class="ba-label ba-label--caveman">Caveman Claude</div>
+          <div class="ba-text ba-text--caveman">"Bug in auth middleware. Token expiry check use <code>&lt;</code> not <code>&lt;=</code>. Fix:"</div>
+          <div class="ba-footer">
+            <span class="ba-tokens">15 tokens</span>
+            <span class="ba-tokens ba-tokens--saved">-71%</span>
+          </div>
+        </div>
+      </div>
+      <div class="ve-callout" style="margin-top: 0.25rem;">
+        <strong>鉄則:</strong> コードブロック・インラインコード・URL・コマンド・技術用語は <strong>一切変更しない</strong>。圧縮されるのは自然言語の「フィラー」「丁寧語」「ヘッジング」のみ。
+      </div>
+    </div>
+
+    <!-- 3 強度レベル -->
+    <section id="levels" class="sec-head">3 — 強度レベル</section>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> モード</span>
+      <p style="margin-bottom: 1rem;">トリガーで強度を切り替え。レベルはセッション終了か明示的な変更まで維持される。</p>
+      <div class="level-grid">
+        <div class="level-card">
+          <div class="level-name">Lite</div>
+          <div class="level-trigger">トリガー: <code>/caveman lite</code></div>
+          <div class="level-example">Your component re-renders because you create a new object reference each render. Wrap it in <code>useMemo</code>.</div>
+        </div>
+        <div class="level-card">
+          <div class="level-name">Full（デフォルト）</div>
+          <div class="level-trigger">トリガー: <code>/caveman</code> または <code>/caveman full</code></div>
+          <div class="level-example">New object ref each render. Inline object prop = new ref = re-render. Wrap in <code>useMemo</code>.</div>
+        </div>
+        <div class="level-card">
+          <div class="level-name">Ultra</div>
+          <div class="level-trigger">トリガー: <code>/caveman ultra</code></div>
+          <div class="level-example">Inline obj prop → new ref → re-render. <code>useMemo</code>.</div>
+        </div>
+        <div class="level-card">
+          <div class="level-name">文言文 (Wenyan)</div>
+          <div class="level-trigger">トリガー: <code>/caveman wenyan</code> / <code>wenyan-lite</code> / <code>wenyan-ultra</code></div>
+          <div class="level-example">物出新參照，致重繪。useMemo Wrap之。</div>
+        </div>
+      </div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr>
+            <th>レベル</th>
+            <th>変化内容</th>
+            <th>文体</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><code>lite</code></td>
+              <td>フィラー・ヘッジング削除。冠詞・完全文は維持</td>
+              <td>プロフェッショナルかつ簡潔</td>
+            </tr>
+            <tr>
+              <td><code>full</code></td>
+              <td>冠詞削除・断片 OK・短い同義語に置換</td>
+              <td>クラシック caveman</td>
+            </tr>
+            <tr>
+              <td><code>ultra</code></td>
+              <td>略語（DB/auth/fn）・接続詞削除・矢印（X → Y）で因果表現</td>
+              <td>電報スタイル</td>
+            </tr>
+            <tr>
+              <td><code>wenyan-lite</code></td>
+              <td>フィラー削除、文法構造は維持。古典中国語調</td>
+              <td>半古典</td>
+            </tr>
+            <tr>
+              <td><code>wenyan-full</code></td>
+              <td>完全 文言文。主語省略・古典助詞（之/乃/為/其）</td>
+              <td>最大古典圧縮</td>
+            </tr>
+            <tr>
+              <td><code>wenyan-ultra</code></td>
+              <td>Wenyan の中の極限圧縮。古典中国語感は維持</td>
+              <td>古代学者 on a budget</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>Auto-Clarity:</strong> セキュリティ警告・不可逆操作の確認・複数ステップで断片の順序が誤読を招く場面では自動的に通常語に戻り、完了後に caveman を再開する。
+      </div>
+    </div>
+
+    <!-- 4 インストール -->
+    <section id="install" class="sec-head">4 — インストール</section>
+    <div class="ve-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> セットアップ</span>
+      <p>一度インストールすれば、以降のすべてのセッションで有効になる。One rock. That it.</p>
+
+      <div class="step-flow">
+        <div class="step-card">
+          <div class="step-card__num">1</div>
+          <div class="step-card__body">
+            <div class="step-card__title">npx skills — 推奨（全エージェント共通）</div>
+            <div class="step-card__desc">40 以上のエージェントに対応。<code>-a</code> で特定エージェントのみ対象にできる。</div>
+          </div>
+        </div>
+      </div>
+      <div class="ve-code-block">
+        <pre><code># 全エージェントへ一括インストール
+npx skills add JuliusBrussee/caveman
+
+# 特定エージェントへのみ
+npx skills add JuliusBrussee/caveman -a cursor
+npx skills add JuliusBrussee/caveman -a github-copilot
+npx skills add JuliusBrussee/caveman -a cline
+npx skills add JuliusBrussee/caveman -a windsurf
+npx skills add JuliusBrussee/caveman -a codex</code></pre>
+      </div>
+
+      <div class="step-flow" style="margin-top: 0.5rem;">
+        <div class="step-card">
+          <div class="step-card__num">2</div>
+          <div class="step-card__body">
+            <div class="step-card__title">Claude Code プラグインシステム（代替）</div>
+            <div class="step-card__desc">Claude Code のネイティブプラグイン経由。</div>
+          </div>
+        </div>
+      </div>
+      <div class="ve-code-block">
+        <pre><code>claude plugin marketplace add JuliusBrussee/caveman
+claude plugin install caveman@caveman</code></pre>
+      </div>
+
+      <h3 style="margin-top: 1.25rem;">使い方</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>操作</th><th>コマンド / フレーズ</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>有効化</td>
+              <td><code>/caveman</code>、<code>talk like caveman</code>、<code>caveman mode</code>、<code>less tokens please</code></td>
+            </tr>
+            <tr>
+              <td>無効化</td>
+              <td><code>stop caveman</code>、<code>normal mode</code></td>
+            </tr>
+            <tr>
+              <td>強度変更</td>
+              <td><code>/caveman lite</code> / <code>full</code> / <code>ultra</code> / <code>wenyan</code> / <code>wenyan-lite</code> / <code>wenyan-ultra</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 5 スキル -->
+    <section id="skills" class="sec-head">5 — スキル</section>
+    <div class="ve-card" style="--i:4">
+      <span class="ve-section-label"><span class="ve-dot"></span> 付属スキル</span>
+      <p style="margin-bottom: 1rem;">caveman 本体に加え、コミットメッセージとコードレビュー専用スキルが同梱されている。</p>
+      <div class="skill-grid">
+        <div class="ve-card ve-card--elevated">
+          <div class="ve-section-label"><span class="ve-dot"></span> caveman-commit</div>
+          <p style="font-size: 0.85rem; margin-bottom: 0.875rem;">Conventional Commits 形式でコミットメッセージを生成。subject ≤50 字。「何を」でなく「なぜ」を書く。AI 帰属・絵文字・"This commit does X" は含めない。</p>
+          <div class="ve-code-block">
+            <pre><code>feat(api): add GET /users/:id/profile
+
+Mobile client needs profile data without
+the full user payload to reduce LTE
+bandwidth on cold-launch screens.
+
+Closes #128</code></pre>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.75rem; margin-bottom: 0;">トリガー: <code>/caveman-commit</code></p>
+        </div>
+        <div class="ve-card ve-card--elevated">
+          <div class="ve-section-label"><span class="ve-dot"></span> caveman-review</div>
+          <p style="font-size: 0.85rem; margin-bottom: 0.875rem;">PR コメントを 1 件 1 行に圧縮。場所・問題・修正を完結に。"I noticed that..." "Great work!" は一切なし。重大度プレフィックスで分類。</p>
+          <div class="ve-code-block">
+            <pre><code>L42: 🔴 bug: user can be null after .find(). Add guard before .email.
+L88-140: 🔵 nit: 50-line fn does 4 things. Extract validate/normalize/persist.
+L23: 🟡 risk: no retry on 429. Wrap in withBackoff(3).</code></pre>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.75rem; margin-bottom: 0;">トリガー: <code>/caveman-review</code></p>
+        </div>
+      </div>
+      <div class="ve-table-wrap" style="margin-top: 1.25rem;">
+        <table>
+          <thead><tr><th>重大度</th><th>プレフィックス</th><th>意味</th></tr></thead>
+          <tbody>
+            <tr><td>🔴</td><td><code>bug:</code></td><td>インシデントになる壊れた動作</td></tr>
+            <tr><td>🟡</td><td><code>risk:</code></td><td>動くが脆弱（レース・null チェック漏れ・エラー飲み込み）</td></tr>
+            <tr><td>🔵</td><td><code>nit:</code></td><td>スタイル・命名・マイクロ最適化（著者は無視可）</td></tr>
+            <tr><td>❓</td><td><code>q:</code></td><td>純粋な質問。提案ではない</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 6 Compress -->
+    <section id="compress" class="sec-head">6 — Compress</section>
+    <div class="ve-card" style="--i:5">
+      <span class="ve-section-label"><span class="ve-dot"></span> 入力トークン削減</span>
+      <p>
+        <strong>caveman</strong> は AI が<em>話す</em>トークンを削減する。
+        <strong>caveman-compress</strong> は AI が<em>読む</em>トークンを削減する。
+        <code>CLAUDE.md</code> などのメモリファイルを caveman 語に変換し、セッション開始時のコストを下げる。
+        元の人間が読みやすいファイルは <code>.original.md</code> としてバックアップされる。
+      </p>
+      <div class="ve-code-block">
+        <pre><code>/caveman:compress CLAUDE.md
+
+# → CLAUDE.md          (圧縮版: Claude が毎セッション読む)
+# → CLAUDE.original.md (バックアップ: 人間が編集・参照する)</code></pre>
+      </div>
+      <div class="ve-table-wrap" style="margin-top: 1rem;">
+        <table>
+          <thead><tr>
+            <th>ファイル</th>
+            <th style="text-align: right;">元 (tokens)</th>
+            <th style="text-align: right;">圧縮後 (tokens)</th>
+            <th style="text-align: right;">削減率</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><code>claude-md-preferences.md</code></td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">706</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">285</td>
+              <td style="text-align: right;"><span class="saved-high">59.6%</span></td>
+            </tr>
+            <tr>
+              <td><code>project-notes.md</code></td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">1,145</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">535</td>
+              <td style="text-align: right;"><span class="saved-high">53.3%</span></td>
+            </tr>
+            <tr>
+              <td><code>claude-md-project.md</code></td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">1,122</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">687</td>
+              <td style="text-align: right;"><span class="saved-med">38.8%</span></td>
+            </tr>
+            <tr>
+              <td><code>todo-list.md</code></td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">627</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">388</td>
+              <td style="text-align: right;"><span class="saved-med">38.1%</span></td>
+            </tr>
+            <tr>
+              <td><code>mixed-with-code.md</code></td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">888</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">574</td>
+              <td style="text-align: right;"><span class="saved-med">35.4%</span></td>
+            </tr>
+            <tr style="font-weight: 600;">
+              <td>平均</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">898</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">494</td>
+              <td style="text-align: right;"><span class="saved-high">45%</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>保護対象:</strong> コードブロック・インラインコード・URL・ファイルパス・コマンド・技術用語・プロパー名詞・日付・バージョン番号は <strong>一切変更しない</strong>。
+        圧縮されるのは散文（自然言語）のみ。
+      </div>
+    </div>
+
+    <!-- 7 ベンチマーク -->
+    <section id="benchmarks" class="sec-head">7 — ベンチマーク</section>
+    <div class="ve-card" style="--i:6">
+      <span class="ve-section-label"><span class="ve-dot"></span> 実測値</span>
+      <p>Claude API からの実際のトークン数。<a href="https://github.com/JuliusBrussee/caveman/tree/main/benchmarks" target="_blank" rel="noopener">benchmarks/</a> で再現可能。</p>
+      <div class="ve-table-wrap" style="margin-top: 0.875rem;">
+        <table>
+          <thead><tr>
+            <th>タスク</th>
+            <th style="text-align: right;">通常 (tokens)</th>
+            <th style="text-align: right;">Caveman (tokens)</th>
+            <th style="text-align: right;">削減率</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td>React 再レンダリングのバグ説明</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">1,180</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">159</td>
+              <td style="text-align: right;"><span class="saved-high">87%</span></td>
+            </tr>
+            <tr>
+              <td>認証ミドルウェアのトークン期限バグ修正</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">704</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">121</td>
+              <td style="text-align: right;"><span class="saved-high">83%</span></td>
+            </tr>
+            <tr>
+              <td>PostgreSQL コネクションプール設定</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">2,347</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">380</td>
+              <td style="text-align: right;"><span class="saved-high">84%</span></td>
+            </tr>
+            <tr>
+              <td>git rebase vs merge 解説</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">702</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">292</td>
+              <td style="text-align: right;"><span class="saved-med">58%</span></td>
+            </tr>
+            <tr>
+              <td>callback → async/await リファクタ</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">387</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">301</td>
+              <td style="text-align: right;"><span class="saved-low">22%</span></td>
+            </tr>
+            <tr>
+              <td>マイクロサービス vs モノリス設計</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">446</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">310</td>
+              <td style="text-align: right;"><span class="saved-low">30%</span></td>
+            </tr>
+            <tr>
+              <td>PR セキュリティレビュー</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">678</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">398</td>
+              <td style="text-align: right;"><span class="saved-low">41%</span></td>
+            </tr>
+            <tr>
+              <td>Docker マルチステージビルド</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">1,042</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">290</td>
+              <td style="text-align: right;"><span class="saved-high">72%</span></td>
+            </tr>
+            <tr>
+              <td>PostgreSQL レースコンディションデバッグ</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">1,200</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">232</td>
+              <td style="text-align: right;"><span class="saved-high">81%</span></td>
+            </tr>
+            <tr>
+              <td>React エラーバウンダリ実装</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">3,454</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">456</td>
+              <td style="text-align: right;"><span class="saved-high">87%</span></td>
+            </tr>
+            <tr style="font-weight: 600; background: color-mix(in oklch, var(--muted) 75%, var(--chart-1) 25%);">
+              <td>平均</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">1,214</td>
+              <td style="text-align: right; font-variant-numeric: tabular-nums;">294</td>
+              <td style="text-align: right;"><span class="saved-high">65%</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>重要:</strong> Caveman が削減するのは <strong>出力トークンのみ</strong>。思考・推論トークンには影響しない。
+        最大の恩恵は <strong>可読性と応答速度</strong> ——コスト削減はおまけ。
+        範囲は 22%〜87% でタスクによって大きく異なる（散文が多いほど削減率が高い）。
+      </div>
+    </div>
+
+  </div><!-- /.main -->
+</div><!-- /.wrap -->
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
