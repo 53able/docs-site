@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>nanobot — 超軽量パーソナル AI エージェント</title>
+  <meta name="description" content="nanobot: 99% fewer lines of code で動く超軽量パーソナル AI エージェント。20+ LLM プロバイダー・11+ チャットチャンネル・MCP・Python SDK に対応。アーキテクチャ・クイックスタート・設定リファレンス。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="nanobot — 超軽量パーソナル AI エージェント">
+  <meta property="og:description" content="nanobot: 99% fewer lines of code で動く超軽量パーソナル AI エージェント。20+ LLM プロバイダー・11+ チャットチャンネル・MCP・Python SDK に対応。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/nanobot.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="nanobot — 超軽量パーソナル AI エージェント">
+  <meta name="twitter:description" content="99% fewer lines of code で動く超軽量パーソナル AI エージェント。20+ LLM プロバイダー・11+ チャンネルに対応。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + IBM Plex + deep navy/gold) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.005 85);
+      --foreground: oklch(0.16 0.04 250);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.16 0.04 250);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.16 0.04 250);
+      --primary: oklch(0.25 0.06 250);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.96 0.005 85);
+      --secondary-foreground: oklch(0.25 0.06 250);
+      --muted: oklch(0.96 0.005 85);
+      --muted-foreground: oklch(0.52 0.04 250);
+      --accent: oklch(0.96 0.005 85);
+      --accent-foreground: oklch(0.25 0.06 250);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.9 0.01 85);
+      --input: oklch(0.9 0.01 85);
+      --ring: oklch(0.68 0.04 250);
+      /* chart-1: gold/amber accent */
+      --chart-1: oklch(0.65 0.13 75);
+      /* chart-2: deep navy */
+      --chart-2: oklch(0.35 0.1 250);
+      --chart-3: oklch(0.5 0.08 220);
+      --chart-4: oklch(0.75 0.12 90);
+      --chart-5: oklch(0.55 0.1 160);
+      --code-bg: oklch(0.97 0.005 250);
+      --code-text: oklch(0.3 0.08 250);
+      --font-body: 'Nunito', system-ui, sans-serif;
+      --font-mono: 'Space Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      /* gold accent helpers */
+      --gold: oklch(0.65 0.13 75);
+      --gold-dim: oklch(0.65 0.13 75 / 0.15);
+      --navy: oklch(0.35 0.1 250);
+      --navy-dim: oklch(0.35 0.1 250 / 0.1);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.115 0.02 250);
+        --foreground: oklch(0.93 0.01 80);
+        --card: oklch(0.185 0.03 250);
+        --card-foreground: oklch(0.93 0.01 80);
+        --popover: oklch(0.185 0.03 250);
+        --popover-foreground: oklch(0.93 0.01 80);
+        --primary: oklch(0.88 0.01 80);
+        --primary-foreground: oklch(0.185 0.03 250);
+        --secondary: oklch(0.24 0.03 250);
+        --secondary-foreground: oklch(0.93 0.01 80);
+        --muted: oklch(0.26 0.03 250);
+        --muted-foreground: oklch(0.65 0.03 80);
+        --accent: oklch(0.26 0.03 250);
+        --accent-foreground: oklch(0.93 0.01 80);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 9%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.52 0.03 250);
+        --chart-1: oklch(0.72 0.14 78);
+        --chart-2: oklch(0.55 0.1 250);
+        --chart-3: oklch(0.6 0.08 220);
+        --chart-4: oklch(0.8 0.12 90);
+        --chart-5: oklch(0.6 0.1 160);
+        --code-bg: oklch(0.13 0.025 250);
+        --code-text: oklch(0.82 0.06 220);
+        --gold: oklch(0.72 0.14 78);
+        --gold-dim: oklch(0.72 0.14 78 / 0.2);
+        --navy: oklch(0.55 0.1 250);
+        --navy-dim: oklch(0.55 0.1 250 / 0.15);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--gold) 10%);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--gold) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--gold) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--gold) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--gold); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 700; font-family: var(--font-mono); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--gold); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: var(--gold-dim); color: var(--gold); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 70% 0%, oklch(0.65 0.13 75 / 0.07) 0%, transparent 45%),
+        radial-gradient(ellipse at 10% 80%, oklch(0.35 0.1 250 / 0.05) 0%, transparent 40%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 70% 0%, oklch(0.72 0.14 78 / 0.09) 0%, transparent 45%),
+          radial-gradient(ellipse at 10% 80%, oklch(0.55 0.1 250 / 0.07) 0%, transparent 40%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--gold); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--gold); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.0rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9rem; }
+    a { color: var(--gold); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--navy); }
+    .ve-section-label .ve-dot { background: var(--gold); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    strong { font-weight: 600; }
+
+    /* ============ KPI Row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Feature cards grid ============ */
+    .feat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; margin-top: 1rem; }
+    @media (max-width: 640px) { .feat-grid { grid-template-columns: 1fr; } }
+    .feat-item { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.875rem 1rem; }
+    .feat-item__icon { font-size: 1.1rem; margin-bottom: 0.4rem; }
+    .feat-item__title { font-weight: 600; font-size: 0.875rem; margin-bottom: 0.3rem; }
+    .feat-item__desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.5; }
+
+    /* ============ Quick start steps ============ */
+    .steps { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; }
+    .step-item { display: grid; grid-template-columns: 2.5rem 1fr; gap: 0 1rem; align-items: start; }
+    .step-num { width: 2rem; height: 2rem; border-radius: 50%; background: var(--gold-dim); border: 2px solid var(--gold); color: var(--gold); font-family: var(--font-mono); font-size: 0.875rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-body { min-width: 0; }
+    .step-body p { margin-bottom: 0.5rem; }
+
+    /* ============ Mermaid wrap + zoom ============ */
+    .mermaid-wrap { position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--muted); overflow: hidden; min-height: 340px; margin: 1rem 0; }
+    .mermaid-zoom { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 10; }
+    .mermaid-zoom button { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); width: 28px; height: 28px; font-family: var(--font-mono); font-size: 0.875rem; cursor: pointer; color: var(--text-dim); transition: color 0.15s, background 0.15s; display: flex; align-items: center; justify-content: center; }
+    .mermaid-zoom button:hover { color: var(--text); background: var(--accent); }
+    .mermaid-inner { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 20px; transition: transform 0.15s; cursor: default; user-select: none; }
+    .mermaid-inner.zoomed { cursor: grab; }
+    .mermaid-inner.dragging { cursor: grabbing; }
+    .mermaid-inner svg { max-width: 100%; height: auto; }
+
+    /* ============ Module grid ============ */
+    .mod-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 1rem; }
+    @media (max-width: 640px) { .mod-grid { grid-template-columns: repeat(2, 1fr); } }
+    .mod-item { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--gold); border-radius: 0 var(--radius-md) var(--radius-md) 0; padding: 0.75rem 0.875rem; }
+    .mod-item__name { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 600; color: var(--gold); }
+    .mod-item__desc { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.25rem; line-height: 1.4; }
+
+    /* ============ Channel tag ============ */
+    .ch-tag { display: inline-block; font-size: 0.6875rem; font-weight: 600; padding: 2px 6px; border-radius: var(--radius-sm); background: var(--navy-dim); color: var(--navy); font-family: var(--font-mono); }
+    @media (prefers-color-scheme: dark) {
+      .ch-tag { background: var(--navy-dim); color: var(--chart-2); }
+    }
+
+    /* ============ Advanced features grid ============ */
+    .adv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; margin-top: 0.75rem; }
+    @media (max-width: 640px) { .adv-grid { grid-template-columns: 1fr; } }
+    .adv-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem 1.125rem; }
+    .adv-item__title { font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem; color: var(--text); }
+    .adv-item__body { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+    .adv-item__body code { font-size: 0.75rem; }
+
+    /* ============ Entrance animation ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.06s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#quickstart">クイックスタート</a>
+    <a href="#channels">チャンネル連携</a>
+    <a href="#providers">LLM プロバイダー</a>
+    <a href="#advanced">高度な機能</a>
+  </nav>
+
+  <div class="main">
+  <h1>nanobot</h1>
+  <p class="subtitle">ultra-lightweight personal AI agent · v0.1.5 · Python ≥3.11 · MIT</p>
+
+  <!-- 1. 概要 -->
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> What is nanobot</span>
+    <p><strong>nanobot</strong> は <a href="https://github.com/HKUDS/nanobot" target="_blank" rel="noopener">HKUDS</a> が開発する超軽量パーソナル AI エージェント。<a href="https://github.com/openclaw/openclaw" target="_blank" rel="noopener">OpenClaw</a> にインスパイアされ、フルスタック代替比で <strong>99% 少ないコード行数</strong> でコアエージェント機能を実現している。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">99%</div>
+        <div class="ve-kpi-card__label">コード削減</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">20+</div>
+        <div class="ve-kpi-card__label">LLM プロバイダー</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">11+</div>
+        <div class="ve-kpi-card__label">チャンネル</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">MCP</div>
+        <div class="ve-kpi-card__label">対応</div>
+      </div>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-item">
+        <div class="feat-item__title">Ultra-Lightweight</div>
+        <div class="feat-item__desc">安定した長時間稼働向けに設計された軽量実装。起動高速、リソース消費最小。</div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-item__title">Research-Ready</div>
+        <div class="feat-item__desc">読みやすく変更しやすいクリーンなコード。研究・拡張・学習に最適。</div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-item__title">Easy-to-Use</div>
+        <div class="feat-item__desc"><code>nanobot onboard</code> 一発でセットアップ完了。ウィザード付き対話型初期化も可能。</div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-item__title">Multi-Instance</div>
+        <div class="feat-item__desc"><code>--config</code> フラグで複数インスタンスを独立して運用。チャンネル別・テナント別の分離も容易。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. アーキテクチャ -->
+  <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> システム構成</span>
+    <p>CLI / Gateway がエントリポイントとなり、Message Bus を介してチャンネルと Agent Loop が疎結合で接続されている。</p>
+    <div class="mermaid-wrap" id="arch-wrap">
+      <div class="mermaid-zoom">
+        <button id="zin" title="拡大">+</button>
+        <button id="zout" title="縮小">−</button>
+        <button id="zreset" title="リセット">↺</button>
+      </div>
+      <div class="mermaid-inner" id="arch-inner">
+        <div class="mermaid">
+%%{init: { 'theme': 'base', 'themeVariables': {
+  'primaryColor': '#f5e9cc',
+  'primaryTextColor': '#1a1a2e',
+  'primaryBorderColor': '#c9a74d',
+  'lineColor': '#8c7340',
+  'secondaryColor': '#e8eef5',
+  'tertiaryColor': '#f0f4f8',
+  'background': '#faf9f7',
+  'fontSize': '15px'
+}}}%%
+flowchart TD
+    CLI["nanobot CLI\nonboard / agent / gateway"]
+    CLI --> LOOP["Agent Loop\nloop.py · context.py"]
+    CLI --> GW["Gateway\n:18790"]
+    GW --> BUS["Message Bus"]
+    BUS <--> CH["Channels\nTelegram · Discord · Slack\nFeishu · WhatsApp · Email\n+ 6 more"]
+    BUS --> LOOP
+    LOOP --> PROV["LLM Providers\nOpenRouter · Anthropic · OpenAI\n+ 20 more"]
+    LOOP --> TOOLS["Built-in Tools\nweb · exec · file · mcp"]
+    LOOP --> MEM["Memory / Session\nDream consolidation"]
+    LOOP --> SKILLS["Skills\n(bundled + custom)"]
+    CRON["Cron / Heartbeat"] --> BUS
+
+    classDef box fill:#f5e9cc,stroke:#c9a74d,color:#3a2a0a
+    classDef bus fill:#e3edf8,stroke:#7090c0,color:#1a3060
+    classDef prov fill:#e8f5ee,stroke:#60a080,color:#1a3020
+    class CLI,GW box
+    class BUS,CH bus
+    class PROV,TOOLS,MEM,SKILLS prov
+        </div>
+      </div>
+    </div>
+    <h3>モジュール構成</h3>
+    <div class="mod-grid">
+      <div class="mod-item">
+        <div class="mod-item__name">agent/</div>
+        <div class="mod-item__desc">コア: loop.py（LLM↔ツール実行ループ）, context.py（プロンプト構築）, memory.py, skills.py, subagent.py</div>
+      </div>
+      <div class="mod-item">
+        <div class="mod-item__name">channels/</div>
+        <div class="mod-item__desc">チャットチャンネル連携。プラグイン対応で独自チャンネルも追加可能</div>
+      </div>
+      <div class="mod-item">
+        <div class="mod-item__name">providers/</div>
+        <div class="mod-item__desc">LLM プロバイダーレジストリ。2 ステップで新プロバイダーを追加できる</div>
+      </div>
+      <div class="mod-item">
+        <div class="mod-item__name">bus/</div>
+        <div class="mod-item__desc">メッセージルーティング。チャンネルとエージェントを疎結合に接続</div>
+      </div>
+      <div class="mod-item">
+        <div class="mod-item__name">cron/ heartbeat/</div>
+        <div class="mod-item__desc">スケジュールタスク・定期起動（HEARTBEAT.md による 30 分間隔 wake-up）</div>
+      </div>
+      <div class="mod-item">
+        <div class="mod-item__name">session/ config/</div>
+        <div class="mod-item__desc">会話セッション管理と JSON 設定スキーマ（Pydantic）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. クイックスタート -->
+  <section id="quickstart" class="sec-head">3 — クイックスタート</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 2 分でエージェント起動</span>
+    <div class="steps">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <p><strong>インストール</strong> — pip / uv / source から選択:</p>
+          <div class="ve-code-block"><pre><code># PyPI（安定版）
+pip install nanobot-ai
+
+# uv（推奨 — 高速）
+uv tool install nanobot-ai
+
+# ソースから（最新機能）
+git clone https://github.com/HKUDS/nanobot.git
+cd nanobot && pip install -e .</code></pre></div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p><strong>初期化</strong> — config と workspace を生成:</p>
+          <div class="ve-code-block"><pre><code>nanobot onboard
+# または対話型ウィザード
+nanobot onboard --wizard</code></pre></div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <p><strong>設定</strong> — <code>~/.nanobot/config.json</code> を編集:</p>
+          <div class="ve-code-block"><pre><code>{
+  "providers": {
+    "openrouter": {
+      "apiKey": "sk-or-v1-xxx"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": "anthropic/claude-opus-4-5",
+      "provider": "openrouter"
+    }
+  }
+}</code></pre></div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <p><strong>チャット</strong> — CLI で即座に対話:</p>
+          <div class="ve-code-block"><pre><code># 対話モード
+nanobot agent
+
+# 1 回だけ
+nanobot agent -m "README を要約して"
+
+# ゲートウェイ（チャンネル接続）
+nanobot gateway</code></pre></div>
+        </div>
+      </div>
+    </div>
+    <div class="ve-callout">
+      <strong>API キーについて:</strong> グローバルユーザーには <code>openrouter</code>（全モデルアクセス）が推奨。環境変数 <code>${VAR_NAME}</code> 参照もサポートしており、シークレットを config.json に直書きしなくて済む。
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> CLI リファレンス</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>nanobot onboard</code></td><td><code>~/.nanobot/</code> に config と workspace を初期化</td></tr>
+          <tr><td><code>nanobot onboard --wizard</code></td><td>対話型セットアップウィザード起動</td></tr>
+          <tr><td><code>nanobot agent -m "..."</code></td><td>エージェントに 1 メッセージ送信</td></tr>
+          <tr><td><code>nanobot agent</code></td><td>対話モード（<code>/exit</code> で終了）</td></tr>
+          <tr><td><code>nanobot gateway</code></td><td>ゲートウェイ起動（チャンネル接続）</td></tr>
+          <tr><td><code>nanobot serve</code></td><td>OpenAI 互換 API サーバー起動（ポート 8900）</td></tr>
+          <tr><td><code>nanobot status</code></td><td>設定・プロバイダー状態を表示</td></tr>
+          <tr><td><code>nanobot provider login &lt;name&gt;</code></td><td>OAuth プロバイダー認証（Copilot / Codex）</td></tr>
+          <tr><td><code>nanobot channels login &lt;ch&gt;</code></td><td>チャンネル認証（WhatsApp QR scan 等）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4. チャンネル連携 -->
+  <section id="channels" class="sec-head">4 — チャンネル連携</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 対応チャンネル一覧</span>
+    <p>すべてのチャンネルは <code>channels.*.allowFrom</code> でアクセス制御できる。空配列はデフォルトで全拒否（<code>["*"]</code> で全許可）。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>チャンネル</th><th>接続方式</th><th>必要なもの</th><th>備考</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Telegram</strong> <span class="ch-tag">推奨</span></td>
+            <td>Polling / WebSocket</td>
+            <td>@BotFather トークン</td>
+            <td>ストリーミング対応、グループポリシー設定可</td>
+          </tr>
+          <tr>
+            <td><strong>Discord</strong></td>
+            <td>WebSocket</td>
+            <td>Bot トークン + Message Content Intent</td>
+            <td><code>groupPolicy: "mention"</code> でメンション時のみ応答</td>
+          </tr>
+          <tr>
+            <td><strong>WhatsApp</strong></td>
+            <td>Node.js bridge</td>
+            <td>Node.js ≥18 + QR スキャン</td>
+            <td>アップグレード時は bridge の再ビルドが必要</td>
+          </tr>
+          <tr>
+            <td><strong>WeChat (Weixin)</strong></td>
+            <td>HTTP long-poll</td>
+            <td><code>pip install nanobot-ai[weixin]</code></td>
+            <td>デスクトップクライアント不要</td>
+          </tr>
+          <tr>
+            <td><strong>Feishu</strong></td>
+            <td>WebSocket long connection</td>
+            <td>App ID + App Secret + CardKit 権限</td>
+            <td>公開 IP 不要、CardKit streaming 対応</td>
+          </tr>
+          <tr>
+            <td><strong>DingTalk</strong></td>
+            <td>Stream Mode</td>
+            <td>AppKey + AppSecret</td>
+            <td>公開 IP 不要</td>
+          </tr>
+          <tr>
+            <td><strong>Slack</strong></td>
+            <td>Socket Mode</td>
+            <td>Bot Token + App-Level Token</td>
+            <td><code>groupPolicy: "mention" / "open" / "allowlist"</code></td>
+          </tr>
+          <tr>
+            <td><strong>Matrix</strong></td>
+            <td>Matrix SDK</td>
+            <td><code>pip install nanobot-ai[matrix]</code> + homeserver URL</td>
+            <td>E2EE 対応（推奨: password login）</td>
+          </tr>
+          <tr>
+            <td><strong>Email</strong></td>
+            <td>IMAP / SMTP polling</td>
+            <td>IMAP + SMTP 認証情報</td>
+            <td>添付ファイル受信・自動返信 on/off 可</td>
+          </tr>
+          <tr>
+            <td><strong>QQ</strong></td>
+            <td>botpy SDK / WebSocket</td>
+            <td>AppID + AppSecret</td>
+            <td>プライベートメッセージのみ、サンドボックスでテスト</td>
+          </tr>
+          <tr>
+            <td><strong>Wecom (企業微信)</strong></td>
+            <td>WebSocket long connection</td>
+            <td><code>pip install nanobot-ai[wecom]</code></td>
+            <td>AI ボット API モード</td>
+          </tr>
+          <tr>
+            <td><strong>Mochat</strong></td>
+            <td>Socket.IO WebSocket</td>
+            <td>Claw トークン（自動セットアップ可）</td>
+            <td>nanobot に「Mochat に参加して」と送るだけで自動構成</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem;">
+      <strong>チャンネルプラグイン:</strong> 独自チャンネルの追加は <code>docs/CHANNEL_PLUGIN_GUIDE.md</code> を参照。プラグイン形式で任意の通信チャンネルを接続できる。
+    </div>
+  </div>
+
+  <!-- 5. LLM プロバイダー -->
+  <section id="providers" class="sec-head">5 — LLM プロバイダー</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 対応プロバイダー</span>
+    <p>プロバイダーは <code>nanobot/providers/registry.py</code> に <code>ProviderSpec</code> を 1 エントリ追加するだけで拡張できる。<code>config.json</code> に <code>providers.&lt;name&gt;</code> フィールドも追加する必要がある（2 ステップのみ）。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>プロバイダー</th><th>種別</th><th>取得先</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>openrouter</code> <span class="ch-tag">推奨</span></td><td>ゲートウェイ（全モデルアクセス）</td><td><a href="https://openrouter.ai" target="_blank" rel="noopener">openrouter.ai</a></td></tr>
+          <tr><td><code>anthropic</code></td><td>Claude ダイレクト</td><td><a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a></td></tr>
+          <tr><td><code>openai</code></td><td>GPT + Whisper 音声転写</td><td><a href="https://platform.openai.com" target="_blank" rel="noopener">platform.openai.com</a></td></tr>
+          <tr><td><code>azure_openai</code></td><td>Azure OpenAI</td><td><a href="https://portal.azure.com" target="_blank" rel="noopener">portal.azure.com</a></td></tr>
+          <tr><td><code>deepseek</code></td><td>DeepSeek ダイレクト</td><td><a href="https://platform.deepseek.com" target="_blank" rel="noopener">platform.deepseek.com</a></td></tr>
+          <tr><td><code>groq</code></td><td>LLM + Whisper 転写（デフォルト）</td><td><a href="https://console.groq.com" target="_blank" rel="noopener">console.groq.com</a></td></tr>
+          <tr><td><code>gemini</code></td><td>Gemini ダイレクト</td><td><a href="https://aistudio.google.com" target="_blank" rel="noopener">aistudio.google.com</a></td></tr>
+          <tr><td><code>volcengine</code> / <code>byteplus</code></td><td>VolcEngine（国内 / 海外）</td><td>volcengine.com / byteplus.com</td></tr>
+          <tr><td><code>minimax</code></td><td>MiniMax ダイレクト</td><td>platform.minimaxi.com</td></tr>
+          <tr><td><code>dashscope</code></td><td>Qwen（Alibaba）</td><td>dashscope.console.aliyun.com</td></tr>
+          <tr><td><code>moonshot</code></td><td>Moonshot / Kimi</td><td>platform.moonshot.cn</td></tr>
+          <tr><td><code>zhipu</code></td><td>Zhipu GLM</td><td>open.bigmodel.cn</td></tr>
+          <tr><td><code>stepfun</code></td><td>Step Fun / 阶跃星辰</td><td>platform.stepfun.com</td></tr>
+          <tr><td><code>mimo</code></td><td>Xiaomi MiMo</td><td>platform.xiaomimimo.com</td></tr>
+          <tr><td><code>ollama</code></td><td>ローカル LLM（API key 不要）</td><td><a href="https://ollama.ai" target="_blank" rel="noopener">ollama.ai</a></td></tr>
+          <tr><td><code>vllm</code></td><td>ローカル OpenAI 互換サーバー</td><td>— (any vLLM endpoint)</td></tr>
+          <tr><td><code>ovms</code></td><td>Intel GPU / OpenVINO Model Server</td><td><a href="https://docs.openvino.ai" target="_blank" rel="noopener">docs.openvino.ai</a></td></tr>
+          <tr><td><code>openai_codex</code></td><td>Codex（OAuth、ChatGPT Plus 必須）</td><td><code>nanobot provider login openai-codex</code></td></tr>
+          <tr><td><code>github_copilot</code></td><td>GitHub Copilot（OAuth）</td><td><code>nanobot provider login github-copilot</code></td></tr>
+          <tr><td><code>custom</code></td><td>任意の OpenAI 互換エンドポイント</td><td>—</td></tr>
+          <tr><td><code>siliconflow</code>, <code>mistral</code>, <code>aihubmix</code>, <code>qianfan</code></td><td>各種サードパーティ</td><td>各公式サイト参照</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 6. 高度な機能 -->
+  <section id="advanced" class="sec-head">6 — 高度な機能</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> コア機能群</span>
+    <div class="adv-grid">
+      <div class="adv-item">
+        <div class="adv-item__title">メモリシステム（Dream）</div>
+        <div class="adv-item__body">
+          <p>3 層メモリ: <code>SOUL.md</code>（エージェント人格）, <code>USER.md</code>（ユーザー情報）, <code>memory/MEMORY.md</code>（長期記憶）。<code>memory/history.jsonl</code> に追記式で要約履歴を保存。</p>
+          <p>Dream は定期実行（またはチャット内 <code>/dream</code> コマンド）でメモリを統合。<code>/dream-restore &lt;sha&gt;</code> で過去状態への復元も可能。</p>
+        </div>
+      </div>
+      <div class="adv-item">
+        <div class="adv-item__title">MCP（Model Context Protocol）</div>
+        <div class="adv-item__body">
+          <p>Stdio（npx / uvx 等）と HTTP（SSE）の両方に対応。Claude Desktop / Cursor の config 形式と互換。</p>
+          <div class="ve-code-block" style="max-height:8rem;"><pre><code>{
+  "tools": {
+    "mcpServers": {
+      "filesystem": {
+        "command": "npx",
+        "args": ["-y",
+          "@modelcontextprotocol/server-filesystem",
+          "/path"]
+      }
+    }
+  }
+}</code></pre></div>
+          <p style="margin-top:0.5rem;"><code>enabledTools</code> で登録ツールを絞り込み可能。</p>
+        </div>
+      </div>
+      <div class="adv-item">
+        <div class="adv-item__title">Python SDK</div>
+        <div class="adv-item__body">
+          <p>CLI なしでライブラリとして利用できる。セッションキーで会話を独立管理。</p>
+          <div class="ve-code-block" style="max-height:8rem;"><pre><code>from nanobot import Nanobot
+
+bot = Nanobot.from_config()
+result = await bot.run(
+    "README を要約して",
+    session_key="user-alice"
+)
+print(result.content)</code></pre></div>
+          <p style="margin-top:0.5rem;"><code>AgentHook</code> でツール呼び出し前後のライフサイクルフックも追加できる。</p>
+        </div>
+      </div>
+      <div class="adv-item">
+        <div class="adv-item__title">OpenAI 互換 API</div>
+        <div class="adv-item__body">
+          <p><code>nanobot serve</code> で <code>127.0.0.1:8900</code> にエンドポイントを公開。既存の OpenAI クライアントからそのまま利用できる。</p>
+          <ul>
+            <li><code>GET /health</code></li>
+            <li><code>GET /v1/models</code></li>
+            <li><code>POST /v1/chat/completions</code></li>
+          </ul>
+          <p><code>"session_id"</code> で会話を分離（省略時は共有デフォルトセッション）。</p>
+        </div>
+      </div>
+      <div class="adv-item">
+        <div class="adv-item__title">Docker / Linux Service</div>
+        <div class="adv-item__body">
+          <p>公式 Docker イメージは非 root ユーザー（UID 1000）で動作。bubblewrap（<code>bwrap</code>）によるサンドボックスが事前インストール済み。</p>
+          <div class="ve-code-block" style="max-height:7rem;"><pre><code>docker compose run --rm nanobot-cli onboard
+vim ~/.nanobot/config.json
+docker compose up -d nanobot-gateway</code></pre></div>
+          <p style="margin-top:0.5rem;">systemd ユーザーサービスとして登録すればログアウト後も常時稼働可能（<code>loginctl enable-linger</code>）。</p>
+        </div>
+      </div>
+      <div class="adv-item">
+        <div class="adv-item__title">セキュリティ・サンドボックス</div>
+        <div class="adv-item__body">
+          <p>本番運用向け推奨設定:</p>
+          <div class="ve-code-block" style="max-height:7rem;"><pre><code>{
+  "tools": {
+    "restrictToWorkspace": true,
+    "exec": { "sandbox": "bwrap" }
+  }
+}</code></pre></div>
+          <p style="margin-top:0.5rem;"><code>bwrap</code> で exec をサンドボックス化（Linux のみ）。<code>channels.*.allowFrom</code> は空配列で全拒否がデフォルト。</p>
+        </div>
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem;">
+      <strong>チャット内コマンド:</strong> <code>/new</code>（会話リセット）, <code>/stop</code>（タスク停止）, <code>/restart</code>（再起動）, <code>/status</code>（状態表示）, <code>/dream</code>（記憶統合即時実行）, <code>/dream-restore</code>（メモリ復元）, <code>/help</code>。すべての対応チャンネルと CLI モードで共通動作。
+    </div>
+  </div>
+
+  </div><!-- .main -->
+</div><!-- .wrap -->
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: true, theme: 'base' });
+</script>
+<script>
+(function() {
+  /* Zoom / pan for arch diagram */
+  var inner = document.getElementById('arch-inner');
+  if (inner) {
+    var scale = 1, tx = 0, ty = 0, dragging = false, startX, startY, startTX, startTY;
+    function applyT() {
+      inner.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+      inner.classList.toggle('zoomed', scale > 1);
+    }
+    document.getElementById('zin').addEventListener('click', function() { scale = Math.min(scale + 0.25, 4); applyT(); });
+    document.getElementById('zout').addEventListener('click', function() { scale = Math.max(scale - 0.25, 0.5); if (scale <= 1) { tx = 0; ty = 0; } applyT(); });
+    document.getElementById('zreset').addEventListener('click', function() { scale = 1; tx = 0; ty = 0; applyT(); });
+    inner.addEventListener('wheel', function(e) {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      scale = Math.min(Math.max(scale - e.deltaY * 0.001, 0.5), 4);
+      if (scale <= 1) { tx = 0; ty = 0; }
+      applyT();
+    }, { passive: false });
+    inner.addEventListener('mousedown', function(e) {
+      if (scale <= 1) return;
+      dragging = true; startX = e.clientX; startY = e.clientY; startTX = tx; startTY = ty;
+      inner.classList.add('dragging');
+    });
+    window.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      tx = startTX + (e.clientX - startX);
+      ty = startTY + (e.clientY - startY);
+      applyT();
+    });
+    window.addEventListener('mouseup', function() { dragging = false; inner.classList.remove('dragging'); });
+  }
+
+  /* Scroll Spy */
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
