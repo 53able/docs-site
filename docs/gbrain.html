@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GBrain — Postgres ネイティブのパーソナル知識ベース</title>
+  <meta name="description" content="Markdown 脳リポジトリと Postgres/pgvector をつなぐ検索層。PGLite 既定・ハイブリッド検索・MCP・レシピ連携。garrytan/gbrain の構成概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="GBrain — Postgres ネイティブのパーソナル知識ベース">
+  <meta property="og:description" content="Markdown 脳と Postgres/pgvector。PGLite・ハイブリッド検索・MCP・OpenClaw 連携の技術概要。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/gbrain.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="GBrain — Postgres ネイティブのパーソナル知識ベース">
+  <meta name="twitter:description" content="PGLite 既定・ハイブリッド RAG・MCP 30 ツール・スキルパック運用の概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI + Literata / teal–amber) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.008 95);
+      --foreground: oklch(0.22 0.04 250);
+      --card: oklch(1 0.005 95);
+      --card-foreground: oklch(0.22 0.04 250);
+      --popover: oklch(1 0.005 95);
+      --popover-foreground: oklch(0.22 0.04 250);
+      --primary: oklch(0.26 0.05 250);
+      --primary-foreground: oklch(0.99 0.005 95);
+      --secondary: oklch(0.95 0.02 95);
+      --secondary-foreground: oklch(0.26 0.05 250);
+      --muted: oklch(0.94 0.02 100);
+      --muted-foreground: oklch(0.42 0.04 250);
+      --accent: oklch(0.93 0.04 200);
+      --accent-foreground: oklch(0.22 0.05 250);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.02 100);
+      --input: oklch(0.88 0.02 100);
+      --ring: oklch(0.45 0.11 215);
+      --chart-1: oklch(0.42 0.11 215);
+      --chart-2: oklch(0.68 0.15 75);
+      --chart-3: oklch(0.48 0.09 200);
+      --chart-4: oklch(0.72 0.12 230);
+      --chart-5: oklch(0.58 0.14 42);
+      --code-bg: var(--muted);
+      --code-text: oklch(0.32 0.08 215);
+      --font-body: 'Literata', 'Georgia', 'Times New Roman', serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.03 260);
+        --foreground: oklch(0.96 0.01 95);
+        --card: oklch(0.19 0.03 260);
+        --card-foreground: oklch(0.96 0.01 95);
+        --popover: oklch(0.19 0.03 260);
+        --popover-foreground: oklch(0.96 0.01 95);
+        --primary: oklch(0.92 0.02 95);
+        --primary-foreground: oklch(0.16 0.03 260);
+        --secondary: oklch(0.24 0.03 260);
+        --secondary-foreground: oklch(0.96 0.01 95);
+        --muted: oklch(0.26 0.03 260);
+        --muted-foreground: oklch(0.72 0.03 95);
+        --accent: oklch(0.24 0.05 215);
+        --accent-foreground: oklch(0.96 0.01 95);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.62 0.12 215);
+        --chart-1: oklch(0.72 0.12 215);
+        --chart-2: oklch(0.78 0.14 80);
+        --chart-3: oklch(0.65 0.10 200);
+        --chart-4: oklch(0.70 0.08 230);
+        --chart-5: oklch(0.68 0.12 42);
+        --code-bg: oklch(0.16 0.03 260);
+        --code-text: oklch(0.82 0.06 200);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); font-family: var(--font-mono); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 18rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.65; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 65%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.35rem; line-height: 1.15; font-weight: 700; color: var(--chart-1); font-family: var(--font-mono); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: color-mix(in oklch, var(--muted) 75%, var(--chart-1) 8%); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 25% 0%, oklch(0.42 0.11 215 / 0.07) 0%, transparent 52%),
+        radial-gradient(ellipse at 90% 60%, oklch(0.68 0.15 75 / 0.05) 0%, transparent 45%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 25% 0%, oklch(0.62 0.12 215 / 0.12) 0%, transparent 52%),
+          radial-gradient(ellipse at 90% 60%, oklch(0.72 0.14 75 / 0.06) 0%, transparent 45%);
+      }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; font-family: var(--font-mono); }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    .badge-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .badge { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); }
+    .badge--accent { background: color-mix(in oklch, var(--chart-1) 12%, transparent); border-color: color-mix(in oklch, var(--chart-1) 45%, transparent); color: var(--chart-1); }
+
+    .mermaid-wrap { position: relative; overflow: hidden; border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--card); }
+    .mermaid-controls { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 10; }
+    .mermaid-controls button { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--card); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 14px; color: var(--text-dim); transition: all 0.15s; }
+    .mermaid-controls button:hover { background: var(--muted); color: var(--text); }
+    .mermaid-inner { overflow: auto; display: flex; justify-content: center; padding: 1.25rem; min-height: 140px; }
+    .mermaid { display: flex; justify-content: center; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#engines">ストレージエンジン</a>
+    <a href="#memory-layers">メモリの層</a>
+    <a href="#integrations">データイン</a>
+    <a href="#cli-mcp">CLI / MCP</a>
+    <a href="#links">参考</a>
+  </nav>
+
+  <div class="main">
+    <h1>GBrain</h1>
+    <p class="subtitle">Postgres ネイティブのパーソナル知識ベース — Markdown リポジトリ × ハイブリッド検索</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
+      <p><strong>GBrain</strong> は、AI エージェントが「あなたの文脈」を読むための <strong>検索・保存レイヤー</strong>だ。会議・メール・X・カレンダー・通話などのシグナルを、検索可能な知識ベース（脳）に流し込み、応答の前に読み、会話の後に書き戻す運用を前提にしている。</p>
+      <div class="badge-row">
+        <span class="badge badge--accent">Bun / TypeScript</span>
+        <span class="badge">MIT</span>
+        <span class="badge">OpenClaw プラグイン</span>
+        <span class="badge">pgvector</span>
+      </div>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">0.7.0</span><span class="ve-kpi-card__label">VERSION（package.json）</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">37</span><span class="ve-kpi-card__label">BrainEngine 操作</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">30</span><span class="ve-kpi-card__label">MCP ツール</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">RRF</span><span class="ve-kpi-card__label">ハイブリッド融合</span></div>
+      </div>
+      <p style="margin-bottom:0">正典はローカルの <code>repos/gbrain</code>（README・<code>docs/</code>・<code>src/</code>）。上流: <a href="https://github.com/garrytan/gbrain" target="_blank" rel="noopener">github.com/garrytan/gbrain</a>。</p>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem;">
+      <strong>フロンティアモデル推奨。</strong> README では <strong>Claude Opus 4.6</strong> および <strong>GPT-5.4 Thinking</strong> での検証が前提とされ、小型モデルでは破綻しやすいと明記されている。
+    </div>
+
+    <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 三層の関係</span>
+      <p>Git 管理の <strong>Markdown 脳リポジトリ</strong>がソースの正であり、GBrain が <strong>Postgres + pgvector</strong> 上に検索インデックスを持つ。エージェントは CLI / MCP 経由で読み書きし、人間は常に Markdown を直接編集できる。</p>
+      <div class="mermaid-wrap" id="gb-wrap">
+        <div class="mermaid-controls">
+          <button type="button" id="gb-zoom-in" title="拡大">+</button>
+          <button type="button" id="gb-zoom-out" title="縮小">−</button>
+          <button type="button" id="gb-reset" title="リセット">⟳</button>
+        </div>
+        <div class="mermaid-inner" id="gb-inner">
+          <div class="mermaid" id="gb-diagram">
+flowchart LR
+  MD["Markdown 脳リポジトリ\ngit = source of truth"]
+  PG["Postgres + pgvector\nPGLite / Supabase"]
+  HY["ハイブリッド検索\nRRF 融合"]
+  AG["AI Agent\nskills / MCP"]
+  MD -->|import / sync| PG
+  PG <--> HY
+  HY <--> AG
+  MD <--> AG
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> コンパウンドループ（README の要旨）</span>
+      <div class="pipeline" aria-hidden="true">
+        <span class="step">シグナル到着</span>
+        <span class="arrow">→</span>
+        <span class="step">エンティティ検出</span>
+        <span class="arrow">→</span>
+        <span class="step">READ: 脳を先に検索</span>
+        <span class="arrow">→</span>
+        <span class="step">応答</span>
+        <span class="arrow">→</span>
+        <span class="step">WRITE: ページ更新</span>
+        <span class="arrow">→</span>
+        <span class="step">sync / embed</span>
+      </div>
+      <p style="margin-top:0.75rem; margin-bottom:0">ループを回すほど文脈が蓄積し、同じ人物・会社が次に出たときには既にドシエが揃っている、というのが設計上の価値だ。</p>
+    </div>
+
+    <section id="engines" class="sec-head">3 — ストレージエンジン</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Pluggable BrainEngine</span>
+      <p>すべての操作は <code>BrainEngine</code> 契約を通る。エンジンを差し替えても CLI・MCP・スキルは同じ。v0.7 以降は <strong>PGLiteEngine</strong>（WASM 埋め込み Postgres 17.5）が既定で、サーバ不要のローカル開始が約 2 秒、という README のトーンだ。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>ニーズ</th><th>向くエンジン</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>ゼロコンフィグ・ローカル</td><td><strong>PGLiteEngine</strong>（既定）</td></tr>
+            <tr><td>大規模・多デバイス・マネージド Postgres</td><td><strong>PostgresEngine</strong> + Supabase</td></tr>
+            <tr><td>移行</td><td><code>gbrain migrate --to supabase</code> など（README / ENGINES.md）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:0.75rem; margin-bottom:0"><strong>検索の共通化:</strong> キーワードとベクトルはエンジン実装の差を吸収し、RRF による融合と重複排除は <code>src/core/search/hybrid.ts</code> 側で共有される（ENGINES.md の説明に沿う）。</p>
+    </div>
+
+    <section id="memory-layers" class="sec-head">4 — メモリの層（OpenClaw / Hermes との関係）</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 世界知識 vs 運用メモリ</span>
+      <p>README は GBrain を「人物・会社・会議・思想などの長期世界知識」とし、OpenClaw の <code>memory_search</code> 的なものは「運用状態・好み・セッション設計」と対比している。両方を見る設計が推奨される。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>層</th><th>保持するもの</th><th>問い合わせの例</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>gbrain</strong></td><td>人・会社・会議・アイデア・メディアなど</td><td><code>gbrain search</code> / <code>gbrain query</code> / <code>gbrain get</code></td></tr>
+            <tr><td><strong>エージェントメモリ</strong></td><td>好み・決定・運用設定</td><td><code>memory_search</code>（OpenClaw）</td></tr>
+            <tr><td><strong>セッション</strong></td><td>直近の会話文脈</td><td>（自動）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="integrations" class="sec-head">5 — データイン（レシピ）</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> レシピ駆動</span>
+      <p>各種連携は <code>recipes/*.md</code> に手順が書かれ、エージェントがキー取得・検証・配線まで進める。「Markdown がインストーラ」になる、という README の ethos に近い。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>レシピ</th><th>主な用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>ngrok-tunnel</td><td>MCP や音声用の固定 URL</td></tr>
+            <tr><td>credential-gateway</td><td>Gmail / Calendar へのゲートウェイ</td></tr>
+            <tr><td>twilio-voice-brain</td><td>電話 → 脳ページ</td></tr>
+            <tr><td>email-to-brain</td><td>Gmail → エンティティページ</td></tr>
+            <tr><td>x-to-brain</td><td>X（Twitter）→ 脳ページ</td></tr>
+            <tr><td>calendar-to-brain</td><td>Google Calendar → 日次ページ</td></tr>
+            <tr><td>meeting-sync</td><td>Circleback 等の議事 → ページ</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:0.75rem; margin-bottom:0">依存関係は <code>gbrain integrations</code> で一覧・健全性確認ができる。</p>
+    </div>
+
+    <section id="cli-mcp" class="sec-head">6 — CLI / MCP</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 入口</span>
+      <ul>
+        <li><strong>CLI:</strong> <code>gbrain init</code> → <code>gbrain import</code> → <code>gbrain embed --stale</code> → <code>gbrain query</code> など。スタンドアロンでも利用可能。</li>
+        <li><strong>MCP（stdio）:</strong> <code>gbrain serve</code> で約 30 ツール。CLI と同じ操作定義から生成される（README の記述）。</li>
+        <li><strong>リモート MCP:</strong> Supabase Edge へのデプロイ・トークン発行で、Desktop / Cowork / Perplexity などから接続可能（<code>docs/mcp/</code>）。</li>
+      </ul>
+      <div class="ve-code-block">
+        <pre><code># 例: MCP クライアント設定（README 抜粋）
+{
+  "gbrain": {
+    "command": "gbrain",
+    "args": ["serve"]
+  }
+}</code></pre>
+      </div>
+    </div>
+    <div class="ve-card ve-card--elevated" style="--i:1; margin-top:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> スキルパック</span>
+      <p>ツールだけでは足りず、<strong>GBRAIN_SKILLPACK.md</strong> や <code>skills/*/SKILL.md</code> が「いつ読むか・どう書くか」を規定する。運用の正はリポジトリ内ドキュメントに従う。</p>
+    </div>
+
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/garrytan/gbrain" target="_blank" rel="noopener">GitHub: garrytan/gbrain</a> — 上流リポジトリ</li>
+        <li><a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> — 想定ホストのひとつ</li>
+        <li><a href="https://github.com/NousResearch/hermes-agent" target="_blank" rel="noopener">Hermes Agent</a> — README が案内するエージェントの例</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  themeVariables: dark ? {
+    primaryColor: '#1a2838',
+    primaryTextColor: '#c8dce8',
+    primaryBorderColor: '#5a9bc4',
+    lineColor: '#6eb0d4',
+    secondaryColor: '#1e3248',
+    tertiaryColor: '#1e3248',
+    fontSize: '14px',
+    fontFamily: 'Literata, Georgia, serif',
+    edgeLabelBackground: '#152030',
+    clusterBkg: '#132536',
+    clusterBorder: '#5a9bc4',
+  } : {
+    primaryColor: '#e8f2fa',
+    primaryTextColor: '#1a2a3a',
+    primaryBorderColor: '#3d7aab',
+    lineColor: '#3d7aab',
+    secondaryColor: '#eef6ff',
+    tertiaryColor: '#f5f8fc',
+    fontSize: '14px',
+    fontFamily: 'Literata, Georgia, serif',
+    edgeLabelBackground: '#f0f6fc',
+    clusterBkg: '#e8f0fa',
+    clusterBorder: '#3d7aab',
+  },
+});
+
+await mermaid.run({ querySelector: '#gb-diagram' });
+
+const setupZoom = (wrapperId, innerId) => {
+  let scale = 1;
+  const inner = document.getElementById(innerId);
+  if (!inner) return;
+  const diagram = inner.querySelector('.mermaid svg') || inner.querySelector('svg');
+  if (!diagram) return;
+  diagram.style.transformOrigin = 'center center';
+  diagram.style.transition = 'transform 0.15s ease';
+  const apply = () => { diagram.style.transform = 'scale(' + scale + ')'; };
+  const prefix = wrapperId.replace('-wrap', '');
+  const zIn = document.getElementById(prefix + '-zoom-in');
+  const zOut = document.getElementById(prefix + '-zoom-out');
+  const zReset = document.getElementById(prefix + '-reset');
+  if (zIn) zIn.onclick = () => { scale = Math.min(scale + 0.25, 3); apply(); };
+  if (zOut) zOut.onclick = () => { scale = Math.max(scale - 0.25, 0.5); apply(); };
+  if (zReset) zReset.onclick = () => { scale = 1; apply(); };
+  inner.addEventListener('wheel', (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      scale = Math.max(0.5, Math.min(3, scale - e.deltaY * 0.001));
+      apply();
+    }
+  }, { passive: false });
+};
+
+setupZoom('gb-wrap', 'gb-inner');
+</script>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
