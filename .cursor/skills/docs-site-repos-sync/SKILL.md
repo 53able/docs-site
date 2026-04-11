@@ -44,8 +44,6 @@ SKILL=./.cursor/skills/docs-site-repos-sync
 python3 "$SKILL/scripts/verify-docs-repos-gap.py"
 ```
 
-後方互換: `python3 ./tmp/verify-docs-repos-gap.py`（中身は `./scripts/verify-docs-repos-gap.py` へ委譲）。
-
 読む指標:
 
 | 出力 | 意味 |
