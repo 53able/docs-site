@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>autoskills — スタック検出と AI スキル自動インストール</title>
+  <meta name="description" content="npx autoskills でプロジェクトを走査し、skills.sh 経由で Cursor・Claude Code 等向けのエージェントスキルを自動インストール。検出パイプライン・CLI・エージェントマッピングの概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="autoskills — スタック検出と AI スキル自動インストール">
+  <meta property="og:description" content="プロジェクトを走査し、skills.sh 経由で AI コーディング用スキルを自動インストールする CLI の仕組みとオプション。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/autoskills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="autoskills — スタック検出と AI スキル自動インストール">
+  <meta name="twitter:description" content="npx autoskills の検出フロー、skills CLI 連携、エージェント別インストール先の概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.52 0.14 195);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Figtree', system-ui, sans-serif;
+      --font-mono: 'Source Code Pro', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.72 0.11 195);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 15%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 25% 0%, oklch(0.52 0.14 195 / 0.07) 0%, transparent 48%),
+                        radial-gradient(ellipse at 85% 60%, oklch(0.6 0.118 184.704 / 0.05) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image: radial-gradient(ellipse at 25% 0%, oklch(0.72 0.11 195 / 0.09) 0%, transparent 48%),
+                          radial-gradient(ellipse at 85% 60%, oklch(0.696 0.17 162.48 / 0.06) 0%, transparent 50%);
+      }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    .mermaid-wrap {
+      position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg);
+      overflow: hidden; background: var(--muted); margin: 1rem 0;
+    }
+    .mermaid-controls {
+      position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 10;
+    }
+    .mermaid-controls button {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-dim); font-family: var(--font-mono); font-size: 11px;
+      padding: 3px 8px; cursor: pointer; transition: all 0.15s;
+    }
+    .mermaid-controls button:hover { color: var(--text); border-color: var(--ring); }
+    .mermaid-stage {
+      overflow: auto; cursor: grab; user-select: none; min-height: 260px;
+      display: flex; justify-content: center; align-items: flex-start; padding: 16px;
+    }
+    .mermaid-stage:active { cursor: grabbing; }
+
+    .agent-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+    .agent-badge {
+      font-family: var(--font-mono); font-size: 0.6875rem; padding: 3px 10px;
+      border-radius: 999px; border: 1px solid var(--border);
+      background: var(--muted); color: var(--muted-foreground);
+      white-space: nowrap;
+    }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#flow">実行フロー</a>
+    <a href="#detection">検出の仕組み</a>
+    <a href="#install">インストール</a>
+    <a href="#agents">エージェント</a>
+    <a href="#cli">CLI</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>autoskills</h1>
+  <p class="subtitle">One command — スタックを検出し、skills.sh 経由でエージェント用スキルを入れる CLI</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
+    <p><strong>autoskills</strong> はプロジェクトルートで <code>npx autoskills</code> を実行すると、依存関係や設定ファイルから技術スタックを推定し、<a href="https://skills.sh" target="_blank" rel="noopener">skills.sh</a> レジストリにあるスキルのうち、スタックに合うものを選んでインストールする。検出から候補提示までは<strong>ローカル完結</strong>で、ネットワークはインストールフェーズに入ってから。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">skills.sh</span><span class="ve-kpi-card__label">レジストリ連携</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">50+</span><span class="ve-kpi-card__label">技術の検出ルール</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Combo</span><span class="ve-kpi-card__label">複合スタック向け追加</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">CLAUDE.md</span><span class="ve-kpi-card__label">Claude Code 時に自動</span></div>
+    </div>
+    <div class="ve-callout">
+      <strong>要件:</strong> Node.js 22 以上（<code>package.json</code> の <code>engines</code> 準拠）。ライセンスは CC BY-NC 4.0（<a href="https://github.com/midudev" target="_blank" rel="noopener">midudev</a>）。
+    </div>
+  </div>
+
+  <section id="flow" class="sec-head">2 — 実行フロー</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ざっくりした流れ</span>
+    <div class="pipeline">
+      <span class="step">走査</span><span class="arrow">→</span>
+      <span class="step">detectTechnologies</span><span class="arrow">→</span>
+      <span class="step">collectSkills</span><span class="arrow">→</span>
+      <span class="step">対話 or -y</span><span class="arrow">→</span>
+      <span class="step">installAll</span><span class="arrow">→</span>
+      <span class="step">CLAUDE.md?</span>
+    </div>
+    <div class="mermaid-wrap">
+      <div class="mermaid-controls">
+        <button type="button" id="zoom-in" aria-label="ズームイン">+</button>
+        <button type="button" id="zoom-out" aria-label="ズームアウト">−</button>
+        <button type="button" id="zoom-reset" aria-label="リセット">0</button>
+      </div>
+      <div class="mermaid-stage" id="mermaid-stage">
+        <div class="mermaid">
+flowchart TD
+  A["プロジェクト走査"] --> B["技術スタック検出"]
+  B --> C["コンボ検出"]
+  C --> D["collectSkills"]
+  D --> E{"TTY かつ not -y ?"}
+  E -->|Yes| F["マルチセレクト"]
+  E -->|No| G["全候補のまま"]
+  F --> H["installAll 並列"]
+  G --> H
+  H --> I{"claude-code 対象?"}
+  I -->|Yes| J["CLAUDE.md 生成"]
+  I -->|No| K["完了"]
+  J --> K
+        </div>
+      </div>
+    </div>
+    <p><code>--dry-run</code> のときは候補一覧とエージェント一覧だけ表示し、インストールは行わない。</p>
+  </div>
+
+  <section id="detection" class="sec-head">3 — 検出の仕組み</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 入力ソース</span>
+    <p><code>lib.ts</code> まわりでは、次のような材料から <code>Technology[]</code> とコンボを組み立てる。</p>
+    <ul>
+      <li><strong>Node / JS:</strong> <code>package.json</code>、ロックファイル、<code>pnpm-workspace.yaml</code> 由来のワークスペース展開</li>
+      <li><strong>JVM / Android:</strong> Gradle（<code>build.gradle(.kts)</code>、<code>settings.gradle</code> からのモジュール列挙など）</li>
+      <li><strong>その他:</strong> <code>go.mod</code>、<code>pubspec.yaml</code>、<code>deno.json</code> など、マップされた設定パス</li>
+      <li><strong>フロント単体:</strong> 特定フレームワークが無くても、<code>.tsx</code> / <code>.vue</code> など拡張子の実ファイルが浅い深さで見つかれば「Web フロント」としてボーナススキル候補に繋げる</li>
+    </ul>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> コンボ</span>
+    <p>例: Next.js + Supabase、React + shadcn/ui、Tailwind + shadcn など。複数技術の組み合わせが <code>COMBO_SKILLS_MAP</code> に定義されていれば、単体スキルに加えて追加のスキル ID が付く。</p>
+  </div>
+
+  <section id="install" class="sec-head">4 — skills CLI との連携</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> <code>npx skills</code> 経由</span>
+    <p>各スキルは <code>author/repo</code> または <code>author/repo/skill-name</code> 形式。<code>installer.ts</code> はグローバルの <code>skills</code> コマンドがあれば直接呼び、なければ <code>npx -y skills add …</code> でフォールバックする。</p>
+    <div class="ve-code-block">
+      <pre><code># 概念的な引数（内部で組み立て）
+skills add &lt;repo&gt; [--skill &lt;name&gt;] -y [-a cursor claude-code ...]</code></pre>
+    </div>
+    <p>複数スキルは並列インストールされ、成功・失敗がサマリに集約される。<code>-v</code> / <code>--verbose</code> でエラー時にコマンドや stderr の抜粋を増やせる。</p>
+  </div>
+
+  <section id="agents" class="sec-head">5 — エージェントとフォルダ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> AGENT_FOLDER_MAP の一例</span>
+    <p>CLI に <code>-a</code> / <code>--agent</code> で対象を絞る。省略時は <code>detectAgents()</code> がプロジェクト内の隠しディレクトリから推測する。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>フォルダ</th><th>エージェント ID</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>.claude</code></td><td>claude-code</td></tr>
+          <tr><td><code>.cursor</code></td><td>cursor</td></tr>
+          <tr><td><code>.codex</code></td><td>codex</td></tr>
+          <tr><td><code>.opencode</code></td><td>opencode</td></tr>
+          <tr><td><code>.copilot</code></td><td>github-copilot</td></tr>
+          <tr><td><code>.gemini</code></td><td>gemini-cli</td></tr>
+          <tr><td><code>.antigravity</code></td><td>antigravity</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="ve-section-label" style="margin-top:1rem"><span class="ve-dot"></span> その他（抜粋）</p>
+    <div class="agent-grid">
+      <span class="agent-badge">.cline → cline</span>
+      <span class="agent-badge">.augment → augment</span>
+      <span class="agent-badge">.continue → continue</span>
+      <span class="agent-badge">.kiro → kiro-cli</span>
+      <span class="agent-badge">.supermaven → supermaven</span>
+      <span class="agent-badge">…</span>
+    </div>
+    <p style="margin-top:1rem">Claude Code が対象に含まれるとき、インストール後に <code>.claude/skills</code> 配下の Markdown を要約した <code>CLAUDE.md</code> をルートに生成する（<code>claude.ts</code>）。</p>
+  </div>
+
+  <section id="cli" class="sec-head">6 — CLI オプション</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> フラグ一覧</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>フラグ</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>-y</code> / <code>--yes</code></td><td>確認をスキップし、検出された候補をすべてインストール</td></tr>
+          <tr><td><code>--dry-run</code></td><td>候補とエージェントだけ表示。ネットワークを使わない</td></tr>
+          <tr><td><code>-v</code> / <code>--verbose</code></td><td>失敗時に詳細なエラー行・コマンドを表示</td></tr>
+          <tr><td><code>-a</code> / <code>--agent</code></td><td>続く引数をエージェント ID として渡す（例: <code>cursor claude-code</code>）</td></tr>
+          <tr><td><code>-h</code> / <code>--help</code></td><td>ヘルプ表示</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-code-block">
+      <pre><code>npx autoskills
+npx autoskills -y
+npx autoskills --dry-run
+npx autoskills -a cursor claude-code</code></pre>
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://autoskills.sh" target="_blank" rel="noopener">autoskills.sh</a> — ランディング</li>
+      <li><a href="https://skills.sh" target="_blank" rel="noopener">skills.sh</a> — スキルレジストリ</li>
+      <li><a href="https://github.com/midudev/autoskills" target="_blank" rel="noopener">GitHub: midudev/autoskills</a> — 本体リポジトリ</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+(function () {
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#a5f3fc',
+      primaryTextColor: '#0c4a6e',
+      primaryBorderColor: '#0891b2',
+      lineColor: '#64748b',
+      secondaryColor: '#e0f2fe',
+      tertiaryColor: '#ccfbf1',
+      background: 'transparent',
+      mainBkg: 'transparent',
+      nodeBorder: '#94a3b8',
+      fontSize: '14px',
+    }
+  });
+
+  var toc = document.getElementById('toc');
+  if (toc) {
+    var links = toc.querySelectorAll('a[href^="#"]');
+    var sections = [];
+    links.forEach(function (a) {
+      var id = a.getAttribute('href').slice(1);
+      var el = document.getElementById(id);
+      if (el) sections.push({ link: a, head: el });
+    });
+    function updateActive() {
+      var top = window.scrollY + 24;
+      var current = sections[0] || null;
+      sections.forEach(function (s) {
+        var rect = s.head.getBoundingClientRect();
+        var docTop = rect.top + window.scrollY;
+        if (docTop <= top) current = s;
+      });
+      sections.forEach(function (s) {
+        s.link.classList.toggle('active', s === current);
+      });
+    }
+    window.addEventListener('scroll', updateActive, { passive: true });
+    updateActive();
+  }
+
+  var stage = document.getElementById('mermaid-stage');
+  if (stage) {
+    var scale = 1;
+    var MIN = 0.4, MAX = 3;
+    function applyZoom() {
+      var svg = stage.querySelector('svg');
+      if (svg) svg.style.transform = 'scale(' + scale + ')';
+    }
+    document.getElementById('zoom-in').addEventListener('click', function () {
+      scale = Math.min(MAX, scale + 0.2); applyZoom();
+    });
+    document.getElementById('zoom-out').addEventListener('click', function () {
+      scale = Math.max(MIN, scale - 0.2); applyZoom();
+    });
+    document.getElementById('zoom-reset').addEventListener('click', function () {
+      scale = 1; applyZoom();
+    });
+    stage.addEventListener('wheel', function (e) {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        scale = Math.min(MAX, Math.max(MIN, scale - e.deltaY * 0.005));
+        applyZoom();
+      }
+    }, { passive: false });
+  }
+})();
+</script>
+</body>
+</html>
