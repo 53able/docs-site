@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rowboat — ローカルファースト AI コワーカーとナレッジグラフ</title>
+  <meta name="description" content="メール・会議から知識グラフを構築し、文脈に基づいて作業を支援するオープンソースのデスクトップ AI。Obsidian 互換 Markdown、MCP 拡張、BYOM 対応の技術概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Rowboat — ローカルファースト AI コワーカーとナレッジグラフ">
+  <meta property="og:description" content="メール・会議から知識グラフを構築し、文脈に基づいて作業を支援するオープンソースのデスクトップ AI。Obsidian 互換 Markdown、MCP、BYOM。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/rowboat.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Rowboat — ローカルファースト AI コワーカーとナレッジグラフ">
+  <meta name="twitter:description" content="メール・会議から知識グラフを構築し、文脈に基づいて作業を支援するオープンソースのデスクトップ AI。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Red+Hat+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      /* Blueprint — deep blue + amber accent */
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.32 0.10 250);
+      --chart-4: oklch(0.78 0.14 85);
+      --chart-5: oklch(0.50 0.08 240);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Epilogue', system-ui, sans-serif;
+      --font-mono: 'Red Hat Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.62 0.14 248);
+        --chart-2: oklch(0.78 0.16 76);
+        --chart-3: oklch(0.52 0.12 250);
+        --chart-4: oklch(0.82 0.14 85);
+        --chart-5: oklch(0.68 0.10 240);
+        --code-bg: #0f0f0f;
+        --code-text: #a5c8ff;
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 91%, var(--chart-1) 9%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.35rem; font-weight: 700; line-height: 1.15; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 25% 0%, oklch(0.38 0.12 248 / 0.07) 0%, transparent 52%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 25% 0%, oklch(0.62 0.14 248 / 0.12) 0%, transparent 52%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; overflow-x: auto; margin: 1rem 0; }
+    .mermaid svg { max-width: 100%; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#flow">データの流れ</a>
+    <a href="#monorepo">モノレポ構成</a>
+    <a href="#memory">メモリとグラフ</a>
+    <a href="#integrations">連携</a>
+    <a href="#extend">拡張</a>
+    <a href="#optional-config">任意設定</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>Rowboat</h1>
+  <p class="subtitle">Open-source AI coworker — work をナレッジグラフにし、それを手がかりに行動する</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
+    <p><strong>Rowboat</strong> は、メールや会議メモと接続し、<strong>長寿命のナレッジグラフ</strong>をローカルに蓄え、その文脈でミート準備・メール下書き・スライド生成などを支援する <strong>ローカルファーストの AI コワーカー</strong>（Electron デスクトップアプリが中心）。データは <strong>プレーン Markdown</strong> とバックリンクで保持され、Obsidian 互換の保管形式を採用する。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Local-first</span><span class="ve-kpi-card__label">データは自機の Vault</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Markdown</span><span class="ve-kpi-card__label">透明な作業記憶</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MCP</span><span class="ve-kpi-card__label">外部ツール接続</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">BYOM</span><span class="ve-kpi-card__label">モデルは差し替え可</span></div>
+    </div>
+    <div class="ve-callout">
+      <strong>検索型との違い:</strong> 都度トランスクリプトを探すのではなく、関係・決定・コミットメントがグラフとして積み上がり、ユーザーがノートを直接編集できる点が README で強調されている。
+    </div>
+  </div>
+
+  <section id="flow" class="sec-head">2 — データの流れ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 取り込み → グラフ → 行動</span>
+    <p>連携ソースから同期された情報が Vault 内のノート・リンクとして蓄積され、アシスタントがブリーフ作成や資料生成に利用する、というパイプラインを概念的に示す。</p>
+    <div class="mermaid-wrap">
+      <div class="mermaid">
+flowchart LR
+  subgraph in["取り込み"]
+    A["Gmail / Calendar"]
+    B["会議メモ / Fireflies"]
+  end
+  C["Vault / ナレッジグラフ"]
+  subgraph out["出力"]
+    D["ミート準備・下書き・PDF など"]
+  end
+  in --> C
+  C --> out
+      </div>
+    </div>
+  </div>
+
+  <section id="monorepo" class="sec-head">3 — モノレポ構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> リポジトリ内の主なアプリ</span>
+    <p>開発者向けコンテキスト（<code>CLAUDE.md</code>）に基づく。デスクトップは <code>apps/x</code> の Electron ネストワークスペースが現行の焦点。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>パス</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>apps/x</code></td><td>Electron デスクトップ（main / renderer / preload + <code>packages/core</code> 等）</td></tr>
+          <tr><td><code>apps/rowboat</code></td><td>Next.js ウェブダッシュボード</td></tr>
+          <tr><td><code>apps/rowboatx</code></td><td>Next.js フロントエンド</td></tr>
+          <tr><td><code>apps/cli</code></td><td>CLI</td></tr>
+          <tr><td><code>apps/python-sdk</code></td><td>Python SDK</td></tr>
+          <tr><td><code>apps/docs</code></td><td>ドキュメントサイト</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Electron 側のビルド順（依存関係）</h3>
+    <p><code>shared</code> → <code>core</code> → <code>preload</code> / <code>renderer</code> → <code>main</code>。ワークスペースのシンボリックリンク対策でメインは esbuild 単一バンドルにまとめる、と <code>CLAUDE.md</code> に記載がある。</p>
+  </div>
+
+  <section id="memory" class="sec-head">4 — メモリとグラフ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Vault と Live notes</span>
+    <ul>
+      <li><strong>Obsidian 互換:</strong> バックリンク付き Markdown の Vault が「透明な作業記憶」として機能する。</li>
+      <li><strong>Live notes:</strong> ノート上で <code>@rowboat</code> を指定すると、トピックや人物などを横断して自動更新されるライブノートを作れる（README）。</li>
+      <li><strong>編集可能性:</strong> モデル内部に隠れたコンテキストではなく、ユーザーがファイルとして検査・編集できる。</li>
+    </ul>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> モデル設定（開発者向け）</span>
+    <p>単一プロバイダの例として <code>~/.rowboat/config/models.json</code> に <code>provider</code> / <code>model</code> を置く形式が <code>CLAUDE.md</code> に示されている。</p>
+  </div>
+
+  <section id="integrations" class="sec-head">5 — 連携</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> データソース（README 抜粋）</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>種別</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>メール</td><td>Gmail</td></tr>
+          <tr><td>カレンダー</td><td>Google Calendar</td></tr>
+          <tr><td>会議</td><td>Rowboat 会議メモ または Fireflies</td></tr>
+          <tr><td>その他</td><td>Composio 経由のプロダクト連携ライブラリ</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Google 連携の手順はリポジトリ内の <code>google-setup.md</code> を参照。</p>
+  </div>
+
+  <section id="extend" class="sec-head">6 — 拡張</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> MCP とモデル</span>
+    <ul>
+      <li><strong>MCP:</strong> Model Context Protocol で検索・DB・CRM・Slack / GitHub など外部ツールを接続可能（README の例）。</li>
+      <li><strong>モデル:</strong> Ollama / LM Studio などローカル、またはホスト型 API（独自キー）に対応。Vault はローカルに残る。</li>
+    </ul>
+  </div>
+
+  <section id="optional-config" class="sec-head">7 — 任意設定</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> API キー（README）</span>
+    <p>音声入力（Deepgram）、音声出力（ElevenLabs）、Web 検索（Exa）、Composio などは任意。<code>~/.rowboat/config/</code> 配下の JSON に <code>apiKey</code> を置く形式が共通。</p>
+    <div class="ve-code-block">
+      <pre><code>{
+  "apiKey": "&lt;key&gt;"
+}</code></pre>
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・入手</span>
+    <ul>
+      <li><a href="https://github.com/rowboatlabs/rowboat" target="_blank" rel="noopener">GitHub: rowboatlabs/rowboat</a> — 本解説のソース</li>
+      <li><a href="https://www.rowboatlabs.com/" target="_blank" rel="noopener">Rowboat Labs</a> — 製品サイト</li>
+      <li><a href="https://github.com/rowboatlabs/rowboat/releases/latest" target="_blank" rel="noopener">Releases</a> — Mac / Windows / Linux ビルド</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+<script>
+(function() {
+  var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    look: 'classic',
+    themeVariables: isDark
+      ? {
+          primaryColor: '#1e3a5f',
+          primaryBorderColor: '#60a5fa',
+          primaryTextColor: '#e0e7ff',
+          secondaryColor: '#422006',
+          secondaryBorderColor: '#fbbf24',
+          lineColor: '#64748b',
+          fontFamily: 'Epilogue, system-ui, sans-serif'
+        }
+      : {
+          primaryColor: '#dbeafe',
+          primaryBorderColor: '#2563eb',
+          primaryTextColor: '#1e3a8a',
+          secondaryColor: '#fef3c7',
+          secondaryBorderColor: '#d97706',
+          lineColor: '#94a3b8',
+          fontFamily: 'Epilogue, system-ui, sans-serif'
+        }
+  });
+})();
+</script>
+</body>
+</html>

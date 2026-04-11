@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>agentskills — Agent Skills オープン仕様（agentskills.io）</title>
+  <meta name="description" content="Anthropic 維持のオープンフォーマット。SKILL.md・progressive disclosure・仕様と skills-ref 参照実装のビジュアル解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="agentskills — Agent Skills オープン仕様（agentskills.io）">
+  <meta property="og:description" content="SKILL.md ベースのスキルフォルダ、3 段階のコンテキスト開示、フロントマター制約、skills-ref CLI の要点。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/agentskills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="agentskills — Agent Skills オープン仕様">
+  <meta name="twitter:description" content="agentskills.io 公式リポジトリの構成と仕様の要約。progressive disclosure と skills-ref。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Fragment+Mono:ital@0;1&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    /* ============ THEME — sage + amber (spec / editorial) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.48 0.11 145);
+      --chart-2: oklch(0.62 0.14 75);
+      --chart-3: oklch(0.40 0.09 150);
+      --chart-4: oklch(0.72 0.12 80);
+      --chart-5: oklch(0.55 0.08 200);
+      --code-bg: var(--muted);
+      --code-text: #1a5c4a;
+      --font-body: 'Bricolage Grotesque', system-ui, sans-serif;
+      --font-mono: 'Fragment Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.62 0.13 145);
+        --chart-2: oklch(0.74 0.15 75);
+        --chart-3: oklch(0.52 0.10 150);
+        --chart-4: oklch(0.80 0.12 80);
+        --chart-5: oklch(0.65 0.09 200);
+        --code-bg: #0f1a16;
+        --code-text: #7dffc8;
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 75% 0%, oklch(0.48 0.11 145 / 0.08) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 75% 0%, oklch(0.62 0.13 145 / 0.12) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+    .dir { color: var(--chart-2); }
+    .file-main { color: var(--chart-1); font-weight: 500; }
+    .comment { color: var(--muted-foreground); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .step-flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 1rem; }
+    @media (max-width: 900px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; color: var(--chart-2); margin-bottom: 0.35rem; }
+    .step-card__title { font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.5rem; }
+    .step-card__body { font-size: 0.8125rem; color: var(--muted-foreground); line-height: 1.55; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.06s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+
+    .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; }
+    .mermaid-wrap svg { max-width: 100%; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#folder">フォルダ構成</a>
+    <a href="#disclosure">コンテキスト開示</a>
+    <a href="#frontmatter">SKILL.md フロントマター</a>
+    <a href="#skills-ref">skills-ref</a>
+    <a href="#repo">リポジトリ</a>
+    <a href="#links">リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>agentskills</h1>
+    <p class="subtitle">Agent Skills — オープン仕様（<a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a>）のビジュアル解説</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+      <p>
+        <strong>Agent Skills</strong> は、エージェントに「手順・スクリプト・参照資料」を束ねて渡すための <strong>シンプルなオープンフォーマット</strong>。ルートに <code>SKILL.md</code> があるフォルダが 1 スキル。仕様・ドキュメント・参照実装（<code>skills-ref/</code>）は <a href="https://github.com/agentskills/agentskills" target="_blank" rel="noopener">agentskills/agentskills</a> で公開されている。
+      </p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">SKILL.md</span>
+          <span class="ve-kpi-card__label">必須エントリ</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">3</span>
+          <span class="ve-kpi-card__label">開示の段階</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">Apache 2</span>
+          <span class="ve-kpi-card__label">コードライセンス</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">CC-BY 4.0</span>
+          <span class="ve-kpi-card__label">ドキュメント</span>
+        </div>
+      </div>
+      <div class="ve-callout">
+        <strong>本ページと <code>docs/agent-skills.html</code> の違い:</strong> こちらは <strong>agentskills.io 公式リポジトリ</strong>の解説。別資料の「Agent Skills」エンジニアリングスキル集（19 スキル・6 フェーズ）とは別プロジェクト。
+      </div>
+    </div>
+
+    <section id="folder" class="sec-head">2 — スキルフォルダ構成</section>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> ディレクトリ</span>
+      <p>最小構成は <code>SKILL.md</code> のみ。スクリプト・参照・テンプレは任意ディレクトリに分ける。</p>
+      <div class="ve-code-block">
+        <pre><code><span class="dir">my-skill/</span>
+├── <span class="file-main">SKILL.md</span>          <span class="comment"># 必須: メタデータ + 指示本文</span>
+├── <span class="dir">scripts/</span>          <span class="comment"># 任意: 実行可能コード</span>
+├── <span class="dir">references/</span>       <span class="comment"># 任意: 追加ドキュメント</span>
+└── <span class="dir">assets/</span>           <span class="comment"># 任意: テンプレ・画像など</span></code></pre>
+      </div>
+      <p>仕様上、ルート直下に追加のファイルやディレクトリを置いてもよい。参照パスはスキルルートからの <strong>相対パス</strong>（深いネストの参照チェーンは避ける）。</p>
+    </div>
+
+    <section id="disclosure" class="sec-head">3 — Progressive disclosure</section>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> コンテキストを段階的に載せる</span>
+      <p>常に全文を載せるのではなく、タスクに応じて読み込むことで、エージェントの応答を速く保つ。</p>
+      <div class="step-flow">
+        <div class="step-card">
+          <div class="step-card__num">STEP 1</div>
+          <div class="step-card__title">Discovery</div>
+          <div class="step-card__body">起動時は各スキルの <code>name</code> と <code>description</code> だけを読み、関連しそうかどうかを判定する。</div>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">STEP 2</div>
+          <div class="step-card__title">Activation</div>
+          <div class="step-card__body">タスクが説明に合致したら <code>SKILL.md</code> 全文をコンテキストに載せる。</div>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">STEP 3</div>
+          <div class="step-card__title">Execution</div>
+          <div class="step-card__body">必要に応じて <code>references/</code> や <code>scripts/</code> を読む・実行する。</div>
+        </div>
+      </div>
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+flowchart LR
+  M[メタデータのみ] -->|マッチ| F[SKILL.md 全文]
+  F --> R[参照ファイル / スクリプト]
+        </div>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> 目安トークン（仕様の推奨）</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>段階</th><th>内容</th><th>目安</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>メタデータ</td><td><code>name</code> + <code>description</code></td><td>約 100 トークン</td></tr>
+            <tr><td>本文</td><td><code>SKILL.md</code> の Markdown</td><td>5000 トークン未満推奨</td></tr>
+            <tr><td>リソース</td><td>参照・スクリプト・assets</td><td>必要なときだけ</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>メインの <code>SKILL.md</code> は 500 行超えそうなら、詳細を <code>references/</code> に分割するのが推奨。</p>
+    </div>
+
+    <section id="frontmatter" class="sec-head">4 — SKILL.md フロントマター</section>
+    <div class="ve-card" style="--i:4">
+      <span class="ve-section-label"><span class="ve-dot"></span> フィールド一覧（抜粋）</span>
+      <p>先頭は YAML。続けて Markdown 本文。必須は <code>name</code> と <code>description</code>。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>フィールド</th><th>必須</th><th>制約・意味</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>name</code></td><td>はい</td><td>最大 64 文字。<code>a-z</code>・数字・ハイフンのみ。連続ハイフン不可。親ディレクトリ名と一致。</td></tr>
+            <tr><td><code>description</code></td><td>はい</td><td>1〜1024 文字。何をするかと<strong>いつ使うか</strong>（エージェントが選びやすいキーワード）を書く。</td></tr>
+            <tr><td><code>license</code></td><td>いいえ</td><td>ライセンス名または同梱ファイルへの参照。</td></tr>
+            <tr><td><code>compatibility</code></td><td>いいえ</td><td>最大 500 文字。想定プロダクト・パッケージ・ネットワーク要件など。</td></tr>
+            <tr><td><code>metadata</code></td><td>いいえ</td><td>任意のキー・値（文字列）。実装側の追加プロパティ用。</td></tr>
+            <tr><td><code>allowed-tools</code></td><td>いいえ</td><td>事前承認ツールのスペース区切り（実験的）。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="skills-ref" class="sec-head">5 — skills-ref（参照ライブラリ）</section>
+    <div class="ve-card" style="--i:5">
+      <span class="ve-section-label"><span class="ve-dot"></span> Python CLI / API</span>
+      <p>リポジトリ内 <code>skills-ref/</code> は <strong>検証・プロパティ読取・プロンプト用 XML 生成</strong>向けの参照実装。README では本番利用は想定していない旨が記載されている。</p>
+      <div class="ve-code-block">
+        <pre><code>skills-ref validate path/to/skill
+skills-ref read-properties path/to/skill   <span class="comment"># JSON 出力</span>
+skills-ref to-prompt path/to/skill-a path/to/skill-b   <span class="comment"># &lt;available_skills&gt; XML</span></code></pre>
+      </div>
+      <div class="ve-callout">
+        <strong>貢献について:</strong> CONTRIBUTING では参照ライブラリのコードコントリビューションは当面受け付けていない場合がある。不具合報告やフィードバックは Issue / Discussion へ。
+      </div>
+    </div>
+
+    <section id="repo" class="sec-head">6 — リポジトリ構成</section>
+    <div class="ve-card" style="--i:6">
+      <span class="ve-section-label"><span class="ve-dot"></span> agentskills/agentskills</span>
+      <ul>
+        <li><strong><code>docs/</code></strong> — Mintlify 製の公式ドキュメント（<code>mint dev</code> でローカルプレビュー）。</li>
+        <li><strong><code>skills-ref/</code></strong> — Python パッケージ（<code>uv</code> / pip でインストール可）。</li>
+        <li><strong>ライセンス</strong> — コードは Apache 2.0、ドキュメントは CC-BY 4.0（リポジトリ README・CONTRIBUTING に準拠）。</li>
+      </ul>
+    </div>
+
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card" style="--i:7">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+      <ul>
+        <li><a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> — ドキュメント・チュートリアル</li>
+        <li><a href="https://agentskills.io/specification" target="_blank" rel="noopener">Specification</a> — フォーマット詳細</li>
+        <li><a href="https://github.com/agentskills/agentskills" target="_blank" rel="noopener">GitHub: agentskills/agentskills</a> — 本ページの解説元</li>
+        <li><a href="https://github.com/anthropics/skills" target="_blank" rel="noopener">Example Skills（anthropics/skills）</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'strict' });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
