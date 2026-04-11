@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archon — AI コーディング向けワークフロー・ハーネス</title>
+  <meta name="description" content="coleam00/Archon。YAML で開発プロセスを定義し、git worktree 分離・決定的な AI コーディングワークフローを CLI / Web / 各種チャットから実行。オーケストレータ・アダプタ・ワークフロー DAG の概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Archon — AI コーディング向けワークフロー・ハーネス">
+  <meta property="og:description" content="YAML ワークフロー・git worktree 分離・Orchestrator とプラットフォームアダプタ。CLI / Web UI / Slack などから同じプロセスを再現可能に実行。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/archon.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Archon — AI コーディング向けワークフロー・ハーネス">
+  <meta name="twitter:description" content="YAML・worktree・Orchestrator による AI コーディングの再現可能な自動化の概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI + Public Sans / Roboto Mono / Blueprint) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.995 0.005 248);
+      --foreground: oklch(0.18 0.04 248);
+      --card: oklch(1 0.01 248);
+      --card-foreground: oklch(0.18 0.04 248);
+      --popover: oklch(1 0.01 248);
+      --popover-foreground: oklch(0.18 0.04 248);
+      --primary: oklch(0.22 0.06 248);
+      --primary-foreground: oklch(0.99 0.01 248);
+      --secondary: oklch(0.96 0.02 248);
+      --secondary-foreground: oklch(0.22 0.06 248);
+      --muted: oklch(0.94 0.02 248);
+      --muted-foreground: oklch(0.45 0.04 248);
+      --accent: oklch(0.94 0.03 248);
+      --accent-foreground: oklch(0.22 0.06 248);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.03 248);
+      --input: oklch(0.88 0.03 248);
+      --ring: oklch(0.55 0.12 248);
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.45 0.10 200);
+      --chart-4: oklch(0.55 0.08 150);
+      --chart-5: oklch(0.62 0.14 42);
+      --code-bg: var(--muted);
+      --code-text: oklch(0.28 0.08 248);
+      --font-body: 'Public Sans', system-ui, sans-serif;
+      --font-mono: 'Roboto Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.12 0.03 248);
+        --foreground: oklch(0.96 0.02 248);
+        --card: oklch(0.18 0.04 248);
+        --card-foreground: oklch(0.96 0.02 248);
+        --popover: oklch(0.18 0.04 248);
+        --popover-foreground: oklch(0.96 0.02 248);
+        --primary: oklch(0.92 0.03 248);
+        --primary-foreground: oklch(0.14 0.04 248);
+        --secondary: oklch(0.24 0.04 248);
+        --secondary-foreground: oklch(0.96 0.02 248);
+        --muted: oklch(0.24 0.04 248);
+        --muted-foreground: oklch(0.72 0.04 248);
+        --accent: oklch(0.24 0.05 248);
+        --accent-foreground: oklch(0.96 0.02 248);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.58 0.12 248);
+        --chart-1: oklch(0.62 0.14 248);
+        --chart-2: oklch(0.78 0.15 76);
+        --chart-3: oklch(0.58 0.10 200);
+        --chart-4: oklch(0.65 0.10 150);
+        --chart-5: oklch(0.70 0.12 42);
+        --code-bg: oklch(0.14 0.04 248);
+        --code-text: oklch(0.82 0.08 248);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 82%, var(--chart-1) 18%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.65; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.2rem; line-height: 1.2; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 25% 0%, oklch(0.38 0.12 248 / 0.08) 0%, transparent 52%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 25% 0%, oklch(0.62 0.14 248 / 0.12) 0%, transparent 52%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .arch-flow { display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.8125rem; }
+    .arch-flow__row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .arch-flow__box {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.5rem 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      max-width: 100%;
+    }
+    .arch-flow__arrow { color: var(--text-dim); font-size: 1rem; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#value">価値</a>
+    <a href="#workflow-yaml">ワークフロー例</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#packages">パッケージ</a>
+    <a href="#setup">セットアップ</a>
+    <a href="#web-ui">Web UI</a>
+    <a href="#workflows">標準ワークフロー</a>
+    <a href="#platforms">プラットフォーム</a>
+    <a href="#links">参考</a>
+  </nav>
+
+  <div class="main">
+  <h1>Archon</h1>
+  <p class="subtitle">AI コーディングエージェント向けワークフローエンジン（YAML DAG・worktree 分離・Orchestrator）</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
+    <p><strong>Archon</strong> は開発プロセス（計画・実装・検証・レビュー・PR 作成など）を <strong>YAML ワークフロー</strong>として定義し、同じ手順を何度でも再現できるようにするオープンソースのハーネスだ。Dockerfile がインフラに、GitHub Actions が CI に相当するイメージで、<strong>AI コーディングの「型」</strong>をリポジトリにコミットして共有する。</p>
+    <p>各ランは <strong>git worktree</strong> で隔離され、複数タスクを衝突なく並列実行できる。決定的な処理（bash・テスト・git 操作）と AI ノード（プロンプト駆動）を DAG で混在させ、ループや人間承認ゲートも表現できる。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Repeatable</span><span class="ve-kpi-card__label">同一シーケンス</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Isolated</span><span class="ve-kpi-card__label">worktree 単位</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Composable</span><span class="ve-kpi-card__label">AI + シェル</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Portable</span><span class="ve-kpi-card__label">.archon をコミット</span></div>
+    </div>
+    <p class="ve-callout" style="margin-top:1rem;border-left-color:var(--chart-1)"><strong>解説の正:</strong> ローカルの <code>repos/Archon</code>（README・公式アーキテクチャ文書）に準拠。詳細は <a href="https://archon.diy" target="_blank" rel="noopener">archon.diy</a> を参照。</p>
+  </div>
+
+  <section id="value" class="sec-head">2 — なぜ Archon か</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 問題意識</span>
+    <p>「このバグを直して」と頼むだけでは、モデルによって計画の有無・テスト実行・PR 体裁が毎回ぶれる。Archon は <strong>フェーズ・検証ゲート・アーティファクト</strong>をワークフロー側で固定し、各ステップの知性だけを AI に任せる。</p>
+    <ul>
+      <li><strong>Fire and forget:</strong> ワークフローを起動して離席し、完了時に PR やレビューコメントが揃った状態にできる。</li>
+      <li><strong>マルチ入口:</strong> 同じ定義を CLI・Web UI・Slack / Telegram / GitHub などから起動可能（プラットフォームアダプタ経由）。</li>
+    </ul>
+  </div>
+
+  <section id="workflow-yaml" class="sec-head">3 — ワークフロー例（YAML）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ノードと依存</span>
+    <p><code>.archon/workflows/*.yaml</code> に <code>nodes</code> を並べ、<code>depends_on</code> で DAG を構成する。<code>loop</code> で AI 反復や人間承認（<code>until: APPROVED</code> など）を表現する例は README にある。</p>
+    <div class="ve-code-block">
+      <pre><code># 抜粋: plan → implement ループ → テスト → レビュー → 承認ループ → PR
+nodes:
+  - id: plan
+    prompt: "Explore the codebase and create an implementation plan"
+  - id: implement
+    depends_on: [plan]
+    loop:
+      prompt: "Read the plan. Implement the next task. Run validation."
+      until: ALL_TASKS_COMPLETE
+      fresh_context: true
+  - id: run-tests
+    depends_on: [implement]
+    bash: "bun run validate"
+  - id: create-pr
+    depends_on: [approve]
+    prompt: "Push changes and create a pull request"</code></pre>
+    </div>
+  </div>
+
+  <section id="architecture" class="sec-head">4 — アーキテクチャ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> データの流れ</span>
+    <p>公式ドキュメントの要約: <strong>プラットフォームアダプタ</strong>（Web / CLI / Telegram 等）がメッセージを <strong>Orchestrator</strong> に渡し、スラッシュコマンドは Command Handler、対話は AI アシスタントクライアント（Claude Code / Codex 等）、ワークフローは Executor、作業環境は <strong>Isolation プロバイダ</strong>（worktree 等）が担う。永続化は SQLite または PostgreSQL（コードベース・会話・セッション・ワークフロー実行・イベント等）。</p>
+    <div class="arch-flow" aria-label="アーキテクチャ概要">
+      <div class="arch-flow__box">Platform Adapters（Web SSE / CLI / Telegram / Slack / GitHub …）</div>
+      <div class="arch-flow__row"><span class="arch-flow__arrow">↓</span></div>
+      <div class="arch-flow__box">Orchestrator（ルーティング・セッション・ストリーミング・ワークフローイベント）</div>
+      <div class="arch-flow__row">
+        <span class="arch-flow__box">Command Handler</span>
+        <span class="arch-flow__arrow">·</span>
+        <span class="arch-flow__box">Workflow Executor（YAML DAG）</span>
+        <span class="arch-flow__arrow">·</span>
+        <span class="arch-flow__box">AI Assistant Clients</span>
+        <span class="arch-flow__arrow">·</span>
+        <span class="arch-flow__box">Isolation（worktree 等）</span>
+      </div>
+      <div class="arch-flow__row"><span class="arch-flow__arrow">↓</span></div>
+      <div class="arch-flow__box">SQLite / PostgreSQL（7 テーブル群）</div>
+    </div>
+  </div>
+
+  <section id="packages" class="sec-head">5 — モノレポ構成</section>
+  <div class="ve-table-wrap">
+    <table>
+      <thead>
+        <tr><th>パッケージ</th><th>役割（概要）</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>@archon/core</code></td><td>Orchestrator・コマンドハンドラ・DB・クライアント連携の中核</td></tr>
+        <tr><td><code>@archon/server</code></td><td>HTTP API・プラットフォーム起動</td></tr>
+        <tr><td><code>@archon/web</code></td><td>ダッシュボード UI（チャット・ワークフロー監視など）</td></tr>
+        <tr><td><code>@archon/cli</code></td><td><code>archon</code> CLI</td></tr>
+        <tr><td><code>@archon/workflows</code></td><td>DAG 実行・ローダー</td></tr>
+        <tr><td><code>@archon/adapters</code></td><td>各チャット / Forge 向けアダプタ</td></tr>
+        <tr><td><code>@archon/isolation</code></td><td>worktree 等の隔離プロバイダ</td></tr>
+        <tr><td><code>@archon/git</code> / <code>@archon/paths</code></td><td>Git 操作・パス解決</td></tr>
+        <tr><td><code>@archon/docs-web</code></td><td>公式サイト（archon.diy）ビルド</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <section id="setup" class="sec-head">6 — セットアップ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 二つの入り方</span>
+    <p><strong>フルセットアップ:</strong> リポジトリを clone し <code>bun install</code> のあと Claude Code で「Set up Archon」と指示。認証・CLI・スキル配置をウィザードが案内する。</p>
+    <p><strong>クイック:</strong> <code>curl https://archon.diy/install | bash</code> または Homebrew <code>brew install coleam00/archon/archon</code> でスタンドアロン CLI を入れられる。</p>
+    <div class="ve-callout"><strong>注意:</strong> コーディング対象のプロジェクト側で Claude Code を開くこと。スキルは対象リポジトリにコピーされ、Archon リポジトリ直下だけで作業しても意図どおり動かない。</div>
+  </div>
+
+  <section id="web-ui" class="sec-head">7 — Web UI</section>
+  <div class="ve-card ve-card--recessed" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Mission Control</span>
+    <p>バイナリ利用時は <code>archon serve</code> で UI を取得・起動。チャットに加え、<strong>Dashboard</strong>（実行中ワークフロー）、<strong>Workflow Builder</strong>（DAG 編集）、<strong>Workflow Execution</strong>（進捗）がある。サイドバーには CLI や Slack 経由の会話も横断表示される（README 記載）。</p>
+  </div>
+
+  <section id="workflows" class="sec-head">8 — 標準ワークフロー（例）</section>
+  <div class="ve-table-wrap">
+    <table>
+      <thead>
+        <tr><th>名前</th><th>ざっくりした役割</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>archon-assist</code></td><td>汎用 Q&amp;A・デバッグ（フルエージェント）</td></tr>
+        <tr><td><code>archon-idea-to-pr</code></td><td>アイデア → 実装 → 検証 → 並列レビュー → PR</td></tr>
+        <tr><td><code>archon-fix-github-issue</code></td><td>Issue 分類 → 調査 → 実装 → PR → スマートレビュー</td></tr>
+        <tr><td><code>archon-smart-pr-review</code></td><td>PR 複雑度に応じたレビュー</td></tr>
+        <tr><td><code>archon-resolve-conflicts</code></td><td>コンフリクト検出 → 解消 → 検証</td></tr>
+        <tr><td><code>archon-ralph-dag</code></td><td>PRD ストーリーをループ実装</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:0.875rem;color:var(--text-dim)">同梱は README 時点で 17 本。<code>archon workflow list</code> またはエージェントのルータに任せて選択する。</p>
+
+  <section id="platforms" class="sec-head">9 — 追加プラットフォーム</section>
+  <div class="ve-table-wrap">
+    <table>
+      <thead>
+        <tr><th>プラットフォーム</th><th>目安セットアップ</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Telegram</td><td>約 5 分</td></tr>
+        <tr><td>Discord</td><td>約 5 分</td></tr>
+        <tr><td>Slack / GitHub Webhooks</td><td>約 15 分</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <section id="links" class="sec-head">10 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+    <ul>
+      <li><a href="https://github.com/coleam00/Archon" target="_blank" rel="noopener">GitHub: coleam00/Archon</a></li>
+      <li><a href="https://archon.diy" target="_blank" rel="noopener">ドキュメント（archon.diy）</a></li>
+      <li><a href="https://archon.diy/reference/architecture/" target="_blank" rel="noopener">Architecture（詳細）</a></li>
+      <li><a href="https://archon.diy/guides/authoring-workflows/" target="_blank" rel="noopener">Authoring Workflows</a></li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
