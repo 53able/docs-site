@@ -54,14 +54,9 @@ def git_out(repo: pathlib.Path, *args: str) -> str:
 
 
 def git_meta(repo: pathlib.Path) -> dict[str, str] | None:
+    """現在の作業ツリーの HEAD メタを読む。リモート追従は repos-pull-latest 等で事前に行う。"""
     if not (repo / ".git").exists():
         return None
-    subprocess.run(
-        ["git", "-C", str(repo), "pull", "--ff-only"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
     short = git_out(repo, "rev-parse", "--short=7", "HEAD")
     if not short:
         return None
@@ -143,10 +138,18 @@ def detect_indent(html: str) -> str:
     return "  "
 
 
+# 既存の「解説時点のソース」カード（1 枚）を置換する。構造は build_card と一致させること。
+# インデントは水平空白のみ（\s だと直前の改行まで取り込み、build_card 各行先頭に余計な空行が付く）
+SOURCE_VERSION_CARD_RE = re.compile(
+    r"([ \t]*)<div class=\"ve-card ve-card--recessed\"[^>]*>\s*"
+    r"<span class=\"ve-section-label\"><span class=\"ve-dot\"></span> 解説時点のソース</span>"
+    r"[\s\S]*?</div>",
+    re.DOTALL,
+)
+
+
 def apply_file(path: pathlib.Path, repos_dirs: set[str], repos_lower: dict[str, str]) -> str | None:
     text = path.read_text(encoding="utf-8")
-    if "source-repo-commit:" in text and "解説時点のソース" in text:
-        return None
     ref = vgap.extract_canonical(path)
     if not ref:
         return f"skip {path.name}: no canonical ref"
@@ -162,10 +165,10 @@ def apply_file(path: pathlib.Path, repos_dirs: set[str], repos_lower: dict[str, 
         return f"skip {path.name}: git meta failed for repos/{folder}"
 
     short = meta["short"]
-    if "source-repo-commit:" not in text:
-        text = re.sub(r"(<head>)", r"\1\n" + f"  <!-- source-repo-commit: {short} -->\n", text, count=1)
-
     indent = detect_indent(text)
+    m_card = SOURCE_VERSION_CARD_RE.search(text)
+    if m_card and m_card.group(1) is not None:
+        indent = m_card.group(1)
     card = build_card(
         indent,
         short,
@@ -177,16 +180,38 @@ def apply_file(path: pathlib.Path, repos_dirs: set[str], repos_lower: dict[str, 
         folder,
     )
 
-    sub_full = re.search(r"<p class=\"subtitle\"[^>]*>.*?</p>", text, re.DOTALL)
-    if sub_full:
-        end = sub_full.end()
-        text = text[:end] + "\n\n" + card + text[end:]
+    had_comment = "source-repo-commit:" in text
+    had_card = "解説時点のソース" in text and m_card is not None
+
+    # ヘッドコメントを常に現在の short に合わせる
+    if had_comment:
+        text, n_sub = re.subn(
+            r"<!--\s*source-repo-commit:\s*[a-fA-F0-9]+\s*-->",
+            f"<!-- source-repo-commit: {short} -->",
+            text,
+            count=1,
+        )
+        if n_sub == 0:
+            text = re.sub(r"(<head>)", r"\1\n" + f"  <!-- source-repo-commit: {short} -->\n", text, count=1)
     else:
-        m = main_anchor_pattern().search(text)
-        if not m:
-            return f"skip {path.name}: no insertion anchor"
-        pos = m.end()
-        text = text[:pos] + "\n\n" + card + text[pos:]
+        text = re.sub(r"(<head>)", r"\1\n" + f"  <!-- source-repo-commit: {short} -->\n", text, count=1)
+
+    if had_card:
+        new_text, n_card = SOURCE_VERSION_CARD_RE.subn(card, text, count=1)
+        if n_card == 0:
+            return f"skip {path.name}: could not replace 解説時点のソース card"
+        text = new_text
+    else:
+        sub_full = re.search(r"<p class=\"subtitle\"[^>]*>.*?</p>", text, re.DOTALL)
+        if sub_full:
+            end = sub_full.end()
+            text = text[:end] + "\n\n" + card + text[end:]
+        else:
+            m = main_anchor_pattern().search(text)
+            if not m:
+                return f"skip {path.name}: no insertion anchor"
+            pos = m.end()
+            text = text[:pos] + "\n\n" + card + text[pos:]
 
     path.write_text(text, encoding="utf-8")
     return None

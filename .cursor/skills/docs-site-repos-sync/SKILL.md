@@ -87,6 +87,14 @@ python3 "$SKILL/scripts/verify-docs-repos-gap.py"
 
 **`not cloned under repos/: 0`** なら、当該 HTML については `repos/` 側の名前解決が通っている。
 
+### 5. 解説ページの版メタ注入（`inject-source-version-blocks.py`）
+
+`repos/` を `repos-pull-latest` 等で更新したあと、各 `docs/*.html` の **`<!-- source-repo-commit -->`** と **「解説時点のソース」カード**を、対応する `repos/<folder>` の **現在の HEAD** に合わせて書き換える。
+
+- スクリプト: `./scripts/inject-source-version-blocks.py`（リポジトリルートで実行）
+- **既にカードがあるページも毎回置換**する（古い SHA のまま残さない）
+- 本文の README 同期はしない（版メタのみ）。本文まで直す場合は `docs-site-add-visual-doc` を使う
+
 ## エージェント向け注意
 
 - **このスキルは `docs/*.html` や検証スクリプトのロジックを変えない**。ギャップの原因が `unresolved` なら、編集が必要かユーザーに止める。
