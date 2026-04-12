@@ -219,7 +219,7 @@
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">v0.8+</span><span class="ve-kpi-card__label">Public Preview</span></div>
     </div>
     <div class="ve-callout">
-      <strong>ステータス:</strong> v0.8  Public Preview。仕様と実装は動くがまだ進化中。v0.9 / v0.10 の仕様もリポジトリ内にある。
+      <strong>ステータス:</strong> README どおり <strong>v0.8（Public Preview）</strong>。v0.8 プロトコルは MkDocs の <a href="https://github.com/google/A2UI/blob/main/docs/specification/v0.8-a2ui.md" target="_blank" rel="noopener">v0.8 仕様</a> が正。v0.9 はドラフト（<code>specification/v0_9/</code> など）。ロードマップは <a href="https://github.com/google/A2UI/blob/main/docs/roadmap.md" target="_blank" rel="noopener">docs/roadmap.md</a>。
     </div>
   </div>
   <div class="ve-card ve-card--elevated" style="--i:1">
@@ -255,42 +255,48 @@
     </div>
   </div>
 
-  <section id="protocol" class="sec-head">3 — プロトコル</section>
+  <section id="protocol" class="sec-head">3 — プロトコル（v0.8 安定版）</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> メッセージタイプ</span>
-    <p>サーバーからクライアントへ、JSON オブジェクトのストリームで通信。主なメッセージは次の 4 種類。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> サーバー → クライアント</span>
+    <p>通信は <strong>JSON Lines（JSONL）</strong> のストリーム（多くの場合 <strong>SSE</strong> 上）で、行ごとに 1 メッセージをパースして UI を増分構築する。v0.8 で定義されるサーバー→クライアントのコアは次の 4 種類（仕様書・ロードマップと一致）。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
           <tr><th>メッセージ</th><th>役割</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>createSurface</code></td><td>新しいサーフェスを作成し、その描画を開始するようクライアントに指示。</td></tr>
-          <tr><td><code>updateComponents</code></td><td>指定サーフェスに追加・更新するコンポーネント定義のリストを送る。</td></tr>
-          <tr><td><code>updateDataModel</code></td><td>サーフェスのデータモデルにデータを挿入または置換。</td></tr>
+          <tr><td><code>surfaceUpdate</code></td><td>サーフェスに追加・更新するコンポーネント定義のリスト。フラットな隣接リストモデルで LLM が生成しやすい。</td></tr>
+          <tr><td><code>dataModelUpdate</code></td><td>そのサーフェスのデータモデルへデータを挿入または置換。構造と状態を分離する。</td></tr>
+          <tr><td><code>beginRendering</code></td><td>初回描画のタイミングを指示（ルートコンポーネント ID 等）。バッファした内容をまとめて描画し、未完成のフラッシュを防ぐ。</td></tr>
           <tr><td><code>deleteSurface</code></td><td>サーフェスとその内容を UI から明示的に削除。</td></tr>
         </tbody>
       </table>
     </div>
-    <p>トランスポートはプロトコルから分離されており、順序保証・メッセージ区切り・メタデータ（データモデル同期や capability 交換）を満たす必要がある。双方向（action の返送）はオプション。</p>
+    <p>トランスポート（A2A、AG UI 等）はプロトコルから分離。クライアントからサーバーへの操作は A2A 経由で、主に <code>userAction</code> と <code>error</code> で表現される（一次ストリームはサーバー→クライアントが主）。</p>
+    <div class="ve-callout">
+      <strong>v0.9 ドラフト:</strong> メッセージ名や拡張（例: <code>createSurface</code>、カスタムカタログ）は v0.9 側で進行中。<a href="https://github.com/google/A2UI/blob/main/docs/specification/v0.9-evolution-guide.md" target="_blank" rel="noopener">Evolution guide（v0.8 → v0.9）</a> を参照。
+    </div>
   </div>
 
   <section id="renderers" class="sec-head">4 — レンダラー・エコシステム</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 公式レンダラー</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> クライアントレンダラー（ロードマップ準拠）</span>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>レンダラー</th><th>説明</th></tr>
+          <tr><th>レンダラー</th><th>位置づけ</th><th>メモ</th></tr>
         </thead>
         <tbody>
-          <tr><td>Web (Lit)</td><td>Lit ベースの Web レンダラー。markdown-it レンダラーと web_core を組み合わせて利用。</td></tr>
-          <tr><td>Flutter</td><td>GenUI SDK（flutter/genui）が A2UI を利用。</td></tr>
-          <tr><td>Angular / React</td><td>renderers 配下に Angular / React 向けの実装がある。</td></tr>
+          <tr><td>Web（Lit）</td><td>安定</td><td><code>renderers/lit</code>。Web Components 系で汎用埋め込み向き。</td></tr>
+          <tr><td>Angular</td><td>安定</td><td><code>renderers/angular</code>。</td></tr>
+          <tr><td>Flutter（GenUI SDK）</td><td>安定</td><td>モバイル／Web／デスクトップ。<a href="https://github.com/flutter/genui" target="_blank" rel="noopener">flutter/genui</a> が A2UI を利用。</td></tr>
+          <tr><td>Markdown</td><td>—</td><td><code>renderers/markdown/markdown-it</code> と <code>renderers/web_core</code> を Lit サンプルと組み合わせる構成。</td></tr>
+          <tr><td>React</td><td>開発中</td><td><code>renderers/react</code> および <code>samples/client/react/shell</code> あり。ロードマップでは Q1 2026 頃の本格対応を想定。</td></tr>
+          <tr><td>SwiftUI / Jetpack Compose</td><td>計画</td><td>ロードマップでは Q2 2026 頃を目安に計画中。</td></tr>
         </tbody>
       </table>
     </div>
-    <p>トランスポートは A2A Protocol や AG UI と組み合わせて利用。LLM は JSON を出力できるモデルなら利用可能。Roadmap では React / Jetpack Compose / SwiftUI 等の公式サポートや、REST 等のトランスポート追加が掲げられている。</p>
+    <p>トランスポートは <strong>A2A Protocol</strong>・<strong>AG UI</strong> が完成度が高い。LLM は JSON を出せれば利用可能。追加のトランスポート（REST、WebSocket、SSE、MCP 等）はロードマップで検討・提案段階。エージェント連携例として <strong>AG2</strong> の A2UI エージェントや、<code>agent_sdks/</code>（Python 等）、<code>tools/composer</code>・<code>tools/inspector</code> など開発者向けツール、<code>samples/personalized_learning</code> や MCP 関連サンプルがリポジトリに含まれる。</p>
     <div class="ve-callout">
       <strong>試す:</strong> CopilotKit の <a href="https://go.copilotkit.ai/A2UI-widget-builder" target="_blank" rel="noopener">A2UI Widget Builder</a> で公開デモがある。
     </div>
@@ -299,16 +305,20 @@
   <section id="getting-started" class="sec-head">5 — 使い方</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 前提</span>
-    <p>Node.js（Web クライアント）、Python（エージェントサンプル）、<a href="https://aistudio.google.com/" target="_blank" rel="noopener">Gemini API Key</a> が必要。</p>
+    <p><strong>Node.js</strong>（v18 以降推奨）、エージェント実行用の <strong>uv</strong>（Python）、<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini API Key</a>。公式 Quickstart の想定どおり。</p>
   </div>
   <div class="ve-card" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> Restaurant Finder デモ</span>
-    <ol style="list-style: decimal; padding-left: 1.5rem;">
-      <li>リポジトリをクローンし、<code>GEMINI_API_KEY</code> を export。</li>
-      <li>バックエンド: <code>samples/agent/adk/restaurant_finder</code> で <code>uv run .</code>。</li>
-      <li>フロント: <code>renderers/markdown/markdown-it</code> → <code>npm install && npm run build</code>。続けて <code>renderers/web_core</code>、<code>renderers/lit</code> を同様にビルド。</li>
-      <li>クライアント: <code>samples/client/lit/shell</code> で <code>npm install && npm run dev</code>。</li>
-    </ol>
+    <span class="ve-section-label"><span class="ve-dot"></span> Restaurant Finder（最短）</span>
+    <p>リポジトリルートで <code>GEMINI_API_KEY</code> を設定し、<code>samples/client/lit</code> からデモスクリプトを実行する（<code>package.json</code> の <code>scripts</code> が正）。Restaurant Finder なら例えば次。</p>
+    <div class="ve-code-block"><pre><code>cd samples/client/lit
+npm install
+npm run demo:restaurant</code></pre></div>
+    <p>レンダラー一括ビルド・シェル・エージェント（例: restaurant_finder）をまとめて起動する。別シナリオは <code>demo:contact</code>・<code>demo:orchestrator</code> など。MkDocs の Quickstart に <code>demo:all</code> とある場合でも、手元の <code>package.json</code> に無いなら上記のように存在するスクリプト名に読み替える。</p>
+    <p>セキュリティ上、本番前にエージェントコードの確認を推奨（公式 Quickstart の注意書きどおり）。</p>
+  </div>
+  <div class="ve-card" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> 手動ビルド（README の古典手順）</span>
+    <p><code>renderers/markdown/markdown-it</code> → <code>web_core</code> → <code>lit</code> を順に <code>npm install && npm run build</code> し、<code>samples/client/lit/shell</code> で <code>npm run dev</code>、バックエンドは <code>samples/agent/adk/restaurant_finder</code> で <code>uv run .</code> する方法も README に残っている。細部はクローン先の README を正とする。</p>
     <p>Flutter 利用時は <a href="https://github.com/flutter/genui" target="_blank" rel="noopener">GenUI SDK</a> を参照。</p>
   </div>
 
@@ -317,7 +327,9 @@
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
     <ul>
       <li><a href="https://github.com/google/A2UI" target="_blank" rel="noopener">GitHub: google/A2UI</a> — 本体リポジトリ（Apache 2.0）</li>
+      <li><a href="https://github.com/google/A2UI/blob/main/docs/quickstart.md" target="_blank" rel="noopener">Quickstart（5 分）</a> — Lit クライアントからの起動手順（スクリプト名はリポジトリの <code>package.json</code> と照合）</li>
       <li><a href="https://github.com/google/A2UI/tree/main/docs" target="_blank" rel="noopener">A2UI docs</a> — 仕様・概念・ガイド（MkDocs）</li>
+      <li><a href="https://github.com/google/A2UI/blob/main/docs/roadmap.md" target="_blank" rel="noopener">Roadmap</a> — レンダラー・トランスポートの現状と予定</li>
       <li><a href="https://github.com/flutter/genui" target="_blank" rel="noopener">GenUI SDK</a> — Flutter で A2UI を利用</li>
       <li><a href="https://go.copilotkit.ai/A2UI-widget-builder" target="_blank" rel="noopener">A2UI Widget Builder (CopilotKit)</a> — ブラウザで試すデモ</li>
       <li>CONTRIBUTING.md — コントリビューション手順</li>
