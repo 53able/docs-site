@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Understand Anything — コードベースをナレッジグラフに変換する Claude Code プラグイン</title>
-  <meta name="description" content="LLM と静的解析でコードベースをインタラクティブなナレッジグラフに変換する Claude Code プラグイン Understand Anything の解説。">
+  <title>Understand Anything — コードベースとナレッジベースを可視化するプラグイン</title>
+  <meta name="description" content="コードベース・ナレッジベース・ドキュメントをインタラクティブなナレッジグラフに変換する Understand Anything の解説。Claude Code / Cursor / Copilot など複数プラットフォーム対応。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Understand Anything — コードベースをナレッジグラフに変換する Claude Code プラグイン">
-  <meta property="og:description" content="LLM と静的解析でコードベースをインタラクティブなナレッジグラフに変換する Claude Code プラグイン Understand Anything の解説。">
+  <meta property="og:title" content="Understand Anything — コードベースとナレッジベースを可視化するプラグイン">
+  <meta property="og:description" content="コードベース・ナレッジベース・ドキュメントをインタラクティブなナレッジグラフに変換する Understand Anything の解説。Claude Code / Cursor / Copilot など複数プラットフォーム対応。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/understand-anything.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Understand Anything — コードベースをナレッジグラフに変換する Claude Code プラグイン">
-  <meta name="twitter:description" content="LLM と静的解析でコードベースをインタラクティブなナレッジグラフに変換する Claude Code プラグイン Understand Anything の解説。">
+  <meta name="twitter:title" content="Understand Anything — コードベースとナレッジベースを可視化するプラグイン">
+  <meta name="twitter:description" content="コードベース・ナレッジベース・ドキュメントをインタラクティブなナレッジグラフに変換する Understand Anything の解説。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
@@ -245,25 +245,26 @@
     <a href="#flow">解析フロー</a>
     <a href="#commands">コマンド</a>
     <a href="#types">コア型</a>
+    <a href="#platforms">対応プラットフォーム</a>
     <a href="#setup">セットアップ</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
   <h1>Understand Anything</h1>
-  <p class="subtitle">LLM + 静的解析でコードベースをインタラクティブなナレッジグラフに変換する Claude Code プラグイン</p>
+  <p class="subtitle">マルチエージェント解析 + 静的解析で、コード・ビジネスドメイン・Karpathy 型 LLM wiki をインタラクティブなナレッジグラフに変換</p>
 
   <!-- 1 — 概要 -->
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> What it is</span>
-    <p><strong>Understand Anything</strong> は、Claude（Sonnet / Opus）と web-tree-sitter による静的解析を組み合わせ、任意のコードベースをインタラクティブな<strong>ナレッジグラフ</strong>に変換する Claude Code プラグイン。200,000 行規模のリポジトリでも「どこから読めばいいか」を即座に可視化し、ファイル・関数・クラス・依存関係をグラフのノードとして描画、自然言語の説明を付与する。</p>
-    <p>分析結果は <code>.understand-anything/knowledge-graph.json</code> に保存され、React Flow 製ダッシュボードで閲覧できる。Git 差分ベースのインクリメンタル更新にも対応。Claude Code 以外に Cursor / Codex / OpenCode も利用可能。</p>
+    <p><strong>Understand Anything</strong> は、Claude（Sonnet / Opus）と web-tree-sitter による静的解析を組み合わせ、コードベースだけでなく <strong>ビジネスドメインのフロー</strong>や <strong>Karpathy 型 LLM wiki</strong> もインタラクティブな<strong>ナレッジグラフ</strong>として扱えるプラグイン群。構造グラフではファイル・関数・クラス・依存を、ドメインビューでは業務プロセスを横方向に可視化。ダッシュボードはペルソナ（Junior / PM / PowerUser）に合わせた情報密度に調整できる。</p>
+    <p>分析結果は <code>.understand-anything/knowledge-graph.json</code> に保存され、React Flow 製ダッシュボードで閲覧。Git 差分ベースのインクリメンタル更新に対応。<strong>言語コンセプト</strong>として 12 種のプログラミングパターンを文脈付きで解説する機能もある。</p>
     <div class="kpi-row" style="margin-top:1.25rem">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">6+</span><span class="ve-kpi-card__label">コマンド</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">18</span><span class="ve-kpi-card__label">エッジ型</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">8</span><span class="ve-kpi-card__label">スキルコマンド</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">35</span><span class="ve-kpi-card__label">エッジ型</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">21</span><span class="ve-kpi-card__label">ノード型</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">5</span><span class="ve-kpi-card__label">アーキレイヤー</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">ペルソナ</span></div>
     </div>
   </div>
 
@@ -303,17 +304,38 @@
       <div class="arch-card">
         <div class="arch-card__layer">Dashboard UI</div>
         <div class="arch-card__title">packages/dashboard/</div>
-        <div class="arch-card__desc">React 18 + Vite + TailwindCSS v4。React Flow でグラフ描画。Zustand で状態管理。</div>
+        <div class="arch-card__desc">React 18 + Vite + TailwindCSS v4。React Flow でグラフ描画。Zustand で状態管理。構造ビュー / ドメインビュー / テーマ切替に対応。</div>
       </div>
       <div class="arch-card">
         <div class="arch-card__layer">Static Analysis</div>
         <div class="arch-card__title">web-tree-sitter (WASM)</div>
-        <div class="arch-card__desc">darwin/arm64 + Node.js 24 でネイティブ tree-sitter が動かないため WASM ビルドを採用。</div>
+        <div class="arch-card__desc">ネイティブ tree-sitter が使えない環境でも動くよう WASM 版を採用（例: 一部の darwin/arm64 + 新しめの Node）。</div>
       </div>
     </div>
   </div>
 
-  <div class="ve-card ve-card--recessed" style="--i:1; margin-top:0.875rem">
+  <div class="ve-card" style="--i:1; margin-top:0.875rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> マルチエージェント（役割）</span>
+    <p style="font-size:0.875rem;color:var(--text-dim);margin-bottom:0.75rem"><code>/understand</code> がオーケストレーションするエージェントと、ドメイン・ナレッジ専用のエージェント。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>エージェント</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>project-scanner</code></td><td>ファイル探索、言語・フレームワーク検出</td></tr>
+          <tr><td><code>file-analyzer</code></td><td>関数・クラス・import 抽出、ノード・エッジ生成</td></tr>
+          <tr><td><code>architecture-analyzer</code></td><td>アーキテクチャレイヤー識別</td></tr>
+          <tr><td><code>tour-builder</code></td><td>依存順ガイドツアー生成</td></tr>
+          <tr><td><code>graph-reviewer</code></td><td>グラフの完全性・参照整合性（既定はインライン検証。<code>--review</code> でフル LLM レビュー）</td></tr>
+          <tr><td><code>domain-analyzer</code></td><td>ドメイン・フロー・ステップ抽出（<code>/understand-domain</code>）</td></tr>
+          <tr><td><code>article-analyzer</code></td><td>wiki 記事からエンティティ・主張・暗黙関係を抽出（<code>/understand-knowledge</code>）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:2; margin-top:0.875rem">
     <span class="ve-section-label"><span class="ve-dot"></span> packages/core のモジュール</span>
     <div class="ve-table-wrap">
       <table>
@@ -330,6 +352,8 @@
           <tr><td><code>analyzer/llm-analyzer.ts</code></td><td>LLM へのプロンプト構築 & レスポンスパース</td></tr>
           <tr><td><code>analyzer/layer-detector.ts</code></td><td>アーキレイヤー検出（API / Service / Data / UI / Utility）</td></tr>
           <tr><td><code>analyzer/tour-generator.ts</code></td><td>依存順序のガイドツアー生成</td></tr>
+          <tr><td><code>analyzer/language-lesson.ts</code></td><td>言語コンセプト検出・レッスンプロンプト（12 パターン）</td></tr>
+          <tr><td><code>analyzer/normalize-graph.ts</code></td><td>バッチ出力の正規化・エッジ検証</td></tr>
           <tr><td><code>plugins/tree-sitter-plugin.ts</code></td><td>tree-sitter（WASM版）を使った静的構文解析</td></tr>
         </tbody>
       </table>
@@ -345,10 +369,10 @@
 flowchart TD
   A["/understand コマンド実行"] --> B
   B["project-scanner\n(Claude Sonnet)\nファイル探索・言語検出"] --> C
-  C["file-analyzer × 最大3並列\n(Claude Opus)\ntree-sitter で静的抽出\n→ LLM でサマリー生成\n→ 中間ファイル書き出し"] --> D
+  C["file-analyzer × 最大5並列\n(Claude Opus)\ntree-sitter で静的抽出\n→ LLM でサマリー生成\n→ 中間ファイル書き出し"] --> D
   D["architecture-analyzer\n(Claude Opus)\nAPI / Service / Data / UI / Utility\nレイヤー分類"] --> E
   E["tour-builder\n(Claude Opus)\n依存順ガイドツアー生成"] --> F
-  F["graph-reviewer\n(Claude Sonnet)\n完全性・参照整合性を検証"] --> G
+  F["graph-reviewer\n(既定: インライン検証)\n--review でフル LLM"] --> G
   G["knowledge-graph.json 保存\n中間ファイルをクリーンアップ"] --> H
   H["/understand-dashboard\nReact ダッシュボード自動起動"]
 
@@ -358,7 +382,7 @@ flowchart TD
       </div>
     </div>
     <div class="ve-callout" style="margin-top:1rem">
-      <strong>インクリメンタル更新:</strong> <code>git diff &lt;last-commit&gt;..HEAD</code> で変更ファイルを検出 → 該当ノード・エッジのみ削除・再解析 → <code>mergeGraphUpdate()</code> でグラフをマージ。大規模リポジトリでも全量再解析を避けられる。
+      <strong>インクリメンタル更新:</strong> <code>git diff &lt;last-commit&gt;..HEAD</code> で変更ファイルを検出 → 該当ノード・エッジのみ削除・再解析 → <code>mergeGraphUpdate()</code> でグラフをマージ。file-analyzer はバッチごとに最大 5 並列（バッチあたり約 20〜30 ファイル）で走る。
     </div>
   </div>
 
@@ -402,6 +426,16 @@ flowchart TD
             <td>新メンバー向けオンボーディングガイドを生成</td>
             <td><span class="badge badge--blue">Opus</span></td>
           </tr>
+          <tr>
+            <td><code>/understand-domain</code></td>
+            <td>ビジネスドメイン・フロー・プロセスステップを抽出しドメイングラフを生成（既存グラフからの派生や軽量スキャンにも対応）</td>
+            <td><span class="badge badge--blue">Opus</span></td>
+          </tr>
+          <tr>
+            <td><code>/understand-knowledge</code></td>
+            <td>Karpathy 型 LLM wiki（<code>index.md</code>・wikilink 等）を解析し、エンティティ・主張・トピッククラスタのグラフを生成</td>
+            <td><span class="badge badge--teal">Sonnet + agents</span></td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -414,9 +448,10 @@ flowchart TD
     <div class="ve-code-block">
       <pre><code>interface KnowledgeGraph {
   version: string;
+  kind?: "codebase" | "knowledge";  // コード解析 vs ナレッジ wiki など
   project: ProjectMeta;
-  nodes:   GraphNode[];   // file / function / class / module / concept
-  edges:   GraphEdge[];   // 18 種類のエッジ型
+  nodes:   GraphNode[];   // 21 種のノード型（コード / 非コード / ドメイン / ナレッジ）
+  edges:   GraphEdge[];   // 35 種類のエッジ型（8 カテゴリ）
   layers:  Layer[];       // アーキレイヤー (API/Service/Data/UI/Utility)
   tour:    TourStep[];    // ガイドツアーステップ
 }</code></pre>
@@ -424,24 +459,44 @@ flowchart TD
   </div>
 
   <div class="ve-card ve-card--recessed" style="--i:1; margin-top:0.875rem">
-    <span class="ve-section-label"><span class="ve-dot"></span> エッジ型一覧（18 種）</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> ノード型（21 種・概要）</span>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>カテゴリ</th><th>エッジ型</th></tr>
+          <tr><th>区分</th><th>ノード型</th></tr>
         </thead>
         <tbody>
-          <tr><td>構造</td><td><code>imports</code> <code>exports</code> <code>contains</code> <code>inherits</code> <code>implements</code></td></tr>
-          <tr><td>制御フロー</td><td><code>calls</code> <code>subscribes</code> <code>publishes</code> <code>middleware</code></td></tr>
-          <tr><td>データ</td><td><code>reads_from</code> <code>writes_to</code> <code>transforms</code> <code>validates</code></td></tr>
-          <tr><td>メタ</td><td><code>depends_on</code> <code>tested_by</code> <code>configures</code></td></tr>
-          <tr><td>意味的</td><td><code>related</code> <code>similar_to</code></td></tr>
+          <tr><td>コード（5）</td><td><code>file</code> <code>function</code> <code>class</code> <code>module</code> <code>concept</code></td></tr>
+          <tr><td>非コード構造（8）</td><td><code>config</code> <code>document</code> <code>service</code> <code>table</code> <code>endpoint</code> <code>pipeline</code> <code>schema</code> <code>resource</code></td></tr>
+          <tr><td>ドメイン（3）</td><td><code>domain</code> <code>flow</code> <code>step</code></td></tr>
+          <tr><td>ナレッジ wiki（5）</td><td><code>article</code> <code>entity</code> <code>topic</code> <code>claim</code> <code>source</code></td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <div class="ve-card ve-card--recessed" style="--i:2; margin-top:0.875rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> エッジ型一覧（35 種・8 カテゴリ）</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>カテゴリ</th><th>エッジ型</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Structural</td><td><code>imports</code> <code>exports</code> <code>contains</code> <code>inherits</code> <code>implements</code></td></tr>
+          <tr><td>Behavioral</td><td><code>calls</code> <code>subscribes</code> <code>publishes</code> <code>middleware</code></td></tr>
+          <tr><td>Data flow</td><td><code>reads_from</code> <code>writes_to</code> <code>transforms</code> <code>validates</code></td></tr>
+          <tr><td>Dependencies</td><td><code>depends_on</code> <code>tested_by</code> <code>configures</code></td></tr>
+          <tr><td>Semantic</td><td><code>related</code> <code>similar_to</code></td></tr>
+          <tr><td>Infrastructure / Schema</td><td><code>deploys</code> <code>serves</code> <code>provisions</code> <code>triggers</code> <code>migrates</code> <code>documents</code> <code>routes</code> <code>defines_schema</code></td></tr>
+          <tr><td>Domain</td><td><code>contains_flow</code> <code>flow_step</code> <code>cross_domain</code></td></tr>
+          <tr><td>Knowledge</td><td><code>cites</code> <code>contradicts</code> <code>builds_on</code> <code>exemplifies</code> <code>categorized_under</code> <code>authored_by</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:3; margin-top:0.875rem">
     <span class="ve-section-label"><span class="ve-dot"></span> スキル層の公開 API</span>
     <p>プラグインの <code>understand-anything-plugin/src/index.ts</code> からエクスポートされるコンテキスト構築関数:</p>
     <div class="ve-table-wrap">
@@ -459,8 +514,28 @@ flowchart TD
     </div>
   </div>
 
-  <!-- 6 — セットアップ -->
-  <section id="setup" class="sec-head">6 — セットアップ</section>
+  <!-- 6 — 対応プラットフォーム -->
+  <section id="platforms" class="sec-head">6 — 対応プラットフォーム</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式 README の互換表に基づく</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>プラットフォーム</th><th>備考</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Claude Code</td><td>マーケットから <code>/plugin install</code>（ネイティブ）</td></tr>
+          <tr><td>Cursor</td><td>リポジトリをクローンして開くと <code>.cursor-plugin/plugin.json</code> を自動検出</td></tr>
+          <tr><td>VS Code + GitHub Copilot</td><td>v1.108+。クローンしたリポジトリで <code>.copilot-plugin/plugin.json</code> を自動検出</td></tr>
+          <tr><td>Copilot CLI</td><td><code>copilot plugin install Lum1104/Understand-Anything:understand-anything-plugin</code></td></tr>
+          <tr><td>Codex / OpenCode / OpenClaw / Gemini CLI / Antigravity / Pi</td><td>各ディレクトリの <code>INSTALL.md</code> をエージェントにフェッチさせて手順に従う（README 参照）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 7 — セットアップ -->
+  <section id="setup" class="sec-head">7 — セットアップ</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> Claude Code（ネイティブ）</span>
     <div class="ve-code-block">
@@ -472,30 +547,19 @@ flowchart TD
 
   <div class="ve-card ve-card--recessed" style="--i:1; margin-top:0.875rem">
     <span class="ve-section-label"><span class="ve-dot"></span> Cursor</span>
-    <p>Cursor は <code>.cursor-plugin/plugin.json</code> を自動検出する仕組みを使う。スキル・エージェント定義が相対パスで書かれているため、<strong>Understand-Anything リポジトリ自体を Cursor のワークスペースに含める</strong>必要がある。</p>
-    <h3 style="font-size:0.875rem;margin-top:1rem">手順</h3>
-    <ol style="margin:0.5rem 0 1rem;padding-left:1.5rem;font-size:0.9rem;line-height:1.75">
-      <li>任意の場所にリポジトリをクローンする（例: <code>~/tools/</code> 以下など、プロジェクトとは別でOK）</li>
-      <li>Cursor で解析したいプロジェクトを開く</li>
-      <li>メニュー <strong>File › Add Folder to Workspace…</strong> で、クローンした <code>Understand-Anything/</code> フォルダを追加する</li>
-      <li>Cursor が <code>.cursor-plugin/plugin.json</code> を検出し、コマンドが使えるようになる</li>
-      <li><code>/understand</code> を実行して解析開始</li>
-    </ol>
+    <p>公式 README のとおり、<strong>本リポジトリをクローンして Cursor で開けば</strong> <code>.cursor-plugin/plugin.json</code> が自動検出され、追加インストールなしでスキルが有効になる。</p>
+    <h3 style="font-size:0.875rem;margin-top:1rem">別リポジトリだけを開いている場合</h3>
+    <p style="font-size:0.9rem">解析対象のプロジェクトだけをワークスペースにしているときは、<strong>File › Add Folder to Workspace…</strong> でクローンした <code>Understand-Anything/</code> を追加し、<code>./understand-anything-plugin/skills/</code> などの相対パスが解決できるようにする。</p>
     <div class="ve-code-block">
-      <pre><code># 1. クローン（場所はどこでも可）
-git clone https://github.com/Lum1104/Understand-Anything ~/tools/understand-anything
-
-# 2. Cursor でワークスペースに追加後、解析を実行
+      <pre><code>git clone https://github.com/Lum1104/Understand-Anything ~/tools/understand-anything
+# Cursor で上記フォルダを開く、または既存ワークスペースに追加してから:
 /understand</code></pre>
-    </div>
-    <div class="ve-callout" style="margin-top:1rem">
-      <strong>なぜワークスペースに追加するの？</strong> plugin.json 内のスキル・エージェント定義が <code>./understand-anything-plugin/skills/</code> という相対パスで書かれているため、Cursor がそのパスを解決できる場所にリポジトリが必要。プロジェクトのコードを汚染しないよう、別フォルダにクローンして追加するのがおすすめ。
     </div>
   </div>
 
   <div class="ve-card ve-card--recessed" style="--i:2; margin-top:0.875rem">
     <span class="ve-section-label"><span class="ve-dot"></span> ローカル開発</span>
-    <p>前提: Node.js &ge; 22、pnpm &ge; 10</p>
+    <p>前提: Node.js &ge; 22（開発は v24 系で確認）、pnpm &ge; 10（ルート <code>package.json</code> の <code>packageManager</code> に準拠）</p>
     <div class="ve-code-block">
       <pre><code># 依存インストール
 pnpm install
@@ -508,25 +572,28 @@ pnpm dev:dashboard
 
 # テスト
 pnpm --filter @understand-anything/core test
+pnpm --filter @understand-anything/skill test
 
 # Lint
 pnpm lint</code></pre>
     </div>
     <div class="ve-callout" style="margin-top:1rem">
-      <strong>tree-sitter に注意:</strong> darwin/arm64 + Node.js 24 ではネイティブビルドが失敗するため、<code>web-tree-sitter</code>（WASM版）を採用。ネイティブ <code>tree-sitter</code> へ置き換えた場合は動作しない。
+      <strong>tree-sitter に注意:</strong> 環境によってはネイティブ <code>tree-sitter</code> がビルドできないため、<code>web-tree-sitter</code>（WASM 版）を採用。ネイティブバイナリ前提の変更は動作しない。
     </div>
   </div>
 
-  <!-- 7 — 参考リンク -->
-  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <!-- 8 — 参考リンク -->
+  <section id="links" class="sec-head">8 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
     <ul>
       <li><a href="https://github.com/Lum1104/Understand-Anything" target="_blank" rel="noopener">GitHub: Lum1104/Understand-Anything</a> — 本体リポジトリ</li>
-      <li><a href="https://github.com/Lum1104/Understand-Anything/blob/main/README.md" target="_blank" rel="noopener">README.md</a> — インストール・使い方の公式ドキュメント</li>
-      <li><a href="https://github.com/Lum1104/Understand-Anything/blob/main/understand-anything-plugin/packages/core/src/types.ts" target="_blank" rel="noopener">types.ts</a> — コアデータ型定義</li>
-      <li><a href="https://reactflow.dev/" target="_blank" rel="noopener">React Flow</a> — ダッシュボードのグラフ描画ライブラリ</li>
-      <li><a href="https://github.com/tree-sitter/tree-sitter" target="_blank" rel="noopener">tree-sitter</a> — 静的構文解析エンジン（WASM版を採用）</li>
+      <li><a href="https://lum1104.github.io/Understand-Anything" target="_blank" rel="noopener">プロジェクトホームページ</a> / <a href="https://lum1104.github.io/Understand-Anything/demo/" target="_blank" rel="noopener">Live Demo</a></li>
+      <li><a href="https://github.com/Lum1104/Understand-Anything/blob/main/README.md" target="_blank" rel="noopener">README.md</a> — インストール・マルチプラットフォーム手順</li>
+      <li><a href="https://github.com/Lum1104/Understand-Anything/blob/main/understand-anything-plugin/packages/core/src/types.ts" target="_blank" rel="noopener">types.ts</a> — ノード型・エッジ型の一次情報</li>
+      <li><a href="https://reactflow.dev/" target="_blank" rel="noopener">React Flow</a> — ダッシュボードのグラフ描画</li>
+      <li><a href="https://github.com/tree-sitter/tree-sitter" target="_blank" rel="noopener">tree-sitter</a> — 静的構文解析（WASM バインディング経由）</li>
+      <li><a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f" target="_blank" rel="noopener">Karpathy LLM wiki パターン</a> — <code>/understand-knowledge</code> の想定フォーマット</li>
     </ul>
   </div>
   </div><!-- .main -->
