@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hermes Agent — 自己改善型 AI エージェント</title>
+  <meta name="description" content="Nous Research の Hermes Agent。学習ループ・スキル自動生成・クロスセッション記憶・マルチプラットフォーム Gateway。CLI とメッセージングの入口、ターミナルバックエンド、クイックスタートの視覚解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Hermes Agent — 自己改善型 AI エージェント">
+  <meta property="og:description" content="Nous Research の Hermes Agent。学習ループ・スキル・メモリ・Gateway・複数ターミナルバックエンドの概要。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/hermes-agent.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Hermes Agent — 自己改善型 AI エージェント">
+  <meta name="twitter:description" content="学習ループ・スキル・Gateway・デプロイ先の技術概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + Nunito Sans / terracotta–sage) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.01 85);
+      --foreground: oklch(0.22 0.03 35);
+      --card: oklch(1 0.01 85);
+      --card-foreground: oklch(0.22 0.03 35);
+      --popover: oklch(1 0.01 85);
+      --popover-foreground: oklch(0.22 0.03 35);
+      --primary: oklch(0.28 0.04 35);
+      --primary-foreground: oklch(0.99 0.01 85);
+      --secondary: oklch(0.96 0.02 85);
+      --secondary-foreground: oklch(0.28 0.04 35);
+      --muted: oklch(0.95 0.02 95);
+      --muted-foreground: oklch(0.45 0.04 35);
+      --accent: oklch(0.95 0.03 140);
+      --accent-foreground: oklch(0.25 0.06 35);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.90 0.02 85);
+      --input: oklch(0.90 0.02 85);
+      --ring: oklch(0.55 0.16 42);
+      --chart-1: oklch(0.55 0.16 42);
+      --chart-2: oklch(0.52 0.12 155);
+      --chart-3: oklch(0.45 0.10 200);
+      --chart-4: oklch(0.72 0.12 75);
+      --chart-5: oklch(0.60 0.08 25);
+      --code-bg: var(--muted);
+      --code-text: oklch(0.35 0.12 35);
+      --font-body: 'Nunito Sans', system-ui, sans-serif;
+      --font-mono: 'Source Code Pro', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.02 280);
+        --foreground: oklch(0.96 0.01 85);
+        --card: oklch(0.20 0.02 280);
+        --card-foreground: oklch(0.96 0.01 85);
+        --popover: oklch(0.20 0.02 280);
+        --popover-foreground: oklch(0.96 0.01 85);
+        --primary: oklch(0.92 0.02 85);
+        --primary-foreground: oklch(0.18 0.02 280);
+        --secondary: oklch(0.26 0.02 280);
+        --secondary-foreground: oklch(0.96 0.01 85);
+        --muted: oklch(0.26 0.02 280);
+        --muted-foreground: oklch(0.72 0.03 85);
+        --accent: oklch(0.24 0.04 155);
+        --accent-foreground: oklch(0.96 0.01 85);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.62 0.14 42);
+        --chart-1: oklch(0.68 0.14 42);
+        --chart-2: oklch(0.62 0.12 155);
+        --chart-3: oklch(0.58 0.10 200);
+        --chart-4: oklch(0.72 0.12 75);
+        --chart-5: oklch(0.65 0.10 25);
+        --code-bg: oklch(0.16 0.02 280);
+        --code-text: oklch(0.82 0.06 75);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 85%, var(--chart-1) 15%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.35rem; line-height: 1.2; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.55 0.16 42 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.68 0.14 42 / 0.12) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); border: 1px solid var(--border); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#learning">学習とメモリ</a>
+    <a href="#interfaces">CLI と Gateway</a>
+    <a href="#deploy">実行環境</a>
+    <a href="#quickstart">クイックスタート</a>
+    <a href="#links">参考</a>
+  </nav>
+
+  <div class="main">
+  <h1>Hermes Agent</h1>
+  <p class="subtitle">Nous Research — 経験からスキルを生み、セッションを越えてユーザをモデル化するエージェント</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
+    <p><strong>Hermes Agent</strong> は <a href="https://nousresearch.com" target="_blank" rel="noopener">Nous Research</a> が公開する Python 製の AI エージェント。単発のチャットではなく、<strong>スキルの自動生成・改善</strong>、<strong>永続メモリと会話検索</strong>、<strong>マルチチャネル Gateway</strong> を一体で持つ。モデルプロバイダは固定されず、<code>hermes model</code> で切り替え可能。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">学習ループ</span><span class="ve-kpi-card__label">スキル生成・改善</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">1 Gateway</span><span class="ve-kpi-card__label">Telegram ほか</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">6 バックエンド</span><span class="ve-kpi-card__label">local〜Modal</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">agentskills.io</span><span class="ve-kpi-card__label">スキル互換</span></div>
+    </div>
+    <p>解説の正はローカルの <code>repos/hermes-agent</code>（README・構成）に準拠する。詳細仕様は公式ドキュメントを参照。</p>
+  </div>
+
+  <section id="learning" class="sec-head">2 — 学習とメモリ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 閉ループ</span>
+    <p>README が強調するのは「経験から学ぶ」一連の流れだ。複雑タスクのあとにスキルを自動生成し、利用中に内容を改善する。メモリはエージェント側でキュレーションされ、必要に応じてナッジされる。</p>
+    <ul>
+      <li><strong>セッション検索:</strong> FTS5 ベースの検索に LLM 要約を組み合わせ、過去会話を引き戻す。</li>
+      <li><strong>ユーザモデル:</strong> <a href="https://github.com/plastic-labs/honcho" target="_blank" rel="noopener">Honcho</a> による弁証法的ユーザモデリング（README 記載）。</li>
+      <li><strong>標準:</strong> <a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> オープン標準との互換。</li>
+    </ul>
+    <div class="pipeline" aria-hidden="true">
+      <span class="step">タスク実行</span>
+      <span class="arrow">→</span>
+      <span class="step">スキル生成 / 更新</span>
+      <span class="arrow">→</span>
+      <span class="step">メモリ書き込み</span>
+      <span class="arrow">→</span>
+      <span class="step">次セッションで検索・再利用</span>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 研究向け</span>
+    <p>バッチ軌道生成、Atropos RL 連携、軌道圧縮など、ツール呼び出しモデル向けの研究機能も README に列挙されている。</p>
+  </div>
+
+  <section id="interfaces" class="sec-head">3 — CLI とメッセージング Gateway</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 二つの入口</span>
+    <p>対話の起点は <strong>ターミナル UI</strong>（<code>hermes</code>）か、<strong>Gateway</strong>（<code>hermes gateway</code>）経由のメッセージングのどちらか。起動後は多くのスラッシュコマンドが共通。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>操作</th><th>CLI</th><th>メッセージング</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>会話開始</td><td><code>hermes</code></td><td><code>gateway setup</code> → <code>start</code> → ボットへ送信</td></tr>
+          <tr><td>新規スレッド</td><td><code>/new</code> / <code>/reset</code></td><td>同左</td></tr>
+          <tr><td>モデル変更</td><td><code>/model [provider:model]</code></td><td>同左</td></tr>
+          <tr><td>スキル</td><td><code>/skills</code> / <code>/&lt;skill&gt;</code></td><td>同左</td></tr>
+          <tr><td>中断</td><td>Ctrl+C または新規メッセージ</td><td><code>/stop</code> または新規メッセージ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-callout">
+    <strong>プラットフォーム:</strong> Telegram、Discord、Slack、WhatsApp、Signal、メールなど。音声メモの文字起こしや、チャネル間の会話連続性も README の機能表に含まれる。
+  </div>
+
+  <section id="deploy" class="sec-head">4 — 実行環境（ターミナルバックエンド）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> どこで動かすか</span>
+    <p>エージェントの実行環境はローカルからクラウドまで選択できる。Daytona / Modal はアイドル時コストが低いサーバレス系として README で言及されている。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>バックエンド</th><th>想定用途のイメージ</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>local</td><td>開発機・ワークステーション上のシェル</td></tr>
+          <tr><td>Docker</td><td>コンテナ隔離</td></tr>
+          <tr><td>SSH</td><td>リモート VM</td></tr>
+          <tr><td>Daytona</td><td>クラウド開発環境連携</td></tr>
+          <tr><td>Singularity</td><td>HPC / コンテナ環境</td></tr>
+          <tr><td>Modal</td><td>サーバレス Python 実行</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="quickstart" class="sec-head">5 — クイックスタート</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> インストール</span>
+    <p>公式インストーラは Linux / macOS / WSL2 向け。ネイティブ Windows は非対応（WSL2 推奨）。</p>
+    <div class="ve-code-block">
+      <pre><code>curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+source ~/.bashrc   # または source ~/.zshrc
+hermes</code></pre>
+    </div>
+    <h3>よく使うコマンド</h3>
+    <div class="ve-code-block">
+      <pre><code>hermes              # 対話 UI
+hermes model        # プロバイダ・モデル選択
+hermes tools        # ツール有効化
+hermes gateway      # メッセージング Gateway
+hermes setup        # セットアップウィザード
+hermes doctor       # 診断</code></pre>
+    </div>
+  </div>
+  <div class="ve-card ve-card--elevated" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> OpenClaw からの移行</span>
+    <p><code>hermes claw migrate</code> で設定・メモリ・スキル・API キー等をインポート可能。README にプリセットと <code>--dry-run</code> が記載されている。</p>
+  </div>
+
+  <section id="links" class="sec-head">6 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+    <ul>
+      <li><a href="https://hermes-agent.nousresearch.com/docs/" target="_blank" rel="noopener">公式ドキュメント</a></li>
+      <li><a href="https://github.com/NousResearch/hermes-agent" target="_blank" rel="noopener">GitHub: NousResearch/hermes-agent</a></li>
+      <li><a href="https://discord.gg/NousResearch" target="_blank" rel="noopener">Discord（Nous Research）</a></li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
