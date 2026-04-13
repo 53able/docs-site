@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Feynman — オープンソース AI リサーチエージェント</title>
-  <meta name="description" content="Feynman は Pi + alphaXiv を基盤に構築されたオープンソース AI リサーチ CLI。論文・Web・コードをまたいで証拠を収集し、再現性のある研究成果物を生成する。">
+  <meta name="description" content="Feynman は Pi + alphaXiv を基盤に構築されたオープンソース AI リサーチ CLI。スタンドアロン同梱 Node・/outputs・Ollama 等ローカルモデル対応を含み、論文・Web・コードをまたいで証拠を収集する。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Feynman — オープンソース AI リサーチエージェント">
-  <meta property="og:description" content="Pi + alphaXiv を基盤に構築された CLI リサーチエージェント。多エージェント構成で論文・Web・実験を横断し、引用付き成果物を生成する。">
+  <meta property="og:description" content="Pi + alphaXiv 基盤の CLI リサーチエージェント。多エージェント・/outputs・ローカルモデル設定を含み、引用付き成果物を生成する。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/feynman.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Feynman — オープンソース AI リサーチエージェント">
-  <meta name="twitter:description" content="Pi + alphaXiv を基盤に構築された CLI リサーチエージェント。多エージェント構成で論文・Web・実験を横断する。">
+  <meta name="twitter:description" content="Pi + alphaXiv 基盤の CLI リサーチエージェント。多エージェント・成果物ブラウズ・ローカルモデル対応。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -290,7 +290,7 @@
       <div class="kpi-row">
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">19</span><span class="ve-kpi-card__label">スキル</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">エージェント</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">9</span><span class="ve-kpi-card__label">CLI コマンド</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">10</span><span class="ve-kpi-card__label">研究ワークフロー</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
       </div>
     </div>
@@ -301,7 +301,7 @@
       <p>Feynman に調査トピックを渡すと、次の流れで研究成果物を生成する。</p>
       <div class="ve-code-block gap-sm">
         <div class="cb-label">bash — quick examples</div>
-        <pre><code>$ feynman "scaling laws とは何か"
+        <pre><code>$ feynman "what do we know about scaling laws"
 → 論文・Web を検索し、引用付きリサーチブリーフを生成
 
 $ feynman deepresearch "mechanistic interpretability"
@@ -331,7 +331,7 @@ $ feynman replicate "chain-of-thought improves math"
     <section id="install" class="sec-head">2 — インストール</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> スタンドアロン CLI</span>
-      <p>1 行のシェルスクリプトで最新リリースをインストールできる。Node.js は不要。</p>
+      <p>1 行インストーラが最新のタグ付きリリースを取得し、<strong>同梱の Node.js ランタイム</strong>付きスタンドアロン・ネイティブバンドルを展開する（開発者が npm 経由で入れる場合と別物）。</p>
       <div class="ve-code-block gap-sm">
         <div class="cb-label">macOS / Linux</div>
         <pre><code>curl -fsSL https://feynman.is/install | bash</code></pre>
@@ -340,23 +340,36 @@ $ feynman replicate "chain-of-thought improves math"
         <div class="cb-label">Windows PowerShell</div>
         <pre><code>irm https://feynman.is/install.ps1 | iex</code></pre>
       </div>
-      <p style="margin-top:0.75rem">バージョンを固定する場合は末尾に <code>-s -- 0.2.16</code> のように渡す。<br>
-      <code>pnpm</code> / <code>bun</code> でインストールする場合は Node.js <code>20.19.0</code> 以上が必要。</p>
+      <p style="margin-top:0.75rem">バージョンを固定する場合は末尾に <code>-s -- 0.2.17</code> のように明示する。<br>
+      リポジトリから <code>npm install</code> する場合は engines に従い <code>node &gt;= 20.19.0</code> が必要。</p>
+    </div>
+    <div class="ve-card gap" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> アップグレードとローカルモデル</span>
+      <p>スタンドアロン CLI を新しいバンドルに差し替えるときは<strong>インストーラを再実行</strong>する。<code>feynman update</code> は Feynman 環境内に入っている Pi パッケージの更新用で、スタンドアロンのランタイムバンドル自体は置き換えない。</p>
+      <p class="gap-sm">ローカルモデル（例: Ollama）は <code>feynman setup</code> でウィザードを開き、<code>Custom provider (baseUrl + API key)</code> を選び、モデル種別に <code>openai-completions</code>、ベース URL に <code>http://localhost:11434/v1</code> を指定する流れで使える。</p>
     </div>
     <div class="ve-card gap" style="--i:1">
       <span class="ve-section-label"><span class="ve-dot"></span> スキルのみインストール</span>
-      <p>フル CLI が不要でリサーチスキルだけ欲しい場合：</p>
+      <p>フル CLI が不要でリサーチスキルだけ欲しい場合。<code>skills/</code> と <code>prompts/</code>、スキルが参照するガイド類を落とすが、<strong>ターミナル本体・同梱 Node・認証ストレージ・ Pi パッケージは入らない</strong>。</p>
       <div class="ve-code-block gap-sm">
-        <div class="cb-label">グローバル（~/.codex/skills/feynman）</div>
+        <div class="cb-label">グローバル（~/.codex/skills/feynman）— macOS / Linux</div>
         <pre><code>curl -fsSL https://feynman.is/install-skills | bash</code></pre>
       </div>
       <div class="ve-code-block gap-sm">
-        <div class="cb-label">リポジトリローカル（.agents/skills/feynman）</div>
+        <div class="cb-label">グローバル — Windows PowerShell</div>
+        <pre><code>irm https://feynman.is/install-skills.ps1 | iex</code></pre>
+      </div>
+      <div class="ve-code-block gap-sm">
+        <div class="cb-label">リポジトリローカル（.agents/skills/feynman）— macOS / Linux</div>
         <pre><code>curl -fsSL https://feynman.is/install-skills | bash -s -- --repo</code></pre>
+      </div>
+      <div class="ve-code-block gap-sm">
+        <div class="cb-label">リポジトリローカル — Windows PowerShell</div>
+        <pre><code>&amp; ([scriptblock]::Create((irm https://feynman.is/install-skills.ps1))) -Scope Repo</code></pre>
       </div>
     </div>
     <div class="ve-callout gap">
-      <strong>Node.js バージョン:</strong> npm / pnpm / bun 経由でインストールする場合は <code>node &gt;= 20.19.0</code> が必要。スタンドアロンバンドルを使う場合は Node.js は不要。
+      <strong>Node.js:</strong> リポジトリから <code>npm install</code> 等で Feynman を入れるときは <code>node &gt;= 20.19.0</code>。スタンドアロン CLI かスキルのみインストーラなら、マシンに Node を入れなくてよい。
     </div>
 
     <section id="commands" class="sec-head">3 — コマンド一覧</section>
@@ -385,8 +398,8 @@ $ feynman replicate "chain-of-thought improves math"
               <td><code>outputs/</code></td>
             </tr>
             <tr>
-              <td><code>/audit &lt;paper&gt;</code></td>
-              <td>論文の主張と公開コードベースの乖離・再現性リスクを監査。</td>
+              <td><code>/audit &lt;item&gt;</code></td>
+              <td>論文と公開コードベースの乖離（ミスマッチ）・再現性リスクを監査。</td>
               <td><code>outputs/</code></td>
             </tr>
             <tr>
@@ -413,6 +426,11 @@ $ feynman replicate "chain-of-thought improves math"
               <td><code>/watch &lt;topic&gt;</code></td>
               <td>定期的なリサーチ監視スケジュールを設定。</td>
               <td><code>outputs/</code></td>
+            </tr>
+            <tr>
+              <td><code>/outputs</code></td>
+              <td>論文・<code>outputs/</code>・実験・ノートなど、研究成果物を一覧・ブラウズ。</td>
+              <td>対話 UI</td>
             </tr>
           </tbody>
         </table>
@@ -477,17 +495,17 @@ flowchart TD
         <div class="agent-card__name">researcher</div>
         <div class="agent-card__desc">論文・Web・リポジトリ・ドキュメントを横断してエビデンスを収集。N 並列で異なる調査軸をカバー。</div>
       </div>
-      <div class="agent-card" style="animation: fadeUp 0.35s ease-out both; animation-delay: 0.1s">
+      <div class="agent-card agent-card--gold" style="animation: fadeUp 0.35s ease-out both; animation-delay: 0.1s">
+        <div class="agent-card__name" style="color:var(--chart-2)">reviewer</div>
+        <div class="agent-card__desc">査読シミュレーション。深刻度グレードの指摘と改訂プランを返す。</div>
+      </div>
+      <div class="agent-card" style="animation: fadeUp 0.35s ease-out both; animation-delay: 0.15s">
         <div class="agent-card__name">writer</div>
         <div class="agent-card__desc">リサーチノートから構造化ドラフトを生成。レポート・文献レビュー・論文スタイルに対応。</div>
       </div>
-      <div class="agent-card agent-card--gold" style="animation: fadeUp 0.35s ease-out both; animation-delay: 0.15s">
+      <div class="agent-card agent-card--gold" style="animation: fadeUp 0.35s ease-out both; animation-delay: 0.2s">
         <div class="agent-card__name" style="color:var(--chart-2)">verifier</div>
         <div class="agent-card__desc">ドラフトにインライン引用を追加し、すべてのソース URL を検証。デッドリンクをクリーンアップ。</div>
-      </div>
-      <div class="agent-card agent-card--gold" style="animation: fadeUp 0.35s ease-out both; animation-delay: 0.2s">
-        <div class="agent-card__name" style="color:var(--chart-2)">reviewer</div>
-        <div class="agent-card__desc">引用付きドラフトに対し、証拠根拠不足・論理的矛盾・単一ソースの重要主張などを検証。FATAL はフィックスループへ。</div>
       </div>
     </div>
 
