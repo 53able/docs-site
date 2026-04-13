@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claude-Mem — Claude Code 向け永続メモリ圧縮</title>
-  <meta name="description" content="Claude Code のセッションをまたいでコンテキストを保持するプラグイン。ツール利用の観察を圧縮・要約し、将来のセッションに注入する。">
+  <title>Claude-Mem — Claude Code / Gemini CLI 向け永続メモリ圧縮</title>
+  <meta name="description" content="Claude Code / Gemini CLI のセッションをまたいでコンテキストを保持するプラグイン。ツール利用の観察を圧縮・要約し、将来のセッションに注入する。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Claude-Mem — Claude Code 向け永続メモリ圧縮">
-  <meta property="og:description" content="Claude Code のセッションをまたいでコンテキストを保持するプラグイン。ツール利用の観察を圧縮・要約し、将来のセッションに注入する。">
+  <meta property="og:title" content="Claude-Mem — Claude Code / Gemini CLI 向け永続メモリ圧縮">
+  <meta property="og:description" content="Claude Code / Gemini CLI のセッションをまたいでコンテキストを保持するプラグイン。ツール利用の観察を圧縮・要約し、将来のセッションに注入する。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/claude-mem.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Claude-Mem — Claude Code 向け永続メモリ圧縮">
-  <meta name="twitter:description" content="Claude Code のセッションをまたいでコンテキストを保持するプラグイン。ツール利用の観察を圧縮・要約し、将来のセッションに注入する。">
+  <meta name="twitter:title" content="Claude-Mem — Claude Code / Gemini CLI 向け永続メモリ圧縮">
+  <meta name="twitter:description" content="Claude Code / Gemini CLI のセッションをまたいでコンテキストを保持するプラグイン。ツール利用の観察を圧縮・要約し、将来のセッションに注入する。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -198,39 +198,40 @@
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
     <a href="#architecture">アーキテクチャ</a>
-    <a href="#usage">使い方</a>
+    <a href="#usage">インストール</a>
     <a href="#mcp-search">MCP 検索</a>
+    <a href="#extras">引用・ベータなど</a>
     <a href="#config-links">設定・参考リンク</a>
   </nav>
 
   <div class="main">
   <h1>Claude-Mem</h1>
-  <p class="subtitle">Claude Code 向けの永続メモリ圧縮。セッションをまたいでコンテキストを保持し、ツール利用の観察を要約して将来のセッションに注入する。</p>
+  <p class="subtitle">Claude Code / Gemini CLI 向けの永続メモリ圧縮。セッションをまたいでコンテキストを保持し、ツール利用の観察を要約して将来のセッションに注入する。</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--elevated" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-    <p><strong>Claude-Mem</strong> は <a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a> 用のプラグインで、セッション終了や再接続後もプロジェクトの知識を継続させる。ツール使用の観察を自動で取り込み、Claude Agent SDK でセマンティック要約を生成し、DB とベクトル検索で保持。新しいセッション開始時に関連コンテキストを注入する。</p>
+    <p><strong>Claude-Mem</strong> は <a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a> や <a href="https://docs.claude-mem.ai/gemini-cli/setup" target="_blank" rel="noopener">Gemini CLI</a> 向けのプラグインで、セッション終了や再接続後もプロジェクトの知識を継続させる。ツール使用の観察を自動で取り込み、セマンティック要約を生成し、SQLite と Chroma によるハイブリッド検索で保持。新しいセッション開始時に関連コンテキストを注入する。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">5</span><span class="ve-kpi-card__label">ライフサイクルフック</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">12.1</span><span class="ve-kpi-card__label">npm バージョン（例）</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">5+1</span><span class="ve-kpi-card__label">ライフサイクル + Smart Install</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">37777</span><span class="ve-kpi-card__label">Worker ポート</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">SQLite</span><span class="ve-kpi-card__label">DB</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Chroma</span><span class="ve-kpi-card__label">ベクトル検索</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">SQLite</span><span class="ve-kpi-card__label">+ Chroma</span></div>
     </div>
-    <p>主な機能: 永続メモリ、Progressive Disclosure（段階的なコンテキスト取得）、mem-search スキルによる自然言語検索、Web Viewer（localhost:37777）、<code>&lt;private&gt;</code> タグによるプライバシー制御、コンテキスト注入の細かい設定。</p>
+    <p>主な機能: 永続メモリ、Progressive Disclosure、mem-search スキル、Web Viewer（<code>localhost:37777</code>）、<strong>Claude Desktop</strong> からの検索スキル、<code>&lt;private&gt;</code> タグ、観察 ID による<strong>引用</strong>、コンテキスト注入の細かい設定、<strong>ベータチャンネル</strong>（Endless Mode など）。</p>
   </div>
 
   <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 構成要素</span>
-    <p>5 つのライフサイクルフックで Claude Code のセッションイベントにフックする: <strong>SessionStart</strong> → <strong>UserPromptSubmit</strong> → <strong>PostToolUse</strong> → <strong>Summary</strong> → <strong>SessionEnd</strong>。フックは <code>src/hooks/*.ts</code> で TypeScript に書き、<code>plugin/scripts/*-hook.js</code> にビルドされる。</p>
+    <p>5 つのライフサイクルフックでセッションイベントにフックする: <strong>SessionStart</strong> → <strong>UserPromptSubmit</strong> → <strong>PostToolUse</strong> → <strong>Stop</strong> → <strong>SessionEnd</strong>。あわせて依存関係チェック用の <strong>Smart Install</strong>（プリフック、ライフサイクル外）があり、フックスクリプトは README では計 6 本と説明される。ビルド成果物は <code>plugin/scripts/</code> 配下に配置される。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
           <tr><th>コンポーネント</th><th>説明</th></tr>
         </thead>
         <tbody>
-          <tr><td>Worker Service</td><td><code>src/services/worker-service.ts</code>。Express API がポート 37777 で待ち受け、Bun で起動。AI 処理は非同期。</td></tr>
+          <tr><td>Worker Service</td><td>HTTP API がポート 37777（デフォルト）で待ち受け、Web Viewer と検索系エンドポイント（README では 10 本の検索系）を提供。Bun で管理・起動。</td></tr>
           <tr><td>Database</td><td><code>src/services/sqlite/</code>。SQLite3 で <code>~/.claude-mem/claude-mem.db</code>。セッション・観察・要約を保存。</td></tr>
           <tr><td>Chroma</td><td><code>src/services/sync/ChromaSync.ts</code>。ベクトル埋め込みでセマンティック検索。</td></tr>
           <tr><td>Viewer UI</td><td><code>src/ui/viewer/</code>。React の Web UI。http://localhost:37777 で表示。ビルド成果は <code>plugin/ui/viewer.html</code>。</td></tr>
@@ -244,30 +245,44 @@
     <p><code>&lt;private&gt;content&lt;/private&gt;</code> でユーザーが指定した範囲は保存されない。タグの除去はフック層（<code>src/utils/tag-stripping.ts</code>）で行い、Worker や DB に渡る前に処理する。</p>
   </div>
 
-  <section id="usage" class="sec-head">3 — 使い方</section>
+  <section id="usage" class="sec-head">3 — インストールと使い方</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> Quick Start</span>
-    <p>Claude Code のターミナルで次を実行:</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> 推奨（npx）</span>
+    <p>ターミナルで次を実行すると、フック・Worker・依存関係のセットアップまで一括で行える:</p>
+    <div class="ve-code-block">
+      <pre><code>npx claude-mem install</code></pre>
+    </div>
+    <p>Gemini CLI 向け（<code>~/.gemini</code> を自動検出）:</p>
+    <div class="ve-code-block">
+      <pre><code>npx claude-mem install --ide gemini-cli</code></pre>
+    </div>
+    <p>Claude Code または Gemini CLI を再起動すると、前セッションのコンテキストが新しいセッションに自動で載る。</p>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> マーケットプレイス（Claude Code）</span>
+    <p>IDE 内からインストールする場合:</p>
     <div class="ve-code-block">
       <pre><code>/plugin marketplace add thedotmack/claude-mem
 
 /plugin install claude-mem</code></pre>
     </div>
-    <p>Claude Code を再起動すると、前のセッションのコンテキストが新しいセッションに自動で現れる。</p>
   </div>
-  <div class="ve-card ve-card--recessed" style="--i:1">
+  <div class="ve-callout" style="margin-top:1rem">
+    <strong>注意:</strong> <code>npm install -g claude-mem</code> は <strong>SDK / ライブラリのみ</strong>で、プラグインフックや Worker の登録は行われない。必ず <code>npx claude-mem install</code> か上記 <code>/plugin</code> 手順を使う。
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:2;margin-top:1rem">
     <span class="ve-section-label"><span class="ve-dot"></span> OpenClaw</span>
     <p><a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> ゲートウェイに永続メモリとして導入する場合:</p>
     <div class="ve-code-block">
       <pre><code>curl -fsSL https://install.cmem.ai/openclaw.sh | bash</code></pre>
     </div>
-    <p>インストーラが依存関係・プラグイン・Worker 起動などをまとめて行う。npm の <code>npm install -g claude-mem</code> は SDK/ライブラリのみで、プラグインフックや Worker は入らない。プラグインとして使う場合は上記 <code>/plugin</code> コマンドを使う。</p>
+    <p>インストーラが依存関係・プラグイン・AI プロバイダ設定・Worker 起動などをまとめて行う。Telegram / Discord / Slack などへのリアルタイム観察フィードも任意で設定可能。詳細は <a href="https://docs.claude-mem.ai/openclaw-integration" target="_blank" rel="noopener">OpenClaw 連携ガイド</a>。</p>
   </div>
 
   <section id="mcp-search" class="sec-head">4 — MCP 検索</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 3 層ワークフロー</span>
-    <p>トークン効率のため、<strong>search</strong> → <strong>timeline</strong> → <strong>get_observations</strong> の 3 段階で絞り込んでから詳細を取得する。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> 3 層ワークフロー（核）</span>
+    <p>トークン効率のため、<strong>search</strong> → <strong>timeline</strong> → <strong>get_observations</strong> の 3 段階で絞り込んでから詳細を取得する。MCP にはこの流れを強制する説明用ツール <code>__IMPORTANT</code> も登録されている。さらに <code>smart_search</code> / <code>smart_outline</code> / <code>smart_unfold</code>（コードベース探索）やコーパス構築系（<code>build_corpus</code> など）も追加されている。一覧と例は <a href="https://docs.claude-mem.ai/usage/search-tools" target="_blank" rel="noopener">Search Tools</a> を参照。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
@@ -283,15 +298,40 @@
     <p>最初に <code>search</code> でインデックスを取り、必要な ID を選んでから <code>get_observations</code> で詳細を取ることで、トークンが約 10 倍節約できる。</p>
   </div>
 
-  <section id="config-links" class="sec-head">5 — 設定・参考リンク</section>
+  <section id="extras" class="sec-head">5 — 引用・ベータ・要件</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 引用と Desktop</span>
+    <p>過去の観察を ID で参照できる。<code>http://localhost:37777/api/observation/{id}</code> や Web Viewer 上で確認可能。Claude Desktop の会話から mem-search スキルでメモリを検索する流れも README で案内されている。</p>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> ベータチャンネル</span>
+    <p>Web Viewer（<code>localhost:37777</code>）の Settings から安定版とベータを切り替え可能。Endless Mode など実験機能の詳細は <a href="https://docs.claude-mem.ai/beta-features" target="_blank" rel="noopener">Beta Features</a>。</p>
+  </div>
+  <div class="ve-table-wrap" style="margin-top:1rem">
+    <table>
+      <thead>
+        <tr><th>要件</th><th>メモ</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Node.js</td><td>18.0.0 以上（README 記載）</td></tr>
+        <tr><td>Claude Code</td><td>プラグイン対応の最新版</td></tr>
+        <tr><td>Bun</td><td>未導入時は自動インストール</td></tr>
+        <tr><td>uv</td><td>ベクトル検索用 Python パッケージ管理。未導入時は自動インストール</td></tr>
+        <tr><td>SQLite 3</td><td>バンドル済み（README 記載）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <section id="config-links" class="sec-head">6 — 設定・参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 設定</span>
-    <p>設定は <code>~/.claude-mem/settings.json</code>。初回起動時にデフォルトで自動作成される。AI モデル、Worker ポート、データディレクトリ、ログレベル、コンテキスト注入の細かいオプションを変更できる。</p>
+    <p>設定は <code>~/.claude-mem/settings.json</code>。初回起動時にデフォルトで自動作成される。AI モデル、Worker ポート、データディレクトリ、ログレベル、コンテキスト注入の細かいオプションを変更できる。環境変数を含む完全な一覧は <a href="https://docs.claude-mem.ai/configuration" target="_blank" rel="noopener">Configuration</a>。</p>
   </div>
   <div class="ve-card" style="--i:1">
     <span class="ve-section-label"><span class="ve-dot"></span> 参考</span>
     <ul>
       <li><a href="https://docs.claude-mem.ai/" target="_blank" rel="noopener">公式ドキュメント（Mintlify）</a></li>
+      <li><a href="https://docs.claude-mem.ai/troubleshooting" target="_blank" rel="noopener">トラブルシューティング</a></li>
       <li><a href="https://github.com/thedotmack/claude-mem" target="_blank" rel="noopener">GitHub: thedotmack/claude-mem</a></li>
       <li>Viewer: <a href="http://localhost:37777" target="_blank" rel="noopener">http://localhost:37777</a>（Worker 起動後）</li>
     </ul>
