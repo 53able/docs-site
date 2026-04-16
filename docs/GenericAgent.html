@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GenericAgent — 自己進化型ローカル AI エージェント</title>
+  <meta name="description" content="約3K行の Python コア、9 個の原子ツールと約百行の Agent Loop。分层記憶・ブラウザ注入・Skill 自動結晶。クイックスタートとアーキテクチャの視覚解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="GenericAgent — 自己進化型ローカル AI エージェント">
+  <meta property="og:description" content="約3K行の Python コア、9 個の原子ツールと分层記憶。Skill の自動結晶とクイックスタートの概要。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/GenericAgent.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="GenericAgent — 自己進化型ローカル AI エージェント">
+  <meta name="twitter:description" content="原子ツール・記憶層・Agent Loop・類似ツール比較の技術概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + Syne / teal–amber) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.005 200);
+      --foreground: oklch(0.18 0.04 220);
+      --card: oklch(1 0.005 200);
+      --card-foreground: oklch(0.18 0.04 220);
+      --popover: oklch(1 0.005 200);
+      --popover-foreground: oklch(0.18 0.04 220);
+      --primary: oklch(0.22 0.06 220);
+      --primary-foreground: oklch(0.98 0.01 200);
+      --secondary: oklch(0.96 0.02 200);
+      --secondary-foreground: oklch(0.22 0.06 220);
+      --muted: oklch(0.94 0.02 200);
+      --muted-foreground: oklch(0.42 0.04 220);
+      --accent: oklch(0.93 0.03 195);
+      --accent-foreground: oklch(0.20 0.05 220);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.02 200);
+      --input: oklch(0.88 0.02 200);
+      --ring: oklch(0.50 0.10 200);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.42 0.10 230);
+      --chart-4: oklch(0.72 0.12 75);
+      --chart-5: oklch(0.55 0.08 160);
+      --code-bg: var(--muted);
+      --code-text: oklch(0.30 0.08 220);
+      --font-body: 'Syne', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.12 0.03 240);
+        --foreground: oklch(0.96 0.02 200);
+        --card: oklch(0.18 0.04 235);
+        --card-foreground: oklch(0.96 0.02 200);
+        --popover: oklch(0.18 0.04 235);
+        --popover-foreground: oklch(0.96 0.02 200);
+        --primary: oklch(0.92 0.03 200);
+        --primary-foreground: oklch(0.14 0.04 240);
+        --secondary: oklch(0.24 0.04 235);
+        --secondary-foreground: oklch(0.96 0.02 200);
+        --muted: oklch(0.24 0.04 235);
+        --muted-foreground: oklch(0.72 0.04 200);
+        --accent: oklch(0.22 0.05 215);
+        --accent-foreground: oklch(0.96 0.02 200);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.58 0.12 200);
+        --chart-1: oklch(0.62 0.14 200);
+        --chart-2: oklch(0.72 0.14 80);
+        --chart-3: oklch(0.58 0.10 230);
+        --chart-4: oklch(0.72 0.12 75);
+        --chart-5: oklch(0.65 0.10 160);
+        --code-bg: oklch(0.14 0.03 240);
+        --code-text: oklch(0.82 0.06 200);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 85%, var(--chart-1) 15%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.35rem; line-height: 1.2; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 25% 0%, oklch(0.45 0.12 200 / 0.08) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 25% 0%, oklch(0.62 0.14 200 / 0.12) 0%, transparent 50%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .mermaid-wrap { display: flex; justify-content: center; margin: 1rem 0; overflow-x: auto; }
+    .mermaid-wrap .mermaid { font-family: var(--font-body) !important; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#evolution">自己進化</a>
+    <a href="#architecture">記憶とループ</a>
+    <a href="#quickstart">クイックスタート</a>
+    <a href="#comparison">比較</a>
+    <a href="#interfaces">フロント</a>
+    <a href="#links">参考</a>
+  </nav>
+
+  <div class="main">
+  <h1>GenericAgent</h1>
+  <p class="subtitle">lsdefine / MIT — 約3K行の Python コアと 9 個の原子ツールでローカル環境を制御する自己進化エージェント</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
+    <p><strong>GenericAgent</strong> は、スキルを事前に大量に同梱せず、<strong>実行のたびに Skill へ結晶化</strong>していく設計の自律エージェント枠組みだ。コアは約 3K 行、<code>agent_loop.py</code> のループは約百行。ブラウザ（実ブラウザ注入・セッション維持）、ターミナル、ファイル、キーボード／マウス、画面視覚、ADB 経由のモバイルまで、LLM に OS 近傍の操作を渡す。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">9+2</span><span class="ve-kpi-card__label">原子ツール + 記憶系</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">L0–L4</span><span class="ve-kpi-card__label">レイヤード記憶</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">~100行</span><span class="ve-kpi-card__label">Agent Loop</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">多モデル</span><span class="ve-kpi-card__label">Claude / Gemini ほか</span></div>
+    </div>
+    <p>解説の正はローカルの <code>repos/GenericAgent</code>（README・GETTING_STARTED）に準拠する。公式リポジトリは <a href="https://github.com/lsdefine/GenericAgent" target="_blank" rel="noopener">github.com/lsdefine/GenericAgent</a>。</p>
+  </div>
+  <div class="ve-callout">
+    <strong>設計思想:</strong> 「プリロードした巨大スキル群」ではなく、タスクを解くたびに手順を Skill として蓄積する。利用が長いほど、自分専用のスキル木が育つ。
+  </div>
+
+  <section id="evolution" class="sec-head">2 — 自己進化の流れ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> タスクから Skill へ</span>
+    <p>初回は依存導入・スクリプト作成・検証まで自律探索し、成功パスをメモリ層に書き込む。以降は同種タスクを短い指示で再利用できる、という README のパイプラインを図示する。</p>
+    <div class="mermaid-wrap">
+      <pre class="mermaid">flowchart TD
+  T[新規タスク] --> E[探索・実行・検証]
+  E --> C[実行パスを Skill 化]
+  C --> M[記憶層へ書込]
+  M --> R[次回は短い指示で再利用]</pre>
+    </div>
+  </div>
+
+  <section id="architecture" class="sec-head">3 — 記憶・ループ・ツール</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> レイヤード記憶（L0–L4）</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>層</th><th>役割（README の整理）</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>L0</strong></td><td>メタルール — エージェントの根幹の振る舞いと制約</td></tr>
+          <tr><td><strong>L1</strong></td><td>Insight Index — 高速ルーティング用の最小インデックス</td></tr>
+          <tr><td><strong>L2</strong></td><td>Global Facts — 長期運用で安定した知識</td></tr>
+          <tr><td><strong>L3</strong></td><td>Task Skills / SOPs — タスク種別ごとの再利用手順</td></tr>
+          <tr><td><strong>L4</strong></td><td>Session Archive — 完了セッションから蒸留したアーカイブ（長期想起）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Autonomous Execution Loop</h3>
+    <p>環境認識 → 推論 → ツール実行 → 経験の記憶への書き戻し、を <code>agent_loop.py</code> が回す。コード量は README 上「約百行」。</p>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 原子ツール（抜粋）</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ツール名</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>code_run</code></td><td>任意コード実行（パッケージ導入やスクリプト生成の土台）</td></tr>
+          <tr><td><code>file_read</code> / <code>file_write</code> / <code>file_patch</code></td><td>ファイル読み書き・差分適用</td></tr>
+          <tr><td><code>web_scan</code> / <code>web_execute_js</code></td><td>ページ認識とブラウザ操作</td></tr>
+          <tr><td><code>ask_user</code></td><td>ヒト介入の確認</td></tr>
+          <tr><td><code>update_working_checkpoint</code> / <code>start_long_term_update</code></td><td>セッション横断の記憶更新（README 上 2 個の記憶系ツール）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="quickstart" class="sec-head">4 — クイックスタート</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 標準インストール</span>
+    <div class="ve-code-block"><pre><code># 1. 取得
+git clone https://github.com/lsdefine/GenericAgent.git
+cd GenericAgent
+
+# 2. 最小依存（README）
+pip install streamlit pywebview
+
+# 3. API キー
+cp mykey_template.py mykey.py
+# mykey.py を編集
+
+# 4. 起動（GUI）
+python launch.pyw</code></pre></div>
+    <p>CLI から試す場合は <code>python agentmain.py</code>（<code>GETTING_STARTED.md</code>）。変数名ルール（<code>oai_*</code> / <code>claude_*</code> / <code>native_*</code> など）で OpenAI 互換・Claude 互換・標準ツール呼び出し形式が切り替わる。</p>
+  </div>
+  <div class="ve-card ve-card--elevated" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> GETTING_STARTED の注意</span>
+    <ul>
+      <li>Python は <strong>3.11 / 3.12 推奨</strong>。3.14 は pywebview 等との非互換として言及あり。</li>
+      <li><code>apibase</code> は末尾のパス有無で自動連結の挙動が変わる（ホストのみ / <code>/v1</code> / フルパス）。</li>
+    </ul>
+  </div>
+
+  <section id="comparison" class="sec-head">5 — 類似ツールとの比較</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> README のマトリクス要約</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>観点</th><th>GenericAgent</th><th>OpenClaw</th><th>Claude Code</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>コード規模</td><td>~3K 行コア</td><td>~53 万行規模（README 記載）</td><td>大規模オープンソース</td></tr>
+          <tr><td>デプロイ</td><td><code>pip</code> + API キー</td><td>マルチサービス</td><td>CLI + サブスク</td></tr>
+          <tr><td>ブラウザ</td><td>実ブラウザ注入・セッション維持</td><td>サンドボックス／ヘッドレス</td><td>MCP 経由など</td></tr>
+          <tr><td>OS 操作</td><td>キーボード・マウス・視覚・ADB</td><td>マルチエージェント委譲</td><td>主にファイル + ターミナル</td></tr>
+          <tr><td>自己進化</td><td>Skill の自律蓄積</td><td>プラグインエコシステム</td><td>セッション間はステートレス寄り</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>数値・製品名は README の比較表に依拠。利用時は各プロダクトの最新ドキュメントを確認してほしい。</p>
+  </div>
+
+  <section id="interfaces" class="sec-head">6 — UI と Bot フロント</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 代表例</span>
+    <ul>
+      <li><strong>デフォルト:</strong> Streamlit + pywebview（<code>launch.pyw</code>）</li>
+      <li><strong>その他 GUI:</strong> <code>frontends/qtapp.py</code>、<code>streamlit run frontends/stapp2.py</code> など</li>
+      <li><strong>チャット系:</strong> Telegram、個人 WeChat、QQ、飛書、企業微信、钉钉 など README にエントリあり。必要パッケージと <code>mykey.py</code> の変数がそれぞれ異なる。</li>
+    </ul>
+  </div>
+
+  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・ソース</span>
+    <ul>
+      <li><a href="https://github.com/lsdefine/GenericAgent" target="_blank" rel="noopener">GitHub: lsdefine/GenericAgent</a></li>
+      <li>リポジトリ内: <code>README.md</code>、<code>GETTING_STARTED.md</code>、<code>LICENSE</code>（MIT）</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    look: 'classic',
+    themeVariables: {
+      primaryColor: isDark ? '#134e4a' : '#ccfbf1',
+      primaryBorderColor: isDark ? '#2dd4bf' : '#0d9488',
+      primaryTextColor: isDark ? '#f0fdfa' : '#134e4a',
+      lineColor: isDark ? '#64748b' : '#94a3b8',
+      fontSize: '15px'
+    }
+  });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
