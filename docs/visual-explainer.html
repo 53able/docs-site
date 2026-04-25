@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>visual-explainer 説明資料</title>
-  <meta name="description" content="ビジュアル解説の説明資料。">
+  <title>visual-explainer — Visual Explainer v0.6.3</title>
+  <meta name="description" content="複雑なターミナル出力を自己完結 HTML に変換する Agent Skill。v0.6.3 の Marketplace 対応、multi-diagram、diagram-shell、Class/C4 図、共有フローを整理。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="visual-explainer 説明資料">
-  <meta property="og:description" content="ビジュアル解説の説明資料。">
+  <meta property="og:title" content="visual-explainer — Visual Explainer v0.6.3">
+  <meta property="og:description" content="複雑なターミナル出力を自己完結 HTML に変換する Agent Skill。Marketplace 対応、multi-diagram、diagram-shell、Class/C4 図、共有フローを整理。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/visual-explainer.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="visual-explainer 説明資料">
-  <meta name="twitter:description" content="ビジュアル解説の説明資料。">
+  <meta name="twitter:title" content="visual-explainer — Visual Explainer v0.6.3">
+  <meta name="twitter:description" content="複雑なターミナル出力を自己完結 HTML に変換する Agent Skill。v0.6.3 の主要更新を整理。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -122,6 +122,11 @@
     .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
     .ve-callout strong { color: var(--foreground); font-weight: 600; }
     .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
 
     /* ============ RESET + BASE ============ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -171,7 +176,7 @@
     .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
     .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
     .sec-head:first-of-type { margin-top: 0; }
-    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    h2, h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
     p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
     ul { margin: 0 0 1rem; padding-left: 1.5rem; }
     li { margin-bottom: 0.35rem; }
@@ -179,6 +184,24 @@
     a:hover { color: var(--chart-3); }
     .ve-section-label .ve-dot { background: var(--chart-1); }
     .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .hero-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1rem; align-items: stretch; }
+    .hero-note { display: grid; gap: 0.75rem; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem; }
+    .feature-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .feature-card { min-width: 0; }
+    .feature-card h2 { margin-top: 0; }
+    .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+    .flow-step { position: relative; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; min-width: 0; }
+    .flow-step strong { display: block; margin-bottom: 0.4rem; }
+    .flow-step small { color: var(--muted-foreground); line-height: 1.5; }
+    .mini-list { list-style-position: inside; padding-left: 0; }
+    .mini-list li { overflow-wrap: break-word; }
+    .version-note { font-family: var(--font-mono); color: var(--text-dim); font-size: 0.8rem; }
+    @media (max-width: 900px) {
+      .hero-grid, .feature-grid, .flow { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
 
     /* ============ ANIMATION ============ */
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -191,55 +214,87 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
+    <a href="#updates">更新点</a>
     <a href="#install">インストール</a>
-    <a href="#commands">コマンド一覧</a>
-    <a href="#slides">スライドモード</a>
-    <a href="#how-it-works">仕組み</a>
+    <a href="#commands">コマンド</a>
+    <a href="#diagram-rules">図のルール</a>
+    <a href="#how-it-works">構成</a>
+    <a href="#share">共有</a>
     <a href="#limits">制限</a>
-    <a href="#credits">クレジット</a>
+    <a href="#credits">リンク</a>
   </nav>
 
   <div class="main">
   <h1>visual-explainer</h1>
-  <p class="subtitle">ターミナル出力を「読みたくなる」スタイル付き HTML に変えるエージェントスキル。アーキテクチャ図・diff レビュー・計画比較などを、ASCII アートではなく自己完結した HTML ページとしてブラウザで開けます。</p>
+  <p class="subtitle">v0.6.3 — 複雑なターミナル出力を、自己完結 HTML の図・表・レビュー・スライドに変換する Agent Skill。</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
-  <div class="ve-card ve-card--elevated" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-1)"></span> なぜ visual-explainer か</span>
-    <p>コーディングエージェントは図を頼まれると ASCII アートで返すことが多い。罫線文字や等幅の配置で、3 箱程度のフローならまだしも、それ以上は読みづらい。表も同様で、要求と計画を 15 項目比較するとパイプとダッシュの壁になり、データはあるが読むのがつらい。</p>
-    <p><strong>visual-explainer</strong> はそこで使うスキル。実際のタイポグラフィ、ダーク/ライトテーマ、ズーム・パン対応の Mermaid 図。ビルド不要で、ブラウザ以外の依存もありません。</p>
-    <div class="ve-callout">
-      <strong>自動発動:</strong> ターミナルに 4 行以上または 3 列以上の表を出そうとしたとき、代わりに HTML をレンダリングします。
+  <div class="hero-grid">
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-1)"></span> 何を解決するか</span>
+      <p>コーディングエージェントは、図や比較表を頼まれると ASCII アートや罫線テーブルへ寄りがち。visual-explainer はその出力を、ブラウザで読める <strong>スタイル付き HTML ページ</strong> に変換する。</p>
+      <p>対象はアーキテクチャ説明、diff レビュー、計画レビュー、プロジェクト復帰用 recap、ファクトチェック、データ表、スライドデッキ。生成物はビルド不要で、基本はブラウザだけで開ける。</p>
+      <div class="ve-callout">
+        <strong>自動発動:</strong> 4 行以上または 3 列以上の複雑な表をターミナルに出しそうな場面では、HTML テーブルとしてレンダリングする方針。
+      </div>
+    </div>
+    <div class="hero-note">
+      <div class="ve-kpi-card" style="--i:1">
+        <div class="ve-kpi-card__value">0.6.3</div>
+        <div class="ve-kpi-card__label">current version</div>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:2">
+        <p class="version-note">Claude Code Marketplace / Pi / Codex に対応。Mermaid は zoom・pan・expand 付きの diagram-shell を正とする。</p>
+      </div>
     </div>
   </div>
 
-  <section id="install" class="sec-head">2 — インストール</section>
+  <section id="updates" class="sec-head">2 — 最新更新点</section>
+  <div class="feature-grid">
+    <div class="ve-card feature-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-1)"></span> v0.6.3</span>
+      <h2>bare Mermaid を禁止</h2>
+      <p><code>&lt;pre class="mermaid"&gt;</code> だけでは図が小さくなりやすく、ズーム・パンもない。新しい説明では <code>templates/mermaid-flowchart.html</code> の <code>diagram-shell</code> パターンを丸ごと使う。</p>
+    </div>
+    <div class="ve-card feature-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-2)"></span> v0.6.0</span>
+      <h2>multi-diagram 対応</h2>
+      <p>ページ内に複数の Mermaid 図を置けるよう、図ごとの状態をクロージャで持つ <code>initDiagram(shell)</code> 方式へ移行。ID 衝突を避け、タッチ操作や double-click fit も扱う。</p>
+    </div>
+    <div class="ve-card feature-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-4)"></span> v0.6.1</span>
+      <h2>Pi のワンコマンド導入</h2>
+      <p><code>install-pi.sh</code> が追加され、スキル本体とプロンプトを <code>~/.pi/agent</code> 配下へコピーし、<code>{{skill_dir}}</code> を実インストール先にパッチする。</p>
+    </div>
+    <div class="ve-card feature-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-5)"></span> v0.5.x</span>
+      <h2>Marketplace 構造へ整理</h2>
+      <p>Claude Code plugin marketplace 仕様に合わせ、スキルは <code>plugins/visual-explainer/</code> に配置。Claude Code ではコマンドが <code>/visual-explainer:diff-review</code> のように名前空間付きになる。</p>
+    </div>
+  </div>
+
+  <section id="install" class="sec-head">3 — インストール</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-1)"></span> 導入方法</span>
 
-    <h3>Claude Code（マーケットプレース）</h3>
+    <h2>Claude Code（マーケットプレース）</h2>
     <div class="ve-code-block">
       <pre><code>/plugin marketplace add nicobailon/visual-explainer
 /plugin install visual-explainer@visual-explainer-marketplace</code></pre>
     </div>
     <p>コマンドは <code>/visual-explainer:コマンド名</code> のように名前空間付きになります。</p>
 
-    <h3>Pi（手動）</h3>
+    <h2>Pi（ワンコマンド）</h2>
     <div class="ve-code-block">
-      <pre><code># リポジトリをクローン
-git clone --depth 1 https://github.com/nicobailon/visual-explainer.git /tmp/visual-explainer
-
-# スキルをインストール
-cp -r /tmp/visual-explainer/plugins/visual-explainer ~/.pi/agent/skills/visual-explainer
-
-# スラッシュコマンド用プロンプトをインストール
-cp /tmp/visual-explainer/plugins/visual-explainer/commands/*.md ~/.pi/agent/prompts/
-
-# 後片付け
-rm -rf /tmp/visual-explainer</code></pre>
+      <pre><code>curl -fsSL https://raw.githubusercontent.com/nicobailon/visual-explainer/main/install-pi.sh | bash</code></pre>
+    </div>
+    <p>ローカルに clone している場合は、リポジトリ直下で <code>./install-pi.sh</code> を実行しても同じ導入フローになる。</p>
+    <div class="ve-code-block">
+      <pre><code>git clone --depth 1 https://github.com/nicobailon/visual-explainer.git
+cd visual-explainer && ./install-pi.sh</code></pre>
     </div>
 
-    <h3>OpenAI Codex</h3>
+    <h2>OpenAI Codex</h2>
     <div class="ve-code-block">
       <pre><code>git clone --depth 1 https://github.com/nicobailon/visual-explainer.git /tmp/visual-explainer
 cp -r /tmp/visual-explainer/plugins/visual-explainer ~/.agents/skills/visual-explainer
@@ -247,12 +302,12 @@ mkdir -p ~/.codex/prompts
 cp /tmp/visual-explainer/plugins/visual-explainer/commands/*.md ~/.codex/prompts/
 rm -rf /tmp/visual-explainer</code></pre>
     </div>
-    <p><code>$visual-explainer</code> で呼び出すか、プロンプトを入れた場合は <code>/prompts:diff-review</code> などを利用できます。</p>
+    <p><code>$visual-explainer</code> で呼び出すか、プロンプトを入れた場合は <code>/prompts:diff-review</code> などを利用する。Codex の slash prompts は deprecated 扱いだが、まだ動作する。</p>
   </div>
 
-  <section id="commands" class="sec-head">3 — コマンド一覧</section>
+  <section id="commands" class="sec-head">4 — コマンド一覧</section>
   <div class="ve-table-wrap" style="--i:0">
-      <table>
+      <table aria-label="visual-explainer のコマンド一覧">
         <thead>
           <tr>
             <th>コマンド</th>
@@ -296,18 +351,41 @@ rm -rf /tmp/visual-explainer</code></pre>
       </table>
     </div>
 
-  <section id="slides" class="sec-head">4 — スライドモード</section>
+  <section id="diagram-rules" class="sec-head">5 — 図解生成のルール</section>
   <div class="ve-card" style="--i:0">
-    <p>スクロール可能なページを出すコマンドには <code>--slides</code> を付けると、スライドデッキ形式で出力できます。</p>
+    <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-1)"></span> Mermaid は shell ごと使う</span>
+    <p>v0.6.3 の重要なルールは、Mermaid 図を裸の <code>&lt;pre class="mermaid"&gt;</code> で置かないこと。ズーム、パン、reset、expand、クリック展開まで含む <code>diagram-shell</code> 構造が canonical pattern になっている。</p>
     <div class="ve-code-block">
-      <pre><code>/diff-review --slides
-/project-recap --slides 2w</code></pre>
+      <pre><code>.diagram-shell
+└── .mermaid-wrap
+    ├── .zoom-controls
+    └── .mermaid-viewport
+        └── .mermaid-canvas
+            └── script.diagram-source</code></pre>
+    </div>
+    <div class="flow">
+      <div class="flow-step">
+        <strong>Flow / Sequence</strong>
+        <small>Mermaid。5+ nodes や分岐は TD 優先。</small>
+      </div>
+      <div class="flow-step">
+        <strong>Class / C4</strong>
+        <small>Class は <code>classDiagram</code>。C4 は native C4 ではなく <code>graph TD</code> + <code>subgraph</code>。</small>
+      </div>
+      <div class="flow-step">
+        <strong>Tables</strong>
+        <small>本物の <code>&lt;table&gt;</code>。ASCII 表や CSS Grid 代用は避ける。</small>
+      </div>
+      <div class="flow-step">
+        <strong>Large Architecture</strong>
+        <small>15+ 要素は hybrid。小さな Mermaid overview と詳細カードを分ける。</small>
+      </div>
     </div>
   </div>
 
-  <section id="how-it-works" class="sec-head">5 — 仕組み</section>
+  <section id="how-it-works" class="sec-head">6 — 構成</section>
   <div class="ve-card" style="--i:0">
-    <p>スキルは用途に応じて自動でアプローチを切り替えます。フローチャート・図は Mermaid、アーキテクチャ概要は CSS Grid、データは HTML テーブル、ダッシュボードは Chart.js など。</p>
+    <p>スキルは用途に応じてアプローチを切り替える。フローチャート・シーケンス・ER・Class・C4 は Mermaid、アーキテクチャ概要は CSS Grid、データは HTML テーブル、ダッシュボードは Chart.js が基本。</p>
     <div class="ve-code-block">
       <pre><code>.claude-plugin/
 ├── plugin.json           ← マーケットプレース用
@@ -331,67 +409,63 @@ plugins/
     └── scripts/
         └── share.sh      ← Vercel へデプロイ用</code></pre>
     </div>
-    <p><strong>出力先:</strong> <code>~/.agent/diagrams/ファイル名.html</code> に保存され、ブラウザで開きます。</p>
+    <p><strong>出力先:</strong> <code>~/.agent/diagrams/ファイル名.html</code> に保存され、ブラウザで開く。docs-site 用に転用する場合は、このページのように <code>docs/&lt;name&gt;.html</code> へ配置する。</p>
   </div>
 
-  <section id="limits" class="sec-head">6 — 制限</section>
+  <section id="share" class="sec-head">7 — 共有フロー</section>
   <div class="ve-card" style="--i:0">
-    <ul>
+    <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-2)"></span> /share</span>
+    <p><code>/share</code> は生成済み HTML を Vercel にデプロイし、ライブ URL と claim URL を返す共有用コマンド。内部では HTML を一時ディレクトリへ <code>index.html</code> としてコピーし、<code>vercel-deploy</code> skill で claimable deployment を作る。</p>
+    <div class="ve-code-block">
+      <pre><code>bash {{skill_dir}}/scripts/share.sh ~/.agent/diagrams/my-diagram.html</code></pre>
+    </div>
+  </div>
+
+  <section id="limits" class="sec-head">8 — 制限</section>
+  <div class="ve-card" style="--i:0">
+    <ul class="mini-list">
       <li>表示にはブラウザが必要</li>
       <li>OS のテーマ切り替え後、Mermaid の SVG を反映するにはページの再読み込みが必要</li>
       <li>結果はモデルの能力に依存する</li>
+      <li>共有 URL は公開デプロイになるため、機密情報を含む HTML には向かない</li>
     </ul>
   </div>
 
-  <section id="credits" class="sec-head">7 — クレジット・ライセンス</section>
+  <section id="credits" class="sec-head">9 — クレジット・リンク</section>
   <div class="ve-callout" style="margin-top:0;">
     <p>Anthropic の <a href="https://github.com/anthropics/skills" target="_blank" rel="noopener">frontend-design skill</a> と <a href="https://github.com/Dammyjay93/interface-design" target="_blank" rel="noopener">interface-design</a> のアイデアを参考にしています。</p>
     <p><strong>ライセンス</strong>：MIT</p>
     <p><strong>リポジトリ</strong>：<a href="https://github.com/nicobailon/visual-explainer" target="_blank" rel="noopener">nicobailon/visual-explainer</a>（GitHub）</p>
+    <p><strong>参照バージョン</strong>：<code>0.6.3</code></p>
   </div>
   </div><!-- /main -->
 </div><!-- /wrap -->
 
 <script>
 (function() {
-  const toc = document.getElementById('toc');
-  const links = toc.querySelectorAll('a');
-  const sections = [];
-
-  links.forEach(function(link) {
-    const id = link.getAttribute('href').slice(1);
-    const el = document.getElementById(id);
-    if (el) sections.push({ id: id, el: el, link: link });
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
   });
-
-  const observer = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        links.forEach(function(l) { l.classList.remove('active'); });
-        const match = sections.find(function(s) { return s.el === entry.target; });
-        if (match) {
-          match.link.classList.add('active');
-          if (window.innerWidth <= 1000) {
-            match.link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-          }
-        }
-      }
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
     });
-  }, { rootMargin: '-10% 0px -80% 0px' });
-
-  sections.forEach(function(s) { observer.observe(s.el); });
-
-  links.forEach(function(link) {
-    link.addEventListener('click', function(e) {
-      e.preventDefault();
-      const id = link.getAttribute('href').slice(1);
-      const el = document.getElementById(id);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        history.replaceState(null, '', '#' + id);
-      }
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
     });
-  });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
 })();
 </script>
 </body>
