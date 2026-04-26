@@ -8,9 +8,11 @@
 - [ ] Step 1（code-reading）を必要範囲で実施している
 - [ ] Step 3 前に `references/visual-explainer-core.md` の Think / Structure / Style と品質・アンチパターンを踏まえている
 - [ ] 解説ページが `docs/` にあり、Spell UI と既存 `docs/*.html` の体裁に揃っている
+- [ ] **解説時点のソース**が本文にあり、**コミット（short SHA 7 桁）**・**コミット日時**・**ブランチまたは detached の旨**が明記されている（`git describe --tags --always` も取得できたら記載）
 - [ ] `<head>` に Unfurl（description ＋ Open Graph ＋ Twitter Card、コメント付き）が含まれている
 - [ ] index の `.doc-list` にリンクカードを追加している
 - [ ] main に直接コミットしておらず、ブランチでコミットしている（`repos/` はコミットに含めない）
+- [ ] ドラフト PR の本文に **解説元**と **解説時点のコミット（7 桁）** が含まれている
 - [ ] ドラフト PR を作成し、作成後に main に戻っている
 
 ## ビジュアル品質（Spell UI）

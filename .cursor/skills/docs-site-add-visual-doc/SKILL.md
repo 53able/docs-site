@@ -2,6 +2,7 @@
 name: docs-site-add-visual-doc
 description: >-
   Adds Spell UI visual documentation pages to docs-site from repos/ sources: optional clone into repos/,
+  records source repo version (git describe / short SHA / branch / commit date) in the HTML page,
   Context Engineering (JiT loading, structured extraction, self-refinement), scan-source.sh inventory,
   Think–Structure–Style and templates, writes docs/<name>.html, links index.html, opens draft PRs.
   Use when converting READMEs, SKILLs, or cloned repos under repos/ into docs-site pages.
@@ -47,6 +48,20 @@ description: >-
 4. 既存あり **かつ Git リポジトリ**: `git -C repos/<clone-dir> pull --ff-only` を試す。衝突時は別名を確認。
 5. 新規: `git clone <URL> repos/<clone-dir>`（任意で `--depth 1`）。
 6. `ls repos/<clone-dir>` で取得を確認。以降 **`repos/<clone-dir>` を解説ルート**とする。
+7. **リポジトリバージョンの取得（必須）**: `repos/<clone-dir>` が Git リポジトリのとき、解説 HTML に載せる値をシェルで確定する（失敗時は手動で `git -C` を再実行）。
+
+```bash
+# プロジェクトルートで実行。値は Phase 4 の「解説時点のソース」ブロックにそのまま使う。
+git -C repos/<clone-dir> rev-parse --short=7 HEAD
+git -C repos/<clone-dir> describe --tags --always 2>/dev/null || true
+git -C repos/<clone-dir> symbolic-ref -q --short HEAD 2>/dev/null || git -C repos/<clone-dir> name-rev --name-only HEAD 2>/dev/null || echo "(detached)"
+git -C repos/<clone-dir> log -1 --format=%ci
+```
+
+- **short SHA**: 先頭 **7 桁**（ユーザー向け表示・PR 本文でも同一）。
+- **describe**: タグが無い場合はコミット短縮表記（例: `abcdef0`）になる。
+- **ブランチ**: detached のときは `(detached)` または `name-rev` の結果をそのまま記載。
+- ソースが **Git 以外**（ZIP のみ等）のときは「バージョン不明」と理由を 1 行で書く。
 
 ### Step 1a: スキャン（推奨）
 
@@ -107,9 +122,16 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 `references/visual-explainer-core.md` と Phase 2 の既存 HTML を踏まえ、新規 `docs/<名前>.html` を作成する。`<名前>` はソースディレクトリ名と一致させる。
 
 1. **Unfurl**: 既存 `docs/*.html` と同形式。`og:url` = `https://tadano-go.github.io/docs-site/docs/<ファイル名>.html`。
-2. **Spell UI**: THEME → Spell UI static → Wrap+TOC → …。`.ve-card`、`ve-code-block`、`ve-table-wrap` 等は `spell-ui-map.md` と内容に合わせて使う。
-3. **4 セクション以上**: `.wrap` / `.toc` / `.main`、Scroll Spy を `defuddle.html` からコピー。
-4. **Mermaid・表・図**: `visual-explainer-core.md` の Diagram Types と **`references/libraries.md`**。
+2. **解説時点のソース（必須）**: 本文の冒頭付近（`<h1>` の直後か、導入段落の前）に **リポジトリのバージョン情報**を視認できる形で置く。Spell UI の既存パターンに合わせ、`ve-card` または `p`（`color: var(--text-dim)` 等）でよい。**含める項目**:
+   - **コミット**（short SHA **7 桁**）
+   - **`git describe --tags --always` の一行**（取得できた場合）
+   - **ブランチ名**（detached のときはその旨）
+   - **対象コミット日時**（`git log -1 --format=%ci`、読みやすい表記にしてよい）
+   - クローン元 URL または `repos/<名前>` パスが分かるなら **リポジトリ参照**（GitHub リンク等）を併記
+   - HTML コメントで機械可読に残す場合: `<!-- source-repo-commit: <7桁SHA> -->` を `<head>` 直後または該当セクション直前に 1 行
+3. **Spell UI**: THEME → Spell UI static → Wrap+TOC → …。`.ve-card`、`ve-code-block`、`ve-table-wrap` 等は `spell-ui-map.md` と内容に合わせて使う。
+4. **4 セクション以上**: `.wrap` / `.toc` / `.main`、Scroll Spy を `defuddle.html` からコピー。
+5. **Mermaid・表・図**: `visual-explainer-core.md` の Diagram Types と **`references/libraries.md`**。
 
 ### テンプレート選択（`assets/`）
 
@@ -134,10 +156,11 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 
 1. `docs/<名前>.html` が存在し、ブラウザで開ける構造になっている。
 2. `<head>` に `og:title` / `og:url` / `og:description` / `twitter:card` がコメント付きで揃っている。
-3. `index.html` の `.doc-list` にリンクカードが追加されている。
-4. 4 セクション以上の場合、Scroll Spy スクリプトが `defuddle.html` のパターン（`toggle('active', s === current)`）と一致している。
-5. フォントとアクセントカラーが既存 `docs/*.html` と被っていない（`references/spell-ui-map.md` の差別化チェック）。
-6. `git status` で `repos/` がステージングされていない。
+3. **解説時点のソース**ブロックがあり、**7 桁のコミット SHA** と **コミット日時**が本文に明記されている（Step 0 の `git` 出力と一致）。
+4. `index.html` の `.doc-list` にリンクカードが追加されている。
+5. 4 セクション以上の場合、Scroll Spy スクリプトが `defuddle.html` のパターン（`toggle('active', s === current)`）と一致している。
+6. フォントとアクセントカラーが既存 `docs/*.html` と被っていない（`references/spell-ui-map.md` の差別化チェック）。
+7. `git status` で `repos/` がステージングされていない。
 
 **全項目チェック:** `references/checklist.md` を読んで残りの項目を確認する。
 
@@ -174,7 +197,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
    - `.cursor/skills/pr-creation/SKILL.md` を読み、環境検出コマンドを実行する。
    - `.cursor/skills/pr-creation/templates.md` を読み、PR タイトルと本文を生成する。
      - ベースブランチは MUST `main`。他は絶対に指定しない。
-     - PR 本文に **解説元**（URL または `repos/<名前>`）と **変更ファイル**を含める。
+     - PR 本文に **解説元**（URL または `repos/<名前>`）、**解説時点のコミット**（short SHA **7 桁**）、**変更ファイル**を含める。
      - 絵文字は使用しない。
    - `.cursor/skills/pr-creation/decision-logic.md` を読み、ベースブランチとタイトル形式を確認する。
    - `.cursor/skills/pr-creation/safety-checks.md` を読み、Self-Refine 評価を実施する。
@@ -193,6 +216,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 | `doc-list` の位置が分からない | `rg -n "doc-list" index.html` |
 | フォント・パレットが既存と被る | `references/spell-ui-map.md` の差別化チェック |
 | `repos/` がステージに混入した | `git reset HEAD repos/` で除外してからコミット |
+| `git -C repos/...` が失敗する | パス typo と `repos/<名前>` が Git か確認。非 Git のみのソースは HTML に「バージョン不明」と理由を記載 |
 | commit-diffs または pr-creation スキルを部分的に読んで実行した | スキル内のすべての参照ファイルを読み直し、未実施ステップを実行する |
 
 ---
