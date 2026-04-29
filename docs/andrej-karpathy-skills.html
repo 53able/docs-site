@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>andrej-karpathy-skills — Karpathy 由来の Claude Code 行動指針</title>
-  <meta name="description" content="Andrej Karpathy の観察に基づく LLM コーディングの落とし穴対策。Think Before Coding・Simplicity First・Surgical Changes・Goal-Driven Execution の 4 原則とインストール手順。">
+  <title>andrej-karpathy-skills — Karpathy 由来のコーディングエージェント行動指針</title>
+  <meta name="description" content="Andrej Karpathy の観察に基づく LLM コーディングの落とし穴対策。4 原則、Claude Code プラグイン、Cursor project rule、実例集の関係を整理。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="andrej-karpathy-skills — Karpathy 由来の Claude Code 行動指針">
-  <meta property="og:description" content="4 原則で暗黙の前提・過剰設計・無関係な編集を抑え、検証可能なゴール駆動のコーディングを促す Claude Code プラグイン / CLAUDE.md。">
+  <meta property="og:title" content="andrej-karpathy-skills — Karpathy 由来のコーディングエージェント行動指針">
+  <meta property="og:description" content="4 原則で暗黙の前提・過剰設計・無関係な編集を抑え、Claude Code と Cursor の両方で検証可能なゴール駆動のコーディングを促す。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/andrej-karpathy-skills.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="andrej-karpathy-skills — Karpathy 由来の Claude Code 行動指針">
-  <meta name="twitter:description" content="4 原則とインストール。Claude Code プラグインまたは CLAUDE.md への取り込み。">
+  <meta name="twitter:title" content="andrej-karpathy-skills — Karpathy 由来のコーディングエージェント行動指針">
+  <meta name="twitter:description" content="4 原則、Claude Code プラグイン、Cursor project rule、実例集の整理。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Cousine:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -113,6 +113,7 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; padding: 0; tab-size: 2; }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
@@ -187,6 +188,11 @@
     @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
 
     .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+    .surface-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+    .surface-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; min-width: 0; }
+    .surface-card h3 { margin-top: 0; }
+    .surface-card p { font-size: 0.8125rem; color: var(--text-dim); margin-bottom: 0; }
+    @media (max-width: 760px) { .surface-grid { grid-template-columns: 1fr; } }
 
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
@@ -201,7 +207,9 @@
     <a href="#problems">問題意識</a>
     <a href="#principles">4 原則</a>
     <a href="#flow">関係図</a>
+    <a href="#examples">具体例</a>
     <a href="#install">導入</a>
+    <a href="#cursor">Cursor</a>
     <a href="#signals">効き目の目安</a>
     <a href="#tradeoff">トレードオフ</a>
     <a href="#links">参考リンク</a>
@@ -209,12 +217,12 @@
 
   <div class="main">
   <h1>andrej-karpathy-skills</h1>
-  <p class="subtitle">Karpathy-Inspired Claude Code Guidelines — 単一の <code>CLAUDE.md</code> と Agent Skill で配布される行動規範</p>
+  <p class="subtitle">Karpathy-Inspired Coding Agent Guidelines — <code>CLAUDE.md</code>、Claude Code Skill、Cursor project rule で配布される行動規範</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何のためか</span>
-    <p>このリポジトリは、<a href="https://x.com/karpathy/status/2015883857489522876" target="_blank" rel="noopener">Andrej Karpathy が指摘した LLM コーディングの癖</a>に対し、<strong>4 つの原則</strong>でブレーキと方針を与えるための素材をまとめたもの。中核は <code>CLAUDE.md</code>（プロジェクト直下に置く指示）と、Claude Code プラグインとしての <strong>Skill</strong>（<code>karpathy-guidelines</code>）である。</p>
+    <p>このリポジトリは、<a href="https://x.com/karpathy/status/2015883857489522876" target="_blank" rel="noopener">Andrej Karpathy が指摘した LLM コーディングの癖</a>に対し、<strong>4 つの原則</strong>でブレーキと方針を与えるための素材をまとめたもの。中核は <code>CLAUDE.md</code>、Claude Code プラグインとしての <strong>Skill</strong>（<code>karpathy-guidelines</code>）、Cursor 用の project rule、そして失敗例と修正例を集めた <code>EXAMPLES.md</code> である。</p>
     <div class="kpi-row">
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">Think</span><span class="ve-kpi-card__label">前提を明示</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">Simple</span><span class="ve-kpi-card__label">最小のコード</span></div>
@@ -222,6 +230,20 @@
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">Goals</span><span class="ve-kpi-card__label">検証可能なゴール</span></div>
     </div>
     <p>キーインサイト（README より）: 「LLM は具体的なゴールがあれば、それを満たすまでループするのが得意」— だから<strong>手順命令</strong>より<strong>成功条件と検証</strong>を渡す設計に寄せる。</p>
+    <div class="surface-grid">
+      <div class="surface-card">
+        <h3>Claude Code</h3>
+        <p>Marketplace plugin と Skill で、複数プロジェクトに再利用しやすい形で配布。</p>
+      </div>
+      <div class="surface-card">
+        <h3>Cursor</h3>
+        <p><code>.cursor/rules/karpathy-guidelines.mdc</code> が <code>alwaysApply: true</code> で同梱される。</p>
+      </div>
+      <div class="surface-card">
+        <h3>Root Instructions</h3>
+        <p>ツールが project rule や plugin を読まない場合は <code>CLAUDE.md</code> を取り込む。</p>
+      </div>
+    </div>
   </div>
 
   <section id="problems" class="sec-head">2 — 問題意識（出典の要約）</section>
@@ -299,10 +321,32 @@ flowchart TB
     </div>
   </div>
 
-  <section id="install" class="sec-head">5 — 導入</section>
+  <section id="examples" class="sec-head">5 — 具体例</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> EXAMPLES.md の読みどころ</span>
+    <p><code>EXAMPLES.md</code> は、4 原則を抽象論で終わらせず、LLM がやりがちな「それっぽいが危ない」実装と、望ましい応答を対比する実例集になっている。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>原則</th><th>やりがちな失敗</th><th>望ましい振る舞い</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Think Before Coding</strong></td><td>エクスポート範囲・形式・項目を勝手に決める</td><td>スコープ、形式、機密フィールド、件数を先に確認する</td></tr>
+          <tr><td><strong>Simplicity First</strong></td><td>単純な割引計算に Strategy / Config / Calculator を先回りで作る</td><td>今日必要な 1 関数で解き、複雑さは要求が出た時点で足す</td></tr>
+          <tr><td><strong>Surgical Changes</strong></td><td>バグ修正ついでにコメント、型注釈、引用符、周辺ロジックまで変える</td><td>報告された不具合に直結する行だけを変え、既存スタイルに合わせる</td></tr>
+          <tr><td><strong>Goal-Driven Execution</strong></td><td>「調査して改善します」のまま成功条件なしで走る</td><td>再現テスト、実装、回帰確認を各ステップの verify として置く</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>要点:</strong> 悪い例は必ずしも雑なコードではない。問題は<strong>必要になる前に複雑さを足すタイミング</strong>で、EXAMPLES.md はその境界を見える化している。
+    </div>
+  </div>
+
+  <section id="install" class="sec-head">6 — 導入</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> Claude Code プラグイン（推奨）</span>
-    <p>マーケットプレイス登録後、プラグイン名でインストールする流れ（README 準拠）。</p>
+    <p>マーケットプレイス登録後、プラグイン名でインストールする流れ（README 準拠）。プラグイン定義では <code>skills/karpathy-guidelines</code> が公開 Skill として参照される。</p>
     <div class="ve-code-block">
       <pre><code>/plugin marketplace add forrestchang/andrej-karpathy-skills
 
@@ -319,7 +363,29 @@ curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/
     <p>Skill 本体のエントリは <code>skills/karpathy-guidelines/SKILL.md</code>。エージェント向けの説明文と YAML フロントマター（<code>name</code> / <code>description</code> / <code>license</code>）が定義されている。</p>
   </div>
 
-  <section id="signals" class="sec-head">6 — 効き目の目安</section>
+  <section id="cursor" class="sec-head">7 — Cursor での使い方</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Project rule と同期対象</span>
+    <p>最新の README では Cursor 対応が明記された。このリポジトリには <code>.cursor/rules/karpathy-guidelines.mdc</code> がコミットされており、<code>alwaysApply: true</code> の project rule として自動適用される。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>利用面</th><th>使うファイル</th><th>注意点</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>このリポジトリを Cursor で開く</strong></td><td><code>.cursor/rules/karpathy-guidelines.mdc</code></td><td>追加インストールなし。Settings → Rules で確認できる。</td></tr>
+          <tr><td><strong>別プロジェクトの Cursor に持ち込む</strong></td><td><code>.cursor/rules/karpathy-guidelines.mdc</code></td><td>対象プロジェクトの <code>.cursor/rules/</code> にコピーし、既存ルールと必要に応じて統合する。</td></tr>
+          <tr><td><strong>Cursor 以外の root instruction</strong></td><td><code>CLAUDE.md</code></td><td>ツールが Cursor rule や plugin を読まない場合に取り込む。</td></tr>
+          <tr><td><strong>個人用 Agent Skill</strong></td><td><code>skills/karpathy-guidelines/SKILL.md</code></td><td>個人のスキルディレクトリにコピーまたは symlink して再利用する。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>同期ルール:</strong> 4 原則を変えるときは <code>CLAUDE.md</code>、Cursor project rule、Skill 本体を揃える。Claude Code は plugin / <code>CLAUDE.md</code>、Cursor は project rule を主に読む、という役割分担。
+    </div>
+  </div>
+
+  <section id="signals" class="sec-head">8 — 効き目の目安</section>
   <div class="ve-card ve-card--recessed" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> うまくいっているサイン</span>
     <ul>
@@ -330,7 +396,7 @@ curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/
     </ul>
   </div>
 
-  <section id="tradeoff" class="sec-head">7 — トレードオフ</section>
+  <section id="tradeoff" class="sec-head">9 — トレードオフ</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 速度とのバランス</span>
     <div class="ve-callout">
@@ -339,12 +405,14 @@ curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/
     <p>プロジェクト固有ルールは <code>## Project-Specific Guidelines</code> などで追記し、この 4 原則と合成して使う想定。</p>
   </div>
 
-  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <section id="links" class="sec-head">10 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・出典</span>
     <ul>
       <li><a href="https://github.com/forrestchang/andrej-karpathy-skills" target="_blank" rel="noopener">GitHub: forrestchang/andrej-karpathy-skills</a> — 本体リポジトリ（README・プラグイン・<code>CLAUDE.md</code>）</li>
       <li><a href="https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md" target="_blank" rel="noopener">CLAUDE.md（raw）</a> — プロジェクト直下に置く行動規範テキスト</li>
+      <li><a href="https://github.com/forrestchang/andrej-karpathy-skills/blob/main/CURSOR.md" target="_blank" rel="noopener">CURSOR.md</a> — Cursor project rule の使い方と Claude Code との違い</li>
+      <li><a href="https://github.com/forrestchang/andrej-karpathy-skills/blob/main/EXAMPLES.md" target="_blank" rel="noopener">EXAMPLES.md</a> — 4 原則ごとの失敗例と修正例</li>
       <li><a href="https://github.com/forrestchang/andrej-karpathy-skills/blob/main/skills/karpathy-guidelines/SKILL.md" target="_blank" rel="noopener">skills/karpathy-guidelines/SKILL.md</a> — Claude Code 用 Skill 定義</li>
       <li><a href="https://x.com/karpathy/status/2015883857489522876" target="_blank" rel="noopener">Andrej Karpathy（X）— LLM コーディングの癖に関する投稿</a> — 本ガイドラインの着想・出典</li>
     </ul>
