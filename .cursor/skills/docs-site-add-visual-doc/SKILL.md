@@ -110,6 +110,18 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 2. **Spell UI**: THEME → Spell UI static → Wrap+TOC → …。`.ve-card`、`ve-code-block`、`ve-table-wrap` 等は `spell-ui-map.md` と内容に合わせて使う。
 3. **4 セクション以上**: `.wrap` / `.toc` / `.main`、Scroll Spy を `defuddle.html` からコピー。
 4. **Mermaid・表・図**: `visual-explainer-core.md` の Diagram Types と **`references/libraries.md`**。
+5. **コードブロック可読性**: グローバル `code { background: ...; padding: ... }` を使う場合、`.ve-code-block pre code` で必ず打ち消す。打ち消しが無いとコード行が帯状になり読めない。
+
+```css
+.ve-code-block pre code {
+  display: block;
+  background: transparent;
+  border-radius: 0;
+  color: var(--code-text);
+  padding: 0;
+  tab-size: 2;
+}
+```
 
 ### テンプレート選択（`assets/`）
 
@@ -137,7 +149,8 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 3. `index.html` の `.doc-list` にリンクカードが追加されている。
 4. 4 セクション以上の場合、Scroll Spy スクリプトが `defuddle.html` のパターン（`toggle('active', s === current)`）と一致している。
 5. フォントとアクセントカラーが既存 `docs/*.html` と被っていない（`references/spell-ui-map.md` の差別化チェック）。
-6. `git status` で `repos/` がステージングされていない。
+6. コードブロックがある場合、`.ve-code-block pre code` が `background: transparent` / `padding: 0` を持ち、インラインコード用背景がコード全体に漏れていない。
+7. `git status` で `repos/` がステージングされていない。
 
 **全項目チェック:** `references/checklist.md` を読んで残りの項目を確認する。
 
@@ -190,6 +203,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 | `repos/<name>` が Glob で見つからない | `.gitignore` のため Glob 不可。`ls` または `Read` で直接確認 |
 | README が無い | メインエントリから直接読む |
 | Scroll Spy が動かない | `docs/defuddle.html` 末尾スクリプトを再コピー。`toggle` パターンを確認 |
+| コードブロックがベージュ/灰色の帯で読みにくい | グローバル `code` スタイルが漏れている。`.ve-code-block pre code { background: transparent; padding: 0; }` を追加 |
 | `doc-list` の位置が分からない | `rg -n "doc-list" index.html` |
 | フォント・パレットが既存と被る | `references/spell-ui-map.md` の差別化チェック |
 | `repos/` がステージに混入した | `git reset HEAD repos/` で除外してからコミット |
