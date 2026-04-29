@@ -24,6 +24,7 @@ description: >-
 - **対象**: docs-site リポジトリ内。解説の正は **`repos/<名前>/`**（URL クローン時は Step 0 で取得）。
 - **出力**: `<プロジェクトルート>/docs/<名前>.html`。`assets/` 内の Markdown プロンプトが参照する `~/.agent/diagrams/` は **docs-site 作業では使わない**（standalone HTML 生成用）。
 - **ファイル名・ブランチ名**: 単語連結 **最大 4 つ**。
+- **公開表記**: 生成 HTML と PR 本文に、ローカル絶対パス（例: `/Users/...`）や作業ツリー前提の `repos/<名前>/...` をそのまま載せない。公開ページでは GitHub URL、プロジェクト名（例: `mattpocock/skills`）、またはリポジトリ内相対パス（例: `README.md`）へ変換する。
 
 > `repos/` は `.gitignore` 対象のため Glob で見えない。`ls` または Read でパス直接確認する。
 
@@ -111,6 +112,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 3. **4 セクション以上**: `.wrap` / `.toc` / `.main`、Scroll Spy を `defuddle.html` からコピー。
 4. **Mermaid・表・図**: `visual-explainer-core.md` の Diagram Types と **`references/libraries.md`**。
 5. **コードブロック可読性**: グローバル `code { background: ...; padding: ... }` を使う場合、`.ve-code-block pre code` で必ず打ち消す。打ち消しが無いとコード行が帯状になり読めない。
+6. **パスの公開化**: 本文・ラベル・出典表記では、読み取り元の `repos/<clone-dir>/...` を公開向けに言い換える。例: `repos/mattpocock/skills/README.md` は `mattpocock/skills の README.md` または `README.md` と書く。
 
 ```css
 .ve-code-block pre code {
@@ -151,6 +153,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 5. フォントとアクセントカラーが既存 `docs/*.html` と被っていない（`references/spell-ui-map.md` の差別化チェック）。
 6. コードブロックがある場合、`.ve-code-block pre code` が `background: transparent` / `padding: 0` を持ち、インラインコード用背景がコード全体に漏れていない。
 7. `git status` で `repos/` がステージングされていない。
+8. `scripts/validate-public-paths.sh docs/<名前>.html` を実行し、ローカル絶対パスと `repos/<名前>/...` 表記が公開 HTML に残っていないことを確認する。
 
 **全項目チェック:** `references/checklist.md` を読んで残りの項目を確認する。
 
@@ -187,7 +190,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
    - `.cursor/skills/pr-creation/SKILL.md` を読み、環境検出コマンドを実行する。
    - `.cursor/skills/pr-creation/templates.md` を読み、PR タイトルと本文を生成する。
      - ベースブランチは MUST `main`。他は絶対に指定しない。
-     - PR 本文に **解説元**（URL または `repos/<名前>`）と **変更ファイル**を含める。
+     - PR 本文に **解説元**（GitHub URL または公開向けプロジェクト名。`repos/<名前>` は避ける）と **変更ファイル**を含める。
      - 絵文字は使用しない。
    - `.cursor/skills/pr-creation/decision-logic.md` を読み、ベースブランチとタイトル形式を確認する。
    - `.cursor/skills/pr-creation/safety-checks.md` を読み、Self-Refine 評価を実施する。
@@ -207,6 +210,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 | `doc-list` の位置が分からない | `rg -n "doc-list" index.html` |
 | フォント・パレットが既存と被る | `references/spell-ui-map.md` の差別化チェック |
 | `repos/` がステージに混入した | `git reset HEAD repos/` で除外してからコミット |
+| 公開 HTML に `/Users/...` や `repos/<名前>/...` が残った | `scripts/validate-public-paths.sh docs/<名前>.html` の検出箇所を、GitHub URL・プロジェクト名・リポジトリ内相対パスへ置換 |
 | commit-diffs または pr-creation スキルを部分的に読んで実行した | スキル内のすべての参照ファイルを読み直し、未実施ステップを実行する |
 
 ---

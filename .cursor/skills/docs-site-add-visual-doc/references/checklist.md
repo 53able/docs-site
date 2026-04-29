@@ -11,6 +11,7 @@
 - [ ] `<head>` に Unfurl（description ＋ Open Graph ＋ Twitter Card、コメント付き）が含まれている
 - [ ] index の `.doc-list` にリンクカードを追加している
 - [ ] コードブロックがある場合、`.ve-code-block pre code` でインラインコード用の `background` / `padding` を打ち消し、コードが帯状表示になっていない
+- [ ] `scripts/validate-public-paths.sh docs/<名前>.html` を実行し、公開 HTML に `/Users/...` などのローカル絶対パスや `repos/<名前>/...` が残っていない
 - [ ] main に直接コミットしておらず、ブランチでコミットしている（`repos/` はコミットに含めない）
 - [ ] ドラフト PR を作成し、作成後に main に戻っている
 
