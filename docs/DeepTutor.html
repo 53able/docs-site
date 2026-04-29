@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepTutor — Agent-Native パーソナライズド AI 家庭教師</title>
+  <meta name="description" content="HKUDS が開発した Agent-Native 学習プラットフォーム。TutorBot・5モードChat・CLI・Guided Learning を統合した次世代 AI チューター。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="DeepTutor — Agent-Native パーソナライズド AI 家庭教師">
+  <meta property="og:description" content="HKUDS が開発した Agent-Native 学習プラットフォーム。TutorBot・5モードChat・CLI・Guided Learning を統合した次世代 AI チューター。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/DeepTutor.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="DeepTutor — Agent-Native パーソナライズド AI 家庭教師">
+  <meta name="twitter:description" content="HKUDS が開発した Agent-Native 学習プラットフォーム。TutorBot・5モードChat・CLI を統合した次世代 AI チューター。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + Sora / JetBrains Mono) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.003 248);
+      --foreground: oklch(0.14 0.02 248);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.14 0.02 248);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.14 0.02 248);
+      --primary: oklch(0.38 0.12 248);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.96 0.006 248);
+      --secondary-foreground: oklch(0.25 0.04 248);
+      --muted: oklch(0.96 0.005 248);
+      --muted-foreground: oklch(0.52 0.03 248);
+      --accent: oklch(0.96 0.005 248);
+      --accent-foreground: oklch(0.25 0.04 248);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.90 0.01 248);
+      --input: oklch(0.90 0.01 248);
+      --ring: oklch(0.70 0.05 248);
+      /* Blueprint: deep blue × gold */
+      --chart-1: oklch(0.38 0.12 248);   /* deep blue */
+      --chart-2: oklch(0.72 0.17 76);    /* gold */
+      --chart-3: oklch(0.55 0.10 200);   /* teal */
+      --chart-4: oklch(0.60 0.15 30);    /* rust */
+      --chart-5: oklch(0.65 0.12 140);   /* sage */
+      --code-bg: oklch(0.96 0.005 248);
+      --code-text: oklch(0.30 0.12 248);
+      --font-body: 'Sora', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.12 0.015 248);
+        --foreground: oklch(0.95 0.008 248);
+        --card: oklch(0.18 0.018 248);
+        --card-foreground: oklch(0.95 0.008 248);
+        --popover: oklch(0.18 0.018 248);
+        --popover-foreground: oklch(0.95 0.008 248);
+        --primary: oklch(0.75 0.10 248);
+        --primary-foreground: oklch(0.12 0.015 248);
+        --secondary: oklch(0.22 0.022 248);
+        --secondary-foreground: oklch(0.95 0.008 248);
+        --muted: oklch(0.24 0.018 248);
+        --muted-foreground: oklch(0.65 0.04 248);
+        --accent: oklch(0.24 0.018 248);
+        --accent-foreground: oklch(0.95 0.008 248);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.50 0.08 248);
+        --chart-1: oklch(0.60 0.14 248);
+        --chart-2: oklch(0.78 0.17 76);
+        --chart-3: oklch(0.65 0.12 200);
+        --chart-4: oklch(0.68 0.14 30);
+        --chart-5: oklch(0.70 0.11 140);
+        --code-bg: oklch(0.14 0.015 248);
+        --code-text: oklch(0.78 0.10 248);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 85%, var(--chart-1) 15%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-section-label .ve-dot--gold { background: var(--chart-2); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; flex: 1; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: var(--muted); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 700; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.72 0.17 76 / 0.12); color: var(--chart-2); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 20% 0%, oklch(0.38 0.12 248 / 0.07) 0%, transparent 45%),
+        radial-gradient(ellipse at 85% 80%, oklch(0.72 0.17 76 / 0.05) 0%, transparent 40%);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.60 0.14 248 / 0.10) 0%, transparent 45%), radial-gradient(ellipse at 85% 80%, oklch(0.78 0.17 76 / 0.06) 0%, transparent 40%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.5; }
+    .subtitle code { font-family: var(--font-mono); font-size: 0.75rem; background: color-mix(in oklch, var(--muted) 80%, var(--chart-1) 20%); color: var(--chart-1); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 0.875rem; padding-left: 1.5rem; }
+    ol { margin: 0 0 0.875rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { opacity: 0.75; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); color: var(--chart-1); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    strong { font-weight: 600; }
+
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.875rem; margin-bottom: 1.25rem; }
+    @media (max-width: 720px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Mode table grid ============ */
+    .mode-grid { display: grid; gap: 0.75rem; margin-bottom: 0.75rem; }
+
+    /* ============ Mode cards ============ */
+    .mode-card { display: grid; grid-template-columns: auto 1fr; gap: 0 1rem; align-items: start; }
+    .mode-num { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: var(--chart-2); background: color-mix(in oklch, var(--muted) 70%, var(--chart-2) 30%); padding: 2px 8px; border-radius: 4px; white-space: nowrap; margin-top: 2px; }
+    .mode-name { font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.25rem; }
+    .mode-desc { font-size: 0.8125rem; line-height: 1.55; color: var(--text-dim); }
+
+    /* ============ Step flow ============ */
+    .step-flow { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1rem 0; }
+    @media (max-width: 600px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--chart-1); margin-bottom: 0.375rem; }
+    .step-card__title { font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.375rem; }
+    .step-card__body { font-size: 0.8125rem; line-height: 1.55; color: var(--text-dim); }
+
+    /* ============ Architecture diagram ============ */
+    .arch-diagram { margin: 1rem 0; }
+    .mermaid-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+    .mermaid-wrap .mermaid { width: 100%; }
+
+    /* ============ Feature pill list ============ */
+    .pill-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; }
+    .pill { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--muted); color: var(--text-dim); }
+    .pill--blue { border-color: color-mix(in oklch, var(--border) 40%, var(--chart-1) 60%); background: color-mix(in oklch, var(--muted) 60%, var(--chart-1) 40%); color: var(--chart-1); }
+    .pill--gold { border-color: color-mix(in oklch, var(--border) 40%, var(--chart-2) 60%); background: color-mix(in oklch, var(--muted) 60%, var(--chart-2) 40%); color: var(--chart-2); }
+
+    /* ============ Two-column layout ============ */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* ============ Timeline (news) ============ */
+    .timeline { position: relative; padding-left: 1.5rem; }
+    .timeline::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 2px; background: var(--border); border-radius: 1px; }
+    .tl-item { position: relative; margin-bottom: 1rem; }
+    .tl-item::before { content: ''; position: absolute; left: -1.5rem; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--chart-1); transform: translateX(-3px); }
+    .tl-item:last-child { margin-bottom: 0; }
+    .tl-date { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--chart-2); font-weight: 600; margin-bottom: 0.2rem; }
+    .tl-body { font-size: 0.8125rem; line-height: 1.55; color: var(--text-dim); }
+    .tl-body strong { color: var(--text); }
+
+    /* ============ Animations ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.06s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">Contents</div>
+    <a href="#overview">概要</a>
+    <a href="#workspace">Chat Workspace</a>
+    <a href="#features">機能群</a>
+    <a href="#tutorbot">TutorBot</a>
+    <a href="#cli">CLI</a>
+    <a href="#setup">セットアップ</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>DeepTutor</h1>
+    <p class="subtitle">Agent-Native Personalized Tutoring · <code>v1.0.0</code> · HKUDS (HKU Data Intelligence Lab) · Apache 2.0</p>
+
+    <!-- ========== SECTION 1: 概要 ========== -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> What is DeepTutor?</span>
+      <p>DeepTutor は <strong>Agent-Native</strong> を標榜する学習プラットフォーム。単なる AI チャットではなく、複数のエージェントが協調して「計画 → 調査 → 解決 → 検証」を実行する設計になっている。バックエンドは FastAPI（Python 3.11+）、フロントエンドは Next.js 16、エージェントエンジンには <a href="https://github.com/HKUDS/nanobot" target="_blank" rel="noopener">nanobot</a> を採用している。</p>
+
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">v1.0.0</span><span class="ve-kpi-card__label">Latest Release (2026.4)</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">10k+</span><span class="ve-kpi-card__label">GitHub Stars (39 days)</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">5 modes</span><span class="ve-kpi-card__label">Unified Chat Workspace</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">24+</span><span class="ve-kpi-card__label">LLM Providers</span></div>
+      </div>
+
+      <div class="pill-list">
+        <span class="pill--blue pill">Python 3.11+</span>
+        <span class="pill--blue pill">Next.js 16</span>
+        <span class="pill--blue pill">FastAPI</span>
+        <span class="pill--gold pill">TutorBot (nanobot)</span>
+        <span class="pill--gold pill">LlamaIndex RAG</span>
+        <span class="pill--gold pill">Manim Math Animator</span>
+        <span class="pill">OpenAI / Anthropic / Gemini / …</span>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> システム構成</span>
+      <div class="arch-diagram mermaid-wrap">
+        <div class="mermaid">
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#dae6f5", "primaryTextColor": "#1a2e4a", "primaryBorderColor": "#4a7ab5", "lineColor": "#4a7ab5", "secondaryColor": "#fdf3d8", "tertiaryColor": "#f0f4f8", "fontSize": "14px"}, "flowchart": {"htmlLabels": true, "curve": "basis"}}}%%
+flowchart TD
+    UI["Next.js 16\nフロントエンド :3782"]
+    API["FastAPI\nバックエンド :8001"]
+    CAPS["Capabilities Layer\nChat / DeepSolve / Quiz\nResearch / Math"]
+    TOOLS["Tools Layer\nRAG · Search · Code · Reason"]
+    KB["LlamaIndex\nKnowledge Base"]
+    BOT["TutorBot\n(nanobot)"]
+    MEM["Persistent Memory\nSummary + Profile"]
+    CHAN["Multi-Channel\nTelegram / Discord / Slack …"]
+
+    UI -->|WebSocket| API
+    API --> CAPS
+    CAPS --> TOOLS
+    TOOLS --> KB
+    API --> BOT
+    BOT --> MEM
+    BOT --> CHAN
+    CAPS -.->|"session / notebook"| MEM
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SECTION 2: Chat Workspace ========== -->
+    <section id="workspace" class="sec-head">2 — Unified Chat Workspace</section>
+
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 5 つのモードが 1 スレッドに共存</span>
+      <p>コンテキスト管理システムが会話履歴・知識ベース・参照ファイルを横断して保持する。モード間の切り替えは <strong>同一スレッド内</strong>でいつでも可能。ツールの有効/無効はモードに依存せずユーザーが選択する。</p>
+
+      <div class="mode-grid">
+        <div class="ve-card ve-card--elevated mode-card" style="--i:0">
+          <span class="mode-num">01</span>
+          <div>
+            <div class="mode-name">Chat</div>
+            <div class="mode-desc">ツール拡張型の対話。RAG 検索・Web 検索・コード実行・深い推論・ブレインストーミング・論文検索を組み合わせて利用できる。</div>
+          </div>
+        </div>
+        <div class="ve-card ve-card--elevated mode-card" style="--i:1">
+          <span class="mode-num">02</span>
+          <div>
+            <div class="mode-name">Deep Solve</div>
+            <div class="mode-desc">マルチエージェントによる問題解決。計画→調査→解決→検証の各フェーズで精密なソース引用を伴う。</div>
+          </div>
+        </div>
+        <div class="ve-card ve-card--elevated mode-card" style="--i:2">
+          <span class="mode-num">03</span>
+          <div>
+            <div class="mode-name">Quiz Generation</div>
+            <div class="mode-desc">知識ベースに基づく問題生成。内蔵バリデーションで問題の品質を担保する。</div>
+          </div>
+        </div>
+        <div class="ve-card ve-card--elevated mode-card" style="--i:3">
+          <span class="mode-num">04</span>
+          <div>
+            <div class="mode-name">Deep Research</div>
+            <div class="mode-desc">トピックをサブテーマに分解し、RAG・Web・学術論文へ並列エージェントを派遣して、完全引用つきレポートを生成する。</div>
+          </div>
+        </div>
+        <div class="ve-card ve-card--elevated mode-card" style="--i:4">
+          <span class="mode-num">05</span>
+          <div>
+            <div class="mode-name">Math Animator</div>
+            <div class="mode-desc">数学的概念を Manim（ManimCat）で視覚アニメーション化。ストーリーボードから動画ファイルを生成する。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ve-callout">
+        <strong>ツールはモードから独立している。</strong>各モードでどのツールを使うか、いくつ使うか、使わないかを自由に選択できる。ワークフローが推論を担い、ツールはユーザーが構成する。
+      </div>
+    </div>
+
+    <!-- ========== SECTION 3: Features ========== -->
+    <section id="features" class="sec-head">3 — 機能群</section>
+
+    <div class="two-col">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-3)"></span> AI Co-Writer</span>
+        <p>Markdown エディタで AI が第一級のコラボレーターになる。テキストを選択して <strong>Rewrite / Expand / Shorten</strong> を適用できる。知識ベースや Web からの文脈を活用でき、全編集はノートブックへ保存されて学習エコシステムに還元される。</p>
+        <ul>
+          <li>非破壊編集（undo/redo 完全対応）</li>
+          <li>知識ベース・Web 検索による文脈補完</li>
+          <li>ノートブック保存でセッション間共有</li>
+        </ul>
+      </div>
+
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-4)"></span> Guided Learning</span>
+        <p>自分の教材を構造化された段階的学習ジャーニーに変換する。</p>
+        <ol>
+          <li>教材から 3〜5 個の段階的知識ポイントを設計</li>
+          <li>各ポイントを視覚的な HTML インタラクティブページに生成</li>
+          <li>各ステップに沿ってコンテキスト Q&amp;A が可能</li>
+          <li>完了時に学習サマリーを生成</li>
+        </ol>
+        <p style="margin-bottom:0">セッションは永続化され、一時停止・再開・任意のステップへの戻りが可能。</p>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-5)"></span> Knowledge Hub</span>
+        <p>すべての機能を支える学習インフラ。</p>
+        <ul>
+          <li><strong>Knowledge Bases</strong> — PDF / TXT / Markdown を RAG-ready コレクションに。インクリメンタル追加が可能。</li>
+          <li><strong>Notebooks</strong> — Chat / Guided Learning / Co-Writer / Deep Research の洞察をカラーコード付きのノートに保存・整理。</li>
+        </ul>
+        <p style="margin-bottom:0">知識ベースは受動的な保管庫ではなく、すべての会話・研究・学習パスに能動的に参加する。</p>
+      </div>
+
+      <div class="ve-card" style="--i:3">
+        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-2)"></span> Persistent Memory</span>
+        <p>DeepTutor はあなたとともに学ぶ。二つの次元でプロファイルを構築する。</p>
+        <ul>
+          <li><strong>Summary</strong> — 学習経緯の継続ダイジェスト。何を学んだか、どのトピックを探求したか、理解がどう深まったか。</li>
+          <li><strong>Profile</strong> — 学習スタイル・好み・知識レベル・目標・コミュニケーションスタイルを自動更新。</li>
+        </ul>
+        <p style="margin-bottom:0">メモリはすべての機能と全 TutorBot で共有される。使えば使うほどパーソナライズが深まる。</p>
+      </div>
+    </div>
+
+    <!-- ========== SECTION 4: TutorBot ========== -->
+    <section id="tutorbot" class="sec-head">4 — TutorBot — 永続的・自律型 AI 家庭教師</section>
+
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot--gold ve-dot"></span> チャットボットではなく、自律型エージェント</span>
+      <p>TutorBot は <a href="https://github.com/HKUDS/nanobot" target="_blank" rel="noopener">nanobot</a> 上に構築された<strong>永続的・マルチインスタンス型エージェント</strong>。各 TutorBot は独立したワークスペース・メモリ・個性を持ち、独自のエージェントループを実行する。ソクラテス式数学チューター、忍耐強い文章コーチ、厳格なリサーチアドバイザーを同時に複数起動できる。</p>
+
+      <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value" style="color:var(--chart-2)">Soul</span><span class="ve-kpi-card__label">個性テンプレート</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value" style="color:var(--chart-2)">Heartbeat</span><span class="ve-kpi-card__label">プロアクティブ発信</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value" style="color:var(--chart-2)">SKILL.md</span><span class="ve-kpi-card__label">エージェント操作</span></div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> 主要機能</span>
+        <ul>
+          <li><strong>Soul Templates</strong> — 編集可能な Soul ファイルでチューターの個性・口調・教育哲学を定義。ソクラテス式・励まし型・厳格型などのアーキタイプを選択、またはカスタム設計。</li>
+          <li><strong>Independent Workspace</strong> — 各ボットは独立したメモリ・セッション・スキル・設定を持ちながら、DeepTutor の共有知識レイヤーにアクセスできる。</li>
+          <li><strong>Proactive Heartbeat</strong> — 定期的な学習チェックイン・復習リマインダー・スケジュールタスクを開始する。ユーザーが来なくてもチューターが動く。</li>
+          <li><strong>Skill Learning</strong> — スキルファイルを追加してボットに新しい能力を教える。ニーズの進化とともにチューターの能力も進化する。</li>
+        </ul>
+      </div>
+
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> マルチチャネル・チームエージェント</span>
+        <ul style="margin-bottom:1rem">
+          <li><strong>Multi-Channel</strong> — Telegram / Discord / Slack / Feishu / WeChat Work / DingTalk / Email などに接続。あなたのいる場所にチューターが来る。</li>
+          <li><strong>Full Tool Access</strong> — RAG 検索・コード実行・Web 検索・学術論文検索・深い推論・ブレインストーミング。</li>
+          <li><strong>Team &amp; Sub-Agents</strong> — バックグラウンドサブエージェントや複数エージェントチームを組成して複雑・長期タスクに対応。</li>
+        </ul>
+        <div class="ve-code-block">
+          <pre><code>deeptutor bot create math-tutor \
+  --persona "Socratic math teacher \
+             who uses probing questions"
+
+deeptutor bot create writing-coach \
+  --persona "Patient writing mentor"
+
+deeptutor bot list   # 全ボット一覧</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SECTION 5: CLI ========== -->
+    <section id="cli" class="sec-head">5 — DeepTutor CLI — Agent-Native インターフェース</section>
+
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 設計思想</span>
+      <p>CLI はブラウザ不要のフルアクセスを提供する。リッチなターミナル出力（人間向け）と構造化 JSON 出力（AI エージェント向け）のデュアルモードを持つ。<code>SKILL.md</code> をエージェントに渡すと、LLM ツールが DeepTutor を自律的に操作できる。</p>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> コア機能コマンド</span>
+      <div class="ve-code-block">
+        <pre><code># One-shot 実行
+deeptutor run chat "Fourier 変換を説明して" -t rag --kb textbook
+deeptutor run deep_solve "√2 が無理数であることを証明せよ" -t reason
+deeptutor run deep_question "線形代数" --config num_questions=5
+deeptutor run deep_research "Transformer の Attention メカニズム"
+
+# インタラクティブ REPL（ライブモード切り替え対応）
+deeptutor chat --capability deep_solve --kb my-kb
+# REPL 内: /cap /tool /kb /history /notebook /config
+
+# デュアル出力
+deeptutor run chat "第3章を要約" -f rich   # 着色フォーマット
+deeptutor run chat "第3章を要約" -f json   # ライン区切り JSON</code></pre>
+      </div>
+    </div>
+
+    <div class="ve-table-wrap" style="margin-bottom:1rem">
+      <table>
+        <thead>
+          <tr><th>コマンドグループ</th><th>主なサブコマンド</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>deeptutor run</code></td>
+            <td><code>chat / deep_solve / deep_question / deep_research / math_animator</code></td>
+            <td>任意の Capability をワンショット実行</td>
+          </tr>
+          <tr>
+            <td><code>deeptutor kb</code></td>
+            <td><code>create / add / search / list / set-default / delete</code></td>
+            <td>知識ベースのライフサイクル管理</td>
+          </tr>
+          <tr>
+            <td><code>deeptutor bot</code></td>
+            <td><code>create / start / stop / list</code></td>
+            <td>TutorBot インスタンス管理</td>
+          </tr>
+          <tr>
+            <td><code>deeptutor memory</code></td>
+            <td><code>show / clear</code></td>
+            <td>学習メモリの参照・クリア</td>
+          </tr>
+          <tr>
+            <td><code>deeptutor session</code></td>
+            <td><code>list / show / open / rename / delete</code></td>
+            <td>セッション継続・管理</td>
+          </tr>
+          <tr>
+            <td><code>deeptutor notebook</code></td>
+            <td><code>list / create / show / add-md / replace-md</code></td>
+            <td>ノートブック管理</td>
+          </tr>
+          <tr>
+            <td><code>deeptutor plugin</code></td>
+            <td><code>list / info</code></td>
+            <td>登録ツール・Capability 一覧</td>
+          </tr>
+          <tr>
+            <td><code>deeptutor provider</code></td>
+            <td><code>login</code></td>
+            <td>プロバイダー認証（OpenAI Codex / GitHub Copilot）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ========== SECTION 6: Setup ========== -->
+    <section id="setup" class="sec-head">6 — セットアップ</section>
+
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 必須の環境変数（最低限）</span>
+      <div class="ve-code-block">
+        <pre><code># LLM（必須）
+LLM_BINDING=openai
+LLM_MODEL=gpt-4o-mini
+LLM_API_KEY=sk-xxx
+LLM_HOST=https://api.openai.com/v1
+
+# Embedding（Knowledge Base に必須）
+EMBEDDING_BINDING=openai
+EMBEDDING_MODEL=text-embedding-3-large
+EMBEDDING_API_KEY=sk-xxx
+EMBEDDING_HOST=https://api.openai.com/v1
+EMBEDDING_DIMENSION=3072</code></pre>
+      </div>
+      <p style="margin-bottom:0">24 以上の LLM プロバイダーをサポート（Anthropic / Gemini / DeepSeek / Ollama / Groq など）。</p>
+    </div>
+
+    <div class="step-flow">
+      <div class="step-card">
+        <div class="step-card__num">Option A — 推奨</div>
+        <div class="step-card__title">Setup Tour</div>
+        <div class="step-card__body">
+          <code>python scripts/start_tour.py</code> を起動するインタラクティブスクリプト。依存のインストール・環境設定・接続テスト・起動までを対話的にガイド。Web モードと CLI モードを選択できる。
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">Option B</div>
+        <div class="step-card__title">Manual Local Install</div>
+        <div class="step-card__body">
+          <code>pip install -e ".[server]"</code> でバックエンド、<code>cd web &amp;&amp; npm install</code> でフロントエンドを個別インストール。<code>.env</code> を手動設定してサービスを個別起動。
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">Option C</div>
+        <div class="step-card__title">Docker Deployment</div>
+        <div class="step-card__body">
+          GHCR の公式イメージ（<code>docker compose -f docker-compose.ghcr.yml up -d</code>）またはソースからのビルド。<code>linux/amd64</code> と <code>linux/arm64</code> に対応。ユーザーデータは Docker ボリュームで永続化。
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">Option D</div>
+        <div class="step-card__title">CLI Only</div>
+        <div class="step-card__body">
+          Web フロントエンドなしで CLI だけを使う場合は <code>pip install -e ".[cli]"</code>。<code>deeptutor chat</code> または <code>deeptutor run &lt;capability&gt;</code> ですぐに開始できる。
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> デフォルトポート</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>サービス</th><th>デフォルトポート</th><th>環境変数で変更</th></tr></thead>
+          <tbody>
+            <tr><td>Backend (FastAPI)</td><td><code>8001</code></td><td><code>BACKEND_PORT</code></td></tr>
+            <tr><td>Frontend (Next.js)</td><td><code>3782</code></td><td><code>FRONTEND_PORT</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== SECTION 7: Links ========== -->
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+
+    <div class="two-col">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連リソース</span>
+        <ul>
+          <li><a href="https://github.com/HKUDS/DeepTutor" target="_blank" rel="noopener">GitHub: HKUDS/DeepTutor</a></li>
+          <li><a href="https://github.com/HKUDS/nanobot" target="_blank" rel="noopener">nanobot</a> — TutorBot のエージェントエンジン</li>
+          <li><a href="https://github.com/run-llama/llama_index" target="_blank" rel="noopener">LlamaIndex</a> — RAG パイプライン</li>
+          <li><a href="https://github.com/Wing900/ManimCat" target="_blank" rel="noopener">ManimCat</a> — Math Animator の基盤</li>
+          <li><a href="https://discord.gg/eRsjPgMU4t" target="_blank" rel="noopener">Discord コミュニティ</a></li>
+        </ul>
+      </div>
+
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot--gold ve-dot"></span> リリース履歴（主要版）</span>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-date">2026.4.8 — v1.0.0-beta.3</div>
+            <div class="tl-body">litellm 依存を除去しネイティブ SDK へ移行。Windows Math Animator 対応、堅牢な JSON パース、i18n 中国語完全対応。</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-date">2026.4.4 — v1.0.0-beta.1</div>
+            <div class="tl-body"><strong>DeepTutor 2.0 アーキテクチャ刷新。</strong> 2 層プラグインモデル（Tools + Capabilities）、CLI &amp; SDK、TutorBot、Co-Writer、Guided Learning、永続メモリ。</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-date">2026.2.6</div>
+            <div class="tl-body">39 日で GitHub Stars 10k 突破。</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-date">2025.12.29</div>
+            <div class="tl-body">DeepTutor 初期リリース。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> HKUDS エコシステム</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>プロジェクト</th><th>役割</th></tr></thead>
+          <tbody>
+            <tr><td><a href="https://github.com/HKUDS/LightRAG" target="_blank" rel="noopener">LightRAG</a></td><td>高速・シンプルな RAG エンジン（将来 DeepTutor に統合予定）</td></tr>
+            <tr><td><a href="https://github.com/HKUDS/AutoAgent" target="_blank" rel="noopener">AutoAgent</a></td><td>ノーコードエージェントフレームワーク</td></tr>
+            <tr><td><a href="https://github.com/HKUDS/AI-Researcher" target="_blank" rel="noopener">AI-Researcher</a></td><td>自動リサーチシステム</td></tr>
+            <tr><td><a href="https://github.com/HKUDS/nanobot" target="_blank" rel="noopener">nanobot</a></td><td>超軽量 AI エージェントエンジン（TutorBot の心臓部）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- .main -->
+</div><!-- .wrap -->
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#dae6f5',
+    primaryTextColor: '#1a2e4a',
+    primaryBorderColor: '#4a7ab5',
+    lineColor: '#4a7ab5',
+    secondaryColor: '#fdf3d8',
+    tertiaryColor: '#f0f4f8',
+    fontSize: '14px'
+  }
+});
+</script>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

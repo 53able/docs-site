@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>marketingskills — AI エージェント向けマーケスキル集</title>
+  <meta name="description" content="Agent Skills 準拠のマーケティング専用スキル。CRO・SEO・計測・GTM など、Corey Haines 氏の marketingskills リポジトリの構造と導入を図解する。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="marketingskills — AI エージェント向けマーケスキル集">
+  <meta property="og:description" content="product-marketing-context を軸にした 38+ スキル、npx skills / プラグイン導入、tools レジストリの要約。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/marketingskills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="marketingskills — AI エージェント向けマーケスキル集">
+  <meta name="twitter:description" content="CRO / SEO / コピー / 計測 / RevOps をカバーする skills 集のビジュアル解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Anonymous+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    /* ============ THEME — teal + amber (growth / GTM) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.4 0.1 195);
+      --chart-4: oklch(0.55 0.1 75);
+      --chart-5: oklch(0.5 0.11 160);
+      --code-bg: var(--muted);
+      --code-text: #0a4d5c;
+      --font-body: 'Be Vietnam Pro', system-ui, sans-serif;
+      --font-mono: 'Anonymous Pro', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.62 0.11 200);
+        --chart-2: oklch(0.75 0.15 80);
+        --chart-3: oklch(0.55 0.1 195);
+        --chart-4: oklch(0.7 0.12 75);
+        --chart-5: oklch(0.6 0.1 160);
+        --code-bg: #0c1416;
+        --code-text: #7dd3fc;
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; color: var(--chart-1); font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.45 0.12 200 / 0.07) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.62 0.11 200 / 0.1) 0%, transparent 50%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; }
+    .mermaid-wrap .mermaid { min-width: min(100%, 40rem); }
+    .mermaid-wrap svg { max-width: 100%; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#together">スキル同士</a>
+    <a href="#categories">カテゴリ</a>
+    <a href="#install">導入</a>
+    <a href="#usage">使い方</a>
+    <a href="#tools">tools</a>
+    <a href="#links">リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>marketingskills</h1>
+  <p class="subtitle">Corey Haines 氏の <a href="https://github.com/coreyhaines31/marketingskills" target="_blank" rel="noopener">marketingskills</a> — マーケ専用 Agent Skills の俯瞰</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何のリポジトリか</span>
+    <p><strong>Marketing Skills for AI Agents</strong> は、<a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills</a> 形式の Markdown スキルを、CRO・コピー・SEO・計測・GTM など <strong>マーケ課題に揃えて束ねた</strong>コレクション。各スキルは <code>SKILL.md</code> 主体で、<code>references/</code>・<code>evals/</code> を併用。Claude Code、Codex、Cursor、Windsurf 等、スキル対応エージェント向けに設計されている。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card">
+        <span class="ve-kpi-card__value">38+</span>
+        <span class="ve-kpi-card__label">独立スキル</span>
+      </div>
+      <div class="ve-kpi-card">
+        <span class="ve-kpi-card__value">PMC</span>
+        <span class="ve-kpi-card__label">product-marketing-context 軸</span>
+      </div>
+      <div class="ve-kpi-card">
+        <span class="ve-kpi-card__value">MIT</span>
+        <span class="ve-kpi-card__label">ライセンス</span>
+      </div>
+      <div class="ve-kpi-card">
+        <span class="ve-kpi-card__value">tools</span>
+        <span class="ve-kpi-card__label">CLI レジストリ同梱</span>
+      </div>
+    </div>
+    <p>中核となる <code>product-marketing-context</code> がプロダクト・顧客・訴求の前提を握り、他スキルは <strong>同じ文脈を先に参照してから</strong>実行する前提で相互参照する。README では SEO・CRO・リテンションなど 7 カラムの要約図と、<code>copywriting ↔ page-cro ↔ ab-test-setup</code> などのクロスリードも明示される。</p>
+  </div>
+
+  <section id="together" class="sec-head">2 — スキル同士の関係</section>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> ハブ＆分岐（概念図）</span>
+    <p>下図は README の階層の<strong>抜粋</strong>。全依存は各 <code>SKILL.md</code> の「Related Skills」を正とする。</p>
+    <div class="mermaid-wrap">
+      <div class="mermaid">
+flowchart TB
+  pmc["product-marketing-context"]
+  pmc --> a["SEO / 発見 / IA"]
+  pmc --> b["CRO / 導線 / オンボ"]
+  pmc --> c["コピー / メール / SNS"]
+  pmc --> d["測定 / 実験 / 有料"]
+  pmc --> e["RevOps / 成長 / 解約防止"]
+      </div>
+    </div>
+  </div>
+
+  <section id="categories" class="sec-head">3 — カテゴリ対応表</section>
+  <div class="ve-card" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> README の分類（代表スキル）</span>
+    <p>行は README の章立てに沿ったダイジェスト。1 行に全スキル名は入れきれないため代表例に留める。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>分野</th><th>主な内容</th><th>例（スラッグ）</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Conversion / CRO</td>
+            <td>ランディング、登録導線、オンボ、フォーム、ポップ、ペイウォール</td>
+            <td><code>page-cro</code>, <code>signup-flow-cro</code>, <code>onboarding-cro</code>, <code>form-cro</code>, <code>popup-cro</code>, <code>paywall-upgrade-cro</code></td>
+          </tr>
+          <tr>
+            <td>Content &amp; Copy</td>
+            <td>新規コピー、既存改善、B2B メール、配信、SNS</td>
+            <td><code>copywriting</code>, <code>copy-editing</code>, <code>cold-email</code>, <code>email-sequence</code>, <code>social-content</code></td>
+          </tr>
+          <tr>
+            <td>SEO &amp; 発見</td>
+            <td>監査、AI/LLM 検索、プログラマティック、比較ページ、スキーマ、ASO</td>
+            <td><code>seo-audit</code>, <code>ai-seo</code>, <code>programmatic-seo</code>, <code>competitor-alternatives</code>, <code>schema-markup</code>, <code>aso-audit</code>, <code>site-architecture</code></td>
+          </tr>
+          <tr>
+            <td>有料 &amp; 成長</td>
+            <td>広告運用、バナー・テキスト大量生成、無料ツール、紹介、コミュニティ、ディレクトリ</td>
+            <td><code>paid-ads</code>, <code>ad-creative</code>, <code>free-tool-strategy</code>, <code>referral-program</code>, <code>community-marketing</code>, <code>directory-submissions</code>, <code>lead-magnets</code></td>
+          </tr>
+          <tr>
+            <td>計測 &amp; 実験</td>
+            <td>イベント設計、A/B 設計</td>
+            <td><code>analytics-tracking</code>, <code>ab-test-setup</code></td>
+          </tr>
+          <tr>
+            <td>リテンション</td>
+            <td>解約導線、支払い回収</td>
+            <td><code>churn-prevention</code></td>
+          </tr>
+          <tr>
+            <td>戦略 / 価格 / 市場</td>
+            <td>アイデア帳、心理、ローンチ、価格、リサーチ、差別化</td>
+            <td><code>marketing-ideas</code>, <code>marketing-psychology</code>, <code>launch-strategy</code>, <code>pricing-strategy</code>, <code>product-marketing-context</code>, <code>customer-research</code>, <code>competitor-profiling</code></td>
+          </tr>
+          <tr>
+            <td>営業 &amp; RevOps</td>
+            <td>SLA 寄りのハンドオフ、セールス資料、デモ台本</td>
+            <td><code>revops</code>, <code>sales-enablement</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="install" class="sec-head">4 — 導入</section>
+  <div class="ve-card" style="--i:3">
+    <span class="ve-section-label"><span class="ve-dot"></span> 代表的な取り込み方</span>
+    <h3>CLI（推奨）</h3>
+    <p>公式 README は <a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">npx skills</a> を最優先で案内。<code>coreyhaines31/marketingskills</code> から一括 or スキル単位で <code>.agents/skills/</code> 等へ入る。</p>
+    <div class="ve-code-block">
+      <pre><code># すべて
+npx skills add coreyhaines31/marketingskills
+
+# 特定のみ
+npx skills add coreyhaines31/marketingskills --skill page-cro copywriting
+</code></pre>
+    </div>
+    <h3>その他</h3>
+    <ul>
+      <li>Claude Code: <code>/plugin marketplace add coreyhaines31/marketingskills</code> から <code>marketing-skills</code> プラグイン</li>
+      <li>生クローン: <code>cp -r marketingskills/skills/* .agents/skills/</code> 等</li>
+      <li>git submodule: <code>.agents/marketingskills</code> として常時取り込み</li>
+      <li>SkillKit 経由: <code>npx skillkit install coreyhaines31/marketingskills</code>（マルチエージェント向け）</li>
+    </ul>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>v1 からの移行:</strong> プロダクト文脈ファイルの置き場所が <code>.claude/product-marketing-context.md</code> から <code>.agents/product-marketing-context.md</code> 優先に変わった。未移行でも <code>.claude/</code> フォールバックあり。
+    </div>
+  </div>
+
+  <section id="usage" class="sec-head">5 — 使い方</section>
+  <div class="ve-card ve-card--recessed" style="--i:4">
+    <span class="ve-section-label"><span class="ve-dot"></span> 会話例</span>
+    <p>依頼文の例（README 抜粋）:</p>
+    <div class="ve-code-block">
+      <pre><code>"Help me optimize this landing page for conversions" → page-cro
+"Write homepage copy for my SaaS" → copywriting
+"Set up GA4 tracking for signups" → analytics-tracking
+"Create a 5-email welcome sequence" → email-sequence
+</code></pre>
+    </div>
+    <p>各スキルに <code>/page-cro</code> 形式のショートカット前提が書かれていれば、エージェントのコマンド体系に合わせて呼び出しやすい。</p>
+  </div>
+
+  <section id="tools" class="sec-head">6 — tools レジストリ</section>
+  <div class="ve-card" style="--i:5">
+    <span class="ve-section-label"><span class="ve-dot"></span> スキル外の補助データ</span>
+    <p><code>tools/REGISTRY.md</code> は、GA4・HubSpot・Stripe など <strong>外部マーケ／計測ツール</strong>について、API / MCP / 参照 CLI / ガイド有無を一覧化した「エージェント向け道具箱インデックス」。<code>tools/clis/*.js</code> と <code>tools/integrations/*.md</code> を横断的に辿るための出発点。スキル本文とは独立しているが、連携作業（計測・配信・CRM）で参照しやすい形になっている。</p>
+  </div>
+
+  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <div class="ve-card" style="--i:6">
+    <span class="ve-section-label"><span class="ve-dot"></span> 本ページ外</span>
+    <ul>
+      <li><a href="https://github.com/coreyhaines31/marketingskills" target="_blank" rel="noopener">GitHub: coreyhaines31/marketingskills</a>（解説元・MIT）</li>
+      <li><a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">Vercel skills CLI</a></li>
+      <li><a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills 仕様</a></li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'strict' });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

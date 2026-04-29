@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PM Skills Marketplace — プロダクト意思決定のための AI オペレーティングシステム</title>
+  <meta name="description" content="65 の PM スキルと 36 のチェーン済みワークフローを 8 プラグインに分類。ディスカバリーから戦略、実行、ローンチ、グロースまで。Claude Code と Cowork 向けマーケットプレイス。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="PM Skills Marketplace — プロダクト意思決定のための AI オペレーティングシステム">
+  <meta property="og:description" content="65 の PM スキルと 36 のチェーン済みワークフローを 8 プラグインに分類。Claude Code と Cowork 向けマーケットプレイス。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/pm-skills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="PM Skills Marketplace — プロダクト意思決定のための AI オペレーティングシステム">
+  <meta name="twitter:description" content="65 PM スキルと 36 ワークフロー。8 プラグインで構成された Claude Code / Cowork 向けマーケットプレイス。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.55 0.16 42);
+      --chart-2: oklch(0.52 0.12 155);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.55 0.08 55);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.70 0.16 42);
+        --chart-2: oklch(0.65 0.12 155);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.70 0.10 55);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--border) 50%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.55 0.16 42 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 70% 0%, oklch(0.55 0.16 42 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 70% 0%, oklch(0.70 0.16 42 / 0.08) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.4rem; font-size: 0.9rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    strong { font-weight: 600; }
+
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Step flow ============ */
+    .step-flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem; }
+    @media (max-width: 720px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+    .step-card__num { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 500; color: var(--chart-1); line-height: 1; }
+    .step-card__title { font-weight: 600; font-size: 0.9375rem; }
+    .step-card__body { font-size: 0.875rem; line-height: 1.6; color: var(--text-dim); overflow-wrap: break-word; }
+
+    /* ============ Plugin grid ============ */
+    .plugin-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    @media (max-width: 720px) { .plugin-grid { grid-template-columns: 1fr; } }
+    .plugin-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+    .plugin-card:hover { border-color: color-mix(in oklch, var(--border) 40%, var(--chart-1) 60%); }
+    .plugin-card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.25rem; }
+    .plugin-card__name { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; color: var(--chart-1); overflow-wrap: break-word; word-break: break-all; }
+    .plugin-card__counts { display: flex; gap: 0.4rem; flex-shrink: 0; }
+    .badge { display: inline-flex; align-items: center; font-size: 0.7rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; font-family: var(--font-mono); white-space: nowrap; }
+    .badge--skills { background: oklch(0.55 0.16 42 / 0.12); color: var(--chart-1); }
+    .badge--cmds { background: oklch(0.52 0.12 155 / 0.12); color: var(--chart-2); }
+    .plugin-card__title { font-weight: 600; font-size: 0.9375rem; }
+    .plugin-card__desc { font-size: 0.8125rem; line-height: 1.55; color: var(--text-dim); overflow-wrap: break-word; }
+
+    /* ============ Animation ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    .plugin-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.04s); transition: border-color 0.2s ease; }
+    .step-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.06s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#how-it-works">仕組み</a>
+    <a href="#plugins">プラグイン</a>
+    <a href="#install">インストール</a>
+    <a href="#frameworks">参照フレームワーク</a>
+    <a href="#links">リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>PM Skills Marketplace</h1>
+    <p class="subtitle">phuryn/pm-skills — プロダクト意思決定のための AI オペレーティングシステム</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">65</span><span class="ve-kpi-card__label">PM スキル</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">36</span><span class="ve-kpi-card__label">チェーンドワークフロー</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">8</span><span class="ve-kpi-card__label">プラグイン</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+      </div>
+      <p>汎用 AI はテキストを返す。PM Skills Marketplace は<strong>構造</strong>を返す。各スキルは Teresa Torres・Marty Cagan・Alberto Savoia らが確立した PM フレームワークをエンコードし、ステップバイステップで実行を導く。</p>
+      <p>ディスカバリーから戦略、実行、ローンチ、グロースまでをカバーする 8 プラグイン構成。Claude Code と <a href="https://cowork.anthropic.com" target="_blank" rel="noopener">Cowork</a> 向けに設計されているが、スキル単体は Gemini CLI / OpenCode / Cursor / Codex CLI / Kiro など任意のエージェントで使える。</p>
+    </div>
+
+    <section id="how-it-works" class="sec-head">2 — 仕組み</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 3 つの構成要素</span>
+      <p>「スキル」「コマンド」「プラグイン」が階層的に組み合わさって動く。コマンドは完了時に次の推奨コマンドを提案するため、PM ワークフロー全体が自然につながる。</p>
+    </div>
+    <div class="step-flow">
+      <div class="step-card" style="--i:0">
+        <span class="step-card__num">Skills</span>
+        <span class="step-card__title">スキル — 知識の最小単位</span>
+        <p class="step-card__body">各スキルは PM ドメインの知識・分析フレームワーク・ガイドワークフローをエンコードする。会話に関連するスキルは自動ロードされるが、<code>/plugin-name:skill-name</code> で明示的に呼び出すことも可能。</p>
+      </div>
+      <div class="step-card" style="--i:1">
+        <span class="step-card__num">Commands</span>
+        <span class="step-card__title">コマンド — スラッシュ起動のフロー</span>
+        <p class="step-card__body"><code>/discover</code> などのコマンドはスキルをチェーンして、エンドツーエンドのプロセスを走らせる。例: <code>/discover</code> は「アイデア出し → 仮定洗い出し → 優先順位付け → 実験設計」の 4 スキルを連続実行する。</p>
+      </div>
+      <div class="step-card" style="--i:2">
+        <span class="step-card__num">Plugins</span>
+        <span class="step-card__title">プラグイン — 領域ごとの束</span>
+        <p class="step-card__body">8 プラグインが PM ドメインを分割して担当する。マーケットプレイスをインストールすると全 8 プラグインが一括導入される。複数コマンドが同一スキルを共有することもある。</p>
+      </div>
+    </div>
+    <div class="ve-callout">
+      <strong>リファレンススキルについて</strong> — <code>prioritization-frameworks</code> や <code>opportunity-solution-tree</code> のようなスキルはコマンドを介さず、会話に関連すれば自動で参照される。スラッシュコマンドは Claude 専用だが、スキルはどの AI ツールでも動く。
+    </div>
+
+    <section id="plugins" class="sec-head">3 — プラグイン一覧</section>
+    <div class="plugin-grid">
+      <div class="plugin-card" style="--i:0">
+        <div class="plugin-card__header">
+          <span class="plugin-card__name">pm-product-discovery</span>
+          <span class="plugin-card__counts">
+            <span class="badge badge--skills">13 skills</span>
+            <span class="badge badge--cmds">5 cmds</span>
+          </span>
+        </div>
+        <p class="plugin-card__title">プロダクトディスカバリー</p>
+        <p class="plugin-card__desc">アイデア出し、実験設計、仮定マッピング、Opportunity Solution Tree（Teresa Torres）、ユーザーインタビュー合成。コマンド例: <code>/discover</code>, <code>/brainstorm</code>, <code>/interview</code>。</p>
+      </div>
+      <div class="plugin-card" style="--i:1">
+        <div class="plugin-card__header">
+          <span class="plugin-card__name">pm-product-strategy</span>
+          <span class="plugin-card__counts">
+            <span class="badge badge--skills">12 skills</span>
+            <span class="badge badge--cmds">5 cmds</span>
+          </span>
+        </div>
+        <p class="plugin-card__title">プロダクト戦略</p>
+        <p class="plugin-card__desc">ビジョン策定、Lean Canvas / BMC / Startup Canvas、価格戦略、SWOT / PESTLE / Porter's Five Forces / Ansoff Matrix。コマンド例: <code>/strategy</code>, <code>/market-scan</code>, <code>/pricing</code>。</p>
+      </div>
+      <div class="plugin-card" style="--i:2">
+        <div class="plugin-card__header">
+          <span class="plugin-card__name">pm-execution</span>
+          <span class="plugin-card__counts">
+            <span class="badge badge--skills">15 skills</span>
+            <span class="badge badge--cmds">10 cmds</span>
+          </span>
+        </div>
+        <p class="plugin-card__title">実行管理</p>
+        <p class="plugin-card__desc">PRD、OKR、ロードマップ、スプリント計画・レトロ、リリースノート、プリモーテム、ステークホルダーマップ、ユーザー/ジョブストーリー。全 8 プラグイン中最多の 15 スキル。</p>
+      </div>
+      <div class="plugin-card" style="--i:3">
+        <div class="plugin-card__header">
+          <span class="plugin-card__name">pm-market-research</span>
+          <span class="plugin-card__counts">
+            <span class="badge badge--skills">7 skills</span>
+            <span class="badge badge--cmds">3 cmds</span>
+          </span>
+        </div>
+        <p class="plugin-card__title">市場調査</p>
+        <p class="plugin-card__desc">ユーザーペルソナ、市場セグメンテーション、カスタマージャーニーマップ、TAM/SAM/SOM、競合分析、フィードバック感情分析。コマンド例: <code>/research-users</code>, <code>/analyze-feedback</code>。</p>
+      </div>
+      <div class="plugin-card" style="--i:4">
+        <div class="plugin-card__header">
+          <span class="plugin-card__name">pm-data-analytics</span>
+          <span class="plugin-card__counts">
+            <span class="badge badge--skills">3 skills</span>
+            <span class="badge badge--cmds">3 cmds</span>
+          </span>
+        </div>
+        <p class="plugin-card__title">データアナリティクス</p>
+        <p class="plugin-card__desc">自然言語からの SQL 生成（BigQuery / PostgreSQL / MySQL）、コホート分析（リテンション・採用率・エンゲージメント）、A/B テスト統計検定。</p>
+      </div>
+      <div class="plugin-card" style="--i:5">
+        <div class="plugin-card__header">
+          <span class="plugin-card__name">pm-go-to-market</span>
+          <span class="plugin-card__counts">
+            <span class="badge badge--skills">6 skills</span>
+            <span class="badge badge--cmds">3 cmds</span>
+          </span>
+        </div>
+        <p class="plugin-card__title">ゴートゥーマーケット</p>
+        <p class="plugin-card__desc">ビーチヘッドセグメント、ICP（Ideal Customer Profile）、GTM 戦略、グロースループ（フライホイール）、GTM モーション評価、競合バトルカード。</p>
+      </div>
+      <div class="plugin-card" style="--i:6">
+        <div class="plugin-card__header">
+          <span class="plugin-card__name">pm-marketing-growth</span>
+          <span class="plugin-card__counts">
+            <span class="badge badge--skills">5 skills</span>
+            <span class="badge badge--cmds">2 cmds</span>
+          </span>
+        </div>
+        <p class="plugin-card__title">マーケティング &amp; グロース</p>
+        <p class="plugin-card__desc">マーケティングアイデア、プロダクトポジショニング、バリュープロポジションステートメント、プロダクトネーミング、North Star メトリック定義。</p>
+      </div>
+      <div class="plugin-card" style="--i:7">
+        <div class="plugin-card__header">
+          <span class="plugin-card__name">pm-toolkit</span>
+          <span class="plugin-card__counts">
+            <span class="badge badge--skills">4 skills</span>
+            <span class="badge badge--cmds">5 cmds</span>
+          </span>
+        </div>
+        <p class="plugin-card__title">PM ツールキット</p>
+        <p class="plugin-card__desc">PM レジュメレビュー・テーラリング（XYZ+S 公式）、NDA ドラフト、プライバシーポリシー（GDPR/CCPA 準拠）、文法・ロジック・フロー校正。</p>
+      </div>
+    </div>
+
+    <section id="install" class="sec-head">4 — インストール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Claude Cowork（推奨）</span>
+      <p>非開発者向けの最速経路。<strong>Customize → Browse plugins → Personal → + → Add marketplace from GitHub</strong> の順に進み、<code>phuryn/pm-skills</code> を入力すると全 8 プラグインが自動インストールされる。</p>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> Claude Code（CLI）</span>
+      <div class="ve-code-block">
+        <pre><code># Step 1: マーケットプレイスを追加
+claude plugin marketplace add phuryn/pm-skills
+
+# Step 2: 必要なプラグインをインストール
+claude plugin install pm-toolkit@pm-skills
+claude plugin install pm-product-strategy@pm-skills
+claude plugin install pm-product-discovery@pm-skills
+claude plugin install pm-market-research@pm-skills
+claude plugin install pm-data-analytics@pm-skills
+claude plugin install pm-marketing-growth@pm-skills
+claude plugin install pm-go-to-market@pm-skills
+claude plugin install pm-execution@pm-skills</code></pre>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> その他のエージェント（スキル単体）</span>
+      <p><code>skills/*/SKILL.md</code> はユニバーサルフォーマット。スラッシュコマンドは Claude 専用だが、スキル自体はどのツールでも動く。</p>
+      <div class="ve-table-wrap" style="margin: 0.75rem 0">
+        <table>
+          <thead>
+            <tr><th>ツール</th><th>配置先</th><th>動作範囲</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Gemini CLI</td><td><code>~/.gemini/skills/</code></td><td>スキルのみ</td></tr>
+            <tr><td>OpenCode</td><td><code>.opencode/skills/</code></td><td>スキルのみ</td></tr>
+            <tr><td>Cursor</td><td><code>.cursor/skills/</code></td><td>スキルのみ</td></tr>
+            <tr><td>Codex CLI</td><td><code>.codex/skills/</code></td><td>スキルのみ</td></tr>
+            <tr><td>Kiro</td><td><code>.kiro/skills/</code></td><td>スキルのみ</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-code-block">
+        <pre><code># 例: OpenCode 向けに全スキルをコピー（プロジェクトルートから実行）
+for plugin in pm-*/; do
+  mkdir -p .opencode/skills/
+  cp -r "$plugin/skills/"* .opencode/skills/ 2>/dev/null
+done</code></pre>
+      </div>
+    </div>
+
+    <section id="frameworks" class="sec-head">5 — 参照フレームワーク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 思想的バックグラウンド</span>
+      <p>スキルが参照する PM 実践者・書籍の一覧。汎用 AI の回答に代わり、これらの体系的なフレームワークを通じた構造化された思考を提供する。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>著者 / 組織</th><th>著作・コンセプト</th><th>関連プラグイン</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Teresa Torres</td><td>Continuous Discovery Habits</td><td>pm-product-discovery</td></tr>
+            <tr><td>Marty Cagan</td><td>INSPIRED / TRANSFORMED</td><td>pm-product-strategy, pm-execution</td></tr>
+            <tr><td>Alberto Savoia</td><td>The Right It（プリトタイプ）</td><td>pm-product-discovery</td></tr>
+            <tr><td>Dan Olsen</td><td>The Lean Product Playbook</td><td>pm-product-strategy</td></tr>
+            <tr><td>Roger L. Martin</td><td>Playing to Win</td><td>pm-product-strategy</td></tr>
+            <tr><td>Ash Maurya</td><td>Running Lean（Lean Canvas）</td><td>pm-product-strategy</td></tr>
+            <tr><td>Strategyzer</td><td>Business Model Generation / Value Proposition Design</td><td>pm-product-strategy</td></tr>
+            <tr><td>Christina Wodtke</td><td>Radical Focus（OKR）</td><td>pm-execution</td></tr>
+            <tr><td>Anthony W. Ulwick</td><td>Jobs to Be Done</td><td>pm-product-discovery, pm-go-to-market</td></tr>
+            <tr><td>Alistair Croll &amp; Benjamin Yoskovitz</td><td>Lean Analytics</td><td>pm-data-analytics</td></tr>
+            <tr><td>Sean Ellis</td><td>Hacking Growth</td><td>pm-marketing-growth</td></tr>
+            <tr><td>Maja Voje</td><td>Go-To-Market Strategist</td><td>pm-go-to-market</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">6 — リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/phuryn/pm-skills" target="_blank" rel="noopener">GitHub: phuryn/pm-skills</a> — 本体リポジトリ（MIT ライセンス）</li>
+        <li><a href="https://www.productcompass.pm" target="_blank" rel="noopener">The Product Compass Newsletter</a> — 作者 Paweł Huryn のニュースレター</li>
+        <li><a href="https://github.com/phuryn/pm-skills/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a> — 貢献ガイド</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GSD 2 — 自律型 AI コーディングエージェント CLI</title>
+  <meta name="description" content="GSD 2 は Pi SDK ベースの自律型コーディングエージェント CLI。ワンコマンドで計画・実行・検証・コミットを繰り返し、ウォークアウェイで開発を進める。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="GSD 2 — 自律型 AI コーディングエージェント CLI">
+  <meta property="og:description" content="GSD 2 は Pi SDK ベースの自律型コーディングエージェント CLI。ワンコマンドで計画・実行・検証・コミットを繰り返し、ウォークアウェイで開発を進める。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/gsd-2.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="GSD 2 — 自律型 AI コーディングエージェント CLI">
+  <meta name="twitter:description" content="GSD 2 は Pi SDK ベースの自律型コーディングエージェント CLI。ワンコマンドで計画・実行・検証・コミットを繰り返す。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens — Outfit / Emerald) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0 0);
+      --foreground: oklch(0.12 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.12 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.12 0 0);
+      --primary: oklch(0.18 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.96 0 0);
+      --secondary-foreground: oklch(0.18 0 0);
+      --muted: oklch(0.96 0 0);
+      --muted-foreground: oklch(0.5 0 0);
+      --accent: oklch(0.96 0 0);
+      --accent-foreground: oklch(0.18 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.91 0 0);
+      --input: oklch(0.91 0 0);
+      --ring: oklch(0.7 0 0);
+      /* Emerald green accent */
+      --chart-1: oklch(0.62 0.16 155);
+      --chart-2: oklch(0.52 0.13 155);
+      --chart-3: oklch(0.38 0.09 155);
+      --chart-4: oklch(0.76 0.12 88);
+      --chart-5: oklch(0.55 0.14 222);
+      --code-bg: var(--muted);
+      --code-text: #0a4e2b;
+      --font-body: 'Outfit', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.11 0 0);
+        --foreground: oklch(0.97 0 0);
+        --card: oklch(0.17 0 0);
+        --card-foreground: oklch(0.97 0 0);
+        --popover: oklch(0.17 0 0);
+        --popover-foreground: oklch(0.97 0 0);
+        --primary: oklch(0.93 0 0);
+        --primary-foreground: oklch(0.17 0 0);
+        --secondary: oklch(0.22 0 0);
+        --secondary-foreground: oklch(0.97 0 0);
+        --muted: oklch(0.25 0 0);
+        --muted-foreground: oklch(0.68 0 0);
+        --accent: oklch(0.25 0 0);
+        --accent-foreground: oklch(0.97 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 9%);
+        --input: oklch(1 0 0 / 13%);
+        --ring: oklch(0.5 0 0);
+        --chart-1: oklch(0.72 0.16 155);
+        --chart-2: oklch(0.62 0.13 155);
+        --chart-3: oklch(0.82 0.12 88);
+        --chart-4: oklch(0.65 0.14 222);
+        --chart-5: oklch(0.75 0.18 50);
+        --code-bg: oklch(0.14 0 0);
+        --code-text: oklch(0.75 0.14 155);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0,0,0,.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0,0,0,.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 91%, var(--chart-1) 9%);
+      box-shadow: 0 4px 20px rgba(0,0,0,.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: .5rem; font-size: .75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: .75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: .875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: .8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: .875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: .875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: .625rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--muted-foreground); margin-top: .375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: .875rem 1.125rem; font-size: .8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: .6875rem; background: oklch(0.62 0.16 155 / .12); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 80% 0%, oklch(0.62 0.16 155 / .07) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 80% 0%, oklch(0.72 0.16 155 / .09) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC (responsive nav) ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all .15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: .5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: .875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 .5rem; }
+    p { font-size: .9375rem; line-height: 1.65; margin-bottom: .75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: .35rem; font-size: .9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: .8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .phase-flow { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
+    .phase-badge { background: color-mix(in oklch, var(--muted) 70%, var(--chart-1) 30%); color: var(--foreground); border: 1px solid color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%); border-radius: var(--radius-md); padding: .375rem .75rem; font-size: .8125rem; font-weight: 600; white-space: nowrap; }
+    .phase-arrow { color: var(--muted-foreground); font-size: .875rem; }
+
+    .hierarchy { display: flex; flex-direction: column; gap: .5rem; }
+    .hier-row { display: flex; align-items: flex-start; gap: .75rem; padding: .75rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border); }
+    .hier-badge { flex-shrink: 0; background: var(--chart-1); color: #fff; border-radius: var(--radius-sm); padding: .25rem .6rem; font-size: .75rem; font-weight: 700; font-family: var(--font-mono); }
+    .hier-badge.slice { background: color-mix(in oklch, var(--chart-1) 65%, var(--background) 35%); }
+    .hier-badge.task { background: color-mix(in oklch, var(--chart-1) 35%, var(--background) 65%); color: var(--foreground); }
+    .hier-content { flex: 1; min-width: 0; }
+    .hier-title { font-weight: 600; font-size: .9rem; margin-bottom: .25rem; }
+    .hier-desc { font-size: .8125rem; color: var(--text-dim); line-height: 1.5; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp .35s ease-out both; animation-delay: calc(var(--i,0) * .05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#automode">オートモード</a>
+    <a href="#hierarchy">ワーク構造</a>
+    <a href="#context">コンテキスト管理</a>
+    <a href="#commands">コマンド一覧</a>
+    <a href="#config">設定</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#start">はじめる</a>
+  </nav>
+
+  <div class="main">
+  <h1>GSD 2</h1>
+  <p class="subtitle">npm install -g gsd-pi &amp;&amp; gsd — ひとつのコマンドで歩き去る、自律型コーディングエージェント。</p>
+
+  <!-- ─── 1. 概要 ─── -->
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> GSD 2 とは</span>
+    <p>GSD 2 は <strong>Pi SDK 上に構築された TypeScript CLI</strong>。プロンプトフレームワークだった v1 とは根本的に異なる：LLM に「やって」と頼むのではなく、<em>TypeScript からエージェントセッションを直接制御する</em>。コンテキストウィンドウのクリア、ファイルの注入タイミング、Git ブランチ管理、コスト追跡、スタック検知——すべてコードで制御される。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">v2.52</span><span class="ve-kpi-card__label">最新バージョン</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">20+</span><span class="ve-kpi-card__label">LLM プロバイダ</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">19</span><span class="ve-kpi-card__label">バンドル拡張</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Pi SDK</span><span class="ve-kpi-card__label">基盤</span></div>
+    </div>
+    <p>一言で：<strong>「ひとつのコマンド。歩き去る。帰ってきたらビルド済みのプロジェクトとクリーンな Git 履歴」</strong>。</p>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> v1 vs v2</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>項目</th><th>v1 (プロンプトフレームワーク)</th><th>v2 (エージェントアプリケーション)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ランタイム</td><td>Claude Code スラッシュコマンド</td><td>Pi SDK 上のスタンドアロン CLI</td></tr>
+          <tr><td>コンテキスト管理</td><td>LLM が溜まらないことを願う</td><td>タスクごとに Fresh セッション、プログラム制御</td></tr>
+          <tr><td>オートモード</td><td>LLM セルフループ</td><td><code>.gsd/</code> ファイル駆動のステートマシン</td></tr>
+          <tr><td>クラッシュ復旧</td><td>なし</td><td>ロックファイル + セッションフォレンジクス</td></tr>
+          <tr><td>Git 戦略</td><td>LLM が git コマンドを書く</td><td>ワークツリー分離、シーケンシャルコミット、スカッシュマージ</td></tr>
+          <tr><td>コスト追跡</td><td>なし</td><td>ユニット・スライス・モデル別の token / コスト台帳</td></tr>
+          <tr><td>スタック検知</td><td>なし</td><td>再試行 → 診断 → 停止</td></tr>
+          <tr><td>検証</td><td>手動</td><td>自動検証コマンド + 自動修正リトライ</td></tr>
+          <tr><td>スキル発見</td><td>なし</td><td>研究フェーズ中に自動検出・適用</td></tr>
+          <tr><td>並列実行</td><td>なし</td><td>マルチワーカー並列マイルストーンオーケストレーション</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ─── 2. オートモード ─── -->
+  <section id="automode" class="sec-head">2 — オートモード</section>
+  <div class="ve-card ve-card--recessed" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ループ</span>
+    <p>オートモードは <strong>ディスク上のファイルで駆動するステートマシン</strong>。<code>.gsd/STATE.md</code> を読み、次の作業単位を判断し、新しいエージェントセッションを作成し、関連するコンテキストをすべてインライン注入し、LLM に実行させる。完了したら再度ディスク状態を読んで次のユニットをディスパッチする。</p>
+    <div class="phase-flow">
+      <span class="phase-badge">Plan</span>
+      <span class="phase-arrow">→</span>
+      <span class="phase-badge">Execute</span>
+      <span class="phase-arrow">→</span>
+      <span class="phase-badge">Complete</span>
+      <span class="phase-arrow">→</span>
+      <span class="phase-badge">Reassess</span>
+      <span class="phase-arrow">→</span>
+      <span class="phase-badge">Next Slice</span>
+      <span class="phase-arrow">↓ 全スライス完了</span>
+      <span class="phase-badge">Validate Milestone</span>
+    </div>
+    <ul>
+      <li><strong>Plan</strong> — コードベースをスカウト、関連ドキュメントをリサーチ、must-have（検証可能な成果物）付きタスクに分解。</li>
+      <li><strong>Execute</strong> — 各タスクを Fresh コンテキストウィンドウで実行。lint / test を自動実行して失敗したら自動修正リトライ。</li>
+      <li><strong>Complete</strong> — サマリー、UAT スクリプトを書き、ロードマップにチェックを入れ、コミット。</li>
+      <li><strong>Reassess</strong> — 判明した情報をもとにロードマップの見直し。スライスの追加・削除・並び替え。</li>
+      <li><strong>Validate Milestone</strong> — 全スライス完了後のゲート。ロードマップの成功基準と実際の成果を照合してから封印。</li>
+    </ul>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 主要特性</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>特性</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Fresh セッション</strong></td><td>タスク・研究・計画のたびにクリーンな 200k トークンウィンドウ。コンテキスト蓄積による品質劣化なし。</td></tr>
+          <tr><td><strong>コンテキスト事前ロード</strong></td><td>ディスパッチプロンプトにタスクプラン・スライスプラン・先行タスクサマリー・依存関係・ロードマップ・決定レジスタをインライン注入。LLM が最初から方向付け済みで始まる。</td></tr>
+          <tr><td><strong>Git 分離</strong></td><td><code>worktree</code> / <code>branch</code> / <code>none</code> から選択。デフォルト <code>none</code>（現在のブランチで作業）。<code>worktree</code> 時はマイルストーンごとに独立したワークツリーを作り、完了時にスカッシュマージ。</td></tr>
+          <tr><td><strong>クラッシュ復旧</strong></td><td>ロックファイルが現在のユニットを追跡。セッションが死んでも次回起動時にサバイバーファイルから完全コンテキストを合成して再開。</td></tr>
+          <tr><td><strong>スタック検知</strong></td><td>スライディングウィンドウで繰り返しパターンを検知。1 度リトライして再失敗したら停止・診断。</td></tr>
+          <tr><td><strong>タイムアウト監督</strong></td><td>ソフト（警告）→ アイドル（停止検知）→ ハード（一時停止）の 3 段階。リカバリーステアリングで LLM に持続的アウトプットを促す。</td></tr>
+          <tr><td><strong>適応的再計画</strong></td><td>各スライス完了後にロードマップを自動アセスメント。新情報で計画を改訂。</td></tr>
+          <tr><td><strong>並列実行</strong></td><td>独立したマイルストーンを複数ワーカーで同時実行。<code>.gsd/parallel/</code> にオーケストレーター状態を永続化。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-callout">
+    <strong>Escape ハッチ:</strong> Escape キーで一時停止。会話を保持したままエージェントと対話し、<code>/gsd auto</code> で再開できる。2 ターミナル構成（1: 自動実行、2: <code>/gsd discuss</code> でステアリング）が推奨ワークフロー。
+  </div>
+
+  <!-- ─── 3. ワーク構造 ─── -->
+  <section id="hierarchy" class="sec-head">3 — ワーク構造</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Milestone → Slice → Task</span>
+    <div class="hierarchy">
+      <div class="hier-row">
+        <span class="hier-badge">Milestone</span>
+        <div class="hier-content">
+          <div class="hier-title">リリース可能なバージョン（4–10 スライス）</div>
+          <div class="hier-desc">ロードマップ、コンテキスト、リサーチを持つ。完了後にスカッシュマージされ、HTML レポートが自動生成される。</div>
+        </div>
+      </div>
+      <div class="hier-row">
+        <span class="hier-badge slice">Slice</span>
+        <div class="hier-content">
+          <div class="hier-title">デモ可能な縦断的機能（1–7 タスク）</div>
+          <div class="hier-desc">S01-PLAN.md にタスク分解。完了後に UAT スクリプト生成。ロードマップ上のチェックボックスで追跡。</div>
+        </div>
+      </div>
+      <div class="hier-row">
+        <span class="hier-badge task">Task</span>
+        <div class="hier-content">
+          <div class="hier-title">コンテキストウィンドウ 1 つ分の作業単位（鉄則）</div>
+          <div class="hier-desc">T01-PLAN.md（must-have 付き）と T01-SUMMARY.md（YAML フロントマター + ナラティブ）を持つ。タスクが 1 ウィンドウに収まらなければ 2 タスクに分割。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Git 戦略（worktree モード）</span>
+    <div class="ve-code-block">
+      <pre><code>main:
+  docs(M001/S04): workflow documentation and examples
+  fix(M001/S03): bug fixes and doc corrections
+  feat(M001/S02): API endpoints and middleware
+  feat(M001/S01): data model and type system
+
+gsd/M001/S01 (マージ後に削除):
+  feat(S01/T03): file writer with round-trip fidelity
+  feat(S01/T02): markdown parser for plan files
+  feat(S01/T01): core types and interfaces</code></pre>
+    </div>
+    <p>main への 1 スカッシュコミット/マイルストーン。<code>git bisect</code> が機能し、個別マイルストーンのリバートも可能。コミットメッセージはタスクサマリーから自動生成。</p>
+  </div>
+
+  <!-- ─── 4. コンテキスト管理 ─── -->
+  <section id="context" class="sec-head">4 — コンテキスト管理</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> .gsd/ アーティファクト</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ファイル</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>PROJECT.md</code></td><td>リビングドキュメント — 今プロジェクトが何であるか</td></tr>
+          <tr><td><code>DECISIONS.md</code></td><td>アーキテクチャ上の意思決定の追記専用レジスタ</td></tr>
+          <tr><td><code>KNOWLEDGE.md</code></td><td>セッション横断のルール・パターン・学習</td></tr>
+          <tr><td><code>RUNTIME.md</code></td><td>API エンドポイント・環境変数・サービスなどランタイムコンテキスト</td></tr>
+          <tr><td><code>STATE.md</code></td><td>クイックグランス用ダッシュボード — 常に最初に読まれる</td></tr>
+          <tr><td><code>M001-ROADMAP.md</code></td><td>スライスチェックボックス・リスク・依存関係付きマイルストーンプラン</td></tr>
+          <tr><td><code>M001-CONTEXT.md</code></td><td>ディスカッションフェーズでのユーザー決定</td></tr>
+          <tr><td><code>S01-PLAN.md</code></td><td>must-have 付きスライスタスク分解</td></tr>
+          <tr><td><code>T01-PLAN.md</code></td><td>検証基準付き個別タスクプラン</td></tr>
+          <tr><td><code>T01-SUMMARY.md</code></td><td>実行結果 — YAML フロントマター + ナラティブ</td></tr>
+          <tr><td><code>S01-UAT.md</code></td><td>スライス成果物から導出される人間テストスクリプト</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-callout">
+    <strong>状態はディスクに生きる：</strong> <code>.gsd/</code> が唯一の真実の源。セッションをまたいでメモリは残らない。これがクラッシュ復旧・マルチターミナルステアリング・セッション再開を可能にする設計上の核心。
+  </div>
+
+  <!-- ─── 5. コマンド一覧 ─── -->
+  <section id="commands" class="sec-head">5 — コマンド一覧</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> スラッシュコマンド（gsd セッション内）</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>/gsd</code></td><td>ステップモード — 1 ユニットずつ実行、各ステップ後に一時停止</td></tr>
+          <tr><td><code>/gsd auto</code></td><td>自律モード — リサーチ・計画・実行・コミット・繰り返し</td></tr>
+          <tr><td><code>/gsd quick</code></td><td>計画オーバーヘッドなしのクイックタスク実行</td></tr>
+          <tr><td><code>/gsd stop</code></td><td>オートモードをグレースフルに停止</td></tr>
+          <tr><td><code>/gsd steer</code></td><td>実行中にプランドキュメントをハードステアリング</td></tr>
+          <tr><td><code>/gsd discuss</code></td><td>アーキテクチャや決定についてディスカッション（オートモード並行可）</td></tr>
+          <tr><td><code>/gsd rethink</code></td><td>プロジェクトの会話的再編成</td></tr>
+          <tr><td><code>/gsd status</code></td><td>進捗ダッシュボード</td></tr>
+          <tr><td><code>/gsd queue</code></td><td>将来のマイルストーンをキュー（オートモード中も安全）</td></tr>
+          <tr><td><code>/gsd prefs</code></td><td>モデル選択・タイムアウト・予算上限</td></tr>
+          <tr><td><code>/gsd forensics</code></td><td>オートモード失敗調査用フルアクセスデバッガ</td></tr>
+          <tr><td><code>/gsd doctor</code></td><td>ランタイムヘルスチェック（ダッシュボード・ビジュアライザ・レポートに表示）</td></tr>
+          <tr><td><code>/gsd keys</code></td><td>API キー管理 — 一覧・追加・削除・テスト・ローテーション</td></tr>
+          <tr><td><code>/gsd export --html</code></td><td>現在または完了済みマイルストーンの HTML レポート生成</td></tr>
+          <tr><td><code>/worktree</code></td><td>Git ワークツリーライフサイクル — 作成・切替・マージ・削除</td></tr>
+          <tr><td><code>/gsd migrate</code></td><td>v1 <code>.planning</code> ディレクトリを <code>.gsd</code> 形式にマイグレーション</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> CLI コマンド（ターミナルから）</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>gsd</code></td><td>インタラクティブ TUI セッションを起動</td></tr>
+          <tr><td><code>gsd --web</code></td><td>ブラウザベース Web UI を起動（<code>gsd --web</code>）</td></tr>
+          <tr><td><code>gsd headless [cmd]</code></td><td>TUI なしで <code>/gsd</code> コマンドを実行（CI / cron / スクリプト）</td></tr>
+          <tr><td><code>gsd headless query</code></td><td>即時 JSON スナップショット — 状態・次のディスパッチ・コスト（LLM 不要）</td></tr>
+          <tr><td><code>gsd config</code></td><td>セットアップウィザードを再実行（LLM プロバイダ + ツールキー）</td></tr>
+          <tr><td><code>gsd update</code></td><td>GSD を最新バージョンに更新</td></tr>
+          <tr><td><code>gsd sessions</code></td><td>保存済みセッションを一覧・再開</td></tr>
+          <tr><td><code>gsd --continue (-c)</code></td><td>現在のディレクトリの最新セッションを再開</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ─── 6. 設定 ─── -->
+  <section id="config" class="sec-head">6 — 設定</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> PREFERENCES.md</span>
+    <p>グローバル設定は <code>~/.gsd/PREFERENCES.md</code>、プロジェクト設定は <code>.gsd/PREFERENCES.md</code>。<code>/gsd prefs</code> で管理。</p>
+    <div class="ve-code-block">
+      <pre><code>---
+version: 1
+models:
+  research: claude-sonnet-4-6
+  planning:
+    model: claude-opus-4-6
+    fallbacks:
+      - openrouter/z-ai/glm-5
+  execution: claude-sonnet-4-6
+  completion: claude-sonnet-4-6
+token_profile: balanced       # budget | balanced | quality
+skill_discovery: suggest       # auto | suggest | off
+auto_supervisor:
+  soft_timeout_minutes: 20
+  idle_timeout_minutes: 10
+  hard_timeout_minutes: 30
+budget_ceiling: 50.00
+git:
+  isolation: none              # none | worktree | branch
+verification_commands:
+  - npm run lint
+  - npm run test
+auto_report: true
+---</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> トークン最適化プロファイル</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>プロファイル</th><th>節約</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>budget</code></td><td>40–60%</td><td>安価なモデル、研究・再評価フェーズのスキップ、コンテキストインライン最小化</td></tr>
+          <tr><td><code>balanced</code></td><td>10–20%</td><td>デフォルトモデル、スライスリサーチをスキップ、標準コンテキスト</td></tr>
+          <tr><td><code>quality</code></td><td>0%</td><td>全フェーズ、全コンテキスト、フルモデルパワー</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>複雑度ベースルーティング：</strong> タスクを simple / standard / complex に自動分類し、適切なモデルへルーティング。シンプルな Docs タスクは Haiku、複雑なアーキテクチャ作業は Opus。予算に対する消費割合（50% / 75% / 90%）でモデルを段階的にダウングレード。</p>
+  </div>
+
+  <!-- ─── 7. アーキテクチャ ─── -->
+  <section id="architecture" class="sec-head">7 — アーキテクチャ</section>
+  <div class="ve-card ve-card--recessed" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> システム構造</span>
+    <div class="ve-code-block">
+      <pre><code>gsd (CLI バイナリ)
+  └─ loader.ts          PI_PACKAGE_DIR・GSD 環境変数をセット、cli.ts を動的インポート
+      └─ cli.ts         SDK マネージャーを配線、拡張をロード、InteractiveMode を起動
+          ├─ headless.ts      ヘッドレスオーケストレータ（RPC 子プロセスをスポーン）
+          ├─ onboarding.ts    初回セットアップウィザード
+          ├─ wizard.ts        auth.json からの環境変数ハイドレーション
+          ├─ app-paths.ts     ~/.gsd/agent/, ~/.gsd/sessions/, auth.json
+          ├─ resource-loader.ts  バンドル拡張 + エージェントを ~/.gsd/agent/ に同期
+          └─ src/resources/
+              ├─ extensions/gsd/    コア GSD 拡張（自律モード・ステート・コマンド…）
+              ├─ extensions/...     18 サポート拡張
+              ├─ agents/            scout, researcher, worker
+              └─ AGENTS.md          エージェントルーティング指示</code></pre>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 主要設計決定</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>決定</th><th>理由</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>状態はディスクに生きる</td><td>クラッシュ復旧・マルチターミナルステアリング・セッション再開を可能にする</td></tr>
+          <tr><td>2 ファイルローダーパターン</td><td><code>loader.ts</code> がゼロ SDK インポートで環境変数をセット → <code>cli.ts</code> が静的インポートを実行。<code>PI_PACKAGE_DIR</code> を SDK コードより先にセットするため。</td></tr>
+          <tr><td><code>pkg/</code> シムディレクトリ</td><td><code>PI_PACKAGE_DIR</code> を <code>pkg/</code>（プロジェクトルートでなく）に向け、Pi のテーマ解決と GSD の <code>src/</code> の衝突を防ぐ。</td></tr>
+          <tr><td>常に上書き同期</td><td>起動のたびにバンドル拡張・エージェントを <code>~/.gsd/agent/</code> に同期。<code>npm update -g</code> が即時反映される。</td></tr>
+          <tr><td>遅延プロバイダロード</td><td>LLM プロバイダ SDK を初回使用時にレイジーロード。コールドスタートタイムを大幅短縮。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> バンドルエージェント</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>エージェント</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Scout</strong></td><td>高速コードベース偵察 — ハンドオフ用の圧縮コンテキストを返す</td></tr>
+          <tr><td><strong>Researcher</strong></td><td>Web リサーチ — 現在の情報を取得・合成</td></tr>
+          <tr><td><strong>Worker</strong></td><td>汎用実行 — 独立したコンテキストウィンドウで作業</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ─── 8. はじめる ─── -->
+  <section id="start" class="sec-head">8 — はじめる</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> インストール</span>
+    <div class="ve-code-block">
+      <pre><code># Node.js ≥ 22.0.0 (Node 24 LTS 推奨) が必要
+npm install -g gsd-pi@latest</code></pre>
+    </div>
+    <h3>プロバイダにログイン</h3>
+    <div class="ve-code-block">
+      <pre><code>gsd
+/login</code></pre>
+    </div>
+    <p>20+ プロバイダから選択 — Anthropic, OpenAI, Google, OpenRouter, GitHub Copilot など。Claude Max または Copilot サブスクリプションがあれば OAuth フローで完結。それ以外は API キーを貼り付けるだけ。</p>
+    <h3>2 ターミナル構成（推奨ワークフロー）</h3>
+    <div class="ve-code-block">
+      <pre><code># ターミナル 1 — ビルドさせる
+gsd
+/gsd auto
+
+# ターミナル 2 — 動いている間にステアリング
+gsd
+/gsd discuss    # アーキテクチャ決定を議論
+/gsd status     # 進捗確認
+/gsd queue      # 次のマイルストーンをキュー</code></pre>
+    </div>
+    <p>両ターミナルは同じ <code>.gsd/</code> ファイルを読み書き。ターミナル 2 での決定は次のフェーズ境界で自動的に取り込まれる — オートモードを止める必要なし。</p>
+    <h3>ヘッドレスモード（CI / スクリプト）</h3>
+    <div class="ve-code-block">
+      <pre><code># CI でオートモード実行
+gsd headless --timeout 600000
+
+# マイルストーンを作成して end-to-end 実行
+gsd headless new-milestone --context spec.md --auto
+
+# 即時 JSON スナップショット（LLM なし、約 50ms）
+gsd headless query</code></pre>
+    </div>
+  </div>
+  <div class="ve-callout">
+    <strong>参照:</strong> <a href="https://github.com/gsd-build/GSD-2" target="_blank" rel="noopener">GitHub: gsd-build/GSD-2</a> &nbsp;|&nbsp; <a href="https://gsd.build" target="_blank" rel="noopener">ドキュメント gsd.build</a> &nbsp;|&nbsp; <a href="https://www.npmjs.com/package/gsd-pi" target="_blank" rel="noopener">npm: gsd-pi</a>
+  </div>
+
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

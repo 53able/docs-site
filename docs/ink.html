@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ink — React for CLIs（ターミナル UI フレームワーク）</title>
+  <meta name="description" content="React コンポーネントで CLI を構築するフレームワーク Ink の解説。Flexbox レイアウト・フック・API・アーキテクチャを図解。Claude Code, Gemini CLI, Cloudflare Wrangler など主要 CLI が採用。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Ink — React for CLIs（ターミナル UI フレームワーク）">
+  <meta property="og:description" content="React コンポーネントで CLI を構築する Ink フレームワーク。Flexbox レイアウト・フック・API・アーキテクチャを図解。Claude Code, Gemini CLI, Cloudflare Wrangler が採用。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/ink.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Ink — React for CLIs（ターミナル UI フレームワーク）">
+  <meta name="twitter:description" content="React コンポーネントで CLI を構築する Ink フレームワーク。Claude Code, Gemini CLI, Cloudflare Wrangler が採用。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME — Blueprint (deep blue + amber) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.984 0.003 248);
+      --foreground: oklch(0.16 0.022 248);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.16 0.022 248);
+      --muted: oklch(0.95 0.008 248);
+      --muted-foreground: oklch(0.52 0.04 248);
+      --accent: oklch(0.94 0.012 248);
+      --accent-foreground: oklch(0.22 0.04 248);
+      --border: oklch(0.88 0.016 248);
+      --chart-1: oklch(0.38 0.12 248);    /* deep blueprint blue */
+      --chart-2: oklch(0.68 0.16 76);     /* amber / gold */
+      --chart-3: oklch(0.55 0.10 200);    /* teal accent */
+      --code-bg: oklch(0.13 0.022 248);
+      --code-fg: oklch(0.80 0.10 200);
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.11 0.02 248);
+        --foreground: oklch(0.92 0.008 248);
+        --card: oklch(0.16 0.024 248);
+        --card-foreground: oklch(0.92 0.008 248);
+        --muted: oklch(0.21 0.028 248);
+        --muted-foreground: oklch(0.62 0.05 248);
+        --accent: oklch(0.21 0.028 248);
+        --accent-foreground: oklch(0.88 0.01 248);
+        --border: oklch(1 0 0 / 10%);
+        --chart-1: oklch(0.62 0.14 248);
+        --chart-2: oklch(0.75 0.17 76);
+        --chart-3: oklch(0.65 0.12 200);
+        --code-bg: oklch(0.09 0.016 248);
+        --code-fg: oklch(0.82 0.12 200);
+      }
+    }
+
+    /* ============ Spell UI static components ============ */
+    .ve-card {
+      background: var(--card);
+      color: var(--card-foreground);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+    }
+    .ve-card--elevated {
+      box-shadow: 0 4px 20px oklch(0 0 0 / 0.06);
+    }
+    .ve-card--recessed {
+      background: var(--muted);
+      box-shadow: inset 0 1px 3px oklch(0 0 0 / 0.04);
+    }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+      border-color: color-mix(in oklch, var(--border) 45%, var(--chart-1) 55%);
+      box-shadow: 0 4px 24px oklch(0 0 0 / 0.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 82%, var(--chart-1) 18%);
+        border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+      }
+    }
+    .ve-section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted-foreground);
+      margin-bottom: 0.875rem;
+    }
+    .ve-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--chart-1);
+      flex-shrink: 0;
+    }
+    .ve-code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .ve-code-block pre {
+      margin: 0;
+      overflow-x: auto;
+      padding: 0.875rem 1.125rem;
+    }
+    .ve-code-block code {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.75;
+      color: var(--code-fg);
+      white-space: pre-wrap;
+    }
+    .ve-table-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .ve-table-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      line-height: 1.55;
+    }
+    .ve-table-wrap th {
+      background: var(--muted);
+      font-weight: 600;
+      text-align: left;
+      padding: 0.7rem 1rem;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    .ve-table-wrap td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: var(--muted); }
+    .ve-kpi-card {
+      background: var(--accent);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 0.875rem 1rem;
+    }
+    .ve-kpi-card__value {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.875rem;
+      line-height: 1.1;
+      font-weight: 600;
+      color: var(--chart-1);
+    }
+    .ve-kpi-card__label {
+      font-size: 0.625rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--muted-foreground);
+      margin-top: 0.35rem;
+    }
+    .ve-callout {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--chart-2);
+      border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+      padding: 0.875rem 1.125rem;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      color: var(--muted-foreground);
+    }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      background: oklch(0.68 0.16 76 / 0.12);
+      color: var(--chart-2);
+      padding: 1px 5px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ============ Reset + base ============ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--background);
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px),
+        radial-gradient(ellipse at 20% 0%, var(--chart-1) 0%, transparent 50%);
+      background-size: 32px 32px, 32px 32px, 100% 100%;
+      background-blend-mode: normal, normal, soft-light;
+      color: var(--foreground);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          linear-gradient(oklch(1 0 0 / 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, oklch(1 0 0 / 0.035) 1px, transparent 1px),
+          radial-gradient(ellipse at 20% 0%, oklch(0.62 0.14 248 / 0.12) 0%, transparent 50%);
+      }
+    }
+
+    /* ============ Layout: Wrap + TOC ============ */
+    .wrap {
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 0 48px;
+    }
+    .main { min-width: 0; }
+    .toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      padding: 14px 0;
+      grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px);
+      overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted-foreground);
+      padding-bottom: 10px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .toc a {
+      display: block;
+      font-size: 0.6875rem;
+      color: var(--muted-foreground);
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 5px;
+      border-left: 2px solid transparent;
+      transition: color 0.12s, background 0.12s, border-color 0.12s;
+      line-height: 1.4;
+      margin-bottom: 1px;
+    }
+    .toc a:hover { color: var(--foreground); background: var(--muted); }
+    .toc a.active { color: var(--foreground); border-left-color: var(--chart-1); }
+
+    @media (max-width: 1000px) {
+      body { padding: 0; }
+      .wrap { grid-template-columns: 1fr; }
+      .toc {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        max-height: none;
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        background: var(--background);
+        border-bottom: 1px solid var(--border);
+        padding: 10px 24px;
+        margin: 0;
+        grid-row: auto;
+        backdrop-filter: blur(8px);
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a {
+        white-space: nowrap;
+        flex-shrink: 0;
+        border-left: none;
+        border-bottom: 2px solid transparent;
+        border-radius: 4px 4px 0 0;
+        padding: 6px 10px;
+        font-size: 0.625rem;
+      }
+      .toc a.active {
+        border-left: none;
+        border-bottom-color: var(--chart-1);
+        background: var(--muted);
+      }
+      .main {
+        padding: 24px;
+        padding-top: 20px;
+      }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 {
+      font-size: clamp(1.625rem, 3.5vw, 2.25rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.375rem;
+      line-height: 1.15;
+      text-wrap: balance;
+    }
+    .subtitle {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      color: var(--muted-foreground);
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+    .sec-head {
+      font-size: 1.0625rem;
+      font-weight: 600;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--foreground);
+      scroll-margin-top: 24px;
+    }
+    h3 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      margin: 1.25rem 0 0.5rem;
+    }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    p:last-child { margin-bottom: 0; }
+    ul { margin: 0 0 0.75rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.3rem; font-size: 0.9rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { opacity: 0.8; }
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      background: var(--muted);
+      padding: 2px 5px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ============ Custom layout helpers ============ */
+    .gap { height: 1rem; }
+    .gap-lg { height: 1.5rem; }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.125rem;
+    }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Adopter grid */
+    .adopter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .adopter-item {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+    .adopter-item small {
+      display: block;
+      font-size: 0.6875rem;
+      color: var(--muted-foreground);
+      margin-top: 2px;
+      font-weight: 400;
+    }
+
+    /* Pipeline span diagram */
+    .pipeline {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.375rem;
+      margin: 0.875rem 0;
+    }
+    .pipeline-step {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.3rem 0.625rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      line-height: 1.35;
+      color: var(--foreground);
+    }
+    .pipeline-arrow {
+      color: var(--chart-1);
+      font-weight: 700;
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+
+    /* Inline mono tag */
+    .tag {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      padding: 1px 6px;
+      border-radius: var(--radius-sm);
+      background: oklch(0.38 0.12 248 / 0.08);
+      color: var(--chart-1);
+      border: 1px solid oklch(0.38 0.12 248 / 0.18);
+      margin-right: 3px;
+    }
+    @media (prefers-color-scheme: dark) {
+      .tag { background: oklch(0.62 0.14 248 / 0.14); border-color: oklch(0.62 0.14 248 / 0.28); }
+    }
+
+    /* ============ Animations ============ */
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .anim { animation: fade-up 0.28s ease-out both; animation-delay: calc(var(--i, 0) * 0.06s); }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== TOC ===== -->
+  <nav class="toc" id="toc">
+    <div class="toc-title">Contents</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#components">コンポーネント</a>
+    <a href="#hooks">フック</a>
+    <a href="#api">API</a>
+    <a href="#testing">テスト・CI</a>
+  </nav>
+
+  <!-- ===== Main ===== -->
+  <div class="main">
+    <h1>Ink</h1>
+    <p class="subtitle">React for CLIs — ターミナル UI をコンポーネントで構築するフレームワーク</p>
+
+    <!-- ━━━ 1: 概要 ━━━ -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+
+    <div class="ve-card ve-card--hero anim" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span>What is Ink</span>
+      <p>Ink は <strong>React</strong> のコンポーネント体験をコマンドラインアプリにそのまま持ち込むフレームワーク。内部では Facebook 製の <strong>Yoga</strong> Flexbox エンジンを使ってターミナルのレイアウトを計算し、<code>chalk</code> / ANSI 経由でテキストスタイルを適用する。</p>
+      <p>React のすべての機能 — Suspense・Concurrent Rendering・<code>useTransition</code> ・Context・カスタムフック — がそのまま使える。</p>
+      <div class="kpi-row" style="margin-top:1rem">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">6</span><span class="ve-kpi-card__label">Built-in Components</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">11</span><span class="ve-kpi-card__label">Built-in Hooks</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">30+</span><span class="ve-kpi-card__label">公式 Examples</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">npm</span><span class="ve-kpi-card__label">ink + react のみで使用可</span></div>
+      </div>
+    </div>
+
+    <div class="gap"></div>
+
+    <div class="ve-card anim" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span>主要採用プロジェクト</span>
+      <div class="adopter-grid">
+        <div class="adopter-item">Claude Code<small>Anthropic — AI コーディングツール</small></div>
+        <div class="adopter-item">Gemini CLI<small>Google — AI エージェント CLI</small></div>
+        <div class="adopter-item">GitHub Copilot CLI<small>GitHub</small></div>
+        <div class="adopter-item">Cloudflare Wrangler<small>Workers CLI</small></div>
+        <div class="adopter-item">Shopify CLI<small>アプリ・テーマ開発</small></div>
+        <div class="adopter-item">Prisma<small>データレイヤー</small></div>
+        <div class="adopter-item">Gatsby<small>Web フレームワーク</small></div>
+        <div class="adopter-item">Terraform CDK<small>HashiCorp</small></div>
+      </div>
+    </div>
+
+    <div class="gap"></div>
+
+    <div class="ve-card ve-card--recessed anim" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span>クイックスタート</span>
+      <div class="ve-code-block">
+        <pre><code>npm install ink react
+
+# スターターテンプレート
+npx create-ink-app my-app           # JavaScript
+npx create-ink-app --typescript my-app  # TypeScript</code></pre>
+      </div>
+      <div style="margin-top:0.875rem">
+        <div class="ve-code-block">
+          <pre><code>// counter.jsx
+import React, {useState, useEffect} from 'react';
+import {render, Text} from 'ink';
+
+const Counter = () => {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setCount(c => c + 1), 100);
+    return () => clearInterval(timer);
+  }, []);
+  return &lt;Text color="green"&gt;{count} iterations&lt;/Text&gt;;
+};
+
+render(&lt;Counter /&gt;);</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- ━━━ 2: アーキテクチャ ━━━ -->
+    <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
+
+    <div class="ve-card anim" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span>レンダリングパイプライン</span>
+      <p>Ink は <strong>カスタム React レンダラー</strong> として実装されている。ブラウザの DOM の代わりに独自の仮想 DOM を持ち、Yoga でレイアウトを計算してから ANSI 文字列を生成する。</p>
+      <div class="pipeline">
+        <span class="pipeline-step">JSX コンポーネント</span>
+        <span class="pipeline-arrow">→</span>
+        <span class="pipeline-step">React Reconciler</span>
+        <span class="pipeline-arrow">→</span>
+        <span class="pipeline-step">Ink Virtual DOM</span>
+        <span class="pipeline-arrow">→</span>
+        <span class="pipeline-step">Yoga Flexbox Layout</span>
+        <span class="pipeline-arrow">→</span>
+        <span class="pipeline-step">ANSI 文字列生成</span>
+        <span class="pipeline-arrow">→</span>
+        <span class="pipeline-step">log-update → stdout</span>
+      </div>
+      <p style="margin-top:0.5rem;font-size:0.8125rem;color:var(--muted-foreground)">
+        <code>log-update</code> が前フレームと差分計算し、変更行だけ書き換えることでちらつきを抑制する。
+      </p>
+    </div>
+
+    <div class="gap"></div>
+
+    <div class="ve-table-wrap anim" style="--i:1">
+      <table>
+        <thead>
+          <tr>
+            <th>ソースファイル</th>
+            <th>責務</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>reconciler.ts</code></td><td>react-reconciler を使ったカスタムレンダラー。DOM ノードの生成・更新・削除を管理。</td></tr>
+          <tr><td><code>dom.ts</code></td><td>Ink 独自の仮想 DOM 型定義（DOMNode / DOMElement）。</td></tr>
+          <tr><td><code>styles.ts</code></td><td>JSX props を Yoga スタイルにマッピング。Flexbox・padding・margin・border・color 等。</td></tr>
+          <tr><td><code>render-node-to-output.ts</code></td><td>DOM ツリーを ANSI 文字列に変換。境界・背景・テキスト装飾を適用。</td></tr>
+          <tr><td><code>log-update.ts</code></td><td>前フレームとの差分を計算して stdout に書き出す。ちらつき抑制。</td></tr>
+          <tr><td><code>ink.tsx</code></td><td>アプリルート。イベントループ管理・stdin/stdout セットアップ・FPS 制御。</td></tr>
+          <tr><td><code>renderer.ts</code></td><td>Yoga レイアウト計算のトリガーと出力バッファ管理。</td></tr>
+          <tr><td><code>input-parser.ts</code></td><td>stdin バイト列をキーイベントにパース。kitty keyboard protocol 対応。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ━━━ 3: コンポーネント ━━━ -->
+    <section id="components" class="sec-head">3 — コンポーネント</section>
+
+    <div class="ve-callout anim" style="--i:0">
+      <strong>重要:</strong> すべてのテキストは <code>&lt;Text&gt;</code> 内に書く必要がある。<code>&lt;Box&gt;</code> は Flexbox コンテナとして機能し、直接テキストを配置することはできない。
+    </div>
+
+    <div class="gap"></div>
+
+    <div class="ve-table-wrap anim" style="--i:1">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:140px">コンポーネント</th>
+            <th>役割</th>
+            <th>主要 Props</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>&lt;Text&gt;</code></td>
+            <td>テキスト表示・スタイリング</td>
+            <td>
+              <code>color</code> <code>backgroundColor</code> <code>bold</code> <code>italic</code> <code>underline</code>
+              <code>strikethrough</code> <code>inverse</code> <code>dimColor</code> <code>wrap</code>
+            </td>
+          </tr>
+          <tr>
+            <td><code>&lt;Box&gt;</code></td>
+            <td>Flexbox コンテナ<br><small style="color:var(--muted-foreground)"><code>&lt;div style="display:flex"&gt;</code> 相当</small></td>
+            <td>
+              <code>flexDirection</code> <code>justifyContent</code> <code>alignItems</code> <code>flexWrap</code>
+              <code>gap</code> <code>padding</code> <code>margin</code> <code>width</code> <code>height</code>
+              <code>borderStyle</code> <code>borderColor</code> <code>backgroundColor</code> <code>overflow</code>
+            </td>
+          </tr>
+          <tr>
+            <td><code>&lt;Newline&gt;</code></td>
+            <td>改行挿入<br><small style="color:var(--muted-foreground)"><code>&lt;Text&gt;</code> 内でのみ使用可</small></td>
+            <td><code>count</code> (default: <code>1</code>)</td>
+          </tr>
+          <tr>
+            <td><code>&lt;Spacer&gt;</code></td>
+            <td>Flexbox の余白を埋める伸縮スペーサー</td>
+            <td>なし</td>
+          </tr>
+          <tr>
+            <td><code>&lt;Static&gt;</code></td>
+            <td>スクロールバッファに固定出力<br><small style="color:var(--muted-foreground)">完了ログ・通知など永続表示に使用</small></td>
+            <td><code>items</code> (Array) &nbsp;<code>style</code></td>
+          </tr>
+          <tr>
+            <td><code>&lt;Transform&gt;</code></td>
+            <td>子の文字列出力を変換<br><small style="color:var(--muted-foreground)">ライン単位で加工できる</small></td>
+            <td><code>transform(outputLine, index)</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="gap"></div>
+
+    <div class="ve-card ve-card--recessed anim" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span>&lt;Box&gt; — ボーダースタイル一覧</span>
+      <p style="font-size:0.8125rem;margin-bottom:0.75rem">
+        <code>borderStyle</code> に指定できる組み込み値:
+        <code>single</code> / <code>double</code> / <code>round</code> / <code>bold</code> /
+        <code>singleDouble</code> / <code>doubleSingle</code> / <code>classic</code>
+        またはカスタムオブジェクト（各辺の文字を個別指定）。
+      </p>
+      <div class="ve-code-block">
+        <pre><code>&lt;Box borderStyle="round" borderColor="green" padding={1}&gt;
+  &lt;Text&gt;Round green border&lt;/Text&gt;
+&lt;/Box&gt;
+
+&lt;Box
+  borderStyle={{
+    topLeft: '╔', top: '═', topRight: '╗',
+    bottomLeft: '╚', bottom: '═', bottomRight: '╝',
+    left: '║', right: '║'
+  }}
+&gt;
+  &lt;Text&gt;Custom border&lt;/Text&gt;
+&lt;/Box&gt;</code></pre>
+      </div>
+    </div>
+
+    <!-- ━━━ 4: フック ━━━ -->
+    <section id="hooks" class="sec-head">4 — フック</section>
+
+    <div class="ve-table-wrap anim" style="--i:0">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:200px">フック</th>
+            <th>役割</th>
+            <th>主な返り値 / 引数</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>useInput(handler, opts?)</code></td>
+            <td>キーボード入力ハンドラ登録</td>
+            <td><code>handler(input: string, key: Key)</code>。<code>key.leftArrow</code> / <code>key.ctrl</code> / <code>key.return</code> 等。opts: <code>isActive</code></td>
+          </tr>
+          <tr>
+            <td><code>usePaste(handler, opts?)</code></td>
+            <td>ペースト（bracketed paste）処理</td>
+            <td><code>handler(text: string)</code>。<code>useInput</code> と別チャンネルで共存可</td>
+          </tr>
+          <tr>
+            <td><code>useApp()</code></td>
+            <td>アプリのライフサイクル制御</td>
+            <td><code>exit(errorOrResult?)</code> &nbsp;<code>waitUntilRenderFlush()</code></td>
+          </tr>
+          <tr>
+            <td><code>useStdin()</code></td>
+            <td>stdin ストリームへのアクセス</td>
+            <td><code>stdin</code> &nbsp;<code>isRawModeSupported</code> &nbsp;<code>setRawMode(bool)</code></td>
+          </tr>
+          <tr>
+            <td><code>useStdout()</code></td>
+            <td>stdout ストリームへのアクセス</td>
+            <td><code>stdout</code> &nbsp;<code>write(data)</code></td>
+          </tr>
+          <tr>
+            <td><code>useStderr()</code></td>
+            <td>stderr ストリームへのアクセス</td>
+            <td><code>stderr</code> &nbsp;<code>write(data)</code></td>
+          </tr>
+          <tr>
+            <td><code>useWindowSize()</code></td>
+            <td>ターミナルサイズ取得（リサイズ時に再レンダー）</td>
+            <td><code>columns: number</code> &nbsp;<code>rows: number</code></td>
+          </tr>
+          <tr>
+            <td><code>useFocus(opts?)</code></td>
+            <td>フォーカス状態の取得（Tab で移動）</td>
+            <td><code>isFocused: boolean</code>。opts: <code>autoFocus</code> &nbsp;<code>isActive</code> &nbsp;<code>id</code></td>
+          </tr>
+          <tr>
+            <td><code>useFocusManager()</code></td>
+            <td>フォーカス管理の制御</td>
+            <td><code>enableFocus()</code> &nbsp;<code>disableFocus()</code> &nbsp;<code>focusNext()</code> &nbsp;<code>focusPrevious()</code> &nbsp;<code>focus(id)</code> &nbsp;<code>activeId</code></td>
+          </tr>
+          <tr>
+            <td><code>useCursor()</code></td>
+            <td>カーソル位置制御（IME サポート向け）</td>
+            <td><code>setCursorPosition({x, y} | undefined)</code></td>
+          </tr>
+          <tr>
+            <td><code>useBoxMetrics(ref)</code></td>
+            <td>Box 要素のレイアウト寸法取得</td>
+            <td><code>width</code> &nbsp;<code>height</code> &nbsp;<code>left</code> &nbsp;<code>top</code> &nbsp;<code>hasMeasured</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="gap"></div>
+
+    <div class="ve-card ve-card--recessed anim" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span>useInput — キーハンドラ例</span>
+      <div class="ve-code-block">
+        <pre><code>import {useInput, useApp} from 'ink';
+
+const MyApp = () => {
+  const {exit} = useApp();
+  useInput((input, key) => {
+    if (input === 'q') exit();
+    if (key.leftArrow) { /* 左移動 */ }
+    if (key.ctrl && input === 'c') exit();
+  });
+  return &lt;Text&gt;Press q to quit&lt;/Text&gt;;
+};</code></pre>
+      </div>
+    </div>
+
+    <!-- ━━━ 5: API ━━━ -->
+    <section id="api" class="sec-head">5 — API</section>
+
+    <div class="ve-card anim" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span>render(tree, options?)</span>
+      <p>コンポーネントをマウントしてターミナルに出力する。<strong>Instance</strong> オブジェクトを返す。</p>
+      <div class="ve-code-block">
+        <pre><code>import {render} from 'ink';
+
+const {rerender, unmount, waitUntilExit} = render(&lt;MyApp /&gt;);
+
+rerender(&lt;MyApp count={1} /&gt;);   // props 更新
+await waitUntilExit();             // 終了まで待機</code></pre>
+      </div>
+    </div>
+
+    <div class="gap"></div>
+
+    <div class="ve-table-wrap anim" style="--i:1">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:200px">オプション</th>
+            <th style="width:200px">型 / デフォルト</th>
+            <th>説明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>stdout</code></td><td><code>Writable</code> / <code>process.stdout</code></td><td>出力先ストリーム</td></tr>
+          <tr><td><code>stdin</code></td><td><code>Readable</code> / <code>process.stdin</code></td><td>入力ストリーム</td></tr>
+          <tr><td><code>exitOnCtrlC</code></td><td><code>boolean</code> / <code>true</code></td><td>Ctrl+C でアプリを終了するか</td></tr>
+          <tr><td><code>patchConsole</code></td><td><code>boolean</code> / <code>true</code></td><td><code>console.log</code> を Ink 出力と混ざらないようにパッチ</td></tr>
+          <tr><td><code>maxFps</code></td><td><code>number</code> / <code>30</code></td><td>最大フレームレート（fps）</td></tr>
+          <tr><td><code>incrementalRendering</code></td><td><code>boolean</code> / <code>false</code></td><td>変更行のみ再描画してちらつきを軽減</td></tr>
+          <tr><td><code>concurrent</code></td><td><code>boolean</code> / <code>false</code></td><td>React Concurrent モード（Suspense・<code>useTransition</code> が有効）</td></tr>
+          <tr><td><code>alternateScreen</code></td><td><code>boolean</code> / <code>false</code></td><td>ターミナルの alternate screen バッファで起動（終了時に元の表示を復元）</td></tr>
+          <tr><td><code>interactive</code></td><td><code>boolean</code> / auto</td><td>インタラクティブモード。非 TTY / CI では自動で <code>false</code></td></tr>
+          <tr><td><code>kittyKeyboard</code></td><td><code>object</code> / <code>undefined</code></td><td>kitty keyboard protocol。修飾キー詳細・press/repeat/release イベントを取得</td></tr>
+          <tr><td><code>isScreenReaderEnabled</code></td><td><code>boolean</code> / env</td><td>スクリーンリーダーモード（<code>INK_SCREEN_READER=true</code> でも有効）</td></tr>
+          <tr><td><code>debug</code></td><td><code>boolean</code> / <code>false</code></td><td>各更新を上書きせず新規出力として表示</td></tr>
+          <tr><td><code>onRender</code></td><td><code>({renderTime}) =&gt; void</code></td><td>各レンダー完了後のコールバック</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="gap"></div>
+
+    <div class="ve-card anim" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span>Instance メソッド</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th style="width:220px">メソッド</th><th>説明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>rerender(tree)</code></td><td>ルートノードを新しいツリーで置き換え、または現在の props を更新</td></tr>
+            <tr><td><code>unmount()</code></td><td>アプリを手動でアンマウント</td></tr>
+            <tr><td><code>waitUntilExit()</code></td><td>アンマウントまで待機する Promise。<code>exit(value)</code> で resolve、<code>exit(error)</code> で reject</td></tr>
+            <tr><td><code>waitUntilRenderFlush()</code></td><td>保留中のレンダー出力が stdout にフラッシュされるまで待機</td></tr>
+            <tr><td><code>cleanup()</code></td><td>アンマウントして内部インスタンスを解放（テスト向け）</td></tr>
+            <tr><td><code>clear()</code></td><td>ターミナル出力をクリア</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="gap"></div>
+
+    <div class="ve-card ve-card--recessed anim" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span>renderToString(tree, options?)</span>
+      <p>コンポーネントを文字列に<strong>同期</strong>レンダーする。stdout に書き出さないため、ドキュメント生成・テスト・ファイル出力に使用。<code>columns</code>（デフォルト: <code>80</code>）でテキスト折り返し幅を指定。</p>
+      <div class="ve-code-block">
+        <pre><code>import {renderToString, Text, Box} from 'ink';
+
+const output = renderToString(
+  &lt;Box padding={1}&gt;
+    &lt;Text color="green"&gt;Hello World&lt;/Text&gt;
+  &lt;/Box&gt;,
+  {columns: 40}
+);
+// → '\n Hello World \n'</code></pre>
+      </div>
+    </div>
+
+    <!-- ━━━ 6: テスト・CI ━━━ -->
+    <section id="testing" class="sec-head">6 — テスト・CI・その他</section>
+
+    <div class="ve-card anim" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span>テスト（ink-testing-library）</span>
+      <p><a href="https://github.com/vadimdemedes/ink-testing-library" target="_blank" rel="noopener">ink-testing-library</a> でコンポーネントをヘッドレスレンダーし、<code>lastFrame()</code> で出力文字列を検証できる。</p>
+      <div class="ve-code-block">
+        <pre><code>import React from 'react';
+import {Text} from 'ink';
+import {render} from 'ink-testing-library';
+
+const Hello = ({name}) =&gt; &lt;Text&gt;Hello, {name}!&lt;/Text&gt;;
+
+const {lastFrame} = render(&lt;Hello name="World" /&gt;);
+lastFrame() === 'Hello, World!'; // =&gt; true</code></pre>
+      </div>
+    </div>
+
+    <div class="gap"></div>
+
+    <div class="ve-table-wrap anim" style="--i:1">
+      <table>
+        <thead>
+          <tr><th style="width:200px">機能</th><th>詳細</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>CI モード</strong></td>
+            <td>環境変数 <code>CI</code> が設定されると、終了時に最後のフレームのみ出力（ANSI 上書きシーケンスを使用しない）。<code>CI=false</code> で無効化可。</td>
+          </tr>
+          <tr>
+            <td><strong>React Devtools</strong></td>
+            <td>オプション依存として <code>react-devtools-core</code> をインストール後、<code>DEV=true my-cli</code> で起動し <code>npx react-devtools</code> で接続。コンポーネントツリーのインスペクト・props のライブ変更が可能。</td>
+          </tr>
+          <tr>
+            <td><strong>スクリーンリーダー</strong></td>
+            <td><code>&lt;Box aria-role="…" aria-label="…" aria-hidden&gt;</code> で ARIA 情報を付与。<code>render(…, {isScreenReaderEnabled: true})</code> または環境変数 <code>INK_SCREEN_READER=true</code> で有効化。</td>
+          </tr>
+          <tr>
+            <td><strong>kitty keyboard protocol</strong></td>
+            <td><code>mode: 'auto'</code> で対応ターミナルを自動検出。Super / Hyper / CapsLock・press / repeat / release イベントが使用可能。</td>
+          </tr>
+          <tr>
+            <td><strong>Incremental Rendering</strong></td>
+            <td><code>incrementalRendering: true</code> で変更された行のみ再描画。高頻度更新 UI のパフォーマンスを大幅に改善。</td>
+          </tr>
+          <tr>
+            <td><strong>Alternate Screen</strong></td>
+            <td><code>alternateScreen: true</code> でターミナルの alt バッファを使用（vim / htop 方式）。終了時に以前の表示を復元。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="gap"></div>
+
+    <div class="ve-callout anim" style="--i:2">
+      <strong>アプリのライフサイクル:</strong> Ink アプリは Node.js プロセスとして動作し、イベントループに作業がある間だけ生存する。非同期処理がなければ 1 フレームレンダーして即終了する。<code>useInput</code> のリスニング・タイマー・Pending Promise などがプロセスを継続させる。<code>useApp().exit()</code> を呼ぶと <code>waitUntilExit()</code> が解決して終了する。
+    </div>
+
+  </div><!-- /.main -->
+</div><!-- /.wrap -->
+
+<script>
+  (function () {
+    var toc = document.getElementById('toc');
+    var links = Array.from(toc.querySelectorAll('a'));
+    var sections = links.map(function (link) {
+      return {link: link, el: document.querySelector(link.getAttribute('href'))};
+    }).filter(function (s) { return s.el; });
+
+    var current = null;
+
+    function onScroll() {
+      var scrollTop = window.scrollY || document.documentElement.scrollTop;
+      var next = sections[0];
+      sections.forEach(function (s) {
+        var top = s.el.getBoundingClientRect().top + scrollTop;
+        if (scrollTop >= top - 80) next = s;
+      });
+      if (next !== current) {
+        current = next;
+        sections.forEach(function (s) {
+          s.link.classList.toggle('active', s === current);
+        });
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, {passive: true});
+    onScroll();
+  }());
+</script>
+</body>
+</html>

@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>skills-slavingia — The Minimalist Entrepreneur スキル集</title>
+  <meta name="description" content="Sahil Lavingia の著書『The Minimalist Entrepreneur』に基づく 10 個の Claude Code スキル。コミュニティ発見から持続可能な成長まで、起業家の旅をガイドする。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="skills-slavingia — The Minimalist Entrepreneur スキル集">
+  <meta property="og:description" content="Sahil Lavingia の著書『The Minimalist Entrepreneur』に基づく 10 個の Claude Code スキル。コミュニティ発見から持続可能な成長まで、起業家の旅をガイドする。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/skills-slavingia.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="skills-slavingia — The Minimalist Entrepreneur スキル集">
+  <meta name="twitter:description" content="Sahil Lavingia の著書『The Minimalist Entrepreneur』に基づく 10 個の Claude Code スキル。コミュニティ発見から持続可能な成長まで、起業家の旅をガイドする。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============ THEME — Spell UI tokens + Editorial palette ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+
+      --background: oklch(0.985 0.006 85);
+      --foreground: oklch(0.18 0.02 60);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.18 0.02 60);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.18 0.02 60);
+      --primary: oklch(0.25 0.06 50);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.96 0.01 75);
+      --secondary-foreground: oklch(0.25 0.06 50);
+      --muted: oklch(0.95 0.01 80);
+      --muted-foreground: oklch(0.52 0.04 70);
+      --accent: oklch(0.95 0.01 80);
+      --accent-foreground: oklch(0.25 0.06 50);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.015 80);
+      --input: oklch(0.88 0.015 80);
+      --ring: oklch(0.65 0.04 75);
+
+      /* Terracotta + amber accent palette */
+      --chart-1: oklch(0.62 0.18 42);   /* terracotta */
+      --chart-2: oklch(0.72 0.16 80);   /* amber */
+      --chart-3: oklch(0.45 0.09 55);   /* brown */
+      --chart-4: oklch(0.56 0.13 155);  /* sage */
+      --chart-5: oklch(0.38 0.07 50);   /* dark brown */
+
+      --code-bg: oklch(0.93 0.01 80);
+      --code-text: oklch(0.32 0.08 42);
+
+      --font-body: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.015 55);
+        --foreground: oklch(0.93 0.01 80);
+        --card: oklch(0.18 0.018 55);
+        --card-foreground: oklch(0.93 0.01 80);
+        --popover: oklch(0.18 0.018 55);
+        --popover-foreground: oklch(0.93 0.01 80);
+        --primary: oklch(0.88 0.015 80);
+        --primary-foreground: oklch(0.18 0.018 55);
+        --secondary: oklch(0.24 0.022 55);
+        --secondary-foreground: oklch(0.93 0.01 80);
+        --muted: oklch(0.24 0.022 55);
+        --muted-foreground: oklch(0.62 0.04 75);
+        --accent: oklch(0.24 0.022 55);
+        --accent-foreground: oklch(0.93 0.01 80);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 0.1);
+        --input: oklch(1 0 0 / 0.15);
+        --ring: oklch(0.52 0.04 75);
+
+        --chart-1: oklch(0.72 0.19 42);
+        --chart-2: oklch(0.80 0.17 80);
+        --chart-3: oklch(0.62 0.10 55);
+        --chart-4: oklch(0.66 0.15 155);
+        --chart-5: oklch(0.55 0.08 50);
+
+        --code-bg: oklch(0.16 0.015 55);
+        --code-text: oklch(0.82 0.14 70);
+
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static components (.ve-*) ============ */
+    .ve-card {
+      background: var(--card);
+      color: var(--card-foreground);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+    }
+    .ve-card--elevated {
+      background: var(--accent);
+      color: var(--accent-foreground);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    }
+    .ve-card--recessed {
+      background: var(--muted);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 1rem;
+      color: var(--muted-foreground);
+    }
+    .ve-section-label .ve-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--chart-1);
+    }
+    .ve-code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .ve-code-block pre {
+      margin: 0;
+      overflow-x: auto;
+      padding: 0.75rem 1rem;
+    }
+    .ve-code-block code {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      line-height: 1.65;
+      color: var(--code-text);
+      white-space: pre-wrap;
+    }
+    .ve-table-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th {
+      background: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border-bottom: 2px solid var(--ring);
+    }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 60%, transparent); }
+    .ve-kpi-card {
+      background: var(--accent);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.125rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    .ve-kpi-card__value { font-size: 1.625rem; font-weight: 400; line-height: 1.1; font-style: italic; }
+    .ve-kpi-card__label {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted-foreground);
+      margin-top: 0.375rem;
+    }
+    .ve-callout {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--chart-1);
+      border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+      padding: 0.875rem 1.125rem;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: var(--muted-foreground);
+    }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: oklch(0.62 0.18 42 / 0.12);
+      color: var(--chart-1);
+      padding: 1px 5px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ============ Reset + base ============ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 20% -10%, oklch(0.62 0.18 42 / 0.07) 0%, transparent 45%),
+        radial-gradient(ellipse at 80% 110%, oklch(0.72 0.16 80 / 0.05) 0%, transparent 40%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 20% -10%, oklch(0.72 0.19 42 / 0.08) 0%, transparent 45%),
+          radial-gradient(ellipse at 80% 110%, oklch(0.80 0.17 80 / 0.06) 0%, transparent 40%);
+      }
+    }
+
+    /* ============ Wrap + TOC (responsive nav) ============ */
+    .wrap {
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 0 48px;
+    }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      padding: 14px 0;
+      grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px);
+      overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      padding: 0 0 10px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .toc a {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 5px;
+      border-left: 2px solid transparent;
+      transition: all 0.15s;
+      line-height: 1.4;
+      margin-bottom: 1px;
+    }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky;
+        top: 0;
+        z-index: 200;
+        max-height: none;
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        padding: 10px 0;
+        margin: 0 -24px;
+        padding-left: 24px;
+        padding-right: 24px;
+        grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a {
+        white-space: nowrap;
+        flex-shrink: 0;
+        border-left: none;
+        border-bottom: 2px solid transparent;
+        border-radius: 4px 4px 0 0;
+        padding: 6px 10px;
+        font-size: 10px;
+      }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 {
+      font-family: var(--font-body);
+      font-size: 2.25rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.375rem;
+      line-height: 1.2;
+    }
+    .subtitle {
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      margin-bottom: 2rem;
+    }
+    .sec-head {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 {
+      font-family: var(--font-body);
+      font-size: 1.1rem;
+      font-weight: 400;
+      font-style: italic;
+      margin: 1.25rem 0 0.5rem;
+      color: var(--foreground);
+    }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.65; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      background: var(--muted);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+    .ve-code-block { margin: 0.75rem 0; }
+
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.875rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Journey timeline ============ */
+    .journey { position: relative; padding: 0.5rem 0 0.5rem 2rem; }
+    .journey::before {
+      content: '';
+      position: absolute;
+      left: 0.5rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(
+        to bottom,
+        var(--chart-1) 0%,
+        var(--chart-2) 50%,
+        var(--chart-4) 100%
+      );
+      border-radius: 2px;
+      opacity: 0.55;
+    }
+    .journey-step {
+      position: relative;
+      margin-bottom: 0.875rem;
+    }
+    .journey-step::before {
+      content: '';
+      position: absolute;
+      left: -1.8rem;
+      top: 0.75rem;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--chart-1);
+      border: 2px solid var(--bg);
+      box-shadow: 0 0 0 2px var(--chart-1);
+      transition: box-shadow 0.2s;
+    }
+    .journey-step:nth-child(3n+2)::before { background: var(--chart-2); box-shadow: 0 0 0 2px var(--chart-2); }
+    .journey-step:nth-child(3n+3)::before { background: var(--chart-4); box-shadow: 0 0 0 2px var(--chart-4); }
+    .journey-step .ve-card {
+      padding: 0.875rem 1.125rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.5rem 1rem;
+      align-items: baseline;
+    }
+    .step-num {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: var(--chart-1);
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+    .journey-step:nth-child(3n+2) .step-num { color: var(--chart-2); }
+    .journey-step:nth-child(3n+3) .step-num { color: var(--chart-4); }
+    .step-content {}
+    .step-title {
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 400;
+      font-style: italic;
+      color: var(--foreground);
+      margin-bottom: 0.125rem;
+    }
+    .step-desc {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+    .step-cmd {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      background: var(--muted);
+      color: var(--chart-1);
+      padding: 2px 7px;
+      border-radius: var(--radius-sm);
+      margin-top: 0.375rem;
+      display: inline-block;
+    }
+    .journey-step:nth-child(3n+2) .step-cmd { color: var(--chart-2); }
+    .journey-step:nth-child(3n+3) .step-cmd { color: var(--chart-4); }
+
+    /* ============ Skills table tag ============ */
+    .tag-when {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      background: color-mix(in oklch, var(--chart-1) 12%, transparent);
+      color: var(--chart-1);
+      padding: 2px 6px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    /* ============ Animations ============ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.04s); }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#journey">ジャーニー</a>
+    <a href="#skills">スキル一覧</a>
+    <a href="#install">インストール</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>skills-slavingia</h1>
+    <p class="subtitle">Sahil Lavingia (slavingia) の著書に基づく Claude Code スキル集 — 10 skills / minimalist-entrepreneur</p>
+
+    <!-- 1. Overview -->
+    <section id="overview" class="sec-head">01 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span>What is this?</span>
+      <p><strong>skills-slavingia</strong> は、Gumroad 創業者 Sahil Lavingia の著書 <em>The Minimalist Entrepreneur</em>（ミニマリスト起業家）の哲学を Claude Code スキルとして実装したコレクション。コミュニティ発見から持続可能な成長まで、起業家の 10 ステップをエージェントがガイドする。</p>
+      <p>「プロダクトから始めるな、コミュニティから始めろ」「週末でシップできないなら削れ」——書籍のエッセンスをコンテキストとして持ち、ビジネス上の意思決定を Lavingia の視点でレビューしてくれる。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card" style="--i:1">
+          <div class="ve-kpi-card__value">10</div>
+          <div class="ve-kpi-card__label">スキル数</div>
+        </div>
+        <div class="ve-kpi-card" style="--i:2">
+          <div class="ve-kpi-card__value" style="font-size:1.25rem;">MEBook</div>
+          <div class="ve-kpi-card__label">ベース書籍</div>
+        </div>
+        <div class="ve-kpi-card" style="--i:3">
+          <div class="ve-kpi-card__value" style="font-size:1.25rem;">Gumroad</div>
+          <div class="ve-kpi-card__label">著者の実績</div>
+        </div>
+        <div class="ve-kpi-card" style="--i:4">
+          <div class="ve-kpi-card__value" style="font-size:1.1rem;">Plugin</div>
+          <div class="ve-kpi-card__label">導入方式</div>
+        </div>
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top: 0.75rem;">
+      <strong>設計思想：</strong> 各スキルは「ビジネスアドバイザーとしての Lavingia」として振る舞い、Minimalist Entrepreneur の原則に沿ってユーザーの状況を整理・判断する。コード生成ではなく、<em>意思決定支援</em> にフォーカスした珍しい設計。
+    </div>
+
+    <!-- 2. Journey -->
+    <section id="journey" class="sec-head">02 — ジャーニー</section>
+    <div class="ve-card" style="--i:0; margin-bottom: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span>起業家の 10 ステップ</span>
+      <p style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-dim);">書籍の章構成に対応。各ステップが前のステップの上に積み上がる。</p>
+      <div class="journey">
+        <div class="journey-step">
+          <div class="ve-card">
+            <span class="step-num">STEP 01</span>
+            <div class="step-content">
+              <div class="step-title">Community — 属するコミュニティを見つける</div>
+              <div class="step-desc">ビジネスアイデアの前にコミュニティ。自分がすでに属する場所、繰り返し聞く不満が起点。</div>
+              <span class="step-cmd">/find-community</span>
+            </div>
+          </div>
+        </div>
+        <div class="journey-step">
+          <div class="ve-card">
+            <span class="step-num">STEP 02</span>
+            <div class="step-content">
+              <div class="step-title">Validate — コードを書く前に売る</div>
+              <div class="step-desc">バリデーションは建設ではなく販売で行う。手作業でも解決できるなら、それが最初の MVP。</div>
+              <span class="step-cmd">/validate-idea</span>
+            </div>
+          </div>
+        </div>
+        <div class="journey-step">
+          <div class="ve-card">
+            <span class="step-num">STEP 03</span>
+            <div class="step-content">
+              <div class="step-title">Build — 週末でシップできるものだけ作る</div>
+              <div class="step-desc">Manual → Processized → Productized の 3 段階。最初は自分が製品。フォームとリストだけで十分。</div>
+              <span class="step-cmd">/mvp</span>
+            </div>
+          </div>
+        </div>
+        <div class="journey-step">
+          <div class="ve-card">
+            <span class="step-num">STEP 04</span>
+            <div class="step-content">
+              <div class="step-title">Processize — 手作業を仕組みにする</div>
+              <div class="step-desc">「休暇中でも誰かが引き継げる紙」を作る。自動化はその後。</div>
+              <span class="step-cmd">/processize</span>
+            </div>
+          </div>
+        </div>
+        <div class="journey-step">
+          <div class="ve-card">
+            <span class="step-num">STEP 05</span>
+            <div class="step-content">
+              <div class="step-title">Sell — 最初の 100 人を一人ずつ獲得する</div>
+              <div class="step-desc">スケールより前に、一人ひとりのカスタマーに向き合う。ファンネルではなく関係性。</div>
+              <span class="step-cmd">/first-customers</span>
+            </div>
+          </div>
+        </div>
+        <div class="journey-step">
+          <div class="ve-card">
+            <span class="step-num">STEP 06</span>
+            <div class="step-content">
+              <div class="step-title">Price — 初日から課金する</div>
+              <div class="step-desc">0 円と 1 円の間には巨大なギャップがある（ゼロプライス効果）。早期割引より正当な価格を。</div>
+              <span class="step-cmd">/pricing</span>
+            </div>
+          </div>
+        </div>
+        <div class="journey-step">
+          <div class="ve-card">
+            <span class="step-num">STEP 07</span>
+            <div class="step-content">
+              <div class="step-title">Market — コンテンツでオーディエンスを構築する</div>
+              <div class="step-desc">プロダクト・マーケット・フィット達成後。広告より、価値あるコンテンツで信頼を積む。</div>
+              <span class="step-cmd">/marketing-plan</span>
+            </div>
+          </div>
+        </div>
+        <div class="journey-step">
+          <div class="ve-card">
+            <span class="step-num">STEP 08</span>
+            <div class="step-content">
+              <div class="step-title">Grow — 利益を維持しながら拡大する</div>
+              <div class="step-desc">採用・支出・スケールの判断を収益ベースで行う。VC ではなく顧客にアカウンタブルに。</div>
+              <span class="step-cmd">/grow-sustainably</span>
+            </div>
+          </div>
+        </div>
+        <div class="journey-step">
+          <div class="ve-card">
+            <span class="step-num">STEP 09</span>
+            <div class="step-content">
+              <div class="step-title">Culture — 住みたい家を設計する</div>
+              <div class="step-desc">採用前に価値観を定義する。採用はカルチャーの希薄化リスク。最初の数人で文化が決まる。</div>
+              <span class="step-cmd">/company-values</span>
+            </div>
+          </div>
+        </div>
+        <div class="journey-step">
+          <div class="ve-card">
+            <span class="step-num">STEP 10</span>
+            <div class="step-content">
+              <div class="step-title">Review — すべての決断をミニマリスト原則で見直す</div>
+              <div class="step-desc">新機能・施策・戦略変更の前に一度立ち止まる。「本当に必要か？」を問い続ける。</div>
+              <span class="step-cmd">/minimalist-review</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Skills Table -->
+    <section id="skills" class="sec-head">03 — スキル一覧</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span>全 10 スキル</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>スキル</th>
+              <th>コマンド</th>
+              <th>いつ使うか</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Find Community</strong></td>
+              <td><code>/find-community</code></td>
+              <td>ビジネスアイデアを探している、コミュニティを見つけたい</td>
+            </tr>
+            <tr>
+              <td><strong>Validate Idea</strong></td>
+              <td><code>/validate-idea</code></td>
+              <td>アイデアが追求する価値があるか検証したい（コードを書く前に）</td>
+            </tr>
+            <tr>
+              <td><strong>MVP</strong></td>
+              <td><code>/mvp</code></td>
+              <td>最初のプロダクトを作る準備ができた、スコープに悩んでいる</td>
+            </tr>
+            <tr>
+              <td><strong>Processize</strong></td>
+              <td><code>/processize</code></td>
+              <td>コードを書く前に手作業で価値を届けたい</td>
+            </tr>
+            <tr>
+              <td><strong>First Customers</strong></td>
+              <td><code>/first-customers</code></td>
+              <td>プロダクトがあり、最初の 100 人の顧客を見つけたい</td>
+            </tr>
+            <tr>
+              <td><strong>Pricing</strong></td>
+              <td><code>/pricing</code></td>
+              <td>価格設定をしたい、価格変更を検討している</td>
+            </tr>
+            <tr>
+              <td><strong>Marketing Plan</strong></td>
+              <td><code>/marketing-plan</code></td>
+              <td>PMF 達成済みで、コンテンツでスケールする準備ができた</td>
+            </tr>
+            <tr>
+              <td><strong>Grow Sustainably</strong></td>
+              <td><code>/grow-sustainably</code></td>
+              <td>支出・採用・スケールについて意思決定している</td>
+            </tr>
+            <tr>
+              <td><strong>Company Values</strong></td>
+              <td><code>/company-values</code></td>
+              <td>カルチャーを定義したい、採用の準備をしている</td>
+            </tr>
+            <tr>
+              <td><strong>Minimalist Review</strong></td>
+              <td><code>/minimalist-review</code></td>
+              <td>あらゆるビジネス上の意思決定を Lavingia 原則でチェックしたい</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 4. Install -->
+    <section id="install" class="sec-head">04 — インストール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span>Claude Code から</span>
+      <p>Claude Code のプラグインマーケットプレイスから 2 コマンドで導入できる:</p>
+      <div class="ve-code-block">
+        <pre><code>/plugin marketplace add slavingia/skills
+/plugin install minimalist-entrepreneur</code></pre>
+      </div>
+      <p style="margin-top: 0.5rem; margin-bottom: 0;">これだけで 10 スキルすべてが自動登録される。</p>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 0.75rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span>ローカルクローン から</span>
+      <p>リポジトリをローカルにクローンして使う場合:</p>
+      <div class="ve-code-block">
+        <pre><code>git clone https://github.com/slavingia/skills.git ~/.claude/plugins/skills</code></pre>
+      </div>
+      <p>その後 Claude Code で:</p>
+      <div class="ve-code-block">
+        <pre><code>/plugin marketplace add ~/.claude/plugins/skills
+/plugin install minimalist-entrepreneur</code></pre>
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top: 0.75rem;">
+      <strong>スキルの使い方：</strong> 各スキルは起動すると Lavingia のビジネス哲学に基づいたアドバイザーとして振る舞う。例えば <code>/validate-idea</code> では、アイデアの詳細を話しかけると「Validated / Needs more validation / Pivot」の判定が返ってくる。
+    </div>
+
+    <!-- 5. Links -->
+    <section id="links" class="sec-head">05 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span>公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/slavingia/skills" target="_blank" rel="noopener">GitHub: slavingia/skills</a> — リポジトリ</li>
+        <li><a href="https://www.minimalistentrepreneur.com/" target="_blank" rel="noopener">The Minimalist Entrepreneur — 公式サイト</a></li>
+        <li><a href="https://www.amazon.co.jp/dp/0593192397" target="_blank" rel="noopener">書籍（Amazon.co.jp）</a> — Sahil Lavingia 著</li>
+        <li><a href="https://gumroad.com" target="_blank" rel="noopener">Gumroad</a> — 著者が創業したプラットフォーム</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

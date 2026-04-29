@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>designlang — ライブ DOM からデザイン言語を抽出</title>
+  <meta name="description" content="Headless ブラウザでサイトを巡回し、計算スタイルから色・タイポ・間隔・モーション・意図・セクション役割などを抽出。W3C トークン、Tailwind、shadcn、MCP まで出力する design-extract（npm: designlang）の技術概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="designlang — ライブ DOM からデザイン言語を抽出">
+  <meta property="og:description" content="Playwright による DOM 走査と多数のエクストラクタでデザイン言語を JSON / Markdown / テーマファイルに落とし込む CLI・MCP 向けツール。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/design-extract.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="designlang — ライブ DOM からデザイン言語を抽出">
+  <meta name="twitter:description" content="Headless ブラウザでサイトを巡回し、トークン・意図・ voice まで抽出する design-extract の概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI — Blueprint + Geist) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.45 0.1 200);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.55 0.14 155);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Geist', system-ui, sans-serif;
+      --font-mono: 'Geist Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.62 0.14 248);
+        --chart-2: oklch(0.78 0.14 76);
+        --chart-3: oklch(0.7 0.1 200);
+        --chart-4: oklch(0.75 0.12 84);
+        --chart-5: oklch(0.7 0.1 155);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 14%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.38 0.12 248 / 0.07) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.5 0.12 248 / 0.12) 0%, transparent 50%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#pipeline">パイプライン</a>
+    <a href="#outputs">出力物</a>
+    <a href="#releases">v10 / v9</a>
+    <a href="#differentiators">差別化</a>
+    <a href="#ecosystem">周辺ツール</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>designlang</h1>
+  <p class="subtitle">npm: designlang / リポジトリ: design-extract — ライブ DOM から Design Language を抜き出す</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
+    <p><strong>designlang</strong>（ソースは <code>design-extract</code> リポジトリ）は、Playwright のヘッドレス Chromium で任意の URL を開き、<strong>実際に計算された CSS</strong> から色・タイポ・間隔・影・ブレークポイント・モーション・アクセシビリティ指標などを集約し、<strong>17 種類以上</strong>の成果物（AI 向け Markdown、W3C トークン、Tailwind 設定、shadcn テーマ、Figma 変数、<code>designlang mcp</code> 用メタ、など）として書き出す Node.js ツールだ。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node</span><span class="ve-kpi-card__label">20+</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">CLI</span><span class="ve-kpi-card__label">designlang</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Browser</span><span class="ve-kpi-card__label">Playwright</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">17+</span><span class="ve-kpi-card__label">出力スロット</span></div>
+    </div>
+    <p>v10 では <strong>ページ意図</strong>・<strong>セクションの役割</strong>・<strong>Material / 画像表現</strong>・<strong>コンポーネントライブラリ推定</strong>など、他ツールが拾わない「意味」と「文脈」に踏み込んでいる。オプションで <code>--full</code> マルチページ、<code>--smart</code> 低信頼時の LLM 補正（API キー必須）も選べる。</p>
+  </div>
+
+  <div class="ve-callout" style="margin-top:1rem">
+    <strong>実行前提:</strong> 依存に Playwright があり、<code>postinstall</code> で Chromium の取得を試みる。オフライン環境ではブラウザ取得に手を要することがある。npm パッケージ名は <code>designlang</code>、公開バイナリ名は <code>designlang</code>（<code>bin/design-extract.js</code>）。
+  </div>
+
+  <section id="pipeline" class="sec-head">2 — パイプライン</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 処理の流れ（概念）</span>
+    <p>エントリ <code>extractDesignLanguage</code> は、まず <code>crawlPage</code> で（ライト/インタラクション用データを含め）<strong>生の計算スタイル</strong>と DOM シグナルを採取し、続く段階で <code>extractors/*</code> が色・タイポ・レイアウト・モーション・<code>page-intent</code> などのサブシステムに落とし込み、最後に <code>formatters/*</code> へ渡して各ファイル形式に整形される。</p>
+    <div class="pipeline" aria-label="パイプライン概略">
+      <span class="step">crawl（Playwright）</span>
+      <span class="arrow">→</span>
+      <span class="step">aggregate styles</span>
+      <span class="arrow">→</span>
+      <span class="step">extractors 群</span>
+      <span class="arrow">→</span>
+      <span class="step">design オブジェクト</span>
+      <span class="arrow">→</span>
+      <span class="step">formatters &amp; 書き出し</span>
+    </div>
+    <h3>抽出レイヤの例</h3>
+    <ul>
+      <li><strong>基礎:</strong> <code>colors</code> / <code>typography</code> / <code>spacing</code> / <code>shadows</code> / <code>borders</code> / <code>variables</code></li>
+      <li><strong>構造・挙動:</strong> <code>layout</code> / <code>breakpoints</code> / <code>components</code> + <code>component-clusters</code> / <code>interaction-states</code> / <code>motion</code></li>
+      <li><strong>意味づけ（v10 付近）:</strong> <code>page-intent</code> / <code>section-roles</code> / <code>material-language</code> / <code>imagery-style</code> / <code>component-library</code> / <code>voice</code></li>
+      <li><strong>運用系:</strong> <code>lint</code> / <code>drift</code> / <code>sync</code> / <code>watch</code> / <code>visual-diff</code> / <code>multibrand</code> — CLI サブコマンドから利用</li>
+    </ul>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 早い試し方</span>
+    <div class="ve-code-block">
+      <pre><code>npx designlang https://example.com
+npx designlang https://example.com --full</code></pre>
+    </div>
+  </div>
+
+  <section id="outputs" class="sec-head">3 — 主な出力物</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ファイル指針</span>
+    <p>同一抽出につきプレフィックス（例: ドメイン名由来）付きの複数ファイルが一括で生成される。代表的な役割は次のとおり（README 記載のサマリに準拠）。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>成果物</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>*-design-language.md</code></td><td>LLM に食わせるための 19 セクション構成の設計要約</td></tr>
+          <tr><td><code>*-preview.html</code></td><td>スウォッチ・タイプスケール等のビジュアルレポート</td></tr>
+          <tr><td><code>*-design-tokens.json</code></td><td>W3C Community Group 形式の Design Tokens</td></tr>
+          <tr><td><code>*-tailwind.config.js</code></td><td>Tailwind テーマ</td></tr>
+          <tr><td><code>*-variables.css</code> / <code>*-shadcn-theme.css</code></td><td>CSS カスタムプロパティ、shadcn 向け</td></tr>
+          <tr><td><code>*-figma-variables.json</code></td><td>Figma Variables 流し込み</td></tr>
+          <tr><td><code>*-motion-tokens.json</code></td><td>持続時間・easing・スクロール連携など v9+ のモーション言語</td></tr>
+          <tr><td><code>*-anatomy.tsx</code></td><td>コンポーネント解剖に基づく型付き React スタブ</td></tr>
+          <tr><td><code>*-voice.json</code></td><td>トーン・CTA 動詞・見出しスタイルなど voice 指紋</td></tr>
+          <tr><td><code>*-mcp.json</code></td><td>後続 <code>designlang mcp</code> 向けのディスク上メタ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="releases" class="sec-head">4 — v10（Intent）と v9</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> v10: 意図と文脈</span>
+    <ul>
+      <li><strong>Page Intent</strong> — <code>landing</code> / <code>pricing</code> / <code>docs</code> 等に分類。デフォはヒューリスティクス、<code>--smart</code> で低信頼時に LLM 補正可能。</li>
+      <li><strong>Section Roles</strong> — セマンティック領域に <code>hero</code> / <code>feature-grid</code> / <code>pricing-table</code> などの役割ラベルとスロット抜粋を付与。</li>
+      <li><strong>Material / Imagery / Library</strong> — ガラス/フラット等の <strong>Material Language</strong>、画像の <strong>Imagery Style</strong>、<strong>UI ライブラリ候補</strong>（shadcn / MUI など）を検出。</li>
+      <li><strong>Prompt Pack</strong> — v0 / Lovable / Cursor / Claude Artifacts 向けの <code>recipe-*</code> など、貼るだけ用プロンプト一式。</li>
+    </ul>
+  </div>
+  <div class="ve-card ve-card--elevated" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> v9: モーションとトークン運用</span>
+    <p>意味トークン化された <strong>Motion Language</strong>、<strong>Component Anatomy v2</strong>（スロット＋ variant × size × state）、<strong>Brand Voice</strong> 抽出、<code>designlang lint</code>（自前トークンファイルの監査）、<code>designlang drift</code>（本番サイトとローカルトークンの比較）、<code>designlang visual-diff</code>（2 URL の可視比較レポート）が一続きのストーリーとして提供される。</p>
+  </div>
+
+  <section id="differentiators" class="sec-head">5 — 他ツールとの違い（抜粋）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> マーケット上の空き</span>
+    <p>README では、単純に色とフォントだけ出す層と差をつけるため、次のような <strong>構造寄り</strong>の能力が前面に出ている。</p>
+    <ul>
+      <li><strong>Layout System</strong> — グリッド/フレックス/コンテナ幅/ギャップ/整列のパターン採取。</li>
+      <li><strong>Responsive 4 ビューポイント</strong> — ブレーク間で <em>何が</em> 切り替わるか（表示/非表示、段数、フォントサイズ等）の差分を記述。</li>
+      <li><strong>Interaction States</strong> — ホバー/フォーカス等をプログラム的に採取してスタイル遷移を具体値で残す（<code>--interactions</code> 系フロー）。</li>
+      <li><strong>Live → Repo</strong> — <code>sync</code> / <code>apply</code> で、デプロイ済みサイトをソースオブトゥルースにしたトークン更新を自動化しうる。</li>
+      <li><strong>Multi-Brand / Score / Watch / Clone</strong> — 複数ブランド横断、品質採点、差分ウォッチ、Next.js 雛形への <code>clone</code> など、再現用アプリ層まで踏み込む。</li>
+    </ul>
+  </div>
+
+  <section id="ecosystem" class="sec-head">6 — 周辺エコシステム</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 同梱・連携</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>枠</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>MCP</strong></td><td><code>src/mcp</code> 経由で <code>designlang mcp</code> 実行。Claude / Cursor 等の MCP クライアントから利用。</td></tr>
+          <tr><td><strong>GitHub Action</strong></td><td><code>github-action/</code> — PR 上の差分に対しトークン揺れを可視化する等の例あり。</td></tr>
+          <tr><td><strong>拡張</strong></td><td>VS Code、Chrome、Raycast、Figma プラグイン、公開サイト（<code>website/</code>）など、リポ内に分割されたフロントが存在する。</td></tr>
+          <tr><td><strong>Agent Skill</strong></td><td><code>skills/extract-design</code> および <code>npx skills add</code> でエージェント向け手順の配布に対応。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+    <ul>
+      <li><a href="https://github.com/Manavarya09/design-extract" target="_blank" rel="noopener">GitHub: Manavarya09/design-extract</a></li>
+      <li><a href="https://www.npmjs.com/package/designlang" target="_blank" rel="noopener">npm: designlang</a></li>
+      <li><a href="https://designlang.manavaryasingh.com/" target="_blank" rel="noopener">公式 Web</a>（バッジ経由。README 記載のライブサイト）</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

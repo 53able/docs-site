@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>baoyu-skills — Claude Code の日常作業を効率化するスキル集</title>
+  <meta name="description" content="JimLiu（Baoyu）が公開する Claude Code 向けスキル集。コンテンツ生成・AI 画像生成・SNS 投稿・翻訳・動画処理など 18 スキルを収録。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="baoyu-skills — Claude Code の日常作業を効率化するスキル集">
+  <meta property="og:description" content="コンテンツ生成・AI 画像生成・SNS 投稿・翻訳など 18 スキル。npx skills add で一発インストール。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/baoyu-skills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="baoyu-skills — Claude Code の日常作業を効率化するスキル集">
+  <meta name="twitter:description" content="コンテンツ生成・AI 画像生成・SNS 投稿・翻訳など 18 スキル。npx skills add で一発インストール。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.006 75);
+      --foreground: oklch(0.18 0.02 50);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.18 0.02 50);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.18 0.02 50);
+      --primary: oklch(0.25 0.03 50);
+      --primary-foreground: oklch(0.99 0 0);
+      --secondary: oklch(0.96 0.01 75);
+      --secondary-foreground: oklch(0.25 0.03 50);
+      --muted: oklch(0.96 0.008 75);
+      --muted-foreground: oklch(0.52 0.025 60);
+      --accent: oklch(0.96 0.01 75);
+      --accent-foreground: oklch(0.25 0.03 50);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.90 0.015 75);
+      --input: oklch(0.90 0.015 75);
+      --ring: oklch(0.72 0.02 75);
+      /* terracotta + sage accent system */
+      --chart-1: oklch(0.58 0.16 40);    /* terracotta */
+      --chart-2: oklch(0.55 0.12 155);   /* sage */
+      --chart-3: oklch(0.40 0.08 45);    /* dark terracotta */
+      --chart-4: oklch(0.75 0.10 85);    /* amber warm */
+      --chart-5: oklch(0.68 0.09 165);   /* light sage */
+      --code-bg: oklch(0.96 0.008 75);
+      --code-text: oklch(0.35 0.10 35);
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.01 50);
+        --foreground: oklch(0.95 0.01 75);
+        --card: oklch(0.19 0.015 50);
+        --card-foreground: oklch(0.95 0.01 75);
+        --popover: oklch(0.19 0.015 50);
+        --popover-foreground: oklch(0.95 0.01 75);
+        --primary: oklch(0.90 0.01 75);
+        --primary-foreground: oklch(0.19 0.015 50);
+        --secondary: oklch(0.25 0.015 50);
+        --secondary-foreground: oklch(0.95 0.01 75);
+        --muted: oklch(0.26 0.015 50);
+        --muted-foreground: oklch(0.68 0.02 70);
+        --accent: oklch(0.26 0.015 50);
+        --accent-foreground: oklch(0.95 0.01 75);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.55 0.02 50);
+        --chart-1: oklch(0.72 0.16 40);
+        --chart-2: oklch(0.65 0.12 155);
+        --chart-3: oklch(0.60 0.10 45);
+        --chart-4: oklch(0.80 0.12 85);
+        --chart-5: oklch(0.72 0.10 165);
+        --code-bg: oklch(0.15 0.012 50);
+        --code-text: oklch(0.78 0.10 40);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--card) 85%, var(--border) 15%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 70% 0%, color-mix(in oklch, var(--chart-1) 8%, transparent) 0%, transparent 45%),
+        radial-gradient(ellipse at 20% 90%, color-mix(in oklch, var(--chart-2) 6%, transparent) 0%, transparent 40%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 70% 0%, color-mix(in oklch, var(--chart-1) 10%, transparent) 0%, transparent 45%),
+          radial-gradient(ellipse at 20% 90%, color-mix(in oklch, var(--chart-2) 8%, transparent) 0%, transparent 40%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); color: var(--foreground); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--foreground); }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Skill grid (card layout) ============ */
+    .skill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .skill-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem 1.25rem; min-width: 0; }
+    .skill-card__name { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 500; color: var(--chart-1); margin-bottom: 0.5rem; display: block; }
+    .skill-card__desc { font-size: 0.875rem; line-height: 1.6; color: var(--text); margin-bottom: 0.75rem; }
+    .skill-card__usage { background: var(--code-bg); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; }
+    .skill-card__usage code { font-size: 0.75rem; color: var(--code-text); white-space: pre-wrap; word-break: break-all; background: none; padding: 0; }
+
+    /* ============ Badge ============ */
+    .badge { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; padding: 2px 8px; border-radius: 99px; border: 1px solid; }
+    .badge--content { color: var(--chart-1); border-color: color-mix(in oklch, var(--chart-1) 40%, transparent); background: color-mix(in oklch, var(--chart-1) 8%, transparent); }
+    .badge--ai { color: var(--chart-2); border-color: color-mix(in oklch, var(--chart-2) 40%, transparent); background: color-mix(in oklch, var(--chart-2) 8%, transparent); }
+    .badge--util { color: var(--chart-4); border-color: color-mix(in oklch, var(--chart-4) 50%, transparent); background: color-mix(in oklch, var(--chart-4) 10%, transparent); }
+
+    /* ============ Animations ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.06s); }
+    .skill-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.04s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#content-skills">コンテンツスキル</a>
+    <a href="#ai-skills">AI 生成スキル</a>
+    <a href="#util-skills">ユーティリティ</a>
+    <a href="#install">インストール</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>baoyu-skills</h1>
+    <p class="subtitle">Claude Code の日常作業を効率化する 18 スキル集 · by JimLiu</p>
+
+    <!-- ========== 1. Overview ========== -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何ができるか</span>
+      <p><strong>baoyu-skills</strong> は、JimLiu（Baoyu）が公開する Claude Code 向けのスキルコレクション。コンテンツ生成・SNS 投稿・翻訳・AI 画像生成・動画処理など日常の繰り返し作業を、スラッシュコマンド一本で自動化する。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">18</div>
+          <div class="ve-kpi-card__label">スキル総数</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">3</div>
+          <div class="ve-kpi-card__label">カテゴリ</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">MIT</div>
+          <div class="ve-kpi-card__label">ライセンス</div>
+        </div>
+      </div>
+      <p>スキルは <strong>コンテンツスキル</strong>（SNS 向けビジュアル生成・投稿）・<strong>AI 生成スキル</strong>（多プロバイダ画像生成）・<strong>ユーティリティスキル</strong>（URL→MD・翻訳・圧縮など）の 3 カテゴリに整理されている。</p>
+    </div>
+
+    <div class="ve-card" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ早見</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>カテゴリ</th><th>スキル数</th><th>主なユースケース</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="badge badge--content">Content</span></td><td>9</td><td>画像インフォグラフィック・スライド・コミック・SNS 投稿（X / WeChat / Weibo）</td></tr>
+            <tr><td><span class="badge badge--ai">AI Gen</span></td><td>2</td><td>OpenAI / Google / DashScope 等多プロバイダで画像生成、Gemini Web 連携</td></tr>
+            <tr><td><span class="badge badge--util">Utility</span></td><td>7</td><td>YouTube 字幕取得・URL→Markdown・X→Markdown・翻訳・圧縮・フォーマット・HTML 変換</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== 2. Content Skills ========== -->
+    <section id="content-skills" class="sec-head">2 — コンテンツスキル</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> SNS・ビジュアル・投稿</span>
+      <p>コンテンツ生成と SNS 投稿に特化した 9 スキル。インフォグラフィック・スライドデッキ・コミック・記事カバー画像の生成から、X・WeChat・Weibo への自動投稿まで対応する。</p>
+    </div>
+
+    <div class="skill-grid">
+      <div class="skill-card" style="--i:0">
+        <span class="skill-card__name">/baoyu-xhs-images</span>
+        <p class="skill-card__desc">小紅書（Xiaohongshu）向け 1〜10 枚のカートゥーン風インフォグラフィックシリーズ。スタイル 9 種 × レイアウト 6 種の 2 次元システム。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-xhs-images article.md --style notion --layout dense</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:1">
+        <span class="skill-card__name">/baoyu-infographic</span>
+        <p class="skill-card__desc">20 レイアウト × 17 スタイルの組み合わせで構成できるインフォグラフィック。内容を分析してベストな組み合わせを自動推薦する。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-infographic content.md --layout pyramid --style technical-schematic</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:2">
+        <span class="skill-card__name">/baoyu-cover-image</span>
+        <p class="skill-card__desc">記事カバー画像を 5 次元（Type × Palette × Rendering × Text × Mood）で生成。9 カラーパレット × 6 レンダリングスタイルで 54 種の組み合わせ。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-cover-image article.md --type conceptual --palette cool</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:3">
+        <span class="skill-card__name">/baoyu-slide-deck</span>
+        <p class="skill-card__desc">スライドデッキ画像を生成。スタイルは 4 次元（Texture × Mood × Typography × Density）で構築され、16 プリセットを用意。完成後に .pptx / .pdf へ自動結合。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-slide-deck article.md --style blueprint --slides 15</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:4">
+        <span class="skill-card__name">/baoyu-comic</span>
+        <p class="skill-card__desc">知識コミックを生成。アートスタイル（ligne-claire / manga / realistic / ink-brush / chalk）× トーン 7 種。ohmsha・wuxia・shoujo プリセットも搭載。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-comic source.md --style ohmsha --layout webtoon</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:5">
+        <span class="skill-card__name">/baoyu-article-illustrator</span>
+        <p class="skill-card__desc">記事の構造を分析し、図解が必要な箇所を自動識別してイラストを挿入。Type × Style 2 次元アプローチ。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-article-illustrator article.md --type flowchart --style blueprint</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:6">
+        <span class="skill-card__name">/baoyu-post-to-x</span>
+        <p class="skill-card__desc">X（Twitter）にテキスト・画像付き投稿、または長文の X Article（Markdown）を投稿。Chrome CDP でアンチ自動化を回避。ユーザーが内容確認後に手動投稿。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-post-to-x --article post.md</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:7">
+        <span class="skill-card__name">/baoyu-post-to-wechat</span>
+        <p class="skill-card__desc">WeChat 公式アカウント（微信公众号）への投稿。画像テキスト形式と長文記事形式に対応。API 認証または Chrome ブラウザ経由の 2 方式をサポート。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-post-to-wechat 文章 --markdown article.md --theme grace</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:8">
+        <span class="skill-card__name">/baoyu-post-to-weibo</span>
+        <p class="skill-card__desc">Weibo（微博）へのテキスト・画像・動画付き投稿、または頭条文章（長文記事）を投稿。Chrome CDP 経由。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-post-to-weibo --article article.md --cover cover.jpg</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layouts table for xhs-images -->
+    <div class="ve-card ve-card--recessed" style="--i:0; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> baoyu-xhs-images のレイアウト早見</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>Layout</th><th>密度</th><th>最適用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>sparse</code></td><td>1〜2 pt</td><td>カバー・引用</td></tr>
+            <tr><td><code>balanced</code></td><td>3〜4 pt</td><td>通常コンテンツ</td></tr>
+            <tr><td><code>dense</code></td><td>5〜8 pt</td><td>知識カード・チートシート</td></tr>
+            <tr><td><code>list</code></td><td>4〜7 item</td><td>チェックリスト・ランキング</td></tr>
+            <tr><td><code>comparison</code></td><td>2 列</td><td>Before/After・Pros/Cons</td></tr>
+            <tr><td><code>flow</code></td><td>3〜6 step</td><td>プロセス・タイムライン</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== 3. AI Generation Skills ========== -->
+    <section id="ai-skills" class="sec-head">3 — AI 生成スキル</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> マルチプロバイダ画像生成</span>
+      <p>複数の AI 画像生成プロバイダを統一インターフェースで扱う 2 スキル。API キーがあるプロバイダを自動検出し、最適なものを使用する。</p>
+      <div class="skill-grid" style="margin-top: 1rem;">
+        <div class="skill-card" style="--i:0">
+          <span class="skill-card__name">/baoyu-image-gen</span>
+          <p class="skill-card__desc">AI SDK ベースの画像生成。OpenAI・Google・OpenRouter・DashScope（阿里云通义万象）・Jimeng（即梦）・Seedream（豆包）・Replicate に対応。参照画像（<code>--ref</code>）、アスペクト比、品質プリセットをサポート。</p>
+          <div class="skill-card__usage">
+            <code>/baoyu-image-gen --prompt "A cat" --image cat.png --provider google --ar 16:9</code>
+          </div>
+        </div>
+        <div class="skill-card" style="--i:1">
+          <span class="skill-card__name">/baoyu-danger-gemini-web</span>
+          <p class="skill-card__desc">Gemini Web のリバースエンジニアリング API でテキスト・画像を生成。Chrome クッキーで認証。API キー不要だが非公式のため安定性は保証されない。</p>
+          <div class="skill-card__usage">
+            <code>/baoyu-danger-gemini-web --prompt "A cute cat" --image cat.png</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> baoyu-image-gen 対応プロバイダ</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>プロバイダ</th><th>環境変数</th><th>デフォルトモデル</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Google</td><td><code>GOOGLE_API_KEY</code></td><td>gemini-3-pro-image-preview</td></tr>
+            <tr><td>OpenAI</td><td><code>OPENAI_API_KEY</code></td><td>gpt-image-1.5</td></tr>
+            <tr><td>OpenRouter</td><td><code>OPENROUTER_API_KEY</code></td><td>google/gemini-3.1-flash-image-preview</td></tr>
+            <tr><td>DashScope</td><td><code>DASHSCOPE_API_KEY</code></td><td>qwen-image-2.0-pro</td></tr>
+            <tr><td>Replicate</td><td><code>REPLICATE_API_TOKEN</code></td><td>google/nano-banana-pro</td></tr>
+            <tr><td>Jimeng（即梦）</td><td><code>JIMENG_ACCESS_KEY_ID</code></td><td>jimeng_t2i_v40</td></tr>
+            <tr><td>Seedream（豆包）</td><td><code>ARK_API_KEY</code></td><td>doubao-seedream-5-0-260128</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top: 0.75rem; margin-bottom: 0;">複数の API キーが設定されている場合は Google を優先。<code>--provider</code> で明示指定も可。</p>
+    </div>
+
+    <div class="ve-callout" style="margin-top: 1rem;">
+      <strong>danger スキルについて</strong> — <code>baoyu-danger-*</code> プレフィックスのスキルは非公式 API を使用する。サービス側の変更で突然動作しなくなる可能性がある。本番環境での利用は推奨しない。
+    </div>
+
+    <!-- ========== 4. Utility Skills ========== -->
+    <section id="util-skills" class="sec-head">4 — ユーティリティスキル</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> コンテンツ処理ツール群</span>
+      <p>URL 取得・翻訳・字幕抽出・圧縮・フォーマット・HTML 変換など、コンテンツ処理に使う 7 スキル。</p>
+    </div>
+
+    <div class="skill-grid">
+      <div class="skill-card" style="--i:0">
+        <span class="skill-card__name">/baoyu-youtube-transcript</span>
+        <p class="skill-card__desc">YouTube 動画のトランスクリプト・字幕・カバー画像をダウンロード。多言語・翻訳・チャプター・話者識別に対応。生データをキャッシュして再フォーマットを高速化。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-youtube-transcript https://youtu.be/VIDEO_ID --chapters --speakers</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:1">
+        <span class="skill-card__name">/baoyu-url-to-markdown</span>
+        <p class="skill-card__desc">Chrome CDP で任意 URL を取得し、Defuddle でクリーンな Markdown に変換。HTML スナップショットも保存。ログイン要のページは <code>--wait</code> モードで対応。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-url-to-markdown https://example.com/article -o output.md</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:2">
+        <span class="skill-card__name">/baoyu-danger-x-to-markdown</span>
+        <p class="skill-card__desc">X（Twitter）のツイートスレッドや X Article を Markdown に変換。非公式リバースエンジニアリング API 経由。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-danger-x-to-markdown https://x.com/user/status/123456</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:3">
+        <span class="skill-card__name">/baoyu-compress-image</span>
+        <p class="skill-card__desc">画像ファイル・ディレクトリを品質を保ちつつ圧縮。ファイルサイズを削減する。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-compress-image images/ --quality 80</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:4">
+        <span class="skill-card__name">/baoyu-format-markdown</span>
+        <p class="skill-card__desc">Markdown のフロントマター・見出し・太字・リスト・コードブロックを整形。タイポグラフィスクリプトも自動実行（ASCII→全角・CJK スペース）。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-format-markdown draft.md</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:5">
+        <span class="skill-card__name">/baoyu-markdown-to-html</span>
+        <p class="skill-card__desc">Markdown を WeChat 互換テーマ付き HTML に変換。シンタックスハイライト・外部リンク脚注対応。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-markdown-to-html article.md --theme grace --cite</code>
+        </div>
+      </div>
+      <div class="skill-card" style="--i:6">
+        <span class="skill-card__name">/baoyu-translate</span>
+        <p class="skill-card__desc">3 モード翻訳（quick・normal・refined）。対象は Markdown ファイル・URL・テキスト。カスタム用語集・対象読者プロファイル・スタイル指定が可能。長文は並列サブエージェントで自動チャンク処理。</p>
+        <div class="skill-card__usage">
+          <code>/baoyu-translate article.md --mode refined --to zh-CN --audience technical</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Translate modes table -->
+    <div class="ve-card ve-card--recessed" style="--i:0; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> baoyu-translate の翻訳モード</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>モード</th><th>ステップ</th><th>最適用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>quick</code></td><td>直接翻訳</td><td>短文・インフォーマルなコンテンツ</td></tr>
+            <tr><td><code>normal</code></td><td>分析 → 翻訳</td><td>記事・ブログ投稿</td></tr>
+            <tr><td><code>refined</code></td><td>分析 → 翻訳 → レビュー → 磨き上げ</td><td>出版品質のドキュメント</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== 5. Install ========== -->
+    <section id="install" class="sec-head">5 — インストール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 3 つの方法</span>
+      <h3>方法 1：npx skills（推奨）</h3>
+      <div class="ve-code-block">
+        <pre><code>npx skills add jimliu/baoyu-skills</code></pre>
+      </div>
+      <h3>方法 2：プラグインマーケットプレース登録</h3>
+      <div class="ve-code-block">
+        <pre><code># Claude Code 内で実行
+/plugin marketplace add JimLiu/baoyu-skills</code></pre>
+      </div>
+      <h3>方法 3：ClawHub から個別インストール</h3>
+      <div class="ve-code-block">
+        <pre><code>clawhub install baoyu-image-gen
+clawhub install baoyu-markdown-to-html</code></pre>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> API キーの設定</span>
+      <p>画像生成スキルなど一部のスキルには API キーが必要。<code>~/.baoyu-skills/.env</code>（ユーザーレベル）または <code>.baoyu-skills/.env</code>（プロジェクトレベル）に記載する。</p>
+      <div class="ve-code-block">
+        <pre><code>mkdir -p ~/.baoyu-skills
+cat > ~/.baoyu-skills/.env &lt;&lt;'EOF'
+# Google Gemini
+GOOGLE_API_KEY=xxx
+
+# OpenAI
+OPENAI_API_KEY=sk-xxx
+
+# OpenRouter
+OPENROUTER_API_KEY=sk-or-xxx
+EOF</code></pre>
+      </div>
+      <p style="margin-bottom: 0;">プロジェクトレベルの <code>.baoyu-skills/.env</code> は <code>.gitignore</code> に追記して秘密情報のコミットを防ぐこと。</p>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:2; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> カスタマイズ（EXTEND.md）</span>
+      <p>スキルごとに <code>EXTEND.md</code> を作成してデフォルトを上書きできる。プロジェクトレベル（<code>.baoyu-skills/&lt;skill-name&gt;/EXTEND.md</code>）とユーザーレベル（<code>~/.baoyu-skills/&lt;skill-name&gt;/EXTEND.md</code>）の 2 段階で管理可能。</p>
+      <div class="ve-code-block">
+        <pre><code>mkdir -p .baoyu-skills/baoyu-cover-image
+# .baoyu-skills/baoyu-cover-image/EXTEND.md にカスタムパレットを定義</code></pre>
+      </div>
+    </div>
+
+    <!-- ========== 6. Links ========== -->
+    <section id="links" class="sec-head">6 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/JimLiu/baoyu-skills" target="_blank" rel="noopener">GitHub: JimLiu/baoyu-skills</a> — 本体リポジトリ</li>
+        <li><a href="https://github.com/nicobailon/skills-cli" target="_blank" rel="noopener">skills CLI</a> — <code>npx skills add</code> で使う スキルインストーラー</li>
+        <li><a href="https://clawhub.dev" target="_blank" rel="noopener">ClawHub</a> — スキルレジストリ（個別インストール用）</li>
+        <li><a href="https://github.com/doocs/md" target="_blank" rel="noopener">doocs/md</a> — baoyu-markdown-to-html が使う Markdown→HTML コア</li>
+        <li><a href="https://github.com/kepano/defuddle" target="_blank" rel="noopener">Defuddle</a> — baoyu-url-to-markdown が使う Web 本文抽出ライブラリ</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

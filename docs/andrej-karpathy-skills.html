@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>andrej-karpathy-skills — Karpathy 由来の Claude Code 行動指針</title>
+  <meta name="description" content="Andrej Karpathy の観察に基づく LLM コーディングの落とし穴対策。Think Before Coding・Simplicity First・Surgical Changes・Goal-Driven Execution の 4 原則とインストール手順。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="andrej-karpathy-skills — Karpathy 由来の Claude Code 行動指針">
+  <meta property="og:description" content="4 原則で暗黙の前提・過剰設計・無関係な編集を抑え、検証可能なゴール駆動のコーディングを促す Claude Code プラグイン / CLAUDE.md。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/andrej-karpathy-skills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="andrej-karpathy-skills — Karpathy 由来の Claude Code 行動指針">
+  <meta name="twitter:description" content="4 原則とインストール。Claude Code プラグインまたは CLAUDE.md への取り込み。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Cousine:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME — Spell UI tokens + bronze accent ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.58 0.13 55);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #3d2914;
+      --font-body: 'Mulish', system-ui, sans-serif;
+      --font-mono: 'Cousine', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.78 0.12 75);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #1a1510;
+        --code-text: #e8c48a;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.25rem; line-height: 1.2; font-weight: 600; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.58 0.13 55 / 0.12); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .quote-block { font-size: 0.875rem; line-height: 1.65; padding: 1rem 1.125rem; border-left: 3px solid var(--chart-1); background: var(--muted); border-radius: 0 var(--radius-md) var(--radius-md) 0; margin: 0.75rem 0; color: var(--text-dim); }
+    .quote-block p { margin: 0 0 0.5rem; }
+    .quote-block p:last-child { margin-bottom: 0; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.58 0.13 55 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.78 0.12 75 / 0.09) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#problems">問題意識</a>
+    <a href="#principles">4 原則</a>
+    <a href="#flow">関係図</a>
+    <a href="#install">導入</a>
+    <a href="#signals">効き目の目安</a>
+    <a href="#tradeoff">トレードオフ</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>andrej-karpathy-skills</h1>
+  <p class="subtitle">Karpathy-Inspired Claude Code Guidelines — 単一の <code>CLAUDE.md</code> と Agent Skill で配布される行動規範</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何のためか</span>
+    <p>このリポジトリは、<a href="https://x.com/karpathy/status/2015883857489522876" target="_blank" rel="noopener">Andrej Karpathy が指摘した LLM コーディングの癖</a>に対し、<strong>4 つの原則</strong>でブレーキと方針を与えるための素材をまとめたもの。中核は <code>CLAUDE.md</code>（プロジェクト直下に置く指示）と、Claude Code プラグインとしての <strong>Skill</strong>（<code>karpathy-guidelines</code>）である。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Think</span><span class="ve-kpi-card__label">前提を明示</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Simple</span><span class="ve-kpi-card__label">最小のコード</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Surgical</span><span class="ve-kpi-card__label">触る範囲を限定</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Goals</span><span class="ve-kpi-card__label">検証可能なゴール</span></div>
+    </div>
+    <p>キーインサイト（README より）: 「LLM は具体的なゴールがあれば、それを満たすまでループするのが得意」— だから<strong>手順命令</strong>より<strong>成功条件と検証</strong>を渡す設計に寄せる。</p>
+  </div>
+
+  <section id="problems" class="sec-head">2 — 問題意識（出典の要約）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Karpathy が挙げたパターン</span>
+    <div class="quote-block">
+      <p>「モデルはユーザーに代わって誤った前提を置き、確認せずに走り続ける。混乱の管理・質問・矛盾の表面化・トレードオフ提示・本来押し返すべきときの押し返しが弱い。」</p>
+    </div>
+    <div class="quote-block">
+      <p>「コードや API を過剰に複雑にし、抽象を膨らませ、デッドコードを片付けない… 100 行で足りるところを 1000 行の構築物にしてしまう。」</p>
+    </div>
+    <div class="quote-block">
+      <p>「タスクと直交するコメントやコードまで、十分に理解しないまま副作用として変えてしまうことがある。」</p>
+    </div>
+  </div>
+
+  <section id="principles" class="sec-head">3 — 4 原則</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 原則と狙い</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>原則</th><th>主に抑える失敗</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Think Before Coding</strong></td><td>暗黙の前提、隠れた混乱、トレードオフ未提示</td></tr>
+          <tr><td><strong>Simplicity First</strong></td><td>過剰設計、肥大した抽象、不要機能の先回り</td></tr>
+          <tr><td><strong>Surgical Changes</strong></td><td>直交するコードへの「ついで修正」、スタイルの押し付け</td></tr>
+          <tr><td><strong>Goal-Driven Execution</strong></td><td>曖昧な「なんとかして」、検証なき完了宣言</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>1. Think Before Coding</h3>
+    <p>実装前に仮説を言語化し、曖昧さは質問で潰す。複数解釈があるときは勝手に一つに決めず並べる。単純な代替があれば指摘する。</p>
+    <h3>2. Simplicity First</h3>
+    <p>依頼範囲を超えた機能・一度きりなのに一般化した抽象・不要なエラーハンドリングを避ける。「シニアが過剰と言うなら削る」というテストを README でも提示。</p>
+    <h3>3. Surgical Changes</h3>
+    <p>隣の未壊コードはリファクタしない。既存スタイルに合わせる。自分の変更で不要になった import 等だけ掃除し、元から死んでいたコードの削除は依頼があるまでしない。</p>
+    <h3>4. Goal-Driven Execution</h3>
+    <p>「バグを直す」→「再現テストを書き、通るまで」など、検証可能な形に言い換える。複数ステップなら <code>ステップ → verify: チェック</code> の短い計画を先に出す。</p>
+  </div>
+
+  <section id="flow" class="sec-head">4 — 関係図</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 失敗パターン → 原則 → 期待される挙動</span>
+    <div class="mermaid-wrap">
+      <pre class="mermaid">
+flowchart TB
+  subgraph issues[典型的な失敗]
+    A[暗黙の前提で実装]
+    B[抽象と行数の膨張]
+    C[無関係な差分・コメント改変]
+    D[曖昧な完了条件]
+  end
+  subgraph p[4 原則]
+    P1[Think Before Coding]
+    P2[Simplicity First]
+    P3[Surgical Changes]
+    P4[Goal-Driven Execution]
+  end
+  subgraph out[期待される結果]
+    O1[質問とトレードオフが先]
+    O2[最小差分のパッチ]
+    O3[テストやコマンドで検証]
+  end
+  A --> P1
+  B --> P2
+  C --> P3
+  D --> P4
+  P1 --> O1
+  P2 --> O2
+  P3 --> O1
+  P4 --> O3
+      </pre>
+    </div>
+  </div>
+
+  <section id="install" class="sec-head">5 — 導入</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Claude Code プラグイン（推奨）</span>
+    <p>マーケットプレイス登録後、プラグイン名でインストールする流れ（README 準拠）。</p>
+    <div class="ve-code-block">
+      <pre><code>/plugin marketplace add forrestchang/andrej-karpathy-skills
+
+/plugin install andrej-karpathy-skills@karpathy-skills</code></pre>
+    </div>
+    <h3>CLAUDE.md をプロジェクトに取り込む</h3>
+    <p>新規プロジェクトでは raw の <code>CLAUDE.md</code> を取得。既存プロジェクトでは追記。</p>
+    <div class="ve-code-block">
+      <pre><code>curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md
+
+echo "" >> CLAUDE.md
+curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md</code></pre>
+    </div>
+    <p>Skill 本体のエントリは <code>skills/karpathy-guidelines/SKILL.md</code>。エージェント向けの説明文と YAML フロントマター（<code>name</code> / <code>description</code> / <code>license</code>）が定義されている。</p>
+  </div>
+
+  <section id="signals" class="sec-head">6 — 効き目の目安</section>
+  <div class="ve-card ve-card--recessed" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> うまくいっているサイン</span>
+    <ul>
+      <li>diff に<strong>依頼と無関係な変更が減る</strong></li>
+      <li>最初から過剰な抽象で書き直す回数が減る</li>
+      <li><strong>実装より先に確認質問</strong>が増える（失敗後ではなく）</li>
+      <li>PR が小さく、ドライブバイリファクタが載りにくい</li>
+    </ul>
+  </div>
+
+  <section id="tradeoff" class="sec-head">7 — トレードオフ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 速度とのバランス</span>
+    <div class="ve-callout">
+      <strong>注意:</strong> ガイドラインは<strong>慎重さを速度より優先</strong>するバイアスを持つ。タイポ修正のような自明な作業では、フル手順までは不要でよい（README の Tradeoff Note と同旨）。
+    </div>
+    <p>プロジェクト固有ルールは <code>## Project-Specific Guidelines</code> などで追記し、この 4 原則と合成して使う想定。</p>
+  </div>
+
+  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・出典</span>
+    <ul>
+      <li><a href="https://github.com/forrestchang/andrej-karpathy-skills" target="_blank" rel="noopener">GitHub: forrestchang/andrej-karpathy-skills</a> — 本体リポジトリ（README・プラグイン・<code>CLAUDE.md</code>）</li>
+      <li><a href="https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md" target="_blank" rel="noopener">CLAUDE.md（raw）</a> — プロジェクト直下に置く行動規範テキスト</li>
+      <li><a href="https://github.com/forrestchang/andrej-karpathy-skills/blob/main/skills/karpathy-guidelines/SKILL.md" target="_blank" rel="noopener">skills/karpathy-guidelines/SKILL.md</a> — Claude Code 用 Skill 定義</li>
+      <li><a href="https://x.com/karpathy/status/2015883857489522876" target="_blank" rel="noopener">Andrej Karpathy（X）— LLM コーディングの癖に関する投稿</a> — 本ガイドラインの着想・出典</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#faf6f0',
+      primaryTextColor: '#3d2914',
+      primaryBorderColor: '#c4a35a',
+      lineColor: '#b8924a',
+      secondaryColor: '#f5efe6',
+      tertiaryColor: '#fff',
+      background: '#ffffff',
+      clusterBkg: '#faf8f4',
+      clusterBorder: '#c4a35a'
+    }
+  });
+</script>
+</body>
+</html>
