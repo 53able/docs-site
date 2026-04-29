@@ -14,7 +14,7 @@
 | 強調ブロック・注目情報 | `.ve-card.ve-card--elevated` | セクション内の主役コンテンツに使う |
 | 補足・参照・警告 | `.ve-card.ve-card--recessed` | 目立たせたくない二次情報 |
 | 重要な注意・制約 | `.ve-callout` | border-left が chart-1 または chart-2 |
-| コード例・CLI コマンド | `.ve-code-block > pre > code` | `white-space: pre-wrap` 必須 |
+| コード例・CLI コマンド | `.ve-code-block > pre > code` | `white-space: pre-wrap` 必須。グローバル `code` 背景は `.ve-code-block pre code` で打ち消す |
 | 設定値・オプション表 | `.ve-table-wrap > table` | `th` に `background: var(--muted)` |
 | 比較（good/bad）| `.ve-table-wrap` + `.badge--good/.badge--bad` | バッジは `border-radius: 4px` |
 | セクション小見出し | `.ve-section-label > .ve-dot` | `.ve-dot` の background は `--chart-1` |
@@ -41,7 +41,7 @@
 │   └─ ve-table-wrap（列: 名前 / 型orデフォルト / 説明）
 │
 ├─ コード例
-│   └─ ve-code-block（言語に応じた syntax ヒント）
+│   └─ ve-code-block（言語に応じた syntax ヒント。pre code は background: transparent / padding: 0）
 │
 ├─ 比較（BAD/GOOD）
 │   └─ ve-table-wrap + badge--bad / badge--good
