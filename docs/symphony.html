@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Symphony — Issue から自律実装ランを編成するエージェント・オーケストレータ</title>
+  <meta name="description" content="Linear の作業を読み取り、Issue ごとに隔離ワークスペースを作成し、Codex app-server を継続実行する Symphony の仕様・Elixir 実装・運用フローを視覚化。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Symphony — 自律実装ランを編成するエージェント・オーケストレータ">
+  <meta property="og:description" content="Issue tracker、WORKFLOW.md、ワークスペース、Codex app-server をつなぐ Symphony の構造を視覚的に解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/symphony.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Symphony — 自律実装ランを編成するエージェント・オーケストレータ">
+  <meta name="twitter:description" content="Linear から候補 Issue を読み、隔離ワークスペースで Codex を走らせる Symphony の設計解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.011 87);
+      --foreground: oklch(0.17 0.035 250);
+      --card: oklch(0.998 0.005 88);
+      --card-foreground: oklch(0.17 0.035 250);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.17 0.035 250);
+      --primary: oklch(0.38 0.12 248);
+      --primary-foreground: oklch(0.985 0.011 87);
+      --secondary: oklch(0.94 0.022 88);
+      --secondary-foreground: oklch(0.22 0.045 248);
+      --muted: oklch(0.94 0.018 88);
+      --muted-foreground: oklch(0.47 0.038 250);
+      --accent: oklch(0.95 0.032 76);
+      --accent-foreground: oklch(0.21 0.045 250);
+      --destructive: oklch(0.55 0.18 25);
+      --border: oklch(0.84 0.022 84);
+      --input: oklch(0.84 0.022 84);
+      --ring: oklch(0.72 0.17 76);
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.45 0.11 200);
+      --chart-4: oklch(0.55 0.16 42);
+      --chart-5: oklch(0.62 0.12 155);
+      --code-bg: oklch(0.19 0.035 250);
+      --code-text: oklch(0.94 0.035 84);
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      --blueprint-line: oklch(0.38 0.12 248 / 0.12);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.035 250);
+        --foreground: oklch(0.94 0.018 88);
+        --card: oklch(0.18 0.038 250);
+        --card-foreground: oklch(0.94 0.018 88);
+        --popover: oklch(0.18 0.038 250);
+        --popover-foreground: oklch(0.94 0.018 88);
+        --primary: oklch(0.78 0.12 76);
+        --primary-foreground: oklch(0.16 0.03 250);
+        --secondary: oklch(0.24 0.042 250);
+        --secondary-foreground: oklch(0.94 0.018 88);
+        --muted: oklch(0.24 0.042 250);
+        --muted-foreground: oklch(0.72 0.028 88);
+        --accent: oklch(0.24 0.042 250);
+        --accent-foreground: oklch(0.94 0.018 88);
+        --destructive: oklch(0.66 0.18 25);
+        --border: oklch(0.88 0.02 88 / 14%);
+        --input: oklch(0.88 0.02 88 / 18%);
+        --ring: oklch(0.72 0.17 76);
+        --chart-1: oklch(0.72 0.17 76);
+        --chart-2: oklch(0.64 0.12 248);
+        --chart-3: oklch(0.70 0.11 200);
+        --chart-4: oklch(0.68 0.14 42);
+        --chart-5: oklch(0.70 0.11 155);
+        --code-bg: oklch(0.11 0.025 250);
+        --code-text: oklch(0.94 0.04 84);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+        --blueprint-line: oklch(0.72 0.17 76 / 0.11);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+      box-shadow: 0 14px 42px rgba(19, 39, 74, 0.10);
+      border-color: color-mix(in oklch, var(--border) 58%, var(--chart-1) 42%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 82%, var(--chart-2) 18%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block__label { color: var(--code-text); border-bottom: 1px solid oklch(1 0 0 / 12%); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; padding: 0.625rem 0.875rem; text-transform: uppercase; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 72%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-display); font-size: 2.2rem; line-height: 1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(var(--blueprint-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--blueprint-line) 1px, transparent 1px),
+        radial-gradient(ellipse at 22% 0%, oklch(0.72 0.17 76 / 0.14) 0%, transparent 42%);
+      background-size: 32px 32px, 32px 32px, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          linear-gradient(var(--blueprint-line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--blueprint-line) 1px, transparent 1px),
+          radial-gradient(ellipse at 22% 0%, oklch(0.72 0.17 76 / 0.10) 0%, transparent 44%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 210px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-family: var(--font-display); font-size: clamp(2.8rem, 7vw, 5.8rem); font-weight: 400; letter-spacing: -0.045em; line-height: 0.92; margin-bottom: 1rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.95rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.7; max-width: 58rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.68; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.35rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    strong { font-weight: 700; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 760px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .hero-grid { display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 1rem; align-items: stretch; }
+    .hero-note { display: flex; flex-direction: column; justify-content: space-between; min-height: 100%; }
+    .hero-note .rule { height: 1px; background: var(--border); margin: 1rem 0; }
+    @media (max-width: 880px) { .hero-grid { grid-template-columns: 1fr; } }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.75rem;
+      align-items: stretch;
+      margin-top: 1rem;
+    }
+    .pipe-card {
+      position: relative;
+      min-width: 0;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 5%);
+    }
+    .pipe-card:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      right: -0.65rem;
+      top: 50%;
+      width: 0.55rem;
+      height: 1px;
+      background: var(--chart-1);
+    }
+    .pipe-card__num { font-family: var(--font-mono); color: var(--chart-2); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em; }
+    .pipe-card__title { display: block; font-weight: 700; margin: 0.35rem 0; }
+    .pipe-card__body { color: var(--text-dim); font-size: 0.8125rem; line-height: 1.55; }
+    @media (max-width: 920px) {
+      .pipeline { grid-template-columns: 1fr; }
+      .pipe-card:not(:last-child)::after { display: none; }
+    }
+
+    .layer-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    .layer-grid .ve-card { min-width: 0; }
+    .layer-name { font-family: var(--font-mono); font-size: 0.72rem; color: var(--chart-1); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 0.5rem; }
+    @media (max-width: 860px) { .layer-grid { grid-template-columns: 1fr; } }
+
+    .state-loop {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .loop-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .loop-list li {
+      position: relative;
+      padding: 0.85rem 0.95rem 0.85rem 2.1rem;
+      border-bottom: 1px solid var(--border);
+      margin: 0;
+      line-height: 1.55;
+      color: var(--text-dim);
+    }
+    .loop-list li::before {
+      content: "";
+      position: absolute;
+      left: 0.85rem;
+      top: 1.25rem;
+      width: 0.45rem;
+      height: 0.45rem;
+      border-radius: 50%;
+      background: var(--chart-2);
+    }
+    .loop-list li strong { color: var(--text); }
+    @media (max-width: 860px) { .state-loop { grid-template-columns: 1fr; } }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.2rem 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      background: var(--muted);
+    }
+    .badge--gold { color: color-mix(in oklch, var(--chart-2) 82%, var(--text)); background: color-mix(in oklch, var(--chart-2) 12%, var(--muted)); }
+    .badge--blue { color: color-mix(in oklch, var(--chart-1) 82%, var(--text)); background: color-mix(in oklch, var(--chart-1) 10%, var(--muted)); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card, .pipe-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">構成</a>
+    <a href="#workflow">WORKFLOW.md</a>
+    <a href="#runtime">実行ループ</a>
+    <a href="#elixir">Elixir 実装</a>
+    <a href="#operate">運用と制約</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <main class="main">
+    <h1>Symphony</h1>
+    <p class="subtitle">Issue tracker の作業を読み、Issue ごとに隔離した workspace で coding agent を走らせる、長時間稼働のスケジューラ / ランナー。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="hero-grid">
+      <div class="ve-card ve-card--hero" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 何をするものか</span>
+        <p><strong>Symphony</strong> は、Linear などの Issue tracker から候補作業をポーリングし、各 Issue に専用 workspace を作って、Codex app-server のような coding agent を継続実行するサービス。エンジニアは個々の agent を逐一見張るのではなく、作業単位とレビュー状態を管理する。</p>
+        <div class="kpi-row">
+          <div class="ve-kpi-card"><div class="ve-kpi-card__value">1</div><div class="ve-kpi-card__label">Issue ごとの workspace</div></div>
+          <div class="ve-kpi-card"><div class="ve-kpi-card__value">10</div><div class="ve-kpi-card__label">例: max concurrent agents</div></div>
+          <div class="ve-kpi-card"><div class="ve-kpi-card__value">20</div><div class="ve-kpi-card__label">例: max turns</div></div>
+          <div class="ve-kpi-card"><div class="ve-kpi-card__value">5s</div><div class="ve-kpi-card__label">例: polling interval</div></div>
+        </div>
+        <p>重要な境界は、Symphony 自体が主に <strong>scheduler / runner / tracker reader</strong> であること。チケットのコメント、状態遷移、PR リンクのような書き込みは、通常 workflow prompt と agent 側ツールが担う。</p>
+      </div>
+      <aside class="ve-card ve-card--recessed hero-note" style="--i:1">
+        <div>
+          <span class="ve-section-label"><span class="ve-dot"></span> Preview software</span>
+          <p>README は Symphony を「trusted environments 向けの engineering preview」として扱っている。Elixir 実装も評価用プロトタイプで、堅牢版は `SPEC.md` をもとに自前実装することが推奨されている。</p>
+        </div>
+        <div class="rule"></div>
+        <div>
+          <span class="badge badge--blue">SPEC.md</span>
+          <span class="badge badge--gold">Elixir/OTP</span>
+          <span class="badge">Codex app-server</span>
+        </div>
+      </aside>
+    </div>
+
+    <section id="architecture" class="sec-head">2 — 構成</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 読み取りから実行まで</span>
+      <p>仕様上の主要コンポーネントは、設定を読む層、Issue を正規化する層、実行を割り当てる層、workspace と agent process を扱う層、そしてログや dashboard を出す観測層に分かれる。</p>
+      <div class="pipeline" aria-label="Symphony runtime pipeline">
+        <div class="pipe-card"><span class="pipe-card__num">01</span><span class="pipe-card__title">Workflow Loader</span><span class="pipe-card__body">`WORKFLOW.md` の YAML front matter と prompt body を読む。</span></div>
+        <div class="pipe-card"><span class="pipe-card__num">02</span><span class="pipe-card__title">Tracker Client</span><span class="pipe-card__body">Linear API から active state の Issue を取得し、安定した Issue model に正規化する。</span></div>
+        <div class="pipe-card"><span class="pipe-card__num">03</span><span class="pipe-card__title">Orchestrator</span><span class="pipe-card__body">poll tick、並行数、retry queue、running state、reconciliation を所有する。</span></div>
+        <div class="pipe-card"><span class="pipe-card__num">04</span><span class="pipe-card__title">Workspace</span><span class="pipe-card__body">Issue identifier から安全な path を作り、hooks を実行し、不要 workspace を掃除する。</span></div>
+        <div class="pipe-card"><span class="pipe-card__num">05</span><span class="pipe-card__title">Agent Runner</span><span class="pipe-card__body">prompt を組み立て、Codex app-server session を開始し、turn を継続する。</span></div>
+      </div>
+    </div>
+    <div class="layer-grid">
+      <div class="ve-card" style="--i:1">
+        <div class="layer-name">Policy</div>
+        <p>`WORKFLOW.md` がチーム固有の手順、検証、handoff、チケット操作方針を保持する。つまり agent の振る舞いもコードと同じ repo でバージョン管理される。</p>
+      </div>
+      <div class="ve-card" style="--i:2">
+        <div class="layer-name">Coordination</div>
+        <p>Orchestrator は daemon として tick を回し、候補 Issue、実行中 Issue、retry、terminal state cleanup を調停する。</p>
+      </div>
+      <div class="ve-card" style="--i:3">
+        <div class="layer-name">Execution</div>
+        <p>Workspace と AgentRunner は、agent のコマンド実行範囲を per-issue workspace に閉じ込め、Codex app-server の turn を進める。</p>
+      </div>
+    </div>
+
+    <section id="workflow" class="sec-head">3 — WORKFLOW.md</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 設定 + プロンプトの契約</span>
+      <p>`WORKFLOW.md` は YAML front matter と Markdown body でできている。front matter は tracker、polling、workspace、hooks、agent、codex などの実行設定。Markdown body は Issue 情報を埋め込んだ Codex session prompt になる。</p>
+      <div class="ve-code-block">
+        <div class="ve-code-block__label">WORKFLOW.md minimal shape</div>
+        <pre><code>---
+tracker:
+  kind: linear
+  project_slug: "..."
+workspace:
+  root: ~/code/workspaces
+hooks:
+  after_create: |
+    git clone git@github.com:your-org/your-repo.git .
+agent:
+  max_concurrent_agents: 10
+  max_turns: 20
+codex:
+  command: codex app-server
+---
+
+You are working on a Linear issue {{ issue.identifier }}.
+
+Title: {{ issue.title }}
+Body: {{ issue.description }}</code></pre>
+      </div>
+    </div>
+    <div class="ve-table-wrap" style="margin-top:1rem">
+      <table>
+        <thead>
+          <tr><th>設定領域</th><th>役割</th><th>README / WORKFLOW で確認できる例</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>tracker</code></td><td>Issue tracker と対象 project、active / terminal state を決める。</td><td><code>kind: linear</code>, <code>active_states</code>, <code>terminal_states</code></td></tr>
+          <tr><td><code>workspace</code></td><td>Issue ごとの作業ディレクトリの root を決める。</td><td><code>~/code/symphony-workspaces</code>, env-backed path</td></tr>
+          <tr><td><code>hooks</code></td><td>workspace 作成、実行前後、削除前の準備や掃除を実行する。</td><td><code>after_create</code> で clone / deps get</td></tr>
+          <tr><td><code>agent</code></td><td>並行数と連続 turn 数を制限する。</td><td><code>max_concurrent_agents: 10</code>, <code>max_turns: 20</code></td></tr>
+          <tr><td><code>codex</code></td><td>Codex app-server コマンド、approval policy、sandbox policy を指定する。</td><td><code>command: codex app-server</code>, <code>thread_sandbox: workspace-write</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section id="runtime" class="sec-head">4 — 実行ループ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> daemon としての調停</span>
+      <p>Orchestrator は `GenServer` として poll tick を持ち、設定を再読み込みしながら候補 Issue の dispatch と実行中 agent の reconciliation を行う。agent process が正常終了しても Issue がまだ active なら continuation retry として再開される。</p>
+      <div class="state-loop">
+        <div class="ve-card ve-card--recessed">
+          <h3>Dispatch path</h3>
+          <ul class="loop-list">
+            <li><strong>poll:</strong> tracker から active Issue を取得。</li>
+            <li><strong>select:</strong> bounded concurrency と claimed / running state を見て対象を選ぶ。</li>
+            <li><strong>spawn:</strong> Issue ごとの workspace と Codex session を作る。</li>
+            <li><strong>observe:</strong> token totals、rate limits、workspace path、worker host を dashboard へ渡す。</li>
+          </ul>
+        </div>
+        <div class="ve-card ve-card--recessed">
+          <h3>Reconciliation path</h3>
+          <ul class="loop-list">
+            <li><strong>normal exit:</strong> Issue が active なら短い continuation delay で再実行。</li>
+            <li><strong>failure exit:</strong> failure retry base delay から retry をスケジュール。</li>
+            <li><strong>terminal state:</strong> Done / Closed / Cancelled / Duplicate なら active agent を止め、workspace を掃除。</li>
+            <li><strong>reload failure:</strong> workflow reload に失敗したら last known good workflow を維持する。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <section id="elixir" class="sec-head">5 — Elixir 実装</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> OTP で長時間プロセスを監督する</span>
+      <p>`elixir/` は現在の参照実装。`mix.exs` では escript `bin/symphony` を生成し、Phoenix LiveView / Bandit / Req / Jason / YamlElixir / Solid などを利用している。README は Elixir を選ぶ理由として、BEAM / OTP の長時間プロセス監督と hot code reloading を挙げている。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>モジュール</th><th>読み取れる責務</th><th>視点</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>SymphonyElixir.Workflow</code></td><td>`WORKFLOW.md` を読み、front matter と prompt を分離する。</td><td>設定契約</td></tr>
+            <tr><td><code>SymphonyElixir.Orchestrator</code></td><td>poll tick、running / completed / claimed、retry attempts、Codex totals を持つ。</td><td>調停</td></tr>
+            <tr><td><code>SymphonyElixir.Workspace</code></td><td>Issue identifier から workspace path を作り、local / SSH worker の準備と削除を行う。</td><td>隔離</td></tr>
+            <tr><td><code>SymphonyElixir.AgentRunner</code></td><td>workspace 作成、hooks、Codex session、turn continuation をまとめる。</td><td>実行</td></tr>
+            <tr><td><code>SymphonyElixir.Codex.AppServer</code></td><td>Codex app-server session と turn を扱う。</td><td>agent runtime</td></tr>
+            <tr><td><code>SymphonyElixirWeb.*</code></td><td>LiveView dashboard と `/api/v1/*` の観測 API を提供する。</td><td>観測</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="operate" class="sec-head">6 — 運用と制約</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 安全に見るべき境界</span>
+      <p>Symphony の設計は「作業を高い抽象度で管理する」方向に強い。一方で、仕様は強い sandbox や approval posture を一律には要求しない。運用側は trust model、agent tool の権限、workspace root、tracker token、Codex auth を明示する必要がある。</p>
+      <div class="ve-callout">
+        <strong>注意:</strong> このページは README、SPEC、Elixir 実装ファイルから読み取れる範囲の解説。実運用の安全性は、採用する Codex app-server バージョン、approval policy、host OS sandbox、Linear / GitHub 権限設計に依存する。
+      </div>
+      <div class="ve-table-wrap" style="margin-top:1rem">
+        <table>
+          <thead>
+            <tr><th>論点</th><th>Symphony が与える形</th><th>運用者が決めること</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>作業分離</td><td>Issue ごとの deterministic workspace。</td><td>workspace root、削除 hooks、SSH worker の信頼境界。</td></tr>
+            <tr><td>チケット状態</td><td>active / terminal state の読み取りと reconciliation。</td><td>状態遷移の prompt、agent tool の書き込み権限。</td></tr>
+            <tr><td>再試行</td><td>normal exit continuation と failure backoff。</td><td>最大 turn、failure の許容回数、human review への逃がし方。</td></tr>
+            <tr><td>観測</td><td>structured logs、任意の Phoenix dashboard / JSON API。</td><td>ログ保存先、token accounting、レビュー証跡の扱い。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Source</span>
+      <ul>
+        <li><a href="https://github.com/openai/symphony" target="_blank" rel="noopener">GitHub: openai/symphony</a> — リポジトリ本体</li>
+        <li><a href="https://github.com/openai/symphony/blob/main/SPEC.md" target="_blank" rel="noopener">SPEC.md</a> — language-agnostic なサービス仕様</li>
+        <li><a href="https://github.com/openai/symphony/blob/main/elixir/README.md" target="_blank" rel="noopener">elixir/README.md</a> — 参照実装のセットアップと実行方法</li>
+        <li><a href="https://developers.openai.com/codex/app-server/" target="_blank" rel="noopener">Codex App Server</a> — Elixir 実装が起動する agent runtime</li>
+        <li><a href="https://openai.com/index/harness-engineering/" target="_blank" rel="noopener">Harness engineering</a> — README が前提としている agent 運用の考え方</li>
+      </ul>
+    </div>
+  </main>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
