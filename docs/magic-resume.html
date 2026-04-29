@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magic Resume — AI支援つきオンライン履歴書エディタ</title>
+  <meta name="description" content="Magic Resume は、リアルタイムプレビュー、テンプレート、PDF/Markdown/JSON出力、AI文章支援を備えたオンライン履歴書エディタ。構造・データフロー・運用上の注意を視覚化します。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Magic Resume — AI支援つきオンライン履歴書エディタ">
+  <meta property="og:description" content="リアルタイムプレビュー、テンプレート、PDF/Markdown/JSON出力、AI文章支援を備えたオンライン履歴書エディタの構造解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/magic-resume.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Magic Resume — AI支援つきオンライン履歴書エディタ">
+  <meta name="twitter:description" content="Magic Resume の体験フロー、状態管理、AI API、エクスポート経路を視覚的に整理。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + resume-paper palette) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.018 78);
+      --foreground: oklch(0.18 0.035 52);
+      --card: oklch(0.998 0.006 78);
+      --card-foreground: oklch(0.18 0.035 52);
+      --popover: oklch(0.998 0.006 78);
+      --popover-foreground: oklch(0.18 0.035 52);
+      --primary: oklch(0.33 0.11 38);
+      --primary-foreground: oklch(0.985 0.018 78);
+      --secondary: oklch(0.94 0.032 82);
+      --secondary-foreground: oklch(0.24 0.05 52);
+      --muted: oklch(0.94 0.026 82);
+      --muted-foreground: oklch(0.47 0.035 62);
+      --accent: oklch(0.91 0.044 78);
+      --accent-foreground: oklch(0.24 0.05 52);
+      --destructive: oklch(0.52 0.18 25);
+      --border: oklch(0.83 0.038 76);
+      --input: oklch(0.83 0.038 76);
+      --ring: oklch(0.55 0.16 42);
+      --chart-1: oklch(0.55 0.16 42);
+      --chart-2: oklch(0.57 0.10 145);
+      --chart-3: oklch(0.42 0.09 220);
+      --chart-4: oklch(0.66 0.12 78);
+      --chart-5: oklch(0.48 0.12 20);
+      --code-bg: oklch(0.22 0.035 52);
+      --code-text: oklch(0.93 0.032 82);
+      --font-body: 'Newsreader', Georgia, serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.15 0.025 52);
+        --foreground: oklch(0.93 0.032 82);
+        --card: oklch(0.20 0.03 52);
+        --card-foreground: oklch(0.93 0.032 82);
+        --popover: oklch(0.20 0.03 52);
+        --popover-foreground: oklch(0.93 0.032 82);
+        --primary: oklch(0.78 0.11 78);
+        --primary-foreground: oklch(0.16 0.025 52);
+        --secondary: oklch(0.24 0.035 52);
+        --secondary-foreground: oklch(0.93 0.032 82);
+        --muted: oklch(0.25 0.03 52);
+        --muted-foreground: oklch(0.72 0.035 82);
+        --accent: oklch(0.28 0.04 55);
+        --accent-foreground: oklch(0.93 0.032 82);
+        --destructive: oklch(0.65 0.16 25);
+        --border: oklch(0.45 0.03 62 / 55%);
+        --input: oklch(0.45 0.03 62 / 55%);
+        --ring: oklch(0.72 0.17 76);
+        --chart-1: oklch(0.72 0.17 76);
+        --chart-2: oklch(0.69 0.12 145);
+        --chart-3: oklch(0.72 0.10 220);
+        --chart-4: oklch(0.78 0.12 96);
+        --chart-5: oklch(0.70 0.12 25);
+        --code-bg: oklch(0.11 0.02 52);
+        --code-text: oklch(0.91 0.035 88);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(61, 43, 24, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(61, 43, 24, 0.05); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 16px 36px rgba(61, 43, 24, 0.10);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.9rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.875rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; text-align: left; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 70%, var(--card) 30%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(61, 43, 24, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.05rem; line-height: 1.2; color: var(--foreground); }
+    .ve-kpi-card__label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.65; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.75rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(90deg, color-mix(in oklch, var(--border) 35%, transparent) 1px, transparent 1px),
+        linear-gradient(180deg, color-mix(in oklch, var(--border) 30%, transparent) 1px, transparent 1px),
+        radial-gradient(ellipse at 18% 0%, color-mix(in oklch, var(--chart-1) 16%, transparent) 0%, transparent 48%),
+        radial-gradient(ellipse at 90% 14%, color-mix(in oklch, var(--chart-2) 12%, transparent) 0%, transparent 42%);
+      background-size: 36px 36px, 36px 36px, auto, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: clamp(2.2rem, 5vw, 4.8rem); font-weight: 700; letter-spacing: -0.055em; line-height: 0.94; margin-bottom: 0.85rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.875rem; margin-bottom: 2rem; }
+    .sec-head { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 600; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.04em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h2, h3 { font-weight: 600; letter-spacing: -0.025em; }
+    h3 { font-size: 1.2rem; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 1rem; line-height: 1.72; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.4rem; }
+    li { margin-bottom: 0.4rem; line-height: 1.6; }
+    a { color: var(--chart-3); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-1); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    small { color: var(--muted-foreground); font-size: 0.8rem; line-height: 1.5; }
+
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr); gap: 1rem; align-items: stretch; margin-bottom: 1.25rem; }
+    .hero-copy { padding: 2rem; }
+    .hero-copy p { font-size: 1.1rem; }
+    .resume-sheet {
+      min-height: 100%;
+      background: linear-gradient(180deg, color-mix(in oklch, var(--card) 94%, var(--chart-4) 6%), var(--card));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.4rem;
+      display: grid;
+      gap: 0.75rem;
+      align-content: start;
+    }
+    .sheet-line { height: 10px; border-radius: 99px; background: var(--muted); }
+    .sheet-line.is-title { width: 70%; height: 18px; background: color-mix(in oklch, var(--chart-1) 25%, var(--muted)); }
+    .sheet-line.is-short { width: 46%; }
+    .sheet-row { display: grid; grid-template-columns: 1fr 1.8fr; gap: 0.75rem; margin-top: 0.5rem; }
+    .sheet-block { min-height: 54px; border-radius: var(--radius-md); border: 1px solid var(--border); background: color-mix(in oklch, var(--card) 75%, var(--muted) 25%); }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.85rem; }
+    .flow-card { position: relative; min-width: 0; }
+    .flow-card:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 2.15rem;
+      right: -0.85rem;
+      width: 0.85rem;
+      border-top: 1px solid var(--chart-1);
+    }
+    .flow-num { display: inline-flex; align-items: center; justify-content: center; width: 1.7rem; height: 1.7rem; border-radius: 99px; background: var(--chart-1); color: var(--primary-foreground); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; margin-bottom: 0.7rem; }
+    .flow-title { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600; margin-bottom: 0.45rem; }
+    .flow-body { color: var(--muted-foreground); font-size: 0.9rem; line-height: 1.55; margin: 0; }
+    .architecture { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    .module-card { min-width: 0; border-top: 3px solid var(--chart-1); }
+    .module-card:nth-child(2) { border-top-color: var(--chart-2); }
+    .module-card:nth-child(3) { border-top-color: var(--chart-3); }
+    .module-card:nth-child(4) { border-top-color: var(--chart-4); }
+    .module-card:nth-child(5) { border-top-color: var(--chart-5); }
+    .module-card:nth-child(6) { border-top-color: var(--chart-2); }
+    .module-card h3 { margin-top: 0; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.75rem; }
+    .tag { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 99px; padding: 0.22rem 0.55rem; font-family: var(--font-mono); font-size: 0.6875rem; color: var(--muted-foreground); background: color-mix(in oklch, var(--card) 80%, var(--muted) 20%); }
+    .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; }
+    .callout-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; } }
+    @media (max-width: 900px) {
+      .hero-grid, .split, .callout-grid { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr; }
+      .flow-card:not(:last-child)::after { display: none; }
+      .architecture { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 560px) {
+      body { padding: 18px; }
+      .toc { margin: 0 -18px; padding-left: 18px; padding-right: 18px; }
+      .hero-copy { padding: 1.25rem; }
+      .kpi-row { grid-template-columns: 1fr; }
+      .ve-table-wrap { overflow-x: auto; }
+      .ve-table-wrap table { min-width: 680px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#workflow">体験フロー</a>
+    <a href="#architecture">内部構造</a>
+    <a href="#ai-export">AIと出力</a>
+    <a href="#operate">運用と制約</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>Magic Resume</h1>
+    <p class="subtitle">JOYCEQL/magic-resume — TanStack Start と Zustand で作られた、AI支援つきオンライン履歴書エディタ。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="hero-grid">
+      <div class="ve-card ve-card--hero hero-copy" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> What it is</span>
+        <p><strong>Magic Resume</strong> は、履歴書を入力しながらプレビューし、テンプレート・テーマ・並び替え・PDF出力まで一画面で扱うオンラインエディタ。README ではリアルタイムプレビュー、カスタムテーマ、ダークモード、自動保存、ローカル保存、AI支援ライティングが主要機能として挙げられている。</p>
+        <p>設計の中心は「履歴書データを一つの構造体として持ち、編集UI・プレビュー・テンプレート・エクスポートへ同じデータを流す」こと。見た目はテンプレートで差し替え、内容は Zustand store に集約している。</p>
+      </div>
+      <div class="resume-sheet ve-card" style="--i:1" aria-label="履歴書プレビューの抽象図">
+        <div class="sheet-line is-title"></div>
+        <div class="sheet-line is-short"></div>
+        <div class="sheet-row">
+          <div class="sheet-block"></div>
+          <div>
+            <div class="sheet-line"></div>
+            <div class="sheet-line"></div>
+            <div class="sheet-line is-short"></div>
+          </div>
+        </div>
+        <div class="sheet-block"></div>
+        <div class="sheet-line"></div>
+        <div class="sheet-line"></div>
+        <div class="sheet-line is-short"></div>
+      </div>
+    </div>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><div class="ve-kpi-card__value">8</div><div class="ve-kpi-card__label">テンプレート登録</div></div>
+      <div class="ve-kpi-card"><div class="ve-kpi-card__value">3</div><div class="ve-kpi-card__label">主要出力形式</div></div>
+      <div class="ve-kpi-card"><div class="ve-kpi-card__value">4</div><div class="ve-kpi-card__label">AIモデル種別</div></div>
+      <div class="ve-kpi-card"><div class="ve-kpi-card__value">2</div><div class="ve-kpi-card__label">言語README</div></div>
+    </div>
+
+    <section id="workflow" class="sec-head">2 — 体験フロー</section>
+    <div class="flow">
+      <div class="ve-card flow-card" style="--i:0">
+        <div class="flow-num">1</div>
+        <div class="flow-title">作成</div>
+        <p class="flow-body">空の履歴書か初期データつき履歴書を生成。表示言語に応じて初期状態も切り替える。</p>
+      </div>
+      <div class="ve-card flow-card" style="--i:1">
+        <div class="flow-num">2</div>
+        <div class="flow-title">編集</div>
+        <p class="flow-body">基本情報、職歴、学歴、プロジェクト、資格、独自セクションを store 経由で更新。</p>
+      </div>
+      <div class="ve-card flow-card" style="--i:2">
+        <div class="flow-num">3</div>
+        <div class="flow-title">プレビュー</div>
+        <p class="flow-body">テンプレート registry から選ばれた React コンポーネントが同じ履歴書データを描画。</p>
+      </div>
+      <div class="ve-card flow-card" style="--i:3">
+        <div class="flow-num">4</div>
+        <div class="flow-title">調整</div>
+        <p class="flow-body">テーマ色、フォント、余白、セクション順、表示/非表示、1ページ自動縮小を調整。</p>
+      </div>
+      <div class="ve-card flow-card" style="--i:4">
+        <div class="flow-num">5</div>
+        <div class="flow-title">出力</div>
+        <p class="flow-body">JSON、Markdown、PDFとして保存。必要に応じてローカルディレクトリとの同期も行う。</p>
+      </div>
+    </div>
+
+    <section id="architecture" class="sec-head">3 — 内部構造</section>
+    <div class="architecture">
+      <div class="ve-card module-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> State</span>
+        <h3>Resume Store</h3>
+        <p><code>useResumeStore</code> が複数履歴書、アクティブ履歴書、各セクション更新、テンプレート変更、ファイル同期をまとめる。永続化キーは <code>resume-storage</code>。</p>
+        <div class="tag-row"><span class="tag">Zustand</span><span class="tag">persist</span><span class="tag">File System Access</span></div>
+      </div>
+      <div class="ve-card module-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Data Model</span>
+        <h3>ResumeData</h3>
+        <p>基本情報、学歴、職歴、プロジェクト、資格、カスタム項目、グローバル設定を一つの型に集める。表示順と有効/無効は <code>menuSections</code> が持つ。</p>
+        <div class="tag-row"><span class="tag">BasicInfo</span><span class="tag">GlobalSettings</span><span class="tag">MenuSection</span></div>
+      </div>
+      <div class="ve-card module-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> Templates</span>
+        <h3>Template Registry</h3>
+        <p><code>classic</code>、<code>modern</code>、<code>left-right</code>、<code>timeline</code>、<code>minimalist</code>、<code>elegant</code>、<code>creative</code>、<code>editorial</code> を registry で統一管理する。</p>
+        <div class="tag-row"><span class="tag">8 layouts</span><span class="tag">config.ts</span><span class="tag">index.tsx</span></div>
+      </div>
+      <div class="ve-card module-card" style="--i:3">
+        <span class="ve-section-label"><span class="ve-dot"></span> Editing</span>
+        <h3>Rich Text</h3>
+        <p>Tiptap と Markdown 変換の補助関数で、本文フィールドをリッチテキストとして編集し、Markdown出力時は HTML 由来の内容を整える。</p>
+        <div class="tag-row"><span class="tag">Tiptap</span><span class="tag">Turndown</span><span class="tag">Markdown</span></div>
+      </div>
+      <div class="ve-card module-card" style="--i:4">
+        <span class="ve-section-label"><span class="ve-dot"></span> AI</span>
+        <h3>Server Routes</h3>
+        <p><code>/api/polish</code>、<code>/api/grammar</code>、<code>/api/resume-import</code> が外部モデル呼び出しを担当。Gemini、Doubao、DeepSeek、OpenAI互換エンドポイントを扱う。</p>
+        <div class="tag-row"><span class="tag">streaming</span><span class="tag">JSON mode</span><span class="tag">custom endpoint</span></div>
+      </div>
+      <div class="ve-card module-card" style="--i:5">
+        <span class="ve-section-label"><span class="ve-dot"></span> Export</span>
+        <h3>PDF / JSON / MD</h3>
+        <p>JSONとMarkdownはブラウザ側で生成し、PDFはプレビュー DOM と抽出したCSSをPDF生成サービスへ渡す。画像は data URL 化して出力を安定させる。</p>
+        <div class="tag-row"><span class="tag">PDF service</span><span class="tag">Blob download</span><span class="tag">safe filename</span></div>
+      </div>
+    </div>
+
+    <section id="ai-export" class="sec-head">4 — AI と出力</section>
+    <div class="split">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> AI routes</span>
+        <div class="ve-table-wrap">
+          <table>
+            <thead>
+              <tr><th>経路</th><th>役割</th><th>返却</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>/api/polish</code></td><td>Markdown形式の履歴書文面を、より専門的で簡潔な表現へ改善する。</td><td>ストリームテキスト</td></tr>
+              <tr><td><code>/api/grammar</code></td><td>中国語履歴書の誤字と重大な句読点ミスだけを検出する。</td><td>JSON</td></tr>
+              <tr><td><code>/api/resume-import</code></td><td>テキストまたは画像から履歴書構造を抽出し、アプリのデータ形へ近づける。</td><td><code>{ resume }</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Export paths</span>
+        <div class="ve-table-wrap">
+          <table>
+            <thead>
+              <tr><th>形式</th><th>処理</th><th>主な用途</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>JSON</td><td><code>ResumeData</code> をそのまま整形保存。</td><td>バックアップ、再インポート、同期</td></tr>
+              <tr><td>Markdown</td><td>表示中セクションを順序付きで本文化し、HTML本文はMarkdownへ変換。</td><td>テキスト提出、LLM入力</td></tr>
+              <tr><td>PDF</td><td>プレビューDOMを複製し、CSSと画像を整えてPDF生成サービスへ送る。</td><td>応募書類として配布</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> Data flow</span>
+      <div class="flow">
+        <div class="ve-card flow-card">
+          <div class="flow-num">A</div>
+          <div class="flow-title">AI設定</div>
+          <p class="flow-body"><code>ai-config-storage</code> に選択モデルとモデルID/エンドポイント設定を保持。</p>
+        </div>
+        <div class="ve-card flow-card">
+          <div class="flow-num">B</div>
+          <div class="flow-title">API呼び出し</div>
+          <p class="flow-body">モデル種別ごとの URL、ヘッダ、必須設定を <code>AI_MODEL_CONFIGS</code> で切り替え。</p>
+        </div>
+        <div class="ve-card flow-card">
+          <div class="flow-num">C</div>
+          <div class="flow-title">UI反映</div>
+          <p class="flow-body">文章改善、校正ハイライト、インポート結果を store とプレビューに戻す。</p>
+        </div>
+      </div>
+    </div>
+
+    <section id="operate" class="sec-head">5 — 運用と制約</section>
+    <div class="split">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Quick start</span>
+        <p>README上の最短起動手順はシンプル。パッケージマネージャは <code>pnpm@10.3.0</code> が指定されている。</p>
+        <div class="ve-code-block">
+          <pre><code>git clone git@github.com:JOYCEQL/magic-resume.git
+cd magic-resume
+pnpm install
+pnpm dev</code></pre>
+        </div>
+        <p>ビルドは <code>pnpm build</code>。Docker Compose ではアプリイメージをビルドしてバックグラウンド起動する手順がREADMEにある。</p>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> License note</span>
+        <p>ライセンスファイルは Apache License 2.0 本文に加えて、商用利用に関する追加制限を明記している。個人の非商用利用は無料、SaaS提供・商用製品への組み込み・商用運用目的の二次開発には事前の商用ライセンス取得が必要、という構成。</p>
+        <div class="ve-callout">
+          <strong>確認ポイント:</strong> 公開利用や社内業務利用を検討する場合は、READMEとLICENSEの最新内容を直接確認するのが安全。ここではソースに書かれている制約の要約に留める。
+        </div>
+      </div>
+    </div>
+    <div class="callout-grid" style="margin-top: 1rem;">
+      <div class="ve-callout">
+        <strong>ローカル優先:</strong> 履歴書データは <code>resume-storage</code> に永続化され、許可されたディレクトリへJSON同期できる。ブラウザ環境と権限に依存するため、ファイル同期は補助経路として理解するとよい。
+      </div>
+      <div class="ve-callout">
+        <strong>1ページ自動調整:</strong> A4高さから余白を引いた可用高さに対し、内容が少し超える場合だけ縮小する。下限は90%で、読みやすさを守る設計になっている。
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">6 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Sources</span>
+      <ul>
+        <li><a href="https://github.com/JOYCEQL/magic-resume" target="_blank" rel="noopener">GitHub: JOYCEQL/magic-resume</a> — プロジェクト本体</li>
+        <li><a href="https://github.com/JOYCEQL/magic-resume/blob/main/README.md" target="_blank" rel="noopener">README.md</a> — 機能、技術スタック、起動手順、ロードマップ</li>
+        <li><a href="https://github.com/JOYCEQL/magic-resume/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a> — Apache License 2.0 と追加の商用利用制限</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
