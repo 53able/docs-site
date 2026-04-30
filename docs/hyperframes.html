@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HyperFrames — HTML ベースの動画レンダリング OSS</title>
-  <meta name="description" content="HTML と data 属性で動画構成を書き、プレビューと MP4 出力まで行うオープンソース枠組み。エージェント向け CLI・モノレポ構成・Frame Adapter をビジュアルで整理。">
+  <meta name="description" content="HTML と data 属性で動画構成を書き、プレビュー、検査、MP4 出力まで行うオープンソース枠組み。エージェント向け CLI・Skills・Remotion 移行をビジュアルで整理。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="HyperFrames — HTML ベースの動画レンダリング OSS">
-  <meta property="og:description" content="HTML と data 属性で動画構成を書き、プレビューと MP4 出力まで行うオープンソース枠組み。エージェント向け CLI・モノレポ構成・Frame Adapter をビジュアルで整理。">
+  <meta property="og:description" content="HTML と data 属性で動画構成を書き、プレビュー、検査、MP4 出力まで行うオープンソース枠組み。エージェント向け CLI・Skills・Remotion 移行をビジュアルで整理。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/hyperframes.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="HyperFrames — HTML ベースの動画レンダリング OSS">
-  <meta name="twitter:description" content="HTML と data 属性で動画構成を書き、プレビューと MP4 出力まで行うオープンソース枠組み。">
+  <meta name="twitter:description" content="HTML と data 属性で動画構成を書き、プレビュー、検査、MP4 出力まで行うオープンソース枠組み。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -114,6 +114,14 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
@@ -224,15 +232,15 @@
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-    <p><strong>HyperFrames</strong> は、HTML ベースの動画コンポジションを作成・プレビュー・レンダリングするオープンソースの枠組み。エージェントがそのまま扱える <strong>宣言的な HTML + data 属性</strong> を正とし、CLI は非対話で自動化パイプラインに載せやすい設計になっている（<a href="https://github.com/heygen-com/hyperframes" target="_blank" rel="noopener">heygen-com/hyperframes</a>、Apache 2.0）。</p>
+    <p><strong>HyperFrames</strong> は、HTML ベースの動画コンポジションを作成・検査・プレビュー・レンダリングするオープンソースの枠組み。エージェントがそのまま扱える <strong>宣言的な HTML + data 属性</strong> を正とし、CLI は非対話で自動化パイプラインに載せやすい設計になっている（<a href="https://github.com/heygen-com/hyperframes" target="_blank" rel="noopener">heygen-com/hyperframes</a>、Apache 2.0）。</p>
     <div class="kpi-row">
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">HTML</span><span class="ve-kpi-card__label">コンポジション</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">MP4</span><span class="ve-kpi-card__label">ローカル / Docker</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">≥22</span><span class="ve-kpi-card__label">Node.js</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">FFmpeg</span><span class="ve-kpi-card__label">レンダー前提</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">20+</span><span class="ve-kpi-card__label">CLI コマンド</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Apache</span><span class="ve-kpi-card__label">2.0</span></div>
     </div>
     <div class="ve-callout">
-      <strong>クイックスタート:</strong> <code>npx hyperframes init my-video</code> → <code>npx hyperframes preview</code>（ライブリロード）→ <code>npx hyperframes render</code>。エージェント向けには <code>npx skills add heygen-com/hyperframes</code> でスキル一式を取り込める。
+      <strong>クイックスタート:</strong> <code>npx hyperframes init my-video</code> → <code>npx hyperframes lint</code> → <code>npx hyperframes inspect</code> → <code>npx hyperframes preview</code>（Studio + ライブリロード）→ <code>npx hyperframes render</code>。Node.js 22 以上と FFmpeg が前提。エージェント向けには <code>npx skills add heygen-com/hyperframes</code> でスキル一式を取り込める。
     </div>
   </div>
 
@@ -241,10 +249,13 @@
     <span class="ve-section-label"><span class="ve-dot"></span> 設計の要点</span>
     <ul>
       <li><strong>HTML-native</strong> — コンポジションは HTML + data 属性。React 専用 DSL ではなく、マークアップでタイムラインを表現する。</li>
-      <li><strong>AI-first</strong> — エージェントは HTML を既に書ける。CLI はデフォルト非対話で、スクリプトや CI に載せやすい。</li>
+      <li><strong>AI-first</strong> — エージェントは HTML を既に書ける。CLI はデフォルト非対話で、Claude Code・Cursor・Codex などのプラグイン／Skills と組み合わせやすい。</li>
       <li><strong>Deterministic rendering</strong> — 同じ入力なら同じ出力。自動生成パイプライン向け。</li>
       <li><strong>Frame Adapter</strong> — アニメーション実行環境を差し替え可能（GSAP、Lottie、CSS、Three.js など）。</li>
     </ul>
+    <div class="ve-callout">
+      <strong>Remotion との違い:</strong> どちらもヘッドレス Chrome と FFmpeg を使うが、Remotion は React コンポーネント、HyperFrames は HTML + CSS + GSAP を主な作者インターフェイスに置く。Apache 2.0 の完全 OSS である点も、再配布や商用利用を考えると大きな判断材料になる。
+    </div>
   </div>
   <div class="ve-card ve-card--recessed" style="--i:1">
     <span class="ve-section-label"><span class="ve-dot"></span> カタログ</span>
@@ -300,6 +311,24 @@ flowchart TD
       </div>
     </div>
   </div>
+  <div class="ve-card ve-card--recessed" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> CLI の基本ループ</span>
+    <p>最新の CLI スキルでは、生成した HTML をいきなりレンダリングせず、<code>lint</code> と <code>inspect</code> で構造と見た目を先に検査する流れが推奨されている。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>段階</th><th>コマンド</th><th>目的</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>構造検査</td><td><code>npx hyperframes lint</code></td><td><code>data-composition-id</code>、トラック重なり、タイムライン登録漏れなどを検出。</td></tr>
+          <tr><td>視覚検査</td><td><code>npx hyperframes inspect</code></td><td>ヘッドレス Chrome でタイムラインをサンプルし、テキストのはみ出しやクリップを報告。</td></tr>
+          <tr><td>プレビュー</td><td><code>npx hyperframes preview</code></td><td>Studio を開き、<code>http://localhost:&lt;port&gt;/#project/&lt;name&gt;</code> を確認面にする。</td></tr>
+          <tr><td>出力</td><td><code>npx hyperframes render</code></td><td>MP4 / WebM を生成。<code>--quality</code>、<code>--fps</code>、<code>--docker</code> などで調整。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>補助コマンドとして <code>catalog</code>、<code>compositions</code>、<code>browser</code>、<code>docs</code>、<code>doctor</code>、<code>upgrade</code>、<code>validate</code>、<code>snapshot</code>、<code>capture</code> も用意されている。</p>
+  </div>
 
   <section id="packages" class="sec-head">4 — モノレポのパッケージ</section>
   <div class="ve-card" style="--i:0">
@@ -311,7 +340,7 @@ flowchart TD
         </thead>
         <tbody>
           <tr><td><code>hyperframes</code>（<code>packages/cli</code>）</td><td>プロジェクト作成、プレビュー、lint、レンダリングなどの CLI</td></tr>
-          <tr><td><code>@hyperframes/core</code></td><td>型、パーサ、ジェネレータ、リンタ、ランタイム、フレームアダプタ</td></tr>
+          <tr><td><code>@hyperframes/core</code></td><td>型、パーサ、ジェネレータ、リンタ、ランタイム、フレームアダプタ、Studio API、registry / text API</td></tr>
           <tr><td><code>@hyperframes/engine</code></td><td>シーク可能なページ→映像キャプチャ（Puppeteer + FFmpeg）</td></tr>
           <tr><td><code>@hyperframes/producer</code></td><td>キャプチャ + エンコード + オーディオミックスまでのパイプライン</td></tr>
           <tr><td><code>@hyperframes/studio</code></td><td>ブラウザ上のコンポジション編集 UI</td></tr>
@@ -333,9 +362,10 @@ flowchart TD
         </thead>
         <tbody>
           <tr><td><code>hyperframes</code></td><td>HTML コンポジション、キャプション、TTS、オーディオ連動アニメ、トランジション</td></tr>
-          <tr><td><code>hyperframes-cli</code></td><td><code>init</code> / <code>lint</code> / <code>preview</code> / <code>render</code> / <code>transcribe</code> / <code>tts</code> / <code>doctor</code> など</td></tr>
+          <tr><td><code>hyperframes-cli</code></td><td><code>init</code> / <code>lint</code> / <code>inspect</code> / <code>preview</code> / <code>render</code> / <code>validate</code> / <code>transcribe</code> / <code>tts</code> / <code>doctor</code> など</td></tr>
           <tr><td><code>hyperframes-registry</code></td><td><code>hyperframes add</code> によるブロック・コンポーネント導入</td></tr>
           <tr><td><code>website-to-hyperframes</code></td><td>URL をキャプチャして動画化するパイプライン</td></tr>
+          <tr><td><code>remotion-to-hyperframes</code></td><td>Remotion（React）コンポジションを HTML + GSAP の HyperFrames 構成へ移すための変換ガイド</td></tr>
           <tr><td><code>gsap</code></td><td>GSAP の API、タイムライン、イージング、プラグイン、パフォーマンス</td></tr>
         </tbody>
       </table>
@@ -350,6 +380,7 @@ flowchart TD
       <li><a href="https://hyperframes.heygen.com/introduction" target="_blank" rel="noopener">公式ドキュメント（Introduction）</a></li>
       <li><a href="https://hyperframes.heygen.com/quickstart" target="_blank" rel="noopener">Quickstart</a></li>
       <li><a href="https://hyperframes.heygen.com/guides/prompting" target="_blank" rel="noopener">Prompting guide</a></li>
+      <li><a href="https://hyperframes.heygen.com/guides/hyperframes-vs-remotion" target="_blank" rel="noopener">Hyperframes vs Remotion guide</a></li>
       <li><a href="https://hyperframes.heygen.com/packages/core" target="_blank" rel="noopener">API Reference（core）</a></li>
       <li><a href="https://www.npmjs.com/package/hyperframes" target="_blank" rel="noopener">npm: hyperframes</a></li>
     </ul>
