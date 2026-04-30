@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Feynman — オープンソース AI リサーチエージェント</title>
-  <meta name="description" content="Feynman は Pi + alphaXiv を基盤に構築されたオープンソース AI リサーチ CLI。スタンドアロン同梱 Node・/outputs・Ollama 等ローカルモデル対応を含み、論文・Web・コードをまたいで証拠を収集する。">
+  <meta name="description" content="Feynman は Pi + alphaXiv を基盤に構築されたオープンソース AI リサーチ CLI。スタンドアロン同梱 Node、モデル管理、Web 検索ルーティング、ローカルモデル対応を含み、論文・Web・コードをまたいで証拠を収集する。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Feynman — オープンソース AI リサーチエージェント">
-  <meta property="og:description" content="Pi + alphaXiv 基盤の CLI リサーチエージェント。多エージェント・/outputs・ローカルモデル設定を含み、引用付き成果物を生成する。">
+  <meta property="og:description" content="Pi + alphaXiv 基盤の CLI リサーチエージェント。多エージェント・モデル管理・Web 検索設定・ローカルモデル対応を含み、引用付き成果物を生成する。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/feynman.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Feynman — オープンソース AI リサーチエージェント">
-  <meta name="twitter:description" content="Pi + alphaXiv 基盤の CLI リサーチエージェント。多エージェント・成果物ブラウズ・ローカルモデル対応。">
+  <meta name="twitter:description" content="Pi + alphaXiv 基盤の CLI リサーチエージェント。多エージェント・成果物ブラウズ・モデル管理・ローカルモデル対応。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -114,6 +114,7 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 24rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
     .ve-code-block .cb-label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); background: var(--muted); padding: 4px 12px; border-bottom: 1px solid var(--border); }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
@@ -290,7 +291,7 @@
       <div class="kpi-row">
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">19</span><span class="ve-kpi-card__label">スキル</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">エージェント</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">10</span><span class="ve-kpi-card__label">研究ワークフロー</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">9</span><span class="ve-kpi-card__label">研究ワークフロー</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
       </div>
     </div>
@@ -314,7 +315,10 @@ $ feynman audit 2401.12345
 → 論文の主張と公開コードベースの乖離を監査
 
 $ feynman replicate "chain-of-thought improves math"
-→ ローカルまたはクラウド GPU で実験を再現</code></pre>
+→ ローカルまたはクラウド GPU で実験を再現
+
+$ feynman summarize https://example.com/paper.pdf
+→ 長い URL / PDF / ローカルファイルを窓読みし、要約を生成</code></pre>
       </div>
     </div>
     <div class="ve-card ve-card--recessed gap" style="--i:1">
@@ -323,6 +327,7 @@ $ feynman replicate "chain-of-thought improves math"
         <li><strong>Evidence over fluency</strong> — 流暢な文章より論拠を優先する。</li>
         <li><strong>観察と推論を分離</strong> — 確認できたことと推論したことを明示的に区別する。</li>
         <li><strong>不確実性を明示</strong> — 最新文献や不安定な事実に関する問いにはツールを使う。</li>
+        <li><strong>最新情報は Web で確認</strong> — 製品・価格・モデル可用性・ベンチマークは <code>web_search</code> / <code>fetch_content</code> / <code>get_search_content</code> を優先する。</li>
         <li><strong>検証なしに "verified" と言わない</strong> — 実際にチェックし、証拠を示せる時だけ使う。</li>
         <li><strong>成果物ファースト</strong> — 読書リスト・監査・実験ログ・草稿など具体的な成果物を届ける。</li>
       </ul>
@@ -340,13 +345,12 @@ $ feynman replicate "chain-of-thought improves math"
         <div class="cb-label">Windows PowerShell</div>
         <pre><code>irm https://feynman.is/install.ps1 | iex</code></pre>
       </div>
-      <p style="margin-top:0.75rem">バージョンを固定する場合は末尾に <code>-s -- 0.2.17</code> のように明示する。<br>
-      リポジトリから <code>npm install</code> する場合は engines に従い <code>node &gt;= 20.19.0</code> が必要。</p>
+      <p style="margin-top:0.75rem">バージョンを固定する場合は末尾に <code>-s -- 0.2.35</code> のように明示する。npm で既存 Node 環境へ入れる場合は <code>npm install -g @companion-ai/feynman</code> を使い、engines に従い <code>node &gt;= 20.19.0 &lt;25</code> が必要。</p>
     </div>
     <div class="ve-card gap" style="--i:2">
       <span class="ve-section-label"><span class="ve-dot"></span> アップグレードとローカルモデル</span>
       <p>スタンドアロン CLI を新しいバンドルに差し替えるときは<strong>インストーラを再実行</strong>する。<code>feynman update</code> は Feynman 環境内に入っている Pi パッケージの更新用で、スタンドアロンのランタイムバンドル自体は置き換えない。</p>
-      <p class="gap-sm">ローカルモデル（例: Ollama）は <code>feynman setup</code> でウィザードを開き、<code>Custom provider (baseUrl + API key)</code> を選び、モデル種別に <code>openai-completions</code>、ベース URL に <code>http://localhost:11434/v1</code> を指定する流れで使える。</p>
+      <p class="gap-sm">ローカルモデルは <code>feynman setup</code> から設定できる。LM Studio は <code>http://localhost:1234/v1</code>、LiteLLM Proxy は <code>http://localhost:4000/v1</code> を既定にし、Ollama / vLLM は <code>Custom provider (baseUrl + API key)</code> で <code>openai-completions</code> とローカルの <code>/v1</code> エンドポイントを指定する。</p>
     </div>
     <div class="ve-card gap" style="--i:1">
       <span class="ve-section-label"><span class="ve-dot"></span> スキルのみインストール</span>
@@ -369,7 +373,7 @@ $ feynman replicate "chain-of-thought improves math"
       </div>
     </div>
     <div class="ve-callout gap">
-      <strong>Node.js:</strong> リポジトリから <code>npm install</code> 等で Feynman を入れるときは <code>node &gt;= 20.19.0</code>。スタンドアロン CLI かスキルのみインストーラなら、マシンに Node を入れなくてよい。
+      <strong>Node.js:</strong> npm 版は <code>node &gt;= 20.19.0 &lt;25</code>。スタンドアロン CLI かスキルのみインストーラなら、マシンに Node を入れなくてよい。
     </div>
 
     <section id="commands" class="sec-head">3 — コマンド一覧</section>
@@ -431,6 +435,64 @@ $ feynman replicate "chain-of-thought improves math"
               <td><code>/outputs</code></td>
               <td>論文・<code>outputs/</code>・実験・ノートなど、研究成果物を一覧・ブラウズ。</td>
               <td>対話 UI</td>
+            </tr>
+            <tr>
+              <td><code>/log</code></td>
+              <td>完了作業・発見・未解決リスク・次アクションをセッションログとして保存。</td>
+              <td><code>notes/</code></td>
+            </tr>
+            <tr>
+              <td><code>/jobs</code></td>
+              <td>実行中プロセス、予約済み watch、失敗したバックグラウンド作業を点検。</td>
+              <td>対話 UI</td>
+            </tr>
+            <tr>
+              <td><code>/feynman-model</code></td>
+              <td>メイン既定モデル、または <code>researcher</code> / <code>reviewer</code> / <code>writer</code> / <code>verifier</code> のモデル上書きを選ぶ。</td>
+              <td>モデル設定</td>
+            </tr>
+            <tr>
+              <td><code>/search</code> / <code>/preview</code></td>
+              <td>過去セッション検索、または Markdown / HTML / PDF 成果物のブラウザプレビュー。</td>
+              <td>検索・表示</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card gap" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> CLI 運用コマンド</span>
+      <p>REPL 内のスラッシュコマンドに加えて、設定・診断・パッケージ更新は CLI コマンドとして切り出されている。</p>
+      <div class="ve-table-wrap gap-sm">
+        <table>
+          <thead>
+            <tr><th>領域</th><th>代表コマンド</th><th>用途</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>診断</td>
+              <td><code>feynman doctor</code> / <code>feynman status</code></td>
+              <td>設定、認証、Pi ランタイム、プレビュー依存関係を確認する。</td>
+            </tr>
+            <tr>
+              <td>モデル</td>
+              <td><code>feynman model list</code> / <code>login</code> / <code>set</code></td>
+              <td>OAuth または API キーで provider を追加し、<code>provider/model</code> または <code>provider:model</code> 形式で既定モデルを切り替える。</td>
+            </tr>
+            <tr>
+              <td>Web 検索</td>
+              <td><code>feynman search status</code> / <code>set</code></td>
+              <td><code>auto</code> / <code>perplexity</code> / <code>exa</code> / <code>gemini</code> の検索ルートを確認・設定する。</td>
+            </tr>
+            <tr>
+              <td>パッケージ</td>
+              <td><code>feynman packages list</code> / <code>install</code> / <code>feynman update</code></td>
+              <td>Pi パッケージや任意 preset を管理する。アプリ本体更新とは別物。</td>
+            </tr>
+            <tr>
+              <td>要約</td>
+              <td><code>feynman summarize &lt;source&gt;</code></td>
+              <td>URL、ローカルファイル、PDF を外部ファイルとして保持し、長文でも窓読みで要約する。</td>
             </tr>
           </tbody>
         </table>
@@ -525,7 +587,7 @@ flowchart TD
             <span class="badge badge--teal">Web</span>
           </div>
           <div class="compute-card__body">
-            Gemini または Perplexity — ゼロコンフィグで使える Web 検索。製品・最新情報・規制・モデルベンチマーク向け。
+            Gemini / Perplexity / Exa — <code>auto</code> ルートで構成できる Web 検索。製品・最新情報・規制・モデルベンチマーク向け。
           </div>
         </div>
         <div class="compute-card">
@@ -564,6 +626,22 @@ flowchart TD
         <div class="skill-tag"><span class="skill-tag__name">jobs</span><span class="skill-tag__desc">採用情報収集・調査</span></div>
         <div class="skill-tag"><span class="skill-tag__name">contributing</span><span class="skill-tag__desc">コントリビュートガイド</span></div>
       </div>
+    </div>
+    <div class="ve-card ve-card--recessed gap" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> コア Pi パッケージ</span>
+      <p>Feynman は研究エージェントの挙動を、同梱の Pi パッケージで拡張している。主な役割は次のとおり。</p>
+      <div class="skill-grid gap-sm">
+        <div class="skill-tag"><span class="skill-tag__name">pi-subagents</span><span class="skill-tag__desc">並列リサーチャーと分担実行</span></div>
+        <div class="skill-tag"><span class="skill-tag__name">pi-web-access</span><span class="skill-tag__desc">Web・GitHub・PDF 取得</span></div>
+        <div class="skill-tag"><span class="skill-tag__name">pi-docparser</span><span class="skill-tag__desc">PDF / Office / 画像の内容抽出</span></div>
+        <div class="skill-tag"><span class="skill-tag__name">pi-markdown-preview</span><span class="skill-tag__desc">HTML / PDF プレビュー</span></div>
+        <div class="skill-tag"><span class="skill-tag__name">pi-session-search</span><span class="skill-tag__desc">過去セッション検索と再開</span></div>
+        <div class="skill-tag"><span class="skill-tag__name">pi-schedule-prompt</span><span class="skill-tag__desc">定期 watch と延期実行</span></div>
+        <div class="skill-tag"><span class="skill-tag__name">pi-memory</span><span class="skill-tag__desc">好み・修正履歴の永続記憶</span></div>
+        <div class="skill-tag"><span class="skill-tag__name">pi-processes</span><span class="skill-tag__desc">長時間実験・ログ監視</span></div>
+        <div class="skill-tag"><span class="skill-tag__name">pi-zotero</span><span class="skill-tag__desc">引用ライブラリ連携</span></div>
+      </div>
+      <p class="gap-sm"><code>generative-ui</code> は任意 preset として提供され、macOS でリッチな HTML 風ウィジェットを追加できる。</p>
     </div>
 
     <section id="workflow" class="sec-head">6 — ディープリサーチフロー</section>
