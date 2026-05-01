@@ -10,7 +10,10 @@ import {
   basenameFromUrl,
   boundedSlug,
   buildRunbook,
+  collectCliArgs,
+  collectInteractiveArgs,
   hasHeadMeta,
+  listDocumentChoices,
   matchesScope,
   normalizeDocPath,
   parseArgs,
@@ -26,6 +29,77 @@ describe("visual-doc-workflow pure helpers", () => {
       options: {
         url: "https://github.com/example/demo.git",
         name: "demo-doc",
+      },
+    });
+  });
+
+  it("prompts for validate doc when command args omit options", async () => {
+    const parsed = await collectCliArgs(["validate"], async () => ({
+      doc: "system-design-primer",
+    }));
+
+    expect(parsed).toEqual({
+      command: "validate",
+      options: {
+        doc: "system-design-primer",
+      },
+    });
+  });
+
+  it("builds autocomplete choices for visual documentation pages", async () => {
+    await expect(listDocumentChoices()).resolves.toContainEqual({
+      title: "system-design-primer",
+      value: "system-design-primer",
+      description: "docs/system-design-primer.html",
+    });
+  });
+
+  it("prompts for prepare source when command args omit source options", async () => {
+    const answers = [
+      {
+        sourceMode: "source",
+      },
+      {
+        doc: "",
+        source: "system-design-primer",
+      },
+    ];
+    const parsed = await collectCliArgs(["prepare"], async () => answers.shift() ?? {});
+
+    expect(parsed).toEqual({
+      command: "prepare",
+      options: {
+        source: "system-design-primer",
+      },
+    });
+  });
+
+  it("collects validate options from interactive answers", async () => {
+    const parsed = await collectInteractiveArgs(async () => ({
+      doc: "system-design-primer",
+      mode: "validate",
+    }));
+
+    expect(parsed).toEqual({
+      command: "validate",
+      options: {
+        doc: "system-design-primer",
+      },
+    });
+  });
+
+  it("collects prepare source options from interactive answers", async () => {
+    const parsed = await collectInteractiveArgs(async () => ({
+      doc: "",
+      mode: "prepare",
+      source: "system-design-primer",
+      sourceMode: "source",
+    }));
+
+    expect(parsed).toEqual({
+      command: "prepare",
+      options: {
+        source: "system-design-primer",
       },
     });
   });

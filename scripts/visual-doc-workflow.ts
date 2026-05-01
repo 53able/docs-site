@@ -15,16 +15,36 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { Command } from "commander";
+import prompts = require("prompts");
 import { z } from "zod";
 
-const CliOptionValueSchema = z.union([z.string(), z.literal(true)]);
-const CliOptionsSchema = z.record(z.string(), CliOptionValueSchema);
+const InteractiveModeSchema = z.enum(["prepare", "validate"]);
+const InteractiveSourceModeSchema = z.enum(["source", "url"]);
+const CliOptionsSchema = z
+  .object({
+    doc: z.string().optional(),
+    name: z.string().optional(),
+    source: z.string().optional(),
+    url: z.string().optional(),
+  })
+  .strict();
 const ParsedArgsSchema = z.object({
   command: z.string().optional(),
   options: CliOptionsSchema,
 });
+const InteractiveAnswersSchema = z
+  .object({
+    doc: z.string().trim().optional(),
+    mode: InteractiveModeSchema.optional(),
+    name: z.string().trim().optional(),
+    source: z.string().trim().optional(),
+    sourceMode: InteractiveSourceModeSchema.optional(),
+    url: z.string().trim().optional(),
+  })
+  .strict();
 const SourceRepositorySchema = z.object({
   absolutePath: z.string(),
   relativePath: z.string(),
@@ -49,13 +69,20 @@ const CommandResultSchema = z.object({
   stderr: z.string(),
 });
 
-type CliOptionValue = z.infer<typeof CliOptionValueSchema>;
 type CliOptions = z.infer<typeof CliOptionsSchema>;
 type ParsedArgs = z.infer<typeof ParsedArgsSchema>;
+type InteractiveAnswers = z.infer<typeof InteractiveAnswersSchema>;
 type SourceRepository = z.infer<typeof SourceRepositorySchema>;
 type DocumentPath = z.infer<typeof DocumentPathSchema>;
 type ValidationFinding = z.infer<typeof ValidationFindingSchema>;
 type CommandResult = z.infer<typeof CommandResultSchema>;
+type PromptQuestion = Parameters<typeof prompts>[0];
+type PromptRunner = (questions: PromptQuestion) => Promise<unknown>;
+type AutocompleteChoice = {
+  title: string;
+  value: string;
+  description: string;
+};
 
 type Result<T> =
   | {
@@ -92,24 +119,239 @@ const printError = (message: string): void => {
   process.stderr.write(`${message}\n`);
 };
 
-/** Parses CLI arguments into a command and flag map. */
-const parseArgs = (argv: string[]): ParsedArgs => {
-  const [command, ...tokens] = argv;
-  const rawOptions = tokens.reduce<Record<string, CliOptionValue>>((acc, token, index, sourceTokens) => {
-    const previous = sourceTokens[index - 1];
-    const isValue = previous?.startsWith("--") ?? false;
-    const isOption = token.startsWith("--");
-    const key = isOption ? token.slice(2) : null;
-    const next = sourceTokens[index + 1];
-    const optionValue = isOption && next && !next.startsWith("--") ? next : true;
-    return isValue
-      ? acc
-      : isOption && key
-        ? { ...acc, [key]: optionValue }
-        : acc;
-  }, {});
+/** Runs prompts behind a small adapter so tests can inject answers. */
+const runPrompts = async (questions: PromptQuestion): Promise<unknown> => prompts(questions);
 
-  return ParsedArgsSchema.parse({ command, options: rawOptions });
+/** Converts a prompt choice value to searchable text. */
+const choiceValueText = (value: unknown): string => (typeof value === "string" ? value : "");
+
+/** Returns choices matching the current autocomplete input. */
+const suggestChoices = async (input: string, choices: prompts.Choice[]): Promise<prompts.Choice[]> => {
+  const query = input.trim().toLowerCase();
+  return query.length === 0
+    ? choices
+    : choices.filter(({ title, value, description }) =>
+        [title, choiceValueText(value), description ?? ""].some((item) => item.toLowerCase().includes(query)),
+      );
+};
+
+/** Builds the Commander program without binding it to process globals. */
+const createProgram = (onCommand: (command: string, options: CliOptions) => void): Command => {
+  const program = new Command();
+  program
+    .name("visual-doc-workflow")
+    .description("Coordinate visual documentation prepare and validate modes.")
+    .exitOverride()
+    .allowExcessArguments(false);
+
+  program
+    .command("prepare")
+    .description("Acquire a Source Repository and write a documentation runbook.")
+    .option("--source <source>", "Existing source repository under repos/")
+    .option("--url <url>", "Git URL to clone when the source repository is missing")
+    .option("--name <name>", "Clone name override for URL-based acquisition")
+    .option("--doc <doc>", "Documentation slug or docs/*.html path override")
+    .action((options: unknown) => {
+      onCommand("prepare", CliOptionsSchema.parse(options));
+    });
+
+  program
+    .command("validate")
+    .description("Run the review gate for a visual documentation page.")
+    .option("--doc <doc>", "Documentation slug or docs/*.html path")
+    .action((options: unknown) => {
+      onCommand("validate", CliOptionsSchema.parse(options));
+    });
+
+  return program;
+};
+
+/** Parses CLI arguments into a command and flag map through Commander. */
+const parseArgs = (argv: string[]): ParsedArgs => {
+  const parsedCommands: ParsedArgs[] = [];
+  const program = createProgram((command, options) => {
+    parsedCommands.push({ command, options });
+  });
+
+  program.parse(["node", "visual-doc-workflow.ts", ...argv], { from: "node" });
+
+  return ParsedArgsSchema.parse(parsedCommands.at(0) ?? { options: {} });
+};
+
+/** Removes empty prompt responses before turning them into CLI options. */
+const compactCliOptions = (answers: InteractiveAnswers): CliOptions =>
+  CliOptionsSchema.parse({
+    doc: answers.doc || undefined,
+    name: answers.name || undefined,
+    source: answers.source || undefined,
+    url: answers.url || undefined,
+  });
+
+/** Lists existing Visual Documentation Pages as autocomplete choices. */
+const listDocumentChoices = async (): Promise<AutocompleteChoice[]> => {
+  const docsDir = path.join(WORKSPACE_ROOT, "docs");
+  const entries = await readdir(docsDir, { withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".html"))
+    .map((entry) => {
+      const slug = path.basename(entry.name, ".html");
+      return {
+        title: slug,
+        value: slug,
+        description: `docs/${entry.name}`,
+      };
+    })
+    .sort((left, right) => left.title.localeCompare(right.title));
+};
+
+/** Lists existing Source Repositories as autocomplete choices. */
+const listSourceChoices = async (): Promise<AutocompleteChoice[]> => {
+  const reposDir = path.join(WORKSPACE_ROOT, "repos");
+  if (!existsSync(reposDir)) {
+    return [];
+  }
+
+  const entries = await readdir(reposDir, { withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => ({
+      title: entry.name,
+      value: entry.name,
+      description: `repos/${entry.name}`,
+    }))
+    .sort((left, right) => left.title.localeCompare(right.title));
+};
+
+/** Prompts for a documentation target when validate mode lacks --doc. */
+const collectValidateOptions = async (
+  promptRunner: PromptRunner,
+  existingOptions: CliOptions = {},
+): Promise<CliOptions> => {
+  if (existingOptions.doc) {
+    return existingOptions;
+  }
+
+  const docAnswers = InteractiveAnswersSchema.parse(
+    await promptRunner({
+      type: "autocomplete",
+      name: "doc",
+      message: "Documentation slug or docs/*.html path",
+      choices: await listDocumentChoices(),
+      suggest: suggestChoices,
+      validate: (value: string) => value.trim().length > 0 || "Documentation path is required.",
+    }),
+  );
+  return compactCliOptions({ ...existingOptions, ...docAnswers });
+};
+
+/** Prompts for Source Repository inputs when prepare mode lacks --source or --url. */
+const collectPrepareOptions = async (
+  promptRunner: PromptRunner,
+  existingOptions: CliOptions = {},
+): Promise<CliOptions> => {
+  if (existingOptions.source || existingOptions.url) {
+    return existingOptions;
+  }
+
+  const sourceModeAnswers = InteractiveAnswersSchema.parse(
+    await promptRunner({
+      type: "select",
+      name: "sourceMode",
+      message: "Prepare from",
+      choices: [
+        { title: "Existing Source Repository under repos/", value: "source" },
+        { title: "Git URL to clone if missing", value: "url" },
+      ],
+    }),
+  );
+
+  if (!sourceModeAnswers.sourceMode) {
+    throw new Error("Interactive mode cancelled.");
+  }
+
+  const optionAnswers = InteractiveAnswersSchema.parse(
+    await promptRunner(
+      sourceModeAnswers.sourceMode === "source"
+        ? [
+            {
+              type: "autocomplete",
+              name: "source",
+              message: "Source Repository path or name",
+              choices: await listSourceChoices(),
+              suggest: suggestChoices,
+              validate: (value: string) => value.trim().length > 0 || "Source Repository is required.",
+            },
+            {
+              type: existingOptions.doc ? null : "text",
+              name: "doc",
+              message: "Documentation slug override (optional)",
+            },
+          ]
+        : [
+            {
+              type: "text",
+              name: "url",
+              message: "Git URL",
+              validate: (value: string) => value.trim().length > 0 || "Git URL is required.",
+            },
+            {
+              type: existingOptions.name ? null : "text",
+              name: "name",
+              message: "Clone name override (optional)",
+            },
+            {
+              type: existingOptions.doc ? null : "text",
+              name: "doc",
+              message: "Documentation slug override (optional)",
+            },
+          ],
+    ),
+  );
+
+  return compactCliOptions({ ...existingOptions, ...optionAnswers });
+};
+
+/** Collects CLI mode and options from prompts when no argv is provided. */
+const collectInteractiveArgs = async (promptRunner: PromptRunner = runPrompts): Promise<ParsedArgs> => {
+  const modeAnswers = InteractiveAnswersSchema.parse(
+    await promptRunner({
+      type: "select",
+      name: "mode",
+      message: "Workflow mode",
+      choices: [
+        { title: "Prepare - acquire source and write runbook", value: "prepare" },
+        { title: "Validate - run review gate for a doc", value: "validate" },
+      ],
+    }),
+  );
+
+  if (!modeAnswers.mode) {
+    throw new Error("Interactive mode cancelled.");
+  }
+
+  return modeAnswers.mode === "validate"
+    ? ParsedArgsSchema.parse({ command: "validate", options: await collectValidateOptions(promptRunner) })
+    : ParsedArgsSchema.parse({ command: "prepare", options: await collectPrepareOptions(promptRunner) });
+};
+
+/** Parses argv and prompts for missing required options in command-specific scripts. */
+const collectCliArgs = async (argv: string[], promptRunner: PromptRunner = runPrompts): Promise<ParsedArgs> => {
+  if (argv.length === 0) {
+    return collectInteractiveArgs(promptRunner);
+  }
+
+  const parsed = parseArgs(argv);
+  return parsed.command === "validate"
+    ? ParsedArgsSchema.parse({
+        command: "validate",
+        options: await collectValidateOptions(promptRunner, parsed.options),
+      })
+    : parsed.command === "prepare"
+      ? ParsedArgsSchema.parse({
+          command: "prepare",
+          options: await collectPrepareOptions(promptRunner, parsed.options),
+        })
+      : parsed;
 };
 
 /** Removes a trailing .git suffix from a repository-like name. */
@@ -450,7 +692,7 @@ const validatePublicPaths = (docPath: string): Result<string> => {
 
 /** Executes Validate Mode and returns Review Gate findings without modifying files. */
 const validate = async (options: CliOptions): Promise<Result<{ doc: string }>> => {
-  if (!options.doc || options.doc === true) {
+  if (!options.doc) {
     return err("validate requires --doc.");
   }
 
@@ -541,7 +783,7 @@ const formatResult = <T>(result: Result<T>): string => {
 const main = async (argv: string[]): Promise<number> => {
   const result = await (async (): Promise<Result<Record<string, unknown>>> => {
     try {
-      const { command, options } = parseArgs(argv);
+      const { command, options } = await collectCliArgs(argv);
       return command === "prepare"
         ? await prepare(options)
         : command === "validate"
@@ -572,8 +814,12 @@ export {
   basenameFromUrl,
   boundedSlug,
   buildRunbook,
+  collectCliArgs,
+  collectInteractiveArgs,
   gitChangedNames,
   hasHeadMeta,
+  listDocumentChoices,
+  listSourceChoices,
   matchesScope,
   normalizeDocPath,
   parseArgs,
