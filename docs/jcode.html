@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>jcode — 高速マルチセッション型コーディングエージェントハーネス</title>
+  <meta name="description" content="jcode は Rust 製の高速 TUI コーディングエージェントハーネス。マルチセッション、永続サーバ、メモリ、Swarm、OAuth プロバイダ連携、Self-Dev を視覚的に整理します。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="jcode — 高速マルチセッション型コーディングエージェントハーネス">
+  <meta property="og:description" content="Rust 製 TUI、永続サーバ、メモリ、Swarm、OAuth プロバイダ連携、Self-Dev を備える次世代コーディングエージェントハーネス。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/jcode.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="jcode — 高速マルチセッション型コーディングエージェントハーネス">
+  <meta name="twitter:description" content="jcode の性能・アーキテクチャ・メモリ・Swarm・Provider を1ページで把握する視覚解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.012 82);
+      --foreground: oklch(0.18 0.018 248);
+      --card: oklch(1 0.006 82);
+      --card-foreground: oklch(0.18 0.018 248);
+      --popover: oklch(1 0.006 82);
+      --popover-foreground: oklch(0.18 0.018 248);
+      --primary: oklch(0.38 0.12 248);
+      --primary-foreground: oklch(0.985 0.012 82);
+      --secondary: oklch(0.955 0.012 82);
+      --secondary-foreground: oklch(0.23 0.018 248);
+      --muted: oklch(0.94 0.014 82);
+      --muted-foreground: oklch(0.47 0.025 248);
+      --accent: oklch(0.955 0.019 76);
+      --accent-foreground: oklch(0.2 0.02 248);
+      --destructive: oklch(0.55 0.19 15);
+      --border: oklch(0.84 0.02 82);
+      --input: oklch(0.84 0.02 82);
+      --ring: oklch(0.38 0.12 248);
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.48 0.10 155);
+      --chart-4: oklch(0.55 0.16 42);
+      --chart-5: oklch(0.60 0.08 55);
+      --code-bg: oklch(0.19 0.025 248);
+      --code-text: oklch(0.91 0.025 82);
+      --font-body: 'Instrument Serif', Georgia, serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.018 248);
+        --foreground: oklch(0.93 0.015 82);
+        --card: oklch(0.18 0.022 248);
+        --card-foreground: oklch(0.93 0.015 82);
+        --popover: oklch(0.18 0.022 248);
+        --popover-foreground: oklch(0.93 0.015 82);
+        --primary: oklch(0.72 0.17 76);
+        --primary-foreground: oklch(0.13 0.018 248);
+        --secondary: oklch(0.24 0.02 248);
+        --secondary-foreground: oklch(0.93 0.015 82);
+        --muted: oklch(0.24 0.02 248);
+        --muted-foreground: oklch(0.72 0.015 82);
+        --accent: oklch(0.25 0.035 248);
+        --accent-foreground: oklch(0.93 0.015 82);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 13%);
+        --input: oklch(1 0 0 / 16%);
+        --ring: oklch(0.72 0.17 76);
+        --chart-1: oklch(0.72 0.17 76);
+        --chart-2: oklch(0.63 0.11 248);
+        --chart-3: oklch(0.70 0.12 155);
+        --chart-4: oklch(0.66 0.15 42);
+        --chart-5: oklch(0.68 0.08 55);
+        --code-bg: oklch(0.10 0.018 248);
+        --code-text: oklch(0.88 0.028 82);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(30, 58, 95, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(30, 58, 95, 0.05); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 12px 34px rgba(30, 58, 95, 0.12);
+      border-color: color-mix(in oklch, var(--border) 52%, var(--chart-1) 48%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 84%, var(--chart-2) 16%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.9rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.76rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.8rem 0.95rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.78rem 0.95rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--muted); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(30, 58, 95, 0.06); }
+    .ve-kpi-card__value { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.35rem; line-height: 1.1; color: var(--primary); }
+    .ve-kpi-card__label { display: block; font-family: var(--font-mono); font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.45rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.95rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.75rem; background: color-mix(in oklch, var(--chart-2) 14%, transparent); color: var(--primary); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(color-mix(in oklch, var(--chart-1) 8%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in oklch, var(--chart-1) 8%, transparent) 1px, transparent 1px),
+        radial-gradient(ellipse at 24% 0%, color-mix(in oklch, var(--chart-2) 12%, transparent) 0%, transparent 48%);
+      background-size: 40px 40px, 40px 40px, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 210px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); background: color-mix(in oklch, var(--surface2) 72%, transparent); }
+    h1 { font-size: clamp(2.7rem, 8vw, 5.5rem); font-weight: 600; letter-spacing: -0.045em; line-height: 0.92; margin-bottom: 0.8rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.6; margin-bottom: 2rem; max-width: 52rem; }
+    .sec-head { font-family: var(--font-mono); font-size: 1rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.02em; scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 1.04rem; line-height: 1.7; margin-bottom: 0.8rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+    li { margin-bottom: 0.42rem; font-size: 1.01rem; line-height: 1.55; }
+    a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-4); }
+    code { font-family: var(--font-mono); font-size: 0.82rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .hero-grid { display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 1rem; align-items: stretch; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .feature-card { min-width: 0; }
+    .feature-card strong { display: block; font-family: var(--font-mono); font-size: 0.82rem; margin-bottom: 0.45rem; color: var(--primary); }
+    .feature-card p { font-size: 0.96rem; margin-bottom: 0; }
+    .flow { display: grid; gap: 0.75rem; }
+    .flow-step { display: grid; grid-template-columns: 3rem 1fr; gap: 0.8rem; align-items: start; padding: 0.85rem 0; border-bottom: 1px solid var(--border); }
+    .flow-step:last-child { border-bottom: 0; }
+    .flow-num { width: 2.2rem; height: 2.2rem; display: grid; place-items: center; border-radius: 999px; background: var(--primary); color: var(--primary-foreground); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; }
+    .flow-title { font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; margin-bottom: 0.2rem; }
+    .flow-body { color: var(--muted-foreground); font-size: 0.96rem; line-height: 1.55; }
+    .arch-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .badge { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid var(--border); border-radius: 999px; padding: 0.2rem 0.55rem; font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted-foreground); background: var(--muted); margin: 0 0.25rem 0.35rem 0; }
+    .source-list a { font-family: var(--font-mono); font-size: 0.86rem; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; } }
+    @media (max-width: 1000px) {
+      body { padding: 24px; }
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 24px;
+        margin: 0 -24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+      .hero-grid, .arch-grid { grid-template-columns: 1fr; }
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .kpi-row, .feature-grid { grid-template-columns: 1fr; }
+      .ve-table-wrap { overflow-x: auto; }
+      .ve-card { padding: 1.05rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#performance">性能</a>
+    <a href="#architecture">構成</a>
+    <a href="#memory">メモリ</a>
+    <a href="#swarm">Swarm</a>
+    <a href="#providers">Provider</a>
+    <a href="#usage">使い方</a>
+    <a href="#links">参考</a>
+  </nav>
+
+  <div class="main">
+    <h1>jcode</h1>
+    <p class="subtitle">Rust 製の高速 TUI コーディングエージェントハーネス。狙いは「複数セッションを軽く動かし、モデル・記憶・ブラウザ・自律チームをひとつの作業面で扱う」こと。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="hero-grid">
+      <div class="ve-card ve-card--hero" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+        <p><strong>jcode</strong> は、コーディングエージェントのための次世代ハーネス。README では「multi-session workflows, infinite customizability, performance」を核に掲げ、TUI、永続サーバ、Provider 連携、メモリ、Swarm、Self-Dev を Rust ワークスペースとして束ねている。</p>
+        <div class="kpi-row">
+          <div class="ve-kpi-card"><span class="ve-kpi-card__value">0.11.4</span><span class="ve-kpi-card__label">Cargo version</span></div>
+          <div class="ve-kpi-card"><span class="ve-kpi-card__value">30+</span><span class="ve-kpi-card__label">Workspace crates</span></div>
+          <div class="ve-kpi-card"><span class="ve-kpi-card__value">14.0ms</span><span class="ve-kpi-card__label">First frame</span></div>
+          <div class="ve-kpi-card"><span class="ve-kpi-card__value">Linux/macOS/Win</span><span class="ve-kpi-card__label">Platforms</span></div>
+        </div>
+        <p>単体 CLI ではなく、複数クライアントが接続できるサーバ型アーキテクチャを前提にしている。軽い起動、低い増分メモリ、再接続、自己更新・自己開発が一続きの体験になる。</p>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> 読み解き方</span>
+        <ul>
+          <li><strong>表層:</strong> 高速な TUI と CLI。</li>
+          <li><strong>中核:</strong> サーバがセッション・Provider・MCP・状態を保持。</li>
+          <li><strong>拡張:</strong> メモリ、Swarm、Self-Dev、ブラウザ自動化。</li>
+          <li><strong>設計圧:</strong> コンパイル速度のために DTO と実行時責務を分離。</li>
+        </ul>
+      </div>
+    </div>
+
+    <section id="performance" class="sec-head">2 — 性能とスケーリング</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> README の比較値</span>
+      <p>jcode はマルチセッション利用を前提に、起動レイテンシと追加セッションあたりのメモリ増分を強く押さえている。README のベンチでは、1セッション時と10セッション時の両方で低い PSS を主張している。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>観点</th><th>jcode</th><th>比較対象の読み方</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1 active session</td><td>167.1 MB（local embedding off: 27.8 MB）</td><td>OpenCode / Claude Code は 370MB 超の値が並ぶ</td></tr>
+            <tr><td>10 active sessions</td><td>260.8 MB（local embedding off: 117.0 MB）</td><td>追加セッション時の固定費を抑える設計</td></tr>
+            <tr><td>Time to first frame</td><td>14.0 ms</td><td>README 上では pi / Codex CLI / Claude Code より大幅に高速</td></tr>
+            <tr><td>Extra PSS per added session</td><td>約 10.4 MB</td><td>複数セッションを常用するための主要指標</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-callout">
+      <strong>設計の意味:</strong> 速さは単なる気持ちよさだけじゃない。Swarm や複数作業面を前提にすると、1セッションごとの増分コストがそのまま並列作業の上限になる。
+    </div>
+
+    <section id="architecture" class="sec-head">3 — サーバ・クレート構成</section>
+    <div class="arch-grid">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Single server / multi client</span>
+        <div class="flow">
+          <div class="flow-step">
+            <span class="flow-num">01</span>
+            <div><div class="flow-title">初回起動</div><div class="flow-body"><code>jcode</code> が既存サーバを探し、無ければ <code>jcode serve</code> をデーモン起動して接続する。</div></div>
+          </div>
+          <div class="flow-step">
+            <span class="flow-num">02</span>
+            <div><div class="flow-title">クライアント接続</div><div class="flow-body">TUI クライアントは Unix socket 経由で接続し、セッションを作成または再開する。</div></div>
+          </div>
+          <div class="flow-step">
+            <span class="flow-num">03</span>
+            <div><div class="flow-title">Reload / reconnect</div><div class="flow-body"><code>/reload</code> でサーバが同じ socket に再 exec。クライアントは自動再接続する。</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Rust workspace</span>
+        <p><code>Cargo.toml</code> は root crate に加え、type crate、provider crate、TUI crate、mobile/desktop crate を持つワークスペースを定義している。</p>
+        <div>
+          <span class="badge">jcode-core</span>
+          <span class="badge">jcode-*-types</span>
+          <span class="badge">jcode-provider-*</span>
+          <span class="badge">jcode-tui-*</span>
+          <span class="badge">jcode-mobile-core</span>
+          <span class="badge">jcode-desktop</span>
+        </div>
+        <p>境界設計の主目的は、通常開発と Self-Dev のビルドを速くすること。安定 DTO は軽い type crate へ、ストレージ・TUI・Provider・プロセス管理などの実行時責務は root 側に残す、という方針が文書化されている。</p>
+      </div>
+    </div>
+
+    <section id="memory" class="sec-head">4 — Agent memory</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 自動で思い出す記憶</span>
+      <p>jcode のメモリは、ユーザーが毎回ツールを呼ばなくても関連情報が会話に戻る設計。各ターン/応答を semantic vector 化し、類似検索とグラフ探索で候補を集め、必要なら sideagent が妥当性を確認して次ターン以降に注入する。</p>
+      <div class="feature-grid">
+        <div class="ve-card feature-card">
+          <strong>Embedding hits</strong>
+          <p>会話文脈から近い記憶を cosine similarity で探す。</p>
+        </div>
+        <div class="ve-card feature-card">
+          <strong>Graph retrieval</strong>
+          <p>タグ・クラスタ・関連エッジをたどり、直接一致しない記憶も拾う。</p>
+        </div>
+        <div class="ve-card feature-card">
+          <strong>Ambient consolidation</strong>
+          <p>古さ・矛盾・重複を整理し、記憶グラフを保守する。</p>
+        </div>
+      </div>
+    </div>
+    <div class="ve-code-block" aria-label="Memory pipeline">
+      <pre><code>Main agent turn
+  -> context handler
+  -> embedder
+  -> similarity search
+  -> cascade retrieval over memory graph
+  -> sidecar verification
+  -> pending memory for next turn</code></pre>
+    </div>
+
+    <section id="swarm" class="sec-head">5 — Swarm と Self-Dev</section>
+    <div class="feature-grid">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Swarm</span>
+        <p>同じリポジトリ内に複数エージェントを立て、サーバが協調状態を管理する。あるエージェントが、別エージェントが読んだファイルを編集した場合、通知して差分確認できる。</p>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Messaging</span>
+        <p>DM、全体 broadcast、リポジトリ単位の broadcast を使い分け、作業チームとして並列処理できる。エージェント自身が worker swarm を起動する構想も README にある。</p>
+      </div>
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> Self-Dev</span>
+        <p>jcode リポジトリ内で動くと self-dev mode を有効化し、自分のソースを編集、build/test、binary reload まで継続できる。高速ビルドと reload 設計がここで効く。</p>
+      </div>
+    </div>
+
+    <section id="providers" class="sec-head">6 — Provider / OAuth / Browser</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> モデルを持ち込む</span>
+      <p>jcode は subscription-backed OAuth と直接 API Provider の両方を扱う。Claude、OpenAI/ChatGPT/Codex、Gemini、GitHub Copilot、Azure OpenAI、OpenRouter、OpenAI-compatible、LM Studio、Ollama などが README に列挙されている。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>分類</th><th>例</th><th>使いどころ</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Native / first-party style</td><td>claude, openai, copilot, gemini, azure</td><td>既存サブスクや公式ログインを使う</td></tr>
+            <tr><td>Aggregator / compatible</td><td>openrouter, openai-compatible</td><td>任意の OpenAI 互換 API やルーターを使う</td></tr>
+            <tr><td>Local / self-hosted</td><td>lmstudio, ollama, vLLM endpoint</td><td>ローカル推論やLAN内推論をつなぐ</td></tr>
+            <tr><td>Browser tool</td><td>Firefox Agent Bridge</td><td>agent session 内で open / click / type / screenshot などを行う</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="usage" class="sec-head">7 — 導入と日常操作</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Quick start</span>
+      <p>README の最短導入は install script。Homebrew、Windows PowerShell、source build も用意されている。</p>
+      <div class="ve-code-block">
+        <pre><code># macOS & Linux
+curl -fsSL https://raw.githubusercontent.com/1jehuang/jcode/master/scripts/install.sh | bash
+
+# Launch the TUI
+jcode
+
+# Run a single command non-interactively
+jcode run "say hello"
+
+# Resume a previous session by memorable name
+jcode --resume fox
+
+# Run as a persistent background server, then attach more clients
+jcode serve
+jcode connect
+
+# Browser tool setup
+jcode browser status
+jcode browser setup</code></pre>
+      </div>
+    </div>
+    <div class="ve-callout">
+      <strong>認知負荷の低い見方:</strong> jcode は「CLI コマンド群」ではなく「軽いサーバを中心に、セッション・モデル・記憶・ツール・チームを接続する作業OS」と捉えると全体像が掴みやすい。
+    </div>
+
+    <section id="links" class="sec-head">8 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ソース</span>
+      <ul class="source-list">
+        <li><a href="https://github.com/1jehuang/jcode" target="_blank" rel="noopener">GitHub: 1jehuang/jcode</a> — 本体リポジトリ。</li>
+        <li><a href="https://github.com/1jehuang/jcode/blob/master/README.md" target="_blank" rel="noopener">README.md</a> — 性能比較、メモリ、Swarm、Provider、導入手順。</li>
+        <li><a href="https://github.com/1jehuang/jcode/blob/master/docs/SERVER_ARCHITECTURE.md" target="_blank" rel="noopener">SERVER_ARCHITECTURE.md</a> — single-server / multi-client の設計。</li>
+        <li><a href="https://github.com/1jehuang/jcode/blob/master/docs/MEMORY_ARCHITECTURE.md" target="_blank" rel="noopener">MEMORY_ARCHITECTURE.md</a> — graph-based hybrid memory。</li>
+        <li><a href="https://github.com/1jehuang/jcode/blob/master/docs/CRATE_OWNERSHIP_BOUNDARIES.md" target="_blank" rel="noopener">CRATE_OWNERSHIP_BOUNDARIES.md</a> — クレート分割とコンパイル速度の境界設計。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
