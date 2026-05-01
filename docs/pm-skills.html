@@ -198,9 +198,8 @@
     .step-card__body { font-size: 0.875rem; line-height: 1.6; color: var(--text-dim); overflow-wrap: break-word; }
 
     /* ============ Plugin grid ============ */
-    .plugin-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-    @media (max-width: 720px) { .plugin-grid { grid-template-columns: 1fr; } }
-    .plugin-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+    .plugin-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+    .plugin-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
     .plugin-card:hover { border-color: color-mix(in oklch, var(--border) 40%, var(--chart-1) 60%); }
     .plugin-card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.25rem; }
     .plugin-card__name { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; color: var(--chart-1); overflow-wrap: break-word; word-break: break-all; }
@@ -209,7 +208,16 @@
     .badge--skills { background: oklch(0.55 0.16 42 / 0.12); color: var(--chart-1); }
     .badge--cmds { background: oklch(0.52 0.12 155 / 0.12); color: var(--chart-2); }
     .plugin-card__title { font-weight: 600; font-size: 0.9375rem; }
-    .plugin-card__desc { font-size: 0.8125rem; line-height: 1.55; color: var(--text-dim); overflow-wrap: break-word; }
+    .plugin-card__desc { font-size: 0.8125rem; line-height: 1.55; color: var(--text-dim); overflow-wrap: break-word; max-width: 62rem; }
+    .plugin-detail-grid { display: grid; grid-template-columns: 1.15fr 1fr 1.1fr; gap: 0.75rem; }
+    @media (max-width: 900px) { .plugin-detail-grid { grid-template-columns: 1fr; } }
+    .plugin-detail { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem 0.95rem; min-width: 0; }
+    .plugin-detail h4 { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; color: var(--chart-1); text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 0.5rem; }
+    .plugin-detail ul { margin: 0; padding-left: 1rem; }
+    .plugin-detail li { font-size: 0.8125rem; line-height: 1.55; margin-bottom: 0.35rem; color: var(--text-dim); }
+    .plugin-detail li:last-child { margin-bottom: 0; }
+    .plugin-detail code { font-size: 0.72rem; }
+    .plugin-example { color: var(--foreground); }
 
     /* ============ Animation ============ */
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -285,7 +293,33 @@
           </span>
         </div>
         <p class="plugin-card__title">プロダクトディスカバリー</p>
-        <p class="plugin-card__desc">アイデア出し、実験設計、仮定マッピング、Opportunity Solution Tree（Teresa Torres）、ユーザーインタビュー合成。コマンド例: <code>/discover</code>, <code>/brainstorm</code>, <code>/interview</code>。</p>
+        <p class="plugin-card__desc">新規アイデアや既存プロダクトの不確実性を、仮定・機会・実験に分解する領域。ふわっとした「何を作るか」を、検証可能な学習計画に落とす。</p>
+        <div class="plugin-detail-grid">
+          <div class="plugin-detail">
+            <h4>Skills</h4>
+            <ul>
+              <li><code>brainstorm-ideas-*</code> と <code>brainstorm-experiments-*</code> で、既存/新規プロダクト別にアイデアと実験を広げる。</li>
+              <li><code>identify-assumptions-*</code> と <code>prioritize-assumptions</code> で、Value / Usability / Viability / Feasibility などのリスクを整理する。</li>
+              <li><code>opportunity-solution-tree</code>、<code>interview-script</code>、<code>summarize-interview</code> で、顧客理解を構造化する。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Commands</h4>
+            <ul>
+              <li><code>/discover</code> は「アイデア出し → 仮定洗い出し → 優先順位付け → 実験設計」を一気通貫で回す。</li>
+              <li><code>/brainstorm</code> は ideas / experiments と existing / new を組み合わせて発散する。</li>
+              <li><code>/triage-requests</code>、<code>/interview</code>、<code>/setup-metrics</code> は、要望・調査・指標設計を個別に扱う。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Examples</h4>
+            <ul>
+              <li class="plugin-example"><code>/discover AI-powered meeting summarizer for remote teams</code></li>
+              <li class="plugin-example">ユーザー活性化を上げる Opportunity Solution Tree を作る。</li>
+              <li class="plugin-example">エンタープライズ顧客の機能要望をテーマ別に優先順位付けする。</li>
+            </ul>
+          </div>
+        </div>
       </div>
       <div class="plugin-card" style="--i:1">
         <div class="plugin-card__header">
@@ -296,7 +330,33 @@
           </span>
         </div>
         <p class="plugin-card__title">プロダクト戦略</p>
-        <p class="plugin-card__desc">ビジョン策定、Lean Canvas / BMC / Startup Canvas、価格戦略、SWOT / PESTLE / Porter's Five Forces / Ansoff Matrix。コマンド例: <code>/strategy</code>, <code>/market-scan</code>, <code>/pricing</code>。</p>
+        <p class="plugin-card__desc">ビジョン、価値提案、事業モデル、価格、競争環境をまとめて扱う戦略レイヤー。個別フレームワークを並べるだけでなく、プロダクトの勝ち筋として接続する。</p>
+        <div class="plugin-detail-grid">
+          <div class="plugin-detail">
+            <h4>Skills</h4>
+            <ul>
+              <li><code>product-strategy</code> は 9 セクションの Product Strategy Canvas で、ビジョンから防御力まで整理する。</li>
+              <li><code>lean-canvas</code>、<code>business-model</code>、<code>startup-canvas</code> は、事業モデルを粒度別に描き分ける。</li>
+              <li><code>pricing-strategy</code>、<code>swot-analysis</code>、<code>pestle-analysis</code>、<code>porters-five-forces</code> で市場と価格の前提を検証する。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Commands</h4>
+            <ul>
+              <li><code>/strategy</code> は包括的な Product Strategy Canvas を生成する。</li>
+              <li><code>/business-model</code> は lean / full / startup / value-prop / all から用途に合うキャンバスを選ぶ。</li>
+              <li><code>/market-scan</code> と <code>/pricing</code> は外部環境と収益化の妥当性を点検する。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Examples</h4>
+            <ul>
+              <li class="plugin-example"><code>/strategy B2B project management tool for agencies</code></li>
+              <li class="plugin-example">AI ライティングツールの JTBD ベースの価値提案を設計する。</li>
+              <li class="plugin-example">プロジェクト管理 SaaS 市場を Porter's Five Forces で分析する。</li>
+            </ul>
+          </div>
+        </div>
       </div>
       <div class="plugin-card" style="--i:2">
         <div class="plugin-card__header">
@@ -307,7 +367,33 @@
           </span>
         </div>
         <p class="plugin-card__title">実行管理</p>
-        <p class="plugin-card__desc">PRD、OKR、ロードマップ、スプリント計画・レトロ、リリースノート、プリモーテム、ステークホルダーマップ、ユーザー/ジョブストーリー。全 8 プラグイン中最多の 15 スキル。</p>
+        <p class="plugin-card__desc">戦略をチームの実行単位へ翻訳する領域。PRD、OKR、ロードマップ、スプリント、リリース、ステークホルダー管理まで、日々の PM 作業を支える。</p>
+        <div class="plugin-detail-grid">
+          <div class="plugin-detail">
+            <h4>Skills</h4>
+            <ul>
+              <li><code>create-prd</code>、<code>brainstorm-okrs</code>、<code>outcome-roadmap</code> で、要求・目標・ロードマップを成果中心にまとめる。</li>
+              <li><code>sprint-plan</code>、<code>retro</code>、<code>release-notes</code> で、スプリント運営とリリースコミュニケーションを支える。</li>
+              <li><code>user-stories</code>、<code>job-stories</code>、<code>wwas</code>、<code>test-scenarios</code> で、開発が動ける粒度に分解する。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Commands</h4>
+            <ul>
+              <li><code>/write-prd</code>、<code>/plan-okrs</code>、<code>/transform-roadmap</code> が計画系の骨格を作る。</li>
+              <li><code>/sprint</code> は plan / retro / release のサブモードでスプリントの前後を扱う。</li>
+              <li><code>/write-stories</code>、<code>/test-scenarios</code>、<code>/generate-data</code> は実装・検証の入力を作る。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Examples</h4>
+            <ul>
+              <li class="plugin-example"><code>/write-prd Smart notification system that reduces alert fatigue</code></li>
+              <li class="plugin-example"><code>/sprint retro</code> にスプリントのメモを渡して振り返りを構造化する。</li>
+              <li class="plugin-example">50 件のバックログに合う優先順位付けフレームワークを選ぶ。</li>
+            </ul>
+          </div>
+        </div>
       </div>
       <div class="plugin-card" style="--i:3">
         <div class="plugin-card__header">
@@ -318,7 +404,33 @@
           </span>
         </div>
         <p class="plugin-card__title">市場調査</p>
-        <p class="plugin-card__desc">ユーザーペルソナ、市場セグメンテーション、カスタマージャーニーマップ、TAM/SAM/SOM、競合分析、フィードバック感情分析。コマンド例: <code>/research-users</code>, <code>/analyze-feedback</code>。</p>
+        <p class="plugin-card__desc">ユーザー、市場、競合を調査して、誰のどんな課題を狙うのかを明確にする領域。定性調査と市場規模の両方を PM が扱える形へ変換する。</p>
+        <div class="plugin-detail-grid">
+          <div class="plugin-detail">
+            <h4>Skills</h4>
+            <ul>
+              <li><code>user-personas</code>、<code>market-segments</code>、<code>user-segmentation</code> で顧客像とセグメントを分ける。</li>
+              <li><code>customer-journey-map</code> で、接点・感情・痛みを時系列に見える化する。</li>
+              <li><code>market-sizing</code>、<code>competitor-analysis</code>、<code>sentiment-analysis</code> で市場規模・競争・声の傾向を読む。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Commands</h4>
+            <ul>
+              <li><code>/research-users</code> はペルソナ、セグメント、カスタマージャーニーをまとめて作る。</li>
+              <li><code>/competitive-analysis</code> は競合の強み・弱み・差別化余地を整理する。</li>
+              <li><code>/analyze-feedback</code> は NPS、レビュー、調査回答を感情とテーマで分解する。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Examples</h4>
+            <ul>
+              <li class="plugin-example"><code>/research-users</code> に 12 人分のインタビューデータを渡す。</li>
+              <li class="plugin-example">AI コードレビュー市場の TAM / SAM / SOM を見積もる。</li>
+              <li class="plugin-example">Q4 の NPS 回答 200 件をテーマ別に分析する。</li>
+            </ul>
+          </div>
+        </div>
       </div>
       <div class="plugin-card" style="--i:4">
         <div class="plugin-card__header">
@@ -329,7 +441,33 @@
           </span>
         </div>
         <p class="plugin-card__title">データアナリティクス</p>
-        <p class="plugin-card__desc">自然言語からの SQL 生成（BigQuery / PostgreSQL / MySQL）、コホート分析（リテンション・採用率・エンゲージメント）、A/B テスト統計検定。</p>
+        <p class="plugin-card__desc">PM が意思決定に必要なデータ分析を扱う小さな分析セット。SQL、コホート、A/B テストを、統計と事業判断の橋渡しとして使う。</p>
+        <div class="plugin-detail-grid">
+          <div class="plugin-detail">
+            <h4>Skills</h4>
+            <ul>
+              <li><code>sql-queries</code> は BigQuery / PostgreSQL / MySQL 向けに自然言語から SQL を作る。</li>
+              <li><code>cohort-analysis</code> はリテンション、機能採用、エンゲージメントをコホート単位で読む。</li>
+              <li><code>ab-test-analysis</code> は有意性、サンプルサイズ、MDE、ship / extend / stop 判断を扱う。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Commands</h4>
+            <ul>
+              <li><code>/write-query</code> は分析したい問いを SQL に変換する。</li>
+              <li><code>/analyze-cohorts</code> は行動データから継続率や採用率の差を読む。</li>
+              <li><code>/analyze-test</code> は実験結果を統計的に評価する。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Examples</h4>
+            <ul>
+              <li class="plugin-example"><code>/write-query Show me monthly active users by country for Q4 2025</code></li>
+              <li class="plugin-example">95% 信頼水準、2% MDE に必要なサンプルサイズを見積もる。</li>
+              <li class="plugin-example">1 月登録ユーザーと 2 月登録ユーザーの週次リテンションを比較する。</li>
+            </ul>
+          </div>
+        </div>
       </div>
       <div class="plugin-card" style="--i:5">
         <div class="plugin-card__header">
@@ -340,7 +478,33 @@
           </span>
         </div>
         <p class="plugin-card__title">ゴートゥーマーケット</p>
-        <p class="plugin-card__desc">ビーチヘッドセグメント、ICP（Ideal Customer Profile）、GTM 戦略、グロースループ（フライホイール）、GTM モーション評価、競合バトルカード。</p>
+        <p class="plugin-card__desc">最初に攻める市場、届け方、売り方、競合への勝ち方を組み立てる領域。ローンチ計画だけでなく、ICP とチャネル、営業材料までつなげる。</p>
+        <div class="plugin-detail-grid">
+          <div class="plugin-detail">
+            <h4>Skills</h4>
+            <ul>
+              <li><code>gtm-strategy</code> はチャネル、メッセージ、成功指標、ローンチ計画をまとめる。</li>
+              <li><code>beachhead-segment</code> と <code>ideal-customer-profile</code> で、最初に狙う顧客を絞り込む。</li>
+              <li><code>growth-loops</code>、<code>gtm-motions</code>、<code>competitive-battlecard</code> で成長構造と営業材料を作る。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Commands</h4>
+            <ul>
+              <li><code>/plan-launch</code> はビーチヘッドからローンチ計画までを一気に作る。</li>
+              <li><code>/growth-strategy</code> はグロースループと GTM モーションを検討する。</li>
+              <li><code>/battlecard</code> は競合比較、反論処理、勝ち筋を営業向けにまとめる。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Examples</h4>
+            <ul>
+              <li class="plugin-example"><code>/plan-launch AI code review tool targeting mid-size engineering teams</code></li>
+              <li class="plugin-example">フリーミアム B2B SaaS のグロースループを設計する。</li>
+              <li class="plugin-example">自社 CRM と Salesforce の SMB 向けバトルカードを作る。</li>
+            </ul>
+          </div>
+        </div>
       </div>
       <div class="plugin-card" style="--i:6">
         <div class="plugin-card__header">
@@ -351,7 +515,32 @@
           </span>
         </div>
         <p class="plugin-card__title">マーケティング &amp; グロース</p>
-        <p class="plugin-card__desc">マーケティングアイデア、プロダクトポジショニング、バリュープロポジションステートメント、プロダクトネーミング、North Star メトリック定義。</p>
+        <p class="plugin-card__desc">市場にどう伝わり、どの指標で成長を見続けるかを扱う領域。ポジショニング、メッセージ、名前、North Star Metric をひと続きで設計する。</p>
+        <div class="plugin-detail-grid">
+          <div class="plugin-detail">
+            <h4>Skills</h4>
+            <ul>
+              <li><code>marketing-ideas</code> はチャネルとメッセージを含む、低コストで試せるマーケティング案を出す。</li>
+              <li><code>positioning-ideas</code> と <code>value-prop-statements</code> は競合との差分と伝え方を整理する。</li>
+              <li><code>product-name</code> と <code>north-star-metric</code> は、ブランドと言語化、成長指標の核を決める。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Commands</h4>
+            <ul>
+              <li><code>/market-product</code> はマーケティング案、ポジショニング、価値提案、名前をまとめて発散する。</li>
+              <li><code>/north-star</code> は North Star Metric と入力指標を定義する。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Examples</h4>
+            <ul>
+              <li class="plugin-example"><code>/market-product B2B analytics dashboard for e-commerce managers</code></li>
+              <li class="plugin-example">Notion と差別化するポジショニング角度を 5 つ出す。</li>
+              <li class="plugin-example">二面 marketplace の North Star Metric を決める。</li>
+            </ul>
+          </div>
+        </div>
       </div>
       <div class="plugin-card" style="--i:7">
         <div class="plugin-card__header">
@@ -362,7 +551,32 @@
           </span>
         </div>
         <p class="plugin-card__title">PM ツールキット</p>
-        <p class="plugin-card__desc">PM レジュメレビュー・テーラリング（XYZ+S 公式）、NDA ドラフト、プライバシーポリシー（GDPR/CCPA 準拠）、文法・ロジック・フロー校正。</p>
+        <p class="plugin-card__desc">中核 PM ワークから少し外れるが、実務で頻繁に発生する文書・法務・キャリア系の補助領域。レビュー、ドラフト、校正を作業単位で支える。</p>
+        <div class="plugin-detail-grid">
+          <div class="plugin-detail">
+            <h4>Skills</h4>
+            <ul>
+              <li><code>review-resume</code> は PM レジュメを XYZ+S 公式、キーワード、構成の観点で見る。</li>
+              <li><code>draft-nda</code> と <code>privacy-policy</code> は NDA とプライバシーポリシーのドラフトを作る。</li>
+              <li><code>grammar-check</code> は文法だけでなく、論理、流れ、読みやすさも対象にする。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Commands</h4>
+            <ul>
+              <li><code>/review-resume</code> と <code>/tailor-resume</code> は、PM レジュメのレビューと求人別調整を扱う。</li>
+              <li><code>/draft-nda</code>、<code>/privacy-policy</code>、<code>/proofread</code> は、文書作成と校正の短いワークフロー。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Examples</h4>
+            <ul>
+              <li class="plugin-example"><code>/tailor-resume</code> にレジュメと求人票を渡して調整する。</li>
+              <li class="plugin-example">プロダクト告知文の文法、論理、流れをチェックする。</li>
+              <li class="plugin-example"><code>/proofread</code> で Q1 投資家向けアップデート草案を磨く。</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
 
