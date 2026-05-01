@@ -12,6 +12,7 @@ import {
   buildRunbook,
   collectCliArgs,
   collectInteractiveArgs,
+  evaluateReviewGate,
   hasHeadMeta,
   listDocumentChoices,
   matchesScope,
@@ -151,6 +152,69 @@ describe("visual-doc-workflow pure helpers", () => {
     expect(matchesScope("docs/design-docs/visual-doc-workflow.md", "docs/system-design.html")).toBe(true);
     expect(matchesScope("scripts/visual-doc-workflow.ts", "docs/system-design.html")).toBe(true);
     expect(matchesScope("README.md", "docs/system-design.html")).toBe(false);
+  });
+
+  it("evaluates review gate findings through an injected environment", async () => {
+    const doc = normalizeDocPath("system-design");
+    const findings = await evaluateReviewGate(doc, {
+      changedNames: () => ["repos/system-design-primer/README.md", "README.md"],
+      exists: (absolutePath) => absolutePath.endsWith("docs/system-design.html"),
+      readText: async (absolutePath) =>
+        absolutePath.endsWith("index.html")
+          ? "<!doctype html><a href=\"docs/other.html\">Other</a>"
+          : "<!doctype html><html><head><meta property=\"og:title\" content=\"Title\"></head><body></body></html>",
+      validatePublicPaths: () => ({
+        ok: false,
+        message: "Public path validation failed.",
+        details: {
+          stderr: "local path leak",
+        },
+      }),
+    });
+
+    expect(findings.map((finding) => finding.code)).toEqual([
+      "missing-index-link",
+      "missing-head-meta",
+      "public-path-leak",
+      "source-in-git-status",
+      "out-of-scope-diff",
+    ]);
+  });
+
+  it("reports missing public path support scripts as infrastructure failures", async () => {
+    const doc = normalizeDocPath("system-design");
+    const findings = await evaluateReviewGate(doc, {
+      changedNames: () => [],
+      exists: (absolutePath) => absolutePath.endsWith("docs/system-design.html"),
+      readText: async (absolutePath) =>
+        absolutePath.endsWith("index.html")
+          ? "<!doctype html><a href=\"docs/system-design.html\">System Design</a>"
+          : `<!doctype html>
+<html>
+<head>
+  <meta property="og:title" content="Title">
+  <meta property="og:url" content="https://example.com">
+  <meta property="og:description" content="Description">
+  <meta name="twitter:card" content="summary">
+</head>
+<body></body>
+</html>`,
+      validatePublicPaths: () => ({
+        ok: false,
+        message: "Workflow support script not found.",
+        details: {
+          script: ".cursor/skills/docs-site-add-visual-doc/scripts/validate-public-paths.sh",
+        },
+      }),
+    });
+
+    expect(findings).toEqual([
+      {
+        code: "public-path-check-failed",
+        details: ".cursor/skills/docs-site-add-visual-doc/scripts/validate-public-paths.sh",
+        message: "Workflow support script not found.",
+      },
+    ]);
   });
 
   it("parses changed paths from git status output", () => {
