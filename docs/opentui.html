@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OpenTUI — Zig ネイティブのターミナル UI コア</title>
-  <meta name="description" content="Zig ネイティブのターミナル UI コア OpenTUI の紹介。">
+  <meta name="description" content="Zig ネイティブのターミナル UI コア OpenTUI の最新構成。Bun、React/Solid、Keymap、Three.js WebGPU、Examples を俯瞰する。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="OpenTUI — Zig ネイティブのターミナル UI コア">
-  <meta property="og:description" content="Zig ネイティブのターミナル UI コア OpenTUI の紹介。">
+  <meta property="og:description" content="Zig ネイティブのターミナル UI コア OpenTUI の最新構成。Bun、React/Solid、Keymap、Three.js WebGPU、Examples を俯瞰する。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/opentui.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="OpenTUI — Zig ネイティブのターミナル UI コア">
-  <meta name="twitter:description" content="Zig ネイティブのターミナル UI コア OpenTUI の紹介。">
+  <meta name="twitter:description" content="Zig ネイティブのターミナル UI コア OpenTUI の最新構成。Bun、React/Solid、Keymap、Three.js WebGPU、Examples を俯瞰する。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -113,6 +113,7 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
@@ -187,6 +188,9 @@
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
     .kpi-row .ve-kpi-card { min-width: 0; }
     @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 0.75rem 0 1rem; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
 
     /* ============ Animation ============ */
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -202,24 +206,26 @@
     <a href="#packages">パッケージ構成</a>
     <a href="#install">インストール</a>
     <a href="#quickstart">クイックスタート</a>
-    <a href="#renderables">Renderables</a>
-    <a href="#ai-skill">AI スキル・事例</a>
+    <a href="#renderer">Renderer</a>
+    <a href="#bindings">React/Solid</a>
+    <a href="#keymap">Keymap</a>
+    <a href="#ai-skill">AI Skill</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
   <h1>OpenTUI</h1>
-  <p class="subtitle">Zig ネイティブのターミナル UI コア。TypeScript バインディングとコンポーネントアーキテクチャで複雑な TUI を構築する。</p>
+  <p class="subtitle">Zig ネイティブのターミナル UI コア。Bun + TypeScript から、Core / React / Solid / Keymap / Three.js WebGPU / Examples を組み合わせて複雑な TUI を構築する。</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--elevated" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-    <p>OpenTUI は<strong>Zig で書かれたネイティブのターミナル UI コア</strong>で、TypeScript バインディングを備える。ネイティブコアは C ABI を露出するため、任意の言語から利用可能。OpenCode の本番で既に利用され、terminal.shop でも使われる予定。正しさ・安定性・高性能を重視した拡張可能なコアで、<strong>コンポーネントベースのアーキテクチャ</strong>と柔軟なレイアウトで複雑なターミナルアプリを実現する。</p>
+    <p>OpenTUI は<strong>Zig で書かれたネイティブのターミナル UI コア</strong>で、TypeScript バインディングを備える。ネイティブコアは C ABI を露出するため、任意の言語から利用可能。OpenCode の本番で利用され、terminal.shop でも使われる予定。現在の公式ドキュメントは <code>packages/web/src/content/docs/**/*.mdx</code> を正としており、Core、Renderer、Layout、Keymap、React/Solid、Plugin、Component、Environment Variables に分かれている。</p>
     <div class="kpi-row">
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">Zig</span><span class="ve-kpi-card__label">ネイティブコア</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">TS</span><span class="ve-kpi-card__label">バインディング</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">C ABI</span><span class="ve-kpi-card__label">他言語対応</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">React/Solid</span><span class="ve-kpi-card__label">レコンシラ</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Bun</span><span class="ve-kpi-card__label">現在の実行環境</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Keymap</span><span class="ve-kpi-card__label">共有キー操作</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">React/Solid</span><span class="ve-kpi-card__label">JSX バインディング</span></div>
     </div>
     <p>公式ドキュメント: <a href="https://opentui.com/docs/getting-started" target="_blank" rel="noopener">opentui.com/docs/getting-started</a></p>
   </div>
@@ -233,9 +239,12 @@
           <tr><th>パッケージ</th><th>説明</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>@opentui/core</code></td><td>Zig ネイティブコアの TypeScript バインディング。命令的 API と全プリミティブ。</td></tr>
-          <tr><td><code>@opentui/solid</code></td><td>OpenTUI 用 SolidJS レコンシラ。</td></tr>
-          <tr><td><code>@opentui/react</code></td><td>OpenTUI 用 React レコンシラ。</td></tr>
+          <tr><td><code>@opentui/core</code></td><td>Zig ネイティブコアの TypeScript バインディング。Renderer、Renderable、Layout、入力、テストの中心。</td></tr>
+          <tr><td><code>@opentui/three</code></td><td>OpenTUI 上で Three.js WebGPU を描画するレンダラー。<code>bun-webgpu</code>、Three.js、任意で Rapier / Planck と連携。</td></tr>
+          <tr><td><code>@opentui/solid</code></td><td>Solid.js の fine-grained reactivity で TUI を書く JSX バインディング。</td></tr>
+          <tr><td><code>@opentui/react</code></td><td>React パターンでターミナル UI を組む JSX バインディング。<code>createRoot(renderer)</code> を使う。</td></tr>
+          <tr><td><code>@opentui/keymap</code></td><td>ターミナルとブラウザで共通利用できるキー割り当て・コマンド・シーケンスエンジン。</td></tr>
+          <tr><td><code>@opentui/examples</code></td><td>ブラウザ向け・単体実行向けのサンプル群と executable build。</td></tr>
         </tbody>
       </table>
     </div>
@@ -244,73 +253,160 @@
   <section id="install" class="sec-head">3 — インストール</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 前提</span>
-    <p>ビルドには <strong>Zig</strong> がシステムにインストールされている必要がある（<a href="https://ziglang.org/learn/getting-started/" target="_blank" rel="noopener">Zig のセットアップ</a>）。</p>
-    <h3>TypeScript / JavaScript（bun）</h3>
+    <p>現在の OpenTUI は <strong>Bun 専用</strong>。Deno / Node 対応は進行中。パッケージをビルドする場合は <strong>Zig</strong> も必要になる。</p>
+    <h3>Core を直接使う</h3>
     <div class="ve-code-block">
-      <pre><code>bun install @opentui/core</code></pre>
+      <pre><code>mkdir my-tui &amp;&amp; cd my-tui
+bun init -y
+bun add @opentui/core</code></pre>
     </div>
-    <h3>クイックスタート（create-tui）</h3>
+    <h3>create-tui で始める</h3>
     <div class="ve-code-block">
-      <pre><code>bun create tui</code></pre>
+      <pre><code>bun create tui
+bun create tui --template react</code></pre>
     </div>
-    <p><a href="https://github.com/msmps/create-tui" target="_blank" rel="noopener">create-tui</a> で bun ベースの TUI プロジェクトをすぐに生成できる。</p>
+    <p><a href="https://github.com/msmps/create-tui" target="_blank" rel="noopener">create-tui</a> で Bun ベースの TUI プロジェクトを生成できる。React テンプレートを使う場合は <code>@opentui/react</code> と <code>@opentui/core</code> をまとめて扱う。</p>
   </div>
 
   <section id="quickstart" class="sec-head">4 — クイックスタート</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> リポジトリから実行</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> Hello world</span>
+    <div class="ve-code-block">
+      <pre><code>import { createCliRenderer, Text } from "@opentui/core"
+
+const renderer = await createCliRenderer({
+  exitOnCtrlC: true,
+})
+
+renderer.root.add(
+  Text({
+    content: "Hello, OpenTUI!",
+    fg: "#00FF00",
+  }),
+)</code></pre>
+    </div>
+    <p><code>bun index.ts</code> で実行すると緑のテキストが表示される。<code>Text</code> と <code>Box</code> は factory function で、props と children を渡して宣言的に組み立てる。</p>
+    <h3>リポジトリの Examples</h3>
     <div class="ve-code-block">
       <pre><code>bun install
-cd packages/core
-bun run src/examples/index.ts</code></pre>
+cd packages/examples
+bun run dev</code></pre>
     </div>
-    <p>リポジトリをクローンせずにサンプルを試す場合（macOS / Linux / WSL / Git Bash）:</p>
+    <p>クローンせずにサンプルを試す場合（macOS / Linux / WSL / Git Bash）:</p>
     <div class="ve-code-block">
-      <pre><code>curl -fsSL https://raw.githubusercontent.com/anomalyco/opentui/main/packages/core/src/examples/install.sh | sh</code></pre>
+      <pre><code>curl -fsSL https://raw.githubusercontent.com/anomalyco/opentui/main/packages/examples/install.sh | sh</code></pre>
     </div>
     <p>Windows（PowerShell/CMD）の場合は <a href="https://github.com/anomalyco/opentui/releases/latest" target="_blank" rel="noopener">GitHub Releases</a> から最新リリースをダウンロードして試せる。</p>
   </div>
 
-  <section id="renderables" class="sec-head">5 — Renderables</section>
+  <section id="renderer" class="sec-head">5 — Renderer と Core Model</section>
   <div class="ve-card ve-card--recessed" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 概念</span>
-    <p>Renderables は階層的なオブジェクトで、位置・ネスト・スタイルを指定してターミナルに描画する。Yoga レイアウトエンジンで柔軟なレイアウトが可能。Constructs は React / Solid のようなコンポーネントの「コンストラクタ」で、既存の Renderable を組み合わせて宣言的に UI を組む。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> 描画ループ</span>
+    <p><code>CliRenderer</code> が OpenTUI の中心。ネイティブ Zig ライブラリを読み込み、ターミナル設定、入力、render loop、scrollback、console overlay を管理する。既定は <code>alternate-screen</code> だが、短命ツール向けの <code>main-screen</code>、通常出力の下部に TUI を固定する <code>split-footer</code> も選べる。</p>
+    <div class="pipeline">
+      <span class="step">createCliRenderer</span>
+      <span class="arrow">→</span>
+      <span class="step">native Zig load</span>
+      <span class="arrow">→</span>
+      <span class="step">terminal config</span>
+      <span class="arrow">→</span>
+      <span class="step">Renderable tree</span>
+      <span class="arrow">→</span>
+      <span class="step">render loop</span>
+    </div>
   </div>
   <div class="ve-card" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> 最小例（CLI Renderer）</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> Box + Text</span>
     <div class="ve-code-block">
-      <pre><code>import { createCliRenderer, TextRenderable } from "@opentui/core"
+      <pre><code>import { Box, Text, createCliRenderer } from "@opentui/core"
 
-const renderer = await createCliRenderer()
-
-const obj = new TextRenderable(renderer, {
-  id: "my-obj",
-  content: "Hello, world!"
+const renderer = await createCliRenderer({
+  exitOnCtrlC: true,
 })
 
-renderer.root.add(obj)</code></pre>
+renderer.root.add(
+  Box(
+    { borderStyle: "rounded", padding: 1, flexDirection: "column", gap: 1 },
+    Text({ content: "Welcome", fg: "#FFFF00" }),
+    Text({ content: "Press Ctrl+C to exit" }),
+  ),
+)</code></pre>
     </div>
-    <p><code>CliRenderer</code> がターミナル出力・入力・レンダリングループを司り、<code>renderer.start()</code> でライブループ（指定 FPS）で動かすことも、start せずにツリーやレイアウト変更時のみ再描画することもできる。</p>
+    <p>Layout は Yoga/Flexbox ベース。<code>flexDirection</code>、<code>justifyContent</code>、<code>alignItems</code>、固定サイズ、パーセントサイズ、absolute positioning をターミナル上で扱う。</p>
   </div>
 
-  <section id="ai-skill" class="sec-head">6 — AI スキル・事例</section>
+  <section id="bindings" class="sec-head">6 — React / Solid バインディング</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> JSX surfaces</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Binding</th><th>最小セットアップ</th><th>特徴</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>@opentui/react</code></td><td><code>bun create tui --template react</code> または <code>bun install @opentui/react @opentui/core react</code></td><td><code>createRoot(renderer).render(&lt;App /&gt;)</code>。<code>&lt;text&gt;</code>、<code>&lt;box&gt;</code>、<code>&lt;markdown&gt;</code>、hooks、runtime plugin support。</td></tr>
+          <tr><td><code>@opentui/solid</code></td><td><code>bun install solid-js @opentui/solid</code> + <code>jsxImportSource</code> + <code>bunfig.toml</code> preload</td><td><code>render(() =&gt; &lt;App /&gt;)</code>。multi-word component は <code>ascii_font</code> や <code>tab_select</code> のように snake_case。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-callout" style="margin-top:1rem;">
+    <strong>Plugin support:</strong> 外部 TS/TSX モジュールを runtime import するアプリでは、React は <code>@opentui/react/runtime-plugin-support</code>、Solid は <code>@opentui/solid/runtime-plugin-support</code> を entry で読み込む。
+  </div>
+
+  <section id="keymap" class="sec-head">7 — Keymap</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Shared input engine</span>
+    <p><code>@opentui/keymap</code> はターミナルとブラウザで使える host-agnostic な binding engine。layered shortcuts、discoverable commands、multi-stroke sequence、leader token、React/Solid provider を同じモデルで扱う。</p>
+    <div class="ve-code-block">
+      <pre><code>import { registerDefaultKeys } from "@opentui/keymap/addons"
+import { createOpenTuiKeymap } from "@opentui/keymap/opentui"
+import { KeymapProvider } from "@opentui/keymap/react"
+
+const keymap = createOpenTuiKeymap(renderer)
+registerDefaultKeys(keymap)
+
+createRoot(renderer).render(
+  &lt;KeymapProvider keymap={keymap}&gt;
+    &lt;App /&gt;
+  &lt;/KeymapProvider&gt;,
+)</code></pre>
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Entrypoint</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>@opentui/keymap</code></td><td>bare engine、key stringifier、shared types。</td></tr>
+          <tr><td><code>@opentui/keymap/opentui</code></td><td>OpenTUI host adapter。</td></tr>
+          <tr><td><code>@opentui/keymap/html</code></td><td>DOM host adapter。docs app の HTML demo でも使われる。</td></tr>
+          <tr><td><code>@opentui/keymap/react</code> / <code>@opentui/keymap/solid</code></td><td>事前作成した keymap を framework context で渡す provider / hooks。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="ai-skill" class="sec-head">8 — AI Skill・事例</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> AI コーディングアシスタント向け</span>
-    <p>OpenTUI の API やパターンを AI に教えるスキルがある。</p>
+    <p>OpenTUI の API やパターンを AI に教えるスキルは、現在リポジトリ内の docs 体系を参照する構造になっている。Getting Started、Core、Keymap、React、Solid、Components、Plugins、Env を intent ごとに読む。</p>
     <ul>
-      <li><strong>OpenCode</strong>（<code>/opentui</code> コマンド付き）: <code>curl -fsSL https://raw.githubusercontent.com/msmps/opentui-skill/main/install.sh | bash</code></li>
-      <li><strong>その他</strong>: <code>npx skills add msmps/opentui-skill</code></li>
+      <li><strong>Universal install:</strong> <code>npx skills add anomalyco/opentui --skill opentui</code></li>
+      <li><strong>Global install:</strong> <code>npx skills add anomalyco/opentui --skill opentui -g</code></li>
+      <li><strong>OpenCode:</strong> 同じ install command を利用。別 installer は不要。</li>
     </ul>
     <div class="ve-callout">
       <strong>Showcase:</strong> <a href="https://github.com/msmps/awesome-opentui" target="_blank" rel="noopener">awesome-opentui</a> で OpenTUI で作った TUI やリソースを紹介できる。
     </div>
   </div>
 
-  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <section id="links" class="sec-head">9 — 参考リンク</section>
   <div class="ve-callout" style="margin-top:0;">
     <p><strong>リポジトリ</strong>: <a href="https://github.com/anomalyco/opentui" target="_blank" rel="noopener">anomalyco/opentui</a></p>
-    <p><strong>ドキュメント</strong>: <a href="https://opentui.com/docs/getting-started" target="_blank" rel="noopener">opentui.com/docs</a>、開発ガイド・Getting Started・環境変数は <code>packages/core/docs/</code> を参照。</p>
-    <p><strong>技術</strong>: Zig（ネイティブコア）、TypeScript（バインディング）、Yoga レイアウト、Tree-Sitter（シンタックスハイライト統合）など。</p>
+    <p><strong>ドキュメント</strong>: <a href="https://opentui.com/docs/getting-started" target="_blank" rel="noopener">opentui.com/docs</a>。ソース側では <code>packages/web/src/content/docs/**/*.mdx</code> が canonical reference。</p>
+    <p><strong>技術</strong>: Zig（ネイティブコア）、Bun、TypeScript、Yoga レイアウト、Tree-Sitter、Three.js WebGPU、Keymap engine。</p>
+    <p><strong>Env</strong>: <code>OTUI_USE_CONSOLE</code>、<code>OTUI_DEBUG_FFI</code>、<code>OPENTUI_GRAPHICS</code>、<code>OPENTUI_FORCE_WCWIDTH</code> などで runtime behavior を調整できる。</p>
   </div>
   </div><!-- /main -->
 </div><!-- /wrap -->
@@ -328,18 +424,15 @@ renderer.root.add(obj)</code></pre>
   });
 
   const observer = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        links.forEach(function(l) { l.classList.remove('active'); });
-        const match = sections.find(function(s) { return s.el === entry.target; });
-        if (match) {
-          match.link.classList.add('active');
-          if (window.innerWidth <= 1000) {
-            match.link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-          }
-        }
-      }
+    const visible = entries.filter(function(entry) { return entry.isIntersecting; });
+    if (visible.length === 0) return;
+    const current = sections.find(function(s) { return s.el === visible[0].target; });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
     });
+    if (current && window.innerWidth <= 1000) {
+      current.link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
   }, { rootMargin: '-10% 0px -80% 0px' });
 
   sections.forEach(function(s) { observer.observe(s.el); });
