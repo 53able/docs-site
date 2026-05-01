@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>pi-mono — minimal terminal coding harness</title>
-  <meta name="description" content="badlogic の pi-mono を、Pi coding agent、LLM API、拡張・スキル・パッケージ、セッション管理、開発ルールの観点で整理したビジュアル解説。">
+  <title>pi-mono — tools for building AI agents</title>
+  <meta name="description" content="badlogic の pi-mono を、Pi coding agent、統一 LLM API、エージェント基盤、TUI / Web UI、拡張・スキル・パッケージ、セッション管理の観点で整理したビジュアル解説。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="pi-mono — minimal terminal coding harness">
-  <meta property="og:description" content="Pi coding agent、LLM API、拡張・スキル・パッケージ、セッション管理をまとめた badlogic/pi-mono のビジュアル解説。">
+  <meta property="og:title" content="pi-mono — tools for building AI agents">
+  <meta property="og:description" content="Pi coding agent、統一 LLM API、エージェント基盤、TUI / Web UI、拡張・スキル・パッケージ、セッション管理をまとめた badlogic/pi-mono のビジュアル解説。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/pi-mono.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="pi-mono — minimal terminal coding harness">
-  <meta name="twitter:description" content="Pi coding agent、LLM API、拡張・スキル・パッケージ、セッション管理を整理したビジュアル解説。">
+  <meta name="twitter:title" content="pi-mono — tools for building AI agents">
+  <meta name="twitter:description" content="Pi coding agent、統一 LLM API、エージェント基盤、拡張・スキル・パッケージ、セッション管理を整理したビジュアル解説。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -229,7 +229,7 @@
 
   <div class="main">
   <h1>pi-mono</h1>
-  <p class="subtitle">minimal terminal coding harness, unified LLM API, TUI, web UI, Slack bot, vLLM pods — badlogic</p>
+  <p class="subtitle">minimal terminal coding harness, unified LLM API, agent runtime, TUI, web UI — badlogic</p>
 
   <!-- ===================== 1 概要 ===================== -->
   <section id="overview" class="sec-head">1 — 概要</section>
@@ -237,16 +237,16 @@
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
     <div class="badge-row">
       <span class="badge badge--accent">pi.dev</span>
-      <span class="badge">0.70.6</span>
+      <span class="badge">0.71.0</span>
       <span class="badge">MIT</span>
       <span class="badge">TypeScript</span>
     </div>
-    <p><strong>pi-mono</strong> は、Pi coding agent と周辺ライブラリをまとめた TypeScript モノレポ。README の主語は、以前の「AI agent toolkit」から、現在は <strong>minimal terminal coding harness</strong> に寄っている。</p>
+    <p><strong>pi-mono</strong> は、AI エージェントを作るための TypeScript モノレポ。ルート README は「Tools for building AI agents」と定義し、中心となる <code>@mariozechner/pi-coding-agent</code> は <strong>minimal terminal coding harness</strong> として位置づけられている。</p>
     <p>Pi は「ワークフローをツールに合わせる」のではなく、拡張・スキル・プロンプトテンプレート・テーマ・Pi Packages で <strong>ユーザー側の運用に合わせて変形する</strong> ことを狙っている。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">7</span><span class="ve-kpi-card__label">主要パッケージ</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">5</span><span class="ve-kpi-card__label">主要パッケージ</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">実行モード</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">20+</span><span class="ve-kpi-card__label">LLM プロバイダー</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">22+</span><span class="ve-kpi-card__label">LLM プロバイダー</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">pi</span><span class="ve-kpi-card__label">CLI entrypoint</span></div>
     </div>
     <div class="ve-callout">
@@ -283,11 +283,11 @@ pi
     <div class="two-col">
       <div>
         <h3>サブスクリプション</h3>
-        <p>Anthropic Claude Pro/Max、OpenAI ChatGPT Plus/Pro（Codex）、GitHub Copilot、Google Gemini CLI、Google Antigravity を <code>/login</code> で使える。</p>
+        <p>Anthropic Claude Pro/Max、OpenAI ChatGPT Plus/Pro（Codex）、GitHub Copilot を <code>/login</code> で使える。</p>
       </div>
       <div>
         <h3>API キー</h3>
-        <p>Anthropic、OpenAI、Azure OpenAI、DeepSeek、Google、Vertex AI、Bedrock、Mistral、Groq、Cerebras、Cloudflare Workers AI、xAI、OpenRouter、Vercel AI Gateway、ZAI、OpenCode、Hugging Face、Fireworks、Kimi For Coding などに対応する。</p>
+        <p>Anthropic、OpenAI、Azure OpenAI、DeepSeek、Google Gemini、Vertex AI、Bedrock、Mistral、Groq、Cerebras、Cloudflare AI Gateway、Cloudflare Workers AI、xAI、OpenRouter、Vercel AI Gateway、ZAI、OpenCode Zen / Go、Hugging Face、Fireworks、Kimi For Coding、MiniMax などに対応する。</p>
       </div>
     </div>
   </div>
@@ -296,7 +296,7 @@ pi
   <section id="packages" class="sec-head">3 — パッケージ一覧</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> モノレポ構成</span>
-    <p>全主要パッケージは <code>0.70.6</code> で揃っている。Pi 本体だけでなく、LLM 抽象化、低レベルのエージェントランタイム、UI、Slack 連携、GPU ポッド管理まで分かれている。</p>
+    <p>全主要パッケージは <code>0.71.0</code> で揃っている。Pi 本体だけでなく、統一 LLM API、低レベルのエージェントランタイム、差分レンダリング TUI、AI チャット向け Web UI に責務が分かれている。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
@@ -325,14 +325,6 @@ pi
           <tr>
             <td><code>@mariozechner/pi-web-ui</code></td>
             <td><code>@mariozechner/pi-ai</code> を使う AI チャット向け再利用 Web UI コンポーネント。</td>
-          </tr>
-          <tr>
-            <td><code>@mariozechner/pi-mom</code></td>
-            <td>Slack から Pi coding agent へメッセージを委譲するボット。</td>
-          </tr>
-          <tr>
-            <td><code>@mariozechner/pi</code></td>
-            <td>GPU ポッド上の vLLM デプロイを管理する CLI。</td>
           </tr>
         </tbody>
       </table>
@@ -369,7 +361,7 @@ pi --fork &lt;path|id&gt;    # 特定セッションから分岐</code></pre>
   <section id="customization" class="sec-head">5 — 拡張モデル</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> core stays small</span>
-    <p>Pi はサブエージェントや plan mode を標準装備しない。その代わり、TypeScript 拡張と Agent Skills 標準、プロンプトテンプレート、テーマ、Pi Packages で、各チームのワークフローを後付けする。</p>
+    <p>Pi はサブエージェントや plan mode を標準装備しない。その代わり、TypeScript 拡張と Agent Skills 標準、プロンプトテンプレート、テーマ、Pi Packages で、各チームのワークフローを後付けする。MCP、権限ゲート、サンドボックス、Git チェックポイント、独自 UI も拡張側で組み込める。</p>
     <div class="feature-grid">
       <div class="feature-card"><strong>Prompt Templates</strong><p>Markdown の再利用プロンプト。<code>/name</code> で展開し、変数も使える。</p></div>
       <div class="feature-card"><strong>Skills</strong><p>Agent Skills 標準の手順パッケージ。<code>/skill:name</code> または自動ロードで使う。</p></div>
@@ -388,10 +380,13 @@ pi --fork &lt;path|id&gt;    # 特定セッションから分岐</code></pre>
 pi install npm:@foo/pi-tools@1.2.3
 pi install git:github.com/user/repo
 pi install https://github.com/user/repo@v1
+pi remove npm:@foo/pi-tools
 pi list
+pi update
 pi config
 pi update --extensions
-pi update --self</code></pre>
+pi update --self
+pi update npm:@foo/pi-tools</code></pre>
     </div>
   </div>
 
