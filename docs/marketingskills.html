@@ -9,7 +9,7 @@
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="marketingskills — AI エージェント向けマーケスキル集">
-  <meta property="og:description" content="product-marketing-context を軸にした 38+ スキル、npx skills / プラグイン導入、tools レジストリの要約。">
+  <meta property="og:description" content="product-marketing-context を軸にした 40 スキル、npx skills / プラグイン導入、tools レジストリの要約。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/marketingskills.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
@@ -18,7 +18,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Anonymous+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <style>
     /* ============ THEME — teal + amber (growth / GTM) ============ */
     :root {
@@ -108,6 +107,7 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
@@ -174,9 +174,22 @@
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
     @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
 
-    .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; }
-    .mermaid-wrap .mermaid { min-width: min(100%, 40rem); }
-    .mermaid-wrap svg { max-width: 100%; }
+    .hub-map { display: grid; grid-template-columns: minmax(0, 1fr) 2fr; gap: 1rem; align-items: stretch; margin-top: 1rem; }
+    .hub-core { border: 1px solid color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%); background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%); border-radius: var(--radius-lg); padding: 1rem; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+    .hub-core strong { display: block; font-size: 1rem; margin-bottom: 0.375rem; overflow-wrap: break-word; }
+    .hub-core span { color: var(--text-dim); font-size: 0.8125rem; line-height: 1.5; }
+    .hub-branches { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+    .hub-branch { border: 1px solid var(--border); background: var(--muted); border-radius: var(--radius-md); padding: 0.8rem; min-width: 0; }
+    .hub-branch b { display: block; font-size: 0.85rem; margin-bottom: 0.25rem; }
+    .hub-branch small { color: var(--text-dim); line-height: 1.45; }
+    .tool-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+    .tool-chip { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.75rem; min-width: 0; }
+    .tool-chip b { display: block; margin-bottom: 0.2rem; }
+    .tool-chip small { color: var(--text-dim); line-height: 1.45; }
+    @media (max-width: 720px) {
+      .hub-map { grid-template-columns: 1fr; }
+      .hub-branches, .tool-grid { grid-template-columns: 1fr; }
+    }
 
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
@@ -203,10 +216,10 @@
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何のリポジトリか</span>
-    <p><strong>Marketing Skills for AI Agents</strong> は、<a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills</a> 形式の Markdown スキルを、CRO・コピー・SEO・計測・GTM など <strong>マーケ課題に揃えて束ねた</strong>コレクション。各スキルは <code>SKILL.md</code> 主体で、<code>references/</code>・<code>evals/</code> を併用。Claude Code、Codex、Cursor、Windsurf 等、スキル対応エージェント向けに設計されている。</p>
+    <p><strong>Marketing Skills for AI Agents</strong> は、<a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills</a> 形式の Markdown スキルを、CRO・コピー・SEO・計測・GTM など <strong>マーケ課題に揃えて束ねた</strong>コレクション。各スキルは <code>SKILL.md</code> 主体で、必要に応じて <code>references/</code>・<code>scripts/</code>・<code>assets/</code> を併用する。Claude Code、Codex、Cursor、Windsurf など、スキル対応エージェント向けに設計されている。</p>
     <div class="kpi-row">
       <div class="ve-kpi-card">
-        <span class="ve-kpi-card__value">38+</span>
+        <span class="ve-kpi-card__value">40</span>
         <span class="ve-kpi-card__label">独立スキル</span>
       </div>
       <div class="ve-kpi-card">
@@ -218,26 +231,29 @@
         <span class="ve-kpi-card__label">ライセンス</span>
       </div>
       <div class="ve-kpi-card">
-        <span class="ve-kpi-card__value">tools</span>
-        <span class="ve-kpi-card__label">CLI レジストリ同梱</span>
+        <span class="ve-kpi-card__value">51</span>
+        <span class="ve-kpi-card__label">ゼロ依存 CLI ツール</span>
       </div>
     </div>
-    <p>中核となる <code>product-marketing-context</code> がプロダクト・顧客・訴求の前提を握り、他スキルは <strong>同じ文脈を先に参照してから</strong>実行する前提で相互参照する。README では SEO・CRO・リテンションなど 7 カラムの要約図と、<code>copywriting ↔ page-cro ↔ ab-test-setup</code> などのクロスリードも明示される。</p>
+    <p>中核となる <code>product-marketing-context</code> がプロダクト・顧客・訴求の前提を握り、他スキルは <strong>同じ文脈を先に参照してから</strong>実行する前提で相互参照する。README では SEO・CRO・リテンションなどの要約図と、<code>copywriting ↔ page-cro ↔ ab-test-setup</code> などのクロスリードも明示される。Claude Code プラグインのマニフェストではバージョン <code>1.9.0</code> として公開されている。</p>
   </div>
 
   <section id="together" class="sec-head">2 — スキル同士の関係</section>
   <div class="ve-card" style="--i:1">
     <span class="ve-section-label"><span class="ve-dot"></span> ハブ＆分岐（概念図）</span>
-    <p>下図は README の階層の<strong>抜粋</strong>。全依存は各 <code>SKILL.md</code> の「Related Skills」を正とする。</p>
-    <div class="mermaid-wrap">
-      <div class="mermaid">
-flowchart TB
-  pmc["product-marketing-context"]
-  pmc --> a["SEO / 発見 / IA"]
-  pmc --> b["CRO / 導線 / オンボ"]
-  pmc --> c["コピー / メール / SNS"]
-  pmc --> d["測定 / 実験 / 有料"]
-  pmc --> e["RevOps / 成長 / 解約防止"]
+    <p>README の階層を圧縮すると、「先に product marketing context を読む」ハブ構造になる。全依存は各 <code>SKILL.md</code> の Related Skills を正とする。</p>
+    <div class="hub-map">
+      <div class="hub-core">
+        <strong>product-marketing-context</strong>
+        <span>プロダクト、ICP、差別化、顧客語彙、ブランド voice を保存。以降のマーケスキルがここを先に読む。</span>
+      </div>
+      <div class="hub-branches" aria-label="代表カテゴリ">
+        <div class="hub-branch"><b>SEO / 発見 / IA</b><small><code>seo-audit</code>, <code>ai-seo</code>, <code>site-architecture</code></small></div>
+        <div class="hub-branch"><b>CRO / 導線</b><small><code>page-cro</code>, <code>signup-flow-cro</code>, <code>onboarding-cro</code></small></div>
+        <div class="hub-branch"><b>コピー / メール / SNS</b><small><code>copywriting</code>, <code>email-sequence</code>, <code>social-content</code></small></div>
+        <div class="hub-branch"><b>測定 / 広告 / 実験</b><small><code>analytics-tracking</code>, <code>paid-ads</code>, <code>ab-test-setup</code></small></div>
+        <div class="hub-branch"><b>成長 / Retention</b><small><code>referral-program</code>, <code>churn-prevention</code>, <code>free-tool-strategy</code></small></div>
+        <div class="hub-branch"><b>Sales / RevOps</b><small><code>revops</code>, <code>sales-enablement</code>, <code>cold-email</code></small></div>
       </div>
     </div>
   </div>
@@ -259,8 +275,8 @@ flowchart TB
           </tr>
           <tr>
             <td>Content &amp; Copy</td>
-            <td>新規コピー、既存改善、B2B メール、配信、SNS</td>
-            <td><code>copywriting</code>, <code>copy-editing</code>, <code>cold-email</code>, <code>email-sequence</code>, <code>social-content</code></td>
+            <td>新規コピー、既存改善、B2B メール、配信、SNS、画像・動画制作</td>
+            <td><code>copywriting</code>, <code>copy-editing</code>, <code>cold-email</code>, <code>email-sequence</code>, <code>social-content</code>, <code>image</code>, <code>video</code></td>
           </tr>
           <tr>
             <td>SEO &amp; 発見</td>
@@ -301,7 +317,7 @@ flowchart TB
   <div class="ve-card" style="--i:3">
     <span class="ve-section-label"><span class="ve-dot"></span> 代表的な取り込み方</span>
     <h3>CLI（推奨）</h3>
-    <p>公式 README は <a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">npx skills</a> を最優先で案内。<code>coreyhaines31/marketingskills</code> から一括 or スキル単位で <code>.agents/skills/</code> 等へ入る。</p>
+    <p>公式 README は <a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">npx skills</a> を最優先で案内。<code>coreyhaines31/marketingskills</code> から一括またはスキル単位で <code>.agents/skills/</code> へ入る。Claude Code 互換のため <code>.claude/skills/</code> への symlink も扱う。</p>
     <div class="ve-code-block">
       <pre><code># すべて
 npx skills add coreyhaines31/marketingskills
@@ -333,13 +349,21 @@ npx skills add coreyhaines31/marketingskills --skill page-cro copywriting
 "Create a 5-email welcome sequence" → email-sequence
 </code></pre>
     </div>
-    <p>各スキルに <code>/page-cro</code> 形式のショートカット前提が書かれていれば、エージェントのコマンド体系に合わせて呼び出しやすい。</p>
+    <p>多くのスキルは、まず <code>.agents/product-marketing-context.md</code> を確認する。プロダクト・顧客・ポジショニングを毎回説明し直さず、個別タスクでは足りない情報だけを聞く構造。</p>
   </div>
 
   <section id="tools" class="sec-head">6 — tools レジストリ</section>
   <div class="ve-card" style="--i:5">
     <span class="ve-section-label"><span class="ve-dot"></span> スキル外の補助データ</span>
-    <p><code>tools/REGISTRY.md</code> は、GA4・HubSpot・Stripe など <strong>外部マーケ／計測ツール</strong>について、API / MCP / 参照 CLI / ガイド有無を一覧化した「エージェント向け道具箱インデックス」。<code>tools/clis/*.js</code> と <code>tools/integrations/*.md</code> を横断的に辿るための出発点。スキル本文とは独立しているが、連携作業（計測・配信・CRM）で参照しやすい形になっている。</p>
+    <p><code>tools/REGISTRY.md</code> は、GA4・HubSpot・Stripe など <strong>外部マーケ／計測ツール</strong>について、API / MCP / CLI / SDK / ガイド有無を一覧化した「エージェント向け道具箱インデックス」。スキル本文とは独立しているが、計測・配信・CRM・広告の実作業で、どの連携方法に進むかを決める出発点になる。</p>
+    <div class="tool-grid" aria-label="tools registry highlights">
+      <div class="tool-chip"><b>Analytics / SEO</b><small>GA4、Mixpanel、Amplitude、Search Console、Semrush、Ahrefs など。</small></div>
+      <div class="tool-chip"><b>CRM / Email / Sales</b><small>HubSpot、Salesforce、Mailchimp、Resend、Outreach、Close など。</small></div>
+      <div class="tool-chip"><b>Ads / CRO / Product</b><small>Google Ads、Meta Ads、Hotjar、Optimizely、Pendo、Typeform など。</small></div>
+      <div class="tool-chip"><b>Referral / Payments</b><small>Stripe、Paddle、Rewardful、Tolt、PartnerStack、Dub など。</small></div>
+      <div class="tool-chip"><b>Content / CMS / Video</b><small>Webflow、WordPress、Sanity、Contentful、Wistia、HeyGen、HyperFrames など。</small></div>
+      <div class="tool-chip"><b>Composio Layer</b><small>ネイティブ MCP が薄い OAuth 系ツールへの統合ブリッジ。</small></div>
+    </div>
   </div>
 
   <section id="links" class="sec-head">7 — 参考リンク</section>
@@ -354,9 +378,6 @@ npx skills add coreyhaines31/marketingskills --skill page-cro copywriting
   </div>
 </div>
 
-<script>
-  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'strict' });
-</script>
 <script>
 (function() {
   var toc = document.getElementById('toc');
