@@ -83,6 +83,16 @@ type AutocompleteChoice = {
   value: string;
   description: string;
 };
+type ReviewGateEnvironment = {
+  changedNames: () => string[];
+  exists: (absolutePath: string) => boolean;
+  readText: (absolutePath: string) => Promise<string>;
+  validatePublicPaths: (docPath: string) => Result<string>;
+};
+type ReviewScopeRule = {
+  pattern: string;
+  matches: (file: string, docPath: string) => boolean;
+};
 
 type Result<T> =
   | {
@@ -98,6 +108,53 @@ type Result<T> =
 const WORKSPACE_ROOT = process.cwd();
 const SCAN_SCRIPT = ".cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh";
 const PUBLIC_PATH_SCRIPT = ".cursor/skills/docs-site-add-visual-doc/scripts/validate-public-paths.sh";
+
+const REVIEW_SCOPE_RULES: ReviewScopeRule[] = [
+  {
+    pattern: "{docPath}",
+    matches: (file, docPath) => file === docPath,
+  },
+  {
+    pattern: "index.html",
+    matches: (file) => file === "index.html",
+  },
+  {
+    pattern: "CONTEXT.md",
+    matches: (file) => file === "CONTEXT.md",
+  },
+  {
+    pattern: ".gitignore",
+    matches: (file) => file === ".gitignore",
+  },
+  {
+    pattern: "docs/adr/*.md",
+    matches: (file) => /^docs\/adr\/[^/]+\.md$/u.test(file),
+  },
+  {
+    pattern: "docs/design-docs/*.md",
+    matches: (file) => /^docs\/design-docs\/[^/]+\.md$/u.test(file),
+  },
+  {
+    pattern: "scripts/*.ts",
+    matches: (file) => /^scripts\/[^/]+\.ts$/u.test(file),
+  },
+  {
+    pattern: "package.json",
+    matches: (file) => file === "package.json",
+  },
+  {
+    pattern: "package-lock.json",
+    matches: (file) => file === "package-lock.json",
+  },
+  {
+    pattern: "tsconfig.json",
+    matches: (file) => file === "tsconfig.json",
+  },
+  {
+    pattern: "vitest.config.ts",
+    matches: (file) => file === "vitest.config.ts",
+  },
+];
 
 /** Wraps a successful operation in the shared CLI result shape. */
 const ok = <T>(value: T): Result<T> => ({ ok: true, value });
@@ -454,6 +511,16 @@ const runCommand = (command: string, args: string[], options: { cwd?: string } =
   });
 };
 
+/** Resolves a repository-owned workflow support script before delegating to bash. */
+const resolveWorkflowScriptPath = (relativePath: string): Result<string> => {
+  const absolutePath = path.join(WORKSPACE_ROOT, relativePath);
+  return existsSync(absolutePath)
+    ? ok(relativePath)
+    : err("Workflow support script not found.", {
+        script: relativePath,
+      });
+};
+
 /** Checks that an existing Source Repository can be safely fast-forwarded. */
 const assertCleanGitRepository = (source: SourceRepository): Result<SourceRepository> => {
   const gitDir = path.join(source.absolutePath, ".git");
@@ -518,7 +585,12 @@ const acquireSource = (options: CliOptions): Result<SourceRepository> => {
 
 /** Runs the existing source inventory script and returns its text summary. */
 const runSourceInventory = (source: SourceRepository): Result<string> => {
-  const scan = runCommand("bash", [SCAN_SCRIPT, source.relativePath]);
+  const script = resolveWorkflowScriptPath(SCAN_SCRIPT);
+  if (!script.ok) {
+    return script;
+  }
+
+  const scan = runCommand("bash", [script.value, source.relativePath]);
   return scan.status === 0
     ? ok(scan.stdout.trim())
     : err("Failed to scan Source Repository.", { source: source.relativePath, stderr: scan.stderr });
@@ -545,33 +617,12 @@ const gitChangedNames = (): string[] => [
 ];
 
 /** Lists the human-readable Review Scope patterns for a documentation target. */
-const allowedReviewScope = (docPath: string): string[] => [
-  docPath,
-  "index.html",
-  "CONTEXT.md",
-  ".gitignore",
-  "docs/adr/*.md",
-  "docs/design-docs/*.md",
-  "scripts/*.ts",
-  "package.json",
-  "package-lock.json",
-  "tsconfig.json",
-  "vitest.config.ts",
-];
+const allowedReviewScope = (docPath: string): string[] =>
+  REVIEW_SCOPE_RULES.map((rule) => (rule.pattern === "{docPath}" ? docPath : rule.pattern));
 
 /** Checks whether a changed file belongs to the Review Scope. */
 const matchesScope = (file: string, docPath: string): boolean =>
-  file === docPath ||
-  file === "index.html" ||
-  file === "CONTEXT.md" ||
-  file === ".gitignore" ||
-  file === "package.json" ||
-  file === "package-lock.json" ||
-  file === "tsconfig.json" ||
-  file === "vitest.config.ts" ||
-  /^docs\/adr\/[^/]+\.md$/u.test(file) ||
-  /^docs\/design-docs\/[^/]+\.md$/u.test(file) ||
-  /^scripts\/[^/]+\.ts$/u.test(file);
+  REVIEW_SCOPE_RULES.some((rule) => rule.matches(file, docPath));
 
 /** Determines whether a Visual Documentation Page is new or an update. */
 const pageStatus = (docPath: string): "new" | "update" =>
@@ -686,20 +737,50 @@ const hasHeadMeta = (html: string, marker: string): boolean => {
 
 /** Delegates public path safety checks to the existing docs-site validation script. */
 const validatePublicPaths = (docPath: string): Result<string> => {
-  const result = runCommand("bash", [PUBLIC_PATH_SCRIPT, docPath]);
+  const script = resolveWorkflowScriptPath(PUBLIC_PATH_SCRIPT);
+  if (!script.ok) {
+    return script;
+  }
+
+  const result = runCommand("bash", [script.value, docPath]);
   return result.status === 0 ? ok(result.stdout.trim()) : err("Public path validation failed.", { stderr: result.stderr });
 };
 
-/** Executes Validate Mode and returns Review Gate findings without modifying files. */
-const validate = async (options: CliOptions): Promise<Result<{ doc: string }>> => {
-  if (!options.doc) {
-    return err("validate requires --doc.");
+/** Extracts the most actionable text from a failed Result details object. */
+const failureDetailsText = (details: Record<string, unknown>): string | undefined => {
+  const stderr = details.stderr;
+  if (typeof stderr === "string") {
+    return stderr.trim();
   }
 
-  const doc = normalizeDocPath(options.doc);
+  const script = details.script;
+  return typeof script === "string" ? script : undefined;
+};
+
+/** Maps public path checker failures to review gate findings without hiding infrastructure errors. */
+const publicPathFinding = (result: Extract<Result<string>, { ok: false }>): ValidationFinding =>
+  ValidationFindingSchema.parse({
+    code: result.details.script ? "public-path-check-failed" : "public-path-leak",
+    message: result.message,
+    details: failureDetailsText(result.details),
+  });
+
+/** Creates the default Review Gate environment from the local workspace. */
+const createReviewGateEnvironment = (): ReviewGateEnvironment => ({
+  changedNames: gitChangedNames,
+  exists: existsSync,
+  readText: async (absolutePath) => readFile(absolutePath, "utf8"),
+  validatePublicPaths,
+});
+
+/** Evaluates the Review Gate and returns all actionable Validation Findings. */
+const evaluateReviewGate = async (
+  doc: DocumentPath,
+  environment: ReviewGateEnvironment = createReviewGateEnvironment(),
+): Promise<ValidationFinding[]> => {
   const findings: ValidationFinding[] = [];
 
-  if (!existsSync(doc.absolutePath)) {
+  if (!environment.exists(doc.absolutePath)) {
     findings.push(
       ValidationFindingSchema.parse({
         code: "missing-doc",
@@ -708,7 +789,7 @@ const validate = async (options: CliOptions): Promise<Result<{ doc: string }>> =
     );
   }
 
-  const indexHtml = await readFile(path.join(WORKSPACE_ROOT, "index.html"), "utf8");
+  const indexHtml = await environment.readText(path.join(WORKSPACE_ROOT, "index.html"));
   if (!indexHtml.includes(doc.relativePath)) {
     findings.push(
       ValidationFindingSchema.parse({
@@ -718,7 +799,7 @@ const validate = async (options: CliOptions): Promise<Result<{ doc: string }>> =
     );
   }
 
-  const html = existsSync(doc.absolutePath) ? await readFile(doc.absolutePath, "utf8") : "";
+  const html = environment.exists(doc.absolutePath) ? await environment.readText(doc.absolutePath) : "";
   const missingMeta = ["og:title", "og:url", "og:description", "twitter:card"].filter(
     (marker) => !hasHeadMeta(html, marker),
   );
@@ -731,21 +812,14 @@ const validate = async (options: CliOptions): Promise<Result<{ doc: string }>> =
     );
   }
 
-  if (existsSync(doc.absolutePath)) {
-    const publicPaths = validatePublicPaths(doc.relativePath);
+  if (environment.exists(doc.absolutePath)) {
+    const publicPaths = environment.validatePublicPaths(doc.relativePath);
     if (!publicPaths.ok) {
-      const stderr = publicPaths.details.stderr;
-      findings.push(
-        ValidationFindingSchema.parse({
-          code: "public-path-leak",
-          message: publicPaths.message,
-          details: typeof stderr === "string" ? stderr.trim() : "",
-        }),
-      );
+      findings.push(publicPathFinding(publicPaths));
     }
   }
 
-  const changedNames = gitChangedNames();
+  const changedNames = environment.changedNames();
   const sourceStatus = changedNames.filter((file) => file.startsWith("repos/"));
   if (sourceStatus.length > 0) {
     findings.push(
@@ -767,6 +841,18 @@ const validate = async (options: CliOptions): Promise<Result<{ doc: string }>> =
       }),
     );
   }
+
+  return findings;
+};
+
+/** Executes Validate Mode and returns Review Gate findings without modifying files. */
+const validate = async (options: CliOptions): Promise<Result<{ doc: string }>> => {
+  if (!options.doc) {
+    return err("validate requires --doc.");
+  }
+
+  const doc = normalizeDocPath(options.doc);
+  const findings = await evaluateReviewGate(doc);
 
   return findings.length === 0 ? ok({ doc: doc.relativePath }) : err("Review Gate failed.", { findings });
 };
@@ -816,6 +902,7 @@ export {
   buildRunbook,
   collectCliArgs,
   collectInteractiveArgs,
+  evaluateReviewGate,
   gitChangedNames,
   hasHeadMeta,
   listDocumentChoices,
