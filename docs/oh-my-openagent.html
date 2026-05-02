@@ -120,6 +120,23 @@
     .ve-table-wrap tr:hover td { background: var(--surface-elevated); }
     .ve-section-label { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-dim); margin-bottom: 0.75rem; }
     .ve-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--chart-1); flex-shrink: 0; }
+    .link-list-plain {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .link-list-plain li {
+      margin-bottom: 0.65rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border);
+      line-height: 1.6;
+    }
+    .link-list-plain li:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .link-list-plain a { font-weight: 600; }
     .ve-callout { border-left: 3px solid var(--chart-2); background: rgba(210,170,58,0.07); border-radius: 0 var(--radius-md) var(--radius-md) 0; padding: 0.875rem 1.25rem; }
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1.25rem; }
     .ve-kpi-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem 1.25rem; }
@@ -188,22 +205,22 @@
 
     /* ============ Section header ============ */
     .sec-head {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
       margin: 2.5rem 0 1.25rem;
       scroll-margin-top: 24px;
       padding-bottom: 0.6rem;
       border-bottom: 1px solid var(--border);
     }
-    .sec-num {
-      font-family: var(--font-mono);
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--chart-1);
-      min-width: 24px;
+    section.sec-head {
+      display: block;
+      font-family: var(--font-head);
+      font-size: 1.45rem;
+      font-weight: normal;
+      font-style: italic;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .main > section.sec-head:first-of-type {
+      margin-top: 0.75rem;
     }
 
     /* ============ TOC ============ */
@@ -228,6 +245,14 @@
       padding: 0 0 10px;
       margin-bottom: 8px;
       border-bottom: 1px solid var(--border);
+    }
+    .toc ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .toc li {
+      margin-bottom: 0.05rem;
     }
     .toc a {
       display: block;
@@ -287,11 +312,24 @@
       body { padding: 20px; }
       .toc {
         position: sticky; top: 0; z-index: 200; max-height: none;
-        display: flex; gap: 4px; align-items: center;
         overflow-x: auto; -webkit-overflow-scrolling: touch;
         background: var(--bg); border-bottom: 1px solid var(--border);
         padding: 10px 0; margin: 0 -20px; padding-left: 20px; padding-right: 20px;
         grid-row: auto;
+      }
+      .toc ul {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 4px;
+        align-items: center;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .toc li {
+        margin: 0;
+        flex-shrink: 0;
       }
       .toc::-webkit-scrollbar { display: none; }
       .toc-title { display: none; }
@@ -312,15 +350,20 @@
 <body>
 <div class="wrap">
 
-  <!-- ============ TOC ============ -->
-  <nav class="toc" id="toc">
-    <div class="toc-title">Contents</div>
-    <a href="#s1">概要</a>
-    <a href="#s2">エージェント</a>
-    <a href="#s3">オーケストレーション</a>
-    <a href="#s4">コア技術</a>
-    <a href="#s5">MCP とスキル</a>
-    <a href="#s6">インストール</a>
+  <!-- ============ TOC（oh-my-claudecode / oh-my-codex と同系の構成） ============ -->
+  <nav class="toc" id="toc" aria-label="目次">
+    <p class="toc-title">目次</p>
+    <ul>
+      <li><a href="#overview">概要</a></li>
+      <li><a href="#quickstart">クイックスタート</a></li>
+      <li><a href="#modes">オーケストレーションモード</a></li>
+      <li><a href="#architecture">アーキテクチャ</a></li>
+      <li><a href="#commands">コマンドリファレンス</a></li>
+      <li><a href="#agents">エージェント一覧</a></li>
+      <li><a href="#skills">スキル &amp; MCP</a></li>
+      <li><a href="#install">インストール &amp; 設定</a></li>
+      <li><a href="#links">参考リンク</a></li>
+    </ul>
   </nav>
 
   <!-- ============ Main ============ -->
@@ -328,11 +371,7 @@
     <h1>oh-my-opencode</h1>
     <p class="subtitle">マルチモデル・エージェント・オーケストレーション for OpenCode — npm <code>oh-my-opencode</code> <span class="ve-badge ve-badge--dim" style="font-size:10px">v3.17.12</span> / プラグイン <span style="color:var(--chart-1)">oh-my-openagent</span></p>
 
-    <!-- ========== S1: 概要 ========== -->
-    <div id="s1" class="sec-head">
-      <span class="sec-num">01</span>
-      <h2 style="margin:0;border:none;padding:0">概要</h2>
-    </div>
+    <section id="overview" class="sec-head">概要</section>
 
     <div class="ve-card ve-card--hero">
       <div class="ve-section-label"><span class="ve-dot"></span>Philosophy</div>
@@ -366,11 +405,252 @@
       </div>
     </div>
 
-    <!-- ========== S2: エージェント ========== -->
-    <div id="s2" class="sec-head">
-      <span class="sec-num">02</span>
-      <h2 style="margin:0;border:none;padding:0">エージェント一覧</h2>
+    <!-- ========== Body: claudecode / codex 系のセクション順 ========== -->
+    <section id="quickstart" class="sec-head">クイックスタート</section>
+
+    <div class="step-flow">
+      <div class="step-card">
+        <div class="step-card__num">Step 1 — インストール</div>
+        <div class="step-card__title">公式ガイドに従う</div>
+        <div class="step-card__body">OpenCode の <code>opencode.json</code> にプラグイン <code>oh-my-openagent</code>（旧名 <code>oh-my-opencode</code>）を追加。手順は上流の installation.md を参照。</div>
+        <div class="ve-code-block" style="margin-top:0.5rem;border-radius:var(--radius-sm)">
+          <div class="code-header">fetch</div>
+          <pre><code>curl -s https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/refs/heads/dev/docs/guide/installation.md</code></pre>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">Step 2 — 診断</div>
+        <div class="step-card__title"><code>doctor</code></div>
+        <div class="step-card__body">登録・設定・モデル・環境を一括チェック。</div>
+        <div class="ve-code-block" style="margin-top:0.5rem;border-radius:var(--radius-sm)">
+          <div class="code-header">bash</div>
+          <pre><code>bunx oh-my-opencode doctor</code></pre>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">Step 3 — 実行</div>
+        <div class="step-card__title"><code>ultrawork</code> / <code>ulw</code></div>
+        <div class="step-card__body">ワンショットでオーケストレーション開始。詳細は下記「コマンドリファレンス」。</div>
+      </div>
     </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>Tmux:</strong> 背景エージェントのマルチペイン可視化などは <code>"tmux": { "enabled": true, "layout": "main-vertical" }</code> を推奨。
+    </div>
+
+    <section id="modes" class="sec-head">オーケストレーションモード</section>
+
+    <h3>実行フロー</h3>
+    <div class="mermaid-wrap">
+      <div class="zoom-controls">
+        <button class="zoom-btn" id="zoomIn" title="ズームイン">+</button>
+        <button class="zoom-btn" id="zoomOut" title="ズームアウト">−</button>
+        <button class="zoom-btn" id="zoomReset" title="リセット" style="font-size:10px">↺</button>
+      </div>
+      <div class="mermaid" id="flow-diagram">
+flowchart TD
+  U([User]) --> IG[IntentGate\n意図分類]
+  IG --> S[Sisyphus\n主オーケストレーター]
+  S --> P[Prometheus\n計画・プランニング]
+  S --> H[Hephaestus\n深い実装]
+  S --> O[Oracle\nアーキレビュー]
+  S --> L[Librarian\n調査・ドキュメント]
+  S --> E[Explore\n高速検索]
+  S --> BG[背景エージェント\n並列 × N]
+  P --> S
+  BG --> DONE([完了])
+  H --> DONE
+  O --> DONE
+  L --> DONE
+  E --> DONE
+
+  classDef user fill:#1c2128,stroke:#58a6ff,color:#58a6ff,stroke-width:2px
+  classDef gate fill:#1c2128,stroke:#d4a73a,color:#d4a73a
+  classDef sis fill:#1a2035,stroke:#58a6ff,color:#e6edf3,stroke-width:2px
+  classDef plan fill:#1c2128,stroke:#d4a73a,color:#e6edf3
+  classDef sub fill:#161b22,stroke:#30363d,color:#8b949e
+  classDef done fill:#1c2128,stroke:#3fb950,color:#3fb950,stroke-width:2px
+  class U user
+  class IG gate
+  class S sis
+  class P plan
+  class H,O,L,E,BG sub
+  class DONE done
+      </div>
+    </div>
+
+    <h3>カテゴリシステム</h3>
+    <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.75rem">
+      Sisyphus が委譲する際、モデルを直接指定するのではなく <strong>カテゴリ</strong> を選ぶ。カテゴリが適切なモデルに自動マッピングされる。
+    </p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>カテゴリ</th>
+            <th>用途</th>
+            <th>優先モデル（連鎖の先頭）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>visual-engineering</code></td>
+            <td>フロントエンド・UI/UX・デザイン</td>
+            <td><code>gemini-3.1-pro</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">high</span></td>
+          </tr>
+          <tr>
+            <td><code>deep</code></td>
+            <td>自律的な調査・実行（Hephaestus モード）</td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">medium</span></td>
+          </tr>
+          <tr>
+            <td><code>quick</code></td>
+            <td>単一ファイル変更・タイポ修正など軽量タスク</td>
+            <td><code>gpt-5.4-mini</code></td>
+          </tr>
+          <tr>
+            <td><code>ultrabrain</code></td>
+            <td>難解なロジック・アーキテクチャ決定</td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">xhigh</span></td>
+          </tr>
+          <tr>
+            <td><em>カスタム</em></td>
+            <td>独自ドメイン（business-logic など）を定義可能</td>
+            <td>設定で指定</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>背景エージェント（Background Agents）</h3>
+    <div class="feature-grid">
+      <div class="ve-card ve-card--recessed">
+        <div class="fc-label" style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--chart-2);margin-bottom:.35rem">起動</div>
+        <div class="ve-code-block">
+          <div class="code-header">bash</div>
+          <pre><code>task(
+  subagent_type="explore",
+  prompt="auth 実装を探せ",
+  run_in_background=true
+)</code></pre>
+        </div>
+      </div>
+      <div class="ve-card ve-card--recessed">
+        <div class="fc-label" style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--chart-2);margin-bottom:.35rem">結果取得</div>
+        <div class="ve-code-block">
+          <div class="code-header">bash</div>
+          <pre><code>background_output(
+  task_id="bg_abc123"
+)</code></pre>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:0.8rem;color:var(--text-dim);margin-top:.75rem">
+      <strong>Tmux 統合</strong>を有効化すると、背景エージェントが別ペインに表示され、複数エージェントのリアルタイム動作を観察できる。
+      <code>"tmux": { "enabled": true, "layout": "main-vertical" }</code>
+    </p>
+
+    <section id="architecture" class="sec-head">アーキテクチャ</section>
+
+    <h3>Hashline — ハッシュ錨定編集</h3>
+    <div class="ve-card ve-card--elevated" style="margin-bottom:1rem">
+      <p style="margin-bottom:.75rem">
+        従来の編集ツールはモデルに「前に読んだ内容を再現させる」が、モデルはしばしば失敗する。
+        <a href="https://blog.can.ac/2026/02/12/the-harness-problem/" target="_blank">The Harness Problem</a>（Can Bölük）にインスパイアされた <strong>Hashline</strong> はこれを根本解決する。
+      </p>
+      <p style="font-size:.8rem;color:var(--text-dim);margin-bottom:.75rem">
+        各行に <code>LINE#HASH</code> タグを付与。エージェントはそのタグを参照して編集する。
+        ファイルが変更されたらハッシュが一致しなくなり、編集は拒否される。古い行参照によるファイル破損ゼロ。
+      </p>
+      <div class="ve-code-block">
+        <div class="code-header">Hashline — エージェントが読む形式</div>
+        <pre><code>11#VK| function hello() {
+22#XJ|   return "world";
+33#MB| }</code></pre>
+      </div>
+      <div style="margin-top:.75rem;display:flex;gap:.75rem;align-items:center">
+        <div style="text-align:center;flex:1">
+          <div style="font-family:var(--font-mono);font-size:1.5rem;color:var(--chart-4)">6.7%</div>
+          <div style="font-size:.75rem;color:var(--text-dim)">従来の編集成功率</div>
+        </div>
+        <div style="font-size:1.5rem;color:var(--text-dim)">→</div>
+        <div style="text-align:center;flex:1">
+          <div style="font-family:var(--font-mono);font-size:1.5rem;color:var(--chart-3)">68.3%</div>
+          <div style="font-size:.75rem;color:var(--text-dim)">Hashline 導入後</div>
+        </div>
+        <div style="font-size:.8rem;color:var(--text-dim);flex:2">Grok Code Fast 1 での計測。<br>ツール変更のみで <strong>10× 向上</strong>。</div>
+      </div>
+    </div>
+
+    <h3>IntentGate</h3>
+    <p style="font-size:.85rem;margin-bottom:.75rem">
+      ユーザーの <strong>真の意図</strong> を分類・分析してからアクションを選択。文字通りの解釈による誤った実行を防ぐ。
+    </p>
+
+    <h3>LSP + AST-Grep — IDE 精度のツール</h3>
+    <div class="ve-table-wrap" style="margin-bottom:.75rem">
+      <table>
+        <thead><tr><th>ツール</th><th>機能</th></tr></thead>
+        <tbody>
+          <tr><td><code>lsp_rename</code></td><td>ワークスペース全体のシンボルリネーム</td></tr>
+          <tr><td><code>lsp_goto_definition</code></td><td>定義ジャンプ</td></tr>
+          <tr><td><code>lsp_find_references</code></td><td>全参照を検索</td></tr>
+          <tr><td><code>lsp_diagnostics</code></td><td>ビルド前診断・型エラー検出</td></tr>
+          <tr><td><code>ast_grep</code></td><td>25 言語対応のパターン認識コード検索・書き換え</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>/init-deep — 階層的 AGENTS.md 生成</h3>
+    <div class="ve-code-block" style="margin-bottom:.75rem">
+      <div class="code-header">生成されるディレクトリ構造</div>
+      <pre><code>project/
+├── AGENTS.md          ← プロジェクト全体コンテキスト
+├── src/
+│   ├── AGENTS.md      ← src 固有のコンテキスト
+│   └── components/
+│       └── AGENTS.md  ← コンポーネント固有のコンテキスト</code></pre>
+    </div>
+    <p style="font-size:.8rem;color:var(--text-dim)">
+      エージェントが関連コンテキストを自動読み込み。手動管理不要でトークン効率も向上。
+    </p>
+
+    <section id="commands" class="sec-head">コマンドリファレンス</section>
+
+    <h3>主要コマンド</h3>
+    <div class="step-flow">
+      <div class="step-card">
+        <div class="step-card__num">CMD 01</div>
+        <div class="step-card__title"><code>ultrawork</code> / <code>ulw</code></div>
+        <div class="step-card__body">全エージェント起動。完了まで止まらない。ワンワード、フルオーケストレーション。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">CMD 02</div>
+        <div class="step-card__title"><code>/start-work</code></div>
+        <div class="step-card__body">Prometheus を呼び出し、インタビューモードで計画を立ててから実行開始。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">CMD 03</div>
+        <div class="step-card__title"><code>/ulw-loop</code> (Ralph Loop)</div>
+        <div class="step-card__body">自己参照ループ。100% 完了まで繰り返し実行し続ける。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">CMD 04</div>
+        <div class="step-card__title"><code>/init-deep</code></div>
+        <div class="step-card__body">プロジェクト全体に階層的 AGENTS.md を自動生成。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">CMD 05</div>
+        <div class="step-card__title"><code>doctor</code></div>
+        <div class="step-card__body"><code>bunx oh-my-opencode doctor</code> でプラグイン登録・設定・モデル・環境を診断。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">CMD 06</div>
+        <div class="step-card__title">Todo Enforcer</div>
+        <div class="step-card__body">エージェントがアイドル状態になったらシステムが自動復帰。タスクは必ず完了する。</div>
+      </div>
+    </div>
+
+    <section id="agents" class="sec-head">エージェント一覧</section>
 
     <div class="ve-section-label"><span class="ve-dot"></span>Core Agents</div>
     <div class="ve-table-wrap" style="margin-bottom:1.25rem">
@@ -487,230 +767,7 @@
       </p>
     </div>
 
-    <!-- ========== S3: オーケストレーション ========== -->
-    <div id="s3" class="sec-head">
-      <span class="sec-num">03</span>
-      <h2 style="margin:0;border:none;padding:0">オーケストレーション</h2>
-    </div>
-
-    <h3>実行フロー</h3>
-    <div class="mermaid-wrap">
-      <div class="zoom-controls">
-        <button class="zoom-btn" id="zoomIn" title="ズームイン">+</button>
-        <button class="zoom-btn" id="zoomOut" title="ズームアウト">−</button>
-        <button class="zoom-btn" id="zoomReset" title="リセット" style="font-size:10px">↺</button>
-      </div>
-      <div class="mermaid" id="flow-diagram">
-flowchart TD
-  U([User]) --> IG[IntentGate\n意図分類]
-  IG --> S[Sisyphus\n主オーケストレーター]
-  S --> P[Prometheus\n計画・プランニング]
-  S --> H[Hephaestus\n深い実装]
-  S --> O[Oracle\nアーキレビュー]
-  S --> L[Librarian\n調査・ドキュメント]
-  S --> E[Explore\n高速検索]
-  S --> BG[背景エージェント\n並列 × N]
-  P --> S
-  BG --> DONE([完了])
-  H --> DONE
-  O --> DONE
-  L --> DONE
-  E --> DONE
-
-  classDef user fill:#1c2128,stroke:#58a6ff,color:#58a6ff,stroke-width:2px
-  classDef gate fill:#1c2128,stroke:#d4a73a,color:#d4a73a
-  classDef sis fill:#1a2035,stroke:#58a6ff,color:#e6edf3,stroke-width:2px
-  classDef plan fill:#1c2128,stroke:#d4a73a,color:#e6edf3
-  classDef sub fill:#161b22,stroke:#30363d,color:#8b949e
-  classDef done fill:#1c2128,stroke:#3fb950,color:#3fb950,stroke-width:2px
-  class U user
-  class IG gate
-  class S sis
-  class P plan
-  class H,O,L,E,BG sub
-  class DONE done
-      </div>
-    </div>
-
-    <h3>カテゴリシステム</h3>
-    <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.75rem">
-      Sisyphus が委譲する際、モデルを直接指定するのではなく <strong>カテゴリ</strong> を選ぶ。カテゴリが適切なモデルに自動マッピングされる。
-    </p>
-    <div class="ve-table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>カテゴリ</th>
-            <th>用途</th>
-            <th>優先モデル（連鎖の先頭）</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>visual-engineering</code></td>
-            <td>フロントエンド・UI/UX・デザイン</td>
-            <td><code>gemini-3.1-pro</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">high</span></td>
-          </tr>
-          <tr>
-            <td><code>deep</code></td>
-            <td>自律的な調査・実行（Hephaestus モード）</td>
-            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">medium</span></td>
-          </tr>
-          <tr>
-            <td><code>quick</code></td>
-            <td>単一ファイル変更・タイポ修正など軽量タスク</td>
-            <td><code>gpt-5.4-mini</code></td>
-          </tr>
-          <tr>
-            <td><code>ultrabrain</code></td>
-            <td>難解なロジック・アーキテクチャ決定</td>
-            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">xhigh</span></td>
-          </tr>
-          <tr>
-            <td><em>カスタム</em></td>
-            <td>独自ドメイン（business-logic など）を定義可能</td>
-            <td>設定で指定</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <h3>背景エージェント（Background Agents）</h3>
-    <div class="feature-grid">
-      <div class="ve-card ve-card--recessed">
-        <div class="fc-label" style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--chart-2);margin-bottom:.35rem">起動</div>
-        <div class="ve-code-block">
-          <div class="code-header">bash</div>
-          <pre><code>task(
-  subagent_type="explore",
-  prompt="auth 実装を探せ",
-  run_in_background=true
-)</code></pre>
-        </div>
-      </div>
-      <div class="ve-card ve-card--recessed">
-        <div class="fc-label" style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--chart-2);margin-bottom:.35rem">結果取得</div>
-        <div class="ve-code-block">
-          <div class="code-header">bash</div>
-          <pre><code>background_output(
-  task_id="bg_abc123"
-)</code></pre>
-        </div>
-      </div>
-    </div>
-    <p style="font-size:0.8rem;color:var(--text-dim);margin-top:.75rem">
-      <strong>Tmux 統合</strong>を有効化すると、背景エージェントが別ペインに表示され、複数エージェントのリアルタイム動作を観察できる。
-      <code>"tmux": { "enabled": true, "layout": "main-vertical" }</code>
-    </p>
-
-    <!-- ========== S4: コア技術 ========== -->
-    <div id="s4" class="sec-head">
-      <span class="sec-num">04</span>
-      <h2 style="margin:0;border:none;padding:0">コア技術</h2>
-    </div>
-
-    <h3>Hashline — ハッシュ錨定編集</h3>
-    <div class="ve-card ve-card--elevated" style="margin-bottom:1rem">
-      <p style="margin-bottom:.75rem">
-        従来の編集ツールはモデルに「前に読んだ内容を再現させる」が、モデルはしばしば失敗する。
-        <a href="https://blog.can.ac/2026/02/12/the-harness-problem/" target="_blank">The Harness Problem</a>（Can Bölük）にインスパイアされた <strong>Hashline</strong> はこれを根本解決する。
-      </p>
-      <p style="font-size:.8rem;color:var(--text-dim);margin-bottom:.75rem">
-        各行に <code>LINE#HASH</code> タグを付与。エージェントはそのタグを参照して編集する。
-        ファイルが変更されたらハッシュが一致しなくなり、編集は拒否される。古い行参照によるファイル破損ゼロ。
-      </p>
-      <div class="ve-code-block">
-        <div class="code-header">Hashline — エージェントが読む形式</div>
-        <pre><code>11#VK| function hello() {
-22#XJ|   return "world";
-33#MB| }</code></pre>
-      </div>
-      <div style="margin-top:.75rem;display:flex;gap:.75rem;align-items:center">
-        <div style="text-align:center;flex:1">
-          <div style="font-family:var(--font-mono);font-size:1.5rem;color:var(--chart-4)">6.7%</div>
-          <div style="font-size:.75rem;color:var(--text-dim)">従来の編集成功率</div>
-        </div>
-        <div style="font-size:1.5rem;color:var(--text-dim)">→</div>
-        <div style="text-align:center;flex:1">
-          <div style="font-family:var(--font-mono);font-size:1.5rem;color:var(--chart-3)">68.3%</div>
-          <div style="font-size:.75rem;color:var(--text-dim)">Hashline 導入後</div>
-        </div>
-        <div style="font-size:.8rem;color:var(--text-dim);flex:2">Grok Code Fast 1 での計測。<br>ツール変更のみで <strong>10× 向上</strong>。</div>
-      </div>
-    </div>
-
-    <h3>IntentGate</h3>
-    <p style="font-size:.85rem;margin-bottom:.75rem">
-      ユーザーの <strong>真の意図</strong> を分類・分析してからアクションを選択。文字通りの解釈による誤った実行を防ぐ。
-    </p>
-
-    <h3>LSP + AST-Grep — IDE 精度のツール</h3>
-    <div class="ve-table-wrap" style="margin-bottom:.75rem">
-      <table>
-        <thead><tr><th>ツール</th><th>機能</th></tr></thead>
-        <tbody>
-          <tr><td><code>lsp_rename</code></td><td>ワークスペース全体のシンボルリネーム</td></tr>
-          <tr><td><code>lsp_goto_definition</code></td><td>定義ジャンプ</td></tr>
-          <tr><td><code>lsp_find_references</code></td><td>全参照を検索</td></tr>
-          <tr><td><code>lsp_diagnostics</code></td><td>ビルド前診断・型エラー検出</td></tr>
-          <tr><td><code>ast_grep</code></td><td>25 言語対応のパターン認識コード検索・書き換え</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <h3>/init-deep — 階層的 AGENTS.md 生成</h3>
-    <div class="ve-code-block" style="margin-bottom:.75rem">
-      <div class="code-header">生成されるディレクトリ構造</div>
-      <pre><code>project/
-├── AGENTS.md          ← プロジェクト全体コンテキスト
-├── src/
-│   ├── AGENTS.md      ← src 固有のコンテキスト
-│   └── components/
-│       └── AGENTS.md  ← コンポーネント固有のコンテキスト</code></pre>
-    </div>
-    <p style="font-size:.8rem;color:var(--text-dim)">
-      エージェントが関連コンテキストを自動読み込み。手動管理不要でトークン効率も向上。
-    </p>
-
-    <h3>主要コマンド</h3>
-    <div class="step-flow">
-      <div class="step-card">
-        <div class="step-card__num">CMD 01</div>
-        <div class="step-card__title"><code>ultrawork</code> / <code>ulw</code></div>
-        <div class="step-card__body">全エージェント起動。完了まで止まらない。ワンワード、フルオーケストレーション。</div>
-      </div>
-      <div class="step-card">
-        <div class="step-card__num">CMD 02</div>
-        <div class="step-card__title"><code>/start-work</code></div>
-        <div class="step-card__body">Prometheus を呼び出し、インタビューモードで計画を立ててから実行開始。</div>
-      </div>
-      <div class="step-card">
-        <div class="step-card__num">CMD 03</div>
-        <div class="step-card__title"><code>/ulw-loop</code> (Ralph Loop)</div>
-        <div class="step-card__body">自己参照ループ。100% 完了まで繰り返し実行し続ける。</div>
-      </div>
-      <div class="step-card">
-        <div class="step-card__num">CMD 04</div>
-        <div class="step-card__title"><code>/init-deep</code></div>
-        <div class="step-card__body">プロジェクト全体に階層的 AGENTS.md を自動生成。</div>
-      </div>
-      <div class="step-card">
-        <div class="step-card__num">CMD 05</div>
-        <div class="step-card__title"><code>doctor</code></div>
-        <div class="step-card__body"><code>bunx oh-my-opencode doctor</code> でプラグイン登録・設定・モデル・環境を診断。</div>
-      </div>
-      <div class="step-card">
-        <div class="step-card__num">CMD 06</div>
-        <div class="step-card__title">Todo Enforcer</div>
-        <div class="step-card__body">エージェントがアイドル状態になったらシステムが自動復帰。タスクは必ず完了する。</div>
-      </div>
-    </div>
-
-    <!-- ========== S5: MCP とスキル ========== -->
-    <div id="s5" class="sec-head">
-      <span class="sec-num">05</span>
-      <h2 style="margin:0;border:none;padding:0">MCP とスキル</h2>
-    </div>
+    <section id="skills" class="sec-head">スキル &amp; MCP</section>
 
     <h3>ビルトイン MCP（常時有効）</h3>
     <div class="ve-table-wrap" style="margin-bottom:1.25rem">
@@ -779,11 +836,7 @@ flowchart TD
       Claude Code の設定を移行する必要なし。既存の投資を無駄にしない。
     </div>
 
-    <!-- ========== S6: インストール ========== -->
-    <div id="s6" class="sec-head">
-      <span class="sec-num">06</span>
-      <h2 style="margin:0;border:none;padding:0">インストール / 設定</h2>
-    </div>
+    <section id="install" class="sec-head">インストール &amp; 設定</section>
 
     <h3>インストール（人間向け）</h3>
     <p style="font-size:.8rem;color:var(--text-dim);margin-bottom:.75rem">
@@ -854,14 +907,34 @@ https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/refs/heads/dev/do
     mv /tmp/oc.json ~/.config/opencode/opencode.json</code></pre>
     </div>
 
-    <div style="margin-top:2.5rem;padding:1.25rem 1.5rem;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)">
-      <div class="ve-section-label" style="margin-bottom:.5rem"><span class="ve-dot"></span>Links</div>
-      <div style="display:flex;flex-wrap:wrap;gap:.5rem;font-size:.8rem">
-        <a href="https://github.com/code-yeongyu/oh-my-openagent" target="_blank" class="ve-badge ve-badge--blue">GitHub</a>
-        <a href="https://discord.gg/PUwSMR9XNk" target="_blank" class="ve-badge ve-badge--dim">Discord</a>
-        <a href="https://deepwiki.com/code-yeongyu/oh-my-openagent" target="_blank" class="ve-badge ve-badge--dim">DeepWiki</a>
-        <a href="https://www.npmjs.com/package/oh-my-opencode" target="_blank" class="ve-badge ve-badge--green">npm</a>
-      </div>
+    <section id="links" class="sec-head">参考リンク</section>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・コミュニティ</span>
+      <ul class="link-list-plain">
+        <li>
+          <a href="https://github.com/code-yeongyu/oh-my-openagent" target="_blank" rel="noopener">GitHub リポジトリ</a>
+          — ソース・Issue
+        </li>
+        <li>
+          <a href="https://www.npmjs.com/package/oh-my-opencode" target="_blank" rel="noopener">npm: oh-my-opencode</a>
+          — OpenCode プラグイン（<code>npm i -g oh-my-opencode</code>）
+        </li>
+        <li>
+          <a href="https://deepwiki.com/code-yeongyu/oh-my-openagent" target="_blank" rel="noopener">DeepWiki</a>
+          — AI 生成ドキュメント
+        </li>
+        <li>
+          <a href="https://discord.gg/PUwSMR9XNk" target="_blank" rel="noopener">Discord</a>
+          — コミュニティ
+        </li>
+        <li>
+          姉妹プロジェクト:
+          <a href="https://github.com/Yeachan-Heo/oh-my-codex" target="_blank" rel="noopener">oh-my-codex</a>
+          ·
+          <a href="https://github.com/Yeachan-Heo/oh-my-claudecode" target="_blank" rel="noopener">oh-my-claudecode</a>
+        </li>
+      </ul>
     </div>
 
   </div><!-- /main -->
