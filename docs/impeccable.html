@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Impeccable — LLM フロントエンドデザインスキル集</title>
-  <meta name="description" content="AI が生み出す凡庸なデザインと戦う 1 スキル・20 コマンド・厳選アンチパターン集。Cursor・Claude Code・Gemini CLI など主要ツールに対応。">
+  <meta name="description" content="AI が生み出す凡庸なデザインと戦う 1 スキル・23 コマンド・24 種のアンチパターン検出。Cursor・Claude Code・Gemini CLI など主要ツールに対応。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Impeccable — LLM フロントエンドデザインスキル集">
-  <meta property="og:description" content="AI が生み出す凡庸なデザインと戦う 1 スキル・20 コマンド・厳選アンチパターン集。Cursor・Claude Code・Gemini CLI など主要ツールに対応。">
+  <meta property="og:description" content="AI が生み出す凡庸なデザインと戦う 1 スキル・23 コマンド・24 種のアンチパターン検出。Cursor・Claude Code・Gemini CLI など主要ツールに対応。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/impeccable.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Impeccable — LLM フロントエンドデザインスキル集">
-  <meta name="twitter:description" content="AI が生み出す凡庸なデザインと戦う 1 スキル・20 コマンド・厳選アンチパターン集。Cursor・Claude Code・Gemini CLI など主要ツールに対応。">
+  <meta name="twitter:description" content="AI が生み出す凡庸なデザインと戦う 1 スキル・23 コマンド・24 種のアンチパターン検出。Cursor・Claude Code・Gemini CLI など主要ツールに対応。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -113,6 +113,7 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
@@ -185,7 +186,7 @@
     code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
 
     /* ============ KPI row ============ */
-    .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
     .kpi-row .ve-kpi-card { min-width: 0; }
     @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
 
@@ -205,7 +206,7 @@
 
     /* ============ Anti-pattern list ============ */
     .anti-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
-    .anti-list li { display: flex; gap: 0.625rem; align-items: baseline; font-size: 0.875rem; line-height: 1.55; }
+    .anti-list li { display: grid; grid-template-columns: auto 1fr; gap: 0.625rem; align-items: baseline; font-size: 0.875rem; line-height: 1.55; min-width: 0; }
     .anti-badge { flex-shrink: 0; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; background: oklch(0.577 0.245 27.325 / 0.12); color: oklch(0.577 0.245 27.325); border-radius: var(--radius-sm); padding: 2px 6px; text-transform: uppercase; letter-spacing: 0.05em; }
     @media (prefers-color-scheme: dark) {
       .anti-badge { background: oklch(0.704 0.191 22.216 / 0.18); color: oklch(0.704 0.191 22.216); }
@@ -230,34 +231,36 @@
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
     <a href="#skill">スキル構成</a>
-    <a href="#commands">20 コマンド</a>
+    <a href="#commands">23 コマンド</a>
     <a href="#antipatterns">アンチパターン</a>
+    <a href="#cli">CLI 検出</a>
     <a href="#install">インストール</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
     <h1>Impeccable</h1>
-    <p class="subtitle">1 skill · 20 commands · curated anti-patterns — by Paul Bakaus</p>
+    <p class="subtitle">1 skill · 23 commands · 24 detector issues — by Paul Bakaus</p>
 
     <!-- 1. 概要 -->
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> What is Impeccable?</span>
       <p><strong>Impeccable</strong> は、LLM 搭載の開発ツール（Cursor・Claude Code・Gemini CLI など）向けに、フロントエンドデザインの品質を引き上げるスキル集とコマンドセット。すべての LLM は同じ凡庸なテンプレートを学習してきた。そのままでは「Inter フォント・紫グラデーション・カード入れ子・カラー背景にグレー文字」という予測可能な失敗を繰り返す。</p>
-      <p>Impeccable はそのバイアスを、<strong>拡張スキル + 20 のステアリングコマンド + 厳選アンチパターン集</strong>で打ち破る。</p>
+      <p>Impeccable はそのバイアスを、<strong>拡張スキル + 23 のステアリングコマンド + 厳選アンチパターン + スタンドアロン検出 CLI</strong>で打ち破る。</p>
       <div class="kpi-row" style="margin-top: 1rem;">
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">スキル</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">20</span><span class="ve-kpi-card__label">コマンド</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">8</span><span class="ve-kpi-card__label">対応ツール</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">23</span><span class="ve-kpi-card__label">コマンド</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">24</span><span class="ve-kpi-card__label">検出項目</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">11</span><span class="ve-kpi-card__label">対応ツール</span></div>
       </div>
     </div>
 
     <!-- 2. スキル構成 -->
     <section id="skill" class="sec-head">2 — スキル構成</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> frontend-design スキル</span>
-      <p>コアスキル <code>frontend-design</code> は、デザイン方向性の決定・実装原則・品質チェック（AI スロップテスト）を LLM に伝える主ファイルと、7 つのドメイン別リファレンスで構成される。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> impeccable スキル</span>
+      <p>コアスキル <code>impeccable</code> は、デザイン方向性の決定・実装原則・品質チェック（AI スロップテスト）を LLM に伝える主ファイルと、7 つのドメイン別リファレンスで構成される。Anthropic の <code>frontend-design</code> を土台に、より強い事前ゲートとコマンドルーティングを足している。</p>
       <div class="ref-grid">
         <div class="ref-item">
           <div class="ref-item__name">typography.md</div>
@@ -291,7 +294,7 @@
     </div>
     <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 0.75rem;">
       <span class="ve-section-label"><span class="ve-dot"></span> ビルドアーキテクチャ</span>
-      <p>ソースファイルは 1 つ。ビルド時に 8 つのプロバイダ向けフォーマットへ自動変換される。</p>
+      <p>ソースファイルは 1 つ。ビルド時に各プロバイダ向けフォーマットへ自動変換される。Cursor、Claude Code、OpenCode、Gemini CLI、Codex CLI、Pi、GitHub Copilot、Kiro、Trae、Rovo Dev、Qoder で使える。</p>
       <div class="mermaid-wrap">
         <div class="mermaid" id="arch-diagram">
 flowchart TD
@@ -305,7 +308,8 @@ flowchart TD
   BUILD --> COD["Codex CLI<br/>.codex/skills/"]
   BUILD --> KIR["Kiro<br/>.kiro/skills/"]
   BUILD --> PI["Pi<br/>.pi/skills/"]
-  BUILD --> AG["Agents / Copilot<br/>.agents/skills/"]
+  BUILD --> AG["Agents / Copilot<br/>.agents / .github"]
+  BUILD --> OTHER["Trae / Rovo / Qoder<br/>provider bundles"]
         </div>
         <div class="mermaid-controls">
           <button onclick="zoomMermaid(-0.2)">−</button>
@@ -315,37 +319,40 @@ flowchart TD
       </div>
     </div>
 
-    <!-- 3. 20 コマンド -->
-    <section id="commands" class="sec-head">3 — 20 コマンド一覧</section>
+    <!-- 3. 23 コマンド -->
+    <section id="commands" class="sec-head">3 — 23 コマンド一覧</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> コマンドリスト</span>
-      <p>コマンドはオプション引数で対象を絞り込める。例: <code>/audit blog</code>・<code>/polish settings page</code>。複数コマンドも連鎖可能: <code>/audit /normalize /polish blog</code>。</p>
+      <p>メインの呼び出しは <code>/impeccable &lt;command&gt;</code>。<code>/impeccable pin audit</code> のようにピン留めすると、<code>/audit</code> などの単独ショートカットも作れる。</p>
       <div class="ve-table-wrap" style="margin-top: 1rem;">
         <table>
           <thead>
             <tr><th>コマンド</th><th>役割</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>/teach-impeccable</code></td><td>初回セットアップ: デザインコンテキストを収集して設定ファイルに保存</td></tr>
-            <tr><td><code>/audit</code></td><td>a11y・パフォーマンス・レスポンシブの技術品質チェック（編集なし）</td></tr>
-            <tr><td><code>/critique</code></td><td>UX デザインレビュー: ヒエラルキー・明確さ・感情的共鳴</td></tr>
-            <tr><td><code>/normalize</code></td><td>デザインシステム標準への整合</td></tr>
-            <tr><td><code>/polish</code></td><td>リリース前の最終磨き上げ</td></tr>
-            <tr><td><code>/distill</code></td><td>本質への削ぎ落とし</td></tr>
-            <tr><td><code>/clarify</code></td><td>不明瞭な UX コピーの改善</td></tr>
-            <tr><td><code>/optimize</code></td><td>パフォーマンス改善</td></tr>
-            <tr><td><code>/harden</code></td><td>エラーハンドリング・i18n・エッジケース対応</td></tr>
-            <tr><td><code>/animate</code></td><td>意図あるモーションの追加</td></tr>
-            <tr><td><code>/colorize</code></td><td>戦略的な色の導入</td></tr>
-            <tr><td><code>/bolder</code></td><td>凡庸なデザインを大胆に</td></tr>
-            <tr><td><code>/quieter</code></td><td>過剰に大胆なデザインを落ち着かせる</td></tr>
-            <tr><td><code>/delight</code></td><td>喜びの瞬間を追加</td></tr>
-            <tr><td><code>/extract</code></td><td>再利用可能なコンポーネントへの抽出</td></tr>
-            <tr><td><code>/adapt</code></td><td>異なるデバイスへの適応</td></tr>
-            <tr><td><code>/onboard</code></td><td>オンボーディングフローの設計</td></tr>
-            <tr><td><code>/typeset</code></td><td>フォント選択・ヒエラルキー・サイズの修正</td></tr>
-            <tr><td><code>/arrange</code></td><td>レイアウト・スペーシング・視覚的リズムの修正</td></tr>
-            <tr><td><code>/overdrive</code></td><td>技術的に卓越したエフェクトの追加</td></tr>
+            <tr><td><code>/impeccable craft</code></td><td>shape で合意したブリーフから実装まで進める</td></tr>
+            <tr><td><code>/impeccable shape</code></td><td>コード前に UX/UI の方針を固める</td></tr>
+            <tr><td><code>/impeccable teach</code></td><td>初回セットアップ: PRODUCT.md / DESIGN.md の文脈を作る</td></tr>
+            <tr><td><code>/impeccable document</code></td><td>既存コードから DESIGN.md を生成する</td></tr>
+            <tr><td><code>/impeccable extract</code></td><td>再利用可能なコンポーネントとトークンを抽出する</td></tr>
+            <tr><td><code>/impeccable critique</code></td><td>UX デザインレビュー: ヒエラルキー・明確さ・感情的共鳴</td></tr>
+            <tr><td><code>/impeccable audit</code></td><td>a11y・パフォーマンス・レスポンシブの技術品質チェック</td></tr>
+            <tr><td><code>/impeccable polish</code></td><td>リリース前の最終磨き上げ</td></tr>
+            <tr><td><code>/impeccable bolder</code></td><td>凡庸なデザインを大胆にする</td></tr>
+            <tr><td><code>/impeccable quieter</code></td><td>過剰に大胆なデザインを落ち着かせる</td></tr>
+            <tr><td><code>/impeccable distill</code></td><td>本質へ削ぎ落とす</td></tr>
+            <tr><td><code>/impeccable harden</code></td><td>エラーハンドリング・i18n・エッジケース対応</td></tr>
+            <tr><td><code>/impeccable onboard</code></td><td>初回体験・空状態・アクティベーションを設計する</td></tr>
+            <tr><td><code>/impeccable animate</code></td><td>意図あるモーションを追加する</td></tr>
+            <tr><td><code>/impeccable colorize</code></td><td>戦略的な色を導入する</td></tr>
+            <tr><td><code>/impeccable typeset</code></td><td>フォント選択・ヒエラルキー・サイズを修正する</td></tr>
+            <tr><td><code>/impeccable layout</code></td><td>レイアウト・スペーシング・視覚的リズムを修正する</td></tr>
+            <tr><td><code>/impeccable delight</code></td><td>喜びの瞬間を追加する</td></tr>
+            <tr><td><code>/impeccable overdrive</code></td><td>技術的に卓越したエフェクトを追加する</td></tr>
+            <tr><td><code>/impeccable clarify</code></td><td>不明瞭な UX コピーを改善する</td></tr>
+            <tr><td><code>/impeccable adapt</code></td><td>異なるデバイスや画面サイズへ適応する</td></tr>
+            <tr><td><code>/impeccable optimize</code></td><td>UI パフォーマンスを診断して改善する</td></tr>
+            <tr><td><code>/impeccable live</code></td><td>ブラウザ上で要素を選び、代替案を HMR で試す</td></tr>
           </tbody>
         </table>
       </div>
@@ -388,11 +395,25 @@ flowchart TD
       </ul>
     </div>
     <div class="ve-callout" style="margin-top: 0.75rem;">
-      <strong>コンテキスト収集が必須:</strong> デザインスキルはプロジェクトコンテキスト（ターゲット・ユースケース・ブランドトーン）なしでは汎用的な出力しか生成できない。<code>/teach-impeccable</code> を最初に実行するか、プロジェクトルートに <code>.impeccable.md</code> を置くこと。
+      <strong>コンテキスト収集が必須:</strong> デザインスキルはプロジェクトコンテキスト（ターゲット・ユースケース・ブランドトーン）なしでは汎用的な出力しか生成できない。<code>/impeccable teach</code> を最初に実行して <code>PRODUCT.md</code> と <code>DESIGN.md</code> を用意する。
     </div>
 
-    <!-- 5. インストール -->
-    <section id="install" class="sec-head">5 — インストール</section>
+    <!-- 5. CLI 検出 -->
+    <section id="cli" class="sec-head">5 — CLI 検出</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> AI スロップを機械検出</span>
+      <p>Impeccable は AI ハーネス用スキルだけでなく、スタンドアロン CLI も提供する。ディレクトリ、単一 HTML、URL を対象に、AI スロップと一般的なデザイン品質の問題を検出できる。</p>
+      <div class="ve-code-block">
+        <pre><code>npx impeccable detect src/
+npx impeccable detect index.html
+npx impeccable detect https://example.com
+npx impeccable detect --fast --json .</code></pre>
+      </div>
+      <p>検出対象は 24 種。side-tab borders、purple gradients、bounce easing、dark glows などの AI スロップに加え、行長、詰まりすぎた padding、小さい touch target、見出しスキップなども拾う。</p>
+    </div>
+
+    <!-- 6. インストール -->
+    <section id="install" class="sec-head">6 — インストール</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 推奨: Web からダウンロード</span>
       <p><a href="https://impeccable.style" target="_blank" rel="noopener">impeccable.style</a> にアクセスして、使用ツール向けの ZIP をダウンロード・展開するのが最もシンプル。</p>
@@ -416,19 +437,27 @@ flowchart TD
       </div>
       <div class="tool-card">
         <div class="tool-card__name">Codex CLI</div>
-        <code class="tool-card__cmd">cp -r dist/codex/.codex/* ~/.codex/</code>
+        <code class="tool-card__cmd">cp -r dist/agents/.agents your-project/</code>
       </div>
       <div class="tool-card">
         <div class="tool-card__name">Pi</div>
         <code class="tool-card__cmd">cp -r dist/pi/.pi your-project/</code>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card__name">GitHub Copilot</div>
+        <code class="tool-card__cmd">cp -r dist/github/.github your-project/</code>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card__name">Trae / Rovo Dev / Qoder</div>
+        <code class="tool-card__cmd">cp -r dist/&lt;provider&gt;/&lt;config-dir&gt; your-project/</code>
       </div>
     </div>
     <div class="ve-callout" style="margin-top: 0.75rem;">
       <strong>Cursor の注意:</strong> Agent Skills を使うには Nightly チャンネルへの切り替えと、Cursor Settings → Rules で Agent Skills の有効化が必要。
     </div>
 
-    <!-- 6. 参考リンク -->
-    <section id="links" class="sec-head">6 — 参考リンク</section>
+    <!-- 7. 参考リンク -->
+    <section id="links" class="sec-head">7 — 参考リンク</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
       <ul>
