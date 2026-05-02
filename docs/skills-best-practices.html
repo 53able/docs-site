@@ -114,6 +114,14 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
@@ -207,8 +215,36 @@
     .check-fail { display: inline-block; background: oklch(0.577 0.245 27.325 / 0.1); color: oklch(0.5 0.22 27.325); border-radius: 3px; padding: 1px 7px; font-size: 0.6875rem; font-weight: 600; font-family: var(--font-mono); }
 
     /* Mermaid container */
-    .mermaid-wrap { display: flex; justify-content: center; align-items: flex-start; padding: 1.25rem; overflow: hidden; }
+    .mermaid-wrap { display: flex; justify-content: center; align-items: flex-start; padding: 1.25rem; overflow: hidden; position: relative; cursor: default; }
+    .mermaid-wrap.is-zoomed { cursor: grab; }
+    .mermaid-wrap.is-dragging { cursor: grabbing; }
+    .mermaid-canvas { transform-origin: center top; transition: transform 0.15s ease; }
     .mermaid-wrap svg { max-width: 100%; height: auto; }
+    .mermaid-controls {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      z-index: 2;
+      display: inline-flex;
+      gap: 0.25rem;
+      padding: 0.25rem;
+      background: color-mix(in oklch, var(--card) 88%, transparent);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      backdrop-filter: blur(8px);
+    }
+    .mermaid-controls button {
+      width: 1.75rem;
+      height: 1.75rem;
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      background: var(--muted);
+      color: var(--foreground);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .mermaid-controls button:hover { background: var(--accent); }
 
     /* Animations */
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -406,6 +442,12 @@ python3 scripts/validate-metadata.py \
     <!-- Mermaid フロー -->
     <div class="ve-card" style="--i:0; padding:0; overflow:hidden; margin-bottom:1rem">
       <div class="mermaid-wrap">
+        <div class="mermaid-controls" aria-label="図の拡大操作">
+          <button type="button" data-zoom="in" aria-label="拡大">+</button>
+          <button type="button" data-zoom="out" aria-label="縮小">−</button>
+          <button type="button" data-zoom="reset" aria-label="リセット">1×</button>
+        </div>
+        <div class="mermaid-canvas">
         <pre class="mermaid">flowchart TD
   A([スキル草稿完成]) --> B
 
@@ -443,6 +485,7 @@ python3 scripts/validate-metadata.py \
   classDef terminal fill:#d97b2f,stroke:#d97b2f,color:#fff
   class B,C,D,E phase
   class A,F terminal</pre>
+        </div>
       </div>
     </div>
 
@@ -560,6 +603,81 @@ mermaid.initialize({
     fontFamily: "'IBM Plex Sans', system-ui, sans-serif"
   }
 });
+</script>
+<script>
+(function() {
+  var wraps = document.querySelectorAll('.mermaid-wrap');
+  wraps.forEach(function(wrap) {
+    var canvas = wrap.querySelector('.mermaid-canvas');
+    var controls = wrap.querySelector('.mermaid-controls');
+    var scale = 1;
+    var offsetX = 0;
+    var offsetY = 0;
+    var startX = 0;
+    var startY = 0;
+    var isDragging = false;
+
+    function applyTransform() {
+      canvas.style.transform = 'translate(' + offsetX + 'px, ' + offsetY + 'px) scale(' + scale + ')';
+      wrap.classList.toggle('is-zoomed', scale > 1);
+    }
+
+    function clampScale(value) {
+      return Math.max(1, Math.min(2.2, value));
+    }
+
+    controls.addEventListener('click', function(event) {
+      var button = event.target.closest('button[data-zoom]');
+      if (!button) return;
+      var action = button.getAttribute('data-zoom');
+      if (action === 'in') scale = clampScale(scale + 0.2);
+      if (action === 'out') scale = clampScale(scale - 0.2);
+      if (action === 'reset') {
+        scale = 1;
+        offsetX = 0;
+        offsetY = 0;
+      }
+      if (scale === 1) {
+        offsetX = 0;
+        offsetY = 0;
+      }
+      applyTransform();
+    });
+
+    wrap.addEventListener('wheel', function(event) {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      scale = clampScale(scale + (event.deltaY < 0 ? 0.1 : -0.1));
+      if (scale === 1) {
+        offsetX = 0;
+        offsetY = 0;
+      }
+      applyTransform();
+    }, { passive: false });
+
+    wrap.addEventListener('pointerdown', function(event) {
+      if (scale === 1 || event.target.closest('.mermaid-controls')) return;
+      isDragging = true;
+      startX = event.clientX - offsetX;
+      startY = event.clientY - offsetY;
+      wrap.classList.add('is-dragging');
+      wrap.setPointerCapture(event.pointerId);
+    });
+
+    wrap.addEventListener('pointermove', function(event) {
+      if (!isDragging) return;
+      offsetX = event.clientX - startX;
+      offsetY = event.clientY - startY;
+      applyTransform();
+    });
+
+    wrap.addEventListener('pointerup', function(event) {
+      isDragging = false;
+      wrap.classList.remove('is-dragging');
+      if (wrap.hasPointerCapture(event.pointerId)) wrap.releasePointerCapture(event.pointerId);
+    });
+  });
+})();
 </script>
 <script>
 (function() {
