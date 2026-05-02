@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mattpocock/skills — エージェント開発の運用地図</title>
+  <meta name="description" content="mattpocock/skills を、失敗モード、セットアップ依存、TDD・診断・トリアージの品質ループから読み解くビジュアル運用ガイド。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="mattpocock/skills — エージェント開発の運用地図">
+  <meta property="og:description" content="real engineering, not vibe coding を支える小さな agent skills の選び方と組み合わせ方。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/mattpocock-skills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="mattpocock/skills — エージェント開発の運用地図">
+  <meta name="twitter:description" content="失敗モードから mattpocock/skills を選ぶためのビジュアル運用ガイド。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Azeret+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.982 0.012 203);
+      --foreground: oklch(0.17 0.034 230);
+      --card: oklch(0.998 0.005 203);
+      --card-foreground: oklch(0.17 0.034 230);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.17 0.034 230);
+      --primary: oklch(0.45 0.12 200);
+      --primary-foreground: oklch(0.985 0.012 203);
+      --secondary: oklch(0.94 0.018 205);
+      --secondary-foreground: oklch(0.20 0.04 230);
+      --muted: oklch(0.93 0.016 205);
+      --muted-foreground: oklch(0.45 0.045 225);
+      --accent: oklch(0.92 0.04 195);
+      --accent-foreground: oklch(0.18 0.036 230);
+      --destructive: oklch(0.57 0.20 25);
+      --border: oklch(0.82 0.026 210);
+      --input: oklch(0.82 0.026 210);
+      --ring: oklch(0.65 0.15 80);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.52 0.11 150);
+      --chart-4: oklch(0.55 0.13 25);
+      --chart-5: oklch(0.40 0.10 250);
+      --code-bg: oklch(0.18 0.035 230);
+      --code-text: oklch(0.94 0.025 205);
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      --grid-line: oklch(0.45 0.12 200 / 0.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.032 235);
+        --foreground: oklch(0.94 0.018 203);
+        --card: oklch(0.18 0.034 235);
+        --card-foreground: oklch(0.94 0.018 203);
+        --popover: oklch(0.18 0.034 235);
+        --popover-foreground: oklch(0.94 0.018 203);
+        --primary: oklch(0.70 0.12 200);
+        --primary-foreground: oklch(0.12 0.032 235);
+        --secondary: oklch(0.24 0.034 235);
+        --secondary-foreground: oklch(0.94 0.018 203);
+        --muted: oklch(0.24 0.034 235);
+        --muted-foreground: oklch(0.72 0.030 205);
+        --accent: oklch(0.25 0.045 200);
+        --accent-foreground: oklch(0.94 0.018 203);
+        --destructive: oklch(0.66 0.18 25);
+        --border: oklch(0.90 0.02 203 / 14%);
+        --input: oklch(0.90 0.02 203 / 18%);
+        --ring: oklch(0.76 0.14 80);
+        --chart-1: oklch(0.70 0.12 200);
+        --chart-2: oklch(0.76 0.14 80);
+        --chart-3: oklch(0.72 0.12 150);
+        --chart-4: oklch(0.72 0.13 25);
+        --chart-5: oklch(0.72 0.10 250);
+        --code-bg: oklch(0.09 0.026 235);
+        --code-text: oklch(0.94 0.025 205);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+        --grid-line: oklch(0.70 0.12 200 / 0.10);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 8px 26px rgba(18, 52, 72, 0.09); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(18, 52, 72, 0.05); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%);
+      box-shadow: 0 18px 44px rgba(18, 52, 72, 0.12);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 800; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block__label { color: var(--code-text); border-bottom: 1px solid oklch(1 0 0 / 12%); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; padding: 0.625rem 0.875rem; text-transform: uppercase; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 800; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 72%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(18, 52, 72, 0.06); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-size: 2.15rem; line-height: 1; font-weight: 800; letter-spacing: -0.05em; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 800; }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+        radial-gradient(ellipse at 15% 0%, oklch(0.45 0.12 200 / 0.12) 0%, transparent 42%),
+        radial-gradient(ellipse at 86% 18%, oklch(0.65 0.15 80 / 0.11) 0%, transparent 34%);
+      background-size: 36px 36px, 36px 36px, auto, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          linear-gradient(var(--grid-line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+          radial-gradient(ellipse at 15% 0%, oklch(0.70 0.12 200 / 0.12) 0%, transparent 42%),
+          radial-gradient(ellipse at 86% 18%, oklch(0.76 0.14 80 / 0.10) 0%, transparent 34%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 220px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: clamp(2.4rem, 6vw, 5rem); font-weight: 800; letter-spacing: -0.06em; line-height: 0.95; margin-bottom: 1rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.95rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.7; max-width: 62rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 800; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 800; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.68; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.35rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    strong { font-weight: 800; }
+
+    .hero-grid { display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 1rem; align-items: stretch; }
+    .hero-side { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+    @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 760px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .route-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .route-card { min-width: 0; position: relative; overflow: hidden; }
+    .route-card::after {
+      content: "";
+      position: absolute;
+      right: 1rem;
+      bottom: 1rem;
+      width: 48px;
+      height: 48px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in oklch, var(--chart-1) 38%, transparent);
+      opacity: 0.34;
+    }
+    .route-card h3 { margin-top: 0; }
+    @media (max-width: 760px) { .route-grid { grid-template-columns: 1fr; } }
+
+    .step-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.85rem; }
+    .step-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; min-width: 0; }
+    .step-card__num { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 999px; background: var(--primary); color: var(--primary-foreground); font-family: var(--font-mono); font-weight: 800; font-size: 0.75rem; margin-bottom: 0.75rem; }
+    .step-card__title { font-weight: 800; margin-bottom: 0.3rem; }
+    .step-card__body { color: var(--text-dim); font-size: 0.84rem; line-height: 1.55; }
+    @media (max-width: 960px) { .step-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .step-flow { grid-template-columns: 1fr; } }
+
+    .rail { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.55rem; align-items: stretch; margin-top: 1rem; }
+    .rail__item { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.72rem; min-width: 0; font-family: var(--font-mono); font-size: 0.70rem; line-height: 1.45; }
+    .rail__item strong { display: block; font-family: var(--font-body); font-size: 0.80rem; margin-bottom: 0.25rem; }
+    @media (max-width: 900px) { .rail { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .rail { grid-template-columns: 1fr; } }
+
+    .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.16rem 0.5rem; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 800; white-space: nowrap; }
+    .badge--hard { background: color-mix(in oklch, var(--chart-4) 15%, transparent); color: var(--chart-4); border: 1px solid color-mix(in oklch, var(--chart-4) 38%, transparent); }
+    .badge--soft { background: color-mix(in oklch, var(--chart-3) 15%, transparent); color: var(--chart-3); border: 1px solid color-mix(in oklch, var(--chart-3) 38%, transparent); }
+    .badge--neutral { background: var(--muted); color: var(--text-dim); border: 1px solid var(--border); }
+
+    .source-note { color: var(--text-dim); font-size: 0.82rem; font-family: var(--font-mono); }
+    .link-list { list-style: none; padding: 0; margin: 0; }
+    .link-list li { border-bottom: 1px solid var(--border); padding: 0.65rem 0; margin: 0; }
+    .link-list li:last-child { border-bottom: none; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card, .step-card, .rail__item { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#routes">失敗モード別ルート</a>
+    <a href="#setup">セットアップ契約</a>
+    <a href="#quality">品質ループ</a>
+    <a href="#issue-flow">Issue 化フロー</a>
+    <a href="#architecture">設計レビュー</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>mattpocock/skills</h1>
+  <p class="subtitle">README の “real engineering, not vibe coding” を、実務での選び方に変換する運用地図。巨大な自動運転ではなく、ズレを減らす小さなループを必要な場面に差し込む。</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="hero-grid">
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Operating model</span>
+      <p><strong>mattpocock/skills</strong> は、Claude Code などのエージェントに読み込ませる小さなスキル集。リポジトリ全体のプロセスを奪うのではなく、計画確認、共有語彙、TDD、診断、トリアージ、設計改善という「事故りやすい瞬間」にだけ介入する。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">12</span><span class="ve-kpi-card__label">plugin entries</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">9</span><span class="ve-kpi-card__label">engineering skills</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">productivity skills</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">setup contract</span></div>
+      </div>
+      <p class="source-note">Source: <code>README.md</code>, <code>.claude-plugin/plugin.json</code>, <code>docs/adr/0001-...</code></p>
+    </div>
+    <div class="hero-side">
+      <div class="ve-card ve-card--elevated" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Design stance</span>
+        <p>GSD / BMAD / Spec-Kit のように全体ワークフローを所有するより、ユーザーが制御を持ったまま必要なスキルを組み合わせる設計。失敗時にプロセス自体を直しやすい。</p>
+      </div>
+      <div class="ve-callout" style="--i:2">
+        <strong>読み方:</strong> これはスキル一覧ではなくルーティング表。今起きている失敗を見て、入れるループを選ぶ。
+      </div>
+    </div>
+  </div>
+
+  <section id="routes" class="sec-head">2 — 失敗モード別ルート</section>
+  <div class="route-grid">
+    <div class="ve-card route-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Misalignment</span>
+      <h3>Agent didn't do what I want</h3>
+      <p>作る前の合意が薄い。<code>/grill-me</code> または <code>/grill-with-docs</code> で、設計ツリーを質問で潰してから実装へ進む。</p>
+      <p class="source-note">Main skills: <code>grill-me</code>, <code>grill-with-docs</code></p>
+    </div>
+    <div class="ve-card route-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> Vocabulary drift</span>
+      <h3>Agent is too verbose</h3>
+      <p>同じ概念を毎回20語で説明している。<code>CONTEXT.md</code> と ADR に共有語彙を置き、会話とコードの命名を短くする。</p>
+      <p class="source-note">Main skills: <code>grill-with-docs</code>, <code>setup-matt-pocock-skills</code></p>
+    </div>
+    <div class="ve-card route-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> Broken output</span>
+      <h3>Code doesn't work</h3>
+      <p>エージェントが動くフィードバックループを持っていない。<code>/tdd</code> は vertical slice で RED/GREEN を作り、<code>/diagnose</code> は再現信号から原因へ進む。</p>
+      <p class="source-note">Main skills: <code>tdd</code>, <code>diagnose</code></p>
+    </div>
+    <div class="ve-card route-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> Entropy</span>
+      <h3>Ball of mud</h3>
+      <p>生成速度が設計負債も加速している。<code>/to-prd</code> と <code>/to-issues</code> で薄い slice に分け、<code>/improve-codebase-architecture</code> で deep module 候補を探す。</p>
+      <p class="source-note">Main skills: <code>to-prd</code>, <code>to-issues</code>, <code>improve-codebase-architecture</code></p>
+    </div>
+  </div>
+
+  <section id="setup" class="sec-head">3 — セットアップ契約</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Hard vs soft dependency</span>
+    <p><code>/setup-matt-pocock-skills</code> は、他の engineering skills が共有する repo 固有の契約を作る。ADR は依存を 2 種類に分ける。Issue tracker や label mapping がないと誤った外部操作になるスキルは hard。domain docs がなくても動くが出力が鈍るだけのスキルは soft。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>依存タイプ</th><th>対象スキル</th><th>必要な契約</th><th>ない場合</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge badge--hard">hard</span></td><td><code>to-issues</code>, <code>to-prd</code>, <code>triage</code></td><td>Issue tracker と triage label vocabulary</td><td>Issue 作成先や label が間違う</td></tr>
+          <tr><td><span class="badge badge--soft">soft</span></td><td><code>diagnose</code>, <code>tdd</code>, <code>improve-codebase-architecture</code>, <code>zoom-out</code></td><td>domain glossary と ADR</td><td>動くが、語彙と判断が浅くなる</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Quickstart</span>
+    <div class="ve-code-block">
+      <div class="ve-code-block__label">install</div>
+      <pre><code>npx skills@latest add mattpocock/skills</code></pre>
+    </div>
+    <div class="step-flow">
+      <div class="step-card" style="--i:0">
+        <div class="step-card__num">1</div>
+        <div class="step-card__title">Add skills</div>
+        <div class="step-card__body"><code>skills</code> CLI で repo を追加する。</div>
+      </div>
+      <div class="step-card" style="--i:1">
+        <div class="step-card__num">2</div>
+        <div class="step-card__title">Select setup</div>
+        <div class="step-card__body"><code>/setup-matt-pocock-skills</code> を必ず選ぶ。</div>
+      </div>
+      <div class="step-card" style="--i:2">
+        <div class="step-card__num">3</div>
+        <div class="step-card__title">Record contract</div>
+        <div class="step-card__body">Issue tracker、labels、domain docs を記録する。</div>
+      </div>
+      <div class="step-card" style="--i:3">
+        <div class="step-card__num">4</div>
+        <div class="step-card__title">Route work</div>
+        <div class="step-card__body">以後のスキルが同じ語彙で作業する。</div>
+      </div>
+    </div>
+  </div>
+
+  <section id="quality" class="sec-head">4 — 品質ループ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Feedback first</span>
+    <p><code>/diagnose</code> の中心は「まず高速で決定的な pass/fail signal を作る」こと。<code>/tdd</code> は一括で全テストを書く horizontal slice を避け、1つの振る舞いを RED → GREEN で通す。</p>
+    <div class="rail">
+      <div class="rail__item" style="--i:0"><strong>Signal</strong>test / CLI / browser / harness</div>
+      <div class="rail__item" style="--i:1"><strong>Reproduce</strong>user symptom を確認</div>
+      <div class="rail__item" style="--i:2"><strong>Hypothesize</strong>3-5 個、予測つき</div>
+      <div class="rail__item" style="--i:3"><strong>Instrument</strong>仮説に対応する probe</div>
+      <div class="rail__item" style="--i:4"><strong>Fix</strong>regression test → fix</div>
+      <div class="rail__item" style="--i:5"><strong>Postmortem</strong>防げた設計を確認</div>
+    </div>
+  </div>
+  <div class="ve-card ve-card--elevated" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> TDD contrast</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>やらない</th><th>やる</th><th>理由</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>全テストを先に書く</td><td>1 test → 1 implementation</td><td>想像上の振る舞いではなく、学びに反応した test になる</td></tr>
+          <tr><td>private method を検証する</td><td>public interface の振る舞いを検証する</td><td>内部リファクタで壊れない</td></tr>
+          <tr><td>mock で形だけ通す</td><td>real code path を通す</td><td>本当の統合バグを拾える</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="issue-flow" class="sec-head">5 — Issue 化フロー</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> PRD to slices</span>
+    <p><code>/to-prd</code> は会話とコード理解を PRD にまとめ、<code>/to-issues</code> は tracer bullet の vertical slice に分解する。slice は schema/API/UI/tests の層ではなく、完了したら単体で demoable な細い経路として切る。</p>
+    <div class="step-flow">
+      <div class="step-card" style="--i:0">
+        <div class="step-card__num">A</div>
+        <div class="step-card__title">Conversation</div>
+        <div class="step-card__body">既に話した内容と codebase 状態を合成する。</div>
+      </div>
+      <div class="step-card" style="--i:1">
+        <div class="step-card__num">B</div>
+        <div class="step-card__title">PRD</div>
+        <div class="step-card__body">Problem、Solution、User Stories、Testing Decisions を作る。</div>
+      </div>
+      <div class="step-card" style="--i:2">
+        <div class="step-card__num">C</div>
+        <div class="step-card__title">Vertical slices</div>
+        <div class="step-card__body">AFK / HITL と依存関係を明示して薄く分ける。</div>
+      </div>
+      <div class="step-card" style="--i:3">
+        <div class="step-card__num">D</div>
+        <div class="step-card__title">Triage roles</div>
+        <div class="step-card__body"><code>needs-triage</code> から state machine に乗せる。</div>
+      </div>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Triage state machine</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Role</th><th>意味</th><th>次の動き</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>needs-triage</code></td><td>maintainer 評価待ち</td><td>bug/enhancement と実装可能性を判断</td></tr>
+          <tr><td><code>needs-info</code></td><td>reporter から情報待ち</td><td>具体質問に回答が来たら再評価</td></tr>
+          <tr><td><code>ready-for-agent</code></td><td>AFK agent が拾える</td><td>agent brief を投稿</td></tr>
+          <tr><td><code>ready-for-human</code></td><td>人間判断が必要</td><td>判断ポイント込みで brief 化</td></tr>
+          <tr><td><code>wontfix</code></td><td>対応しない</td><td>理由を残して閉じる</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="architecture" class="sec-head">6 — 設計レビュー</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Deepening opportunities</span>
+    <p><code>/improve-codebase-architecture</code> は、浅い module を深くする候補を探す。目的は美しい抽象化ではなく、<strong>locality</strong> と <strong>leverage</strong>。bug、変更、知識が散らばる場所を見つけ、interface の後ろに実装の複雑さを隠せるかを見る。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>語彙</th><th>見るポイント</th><th>判断質問</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>Module</code></td><td>interface と implementation を持つ単位</td><td>削除すると複雑さは消えるか、caller に散るか</td></tr>
+          <tr><td><code>Interface</code></td><td>caller が知る必要のある契約</td><td>test surface として十分に安定しているか</td></tr>
+          <tr><td><code>Seam</code></td><td>振る舞いを差し替える場所</td><td>adapter が2つ以上あり、現実の seam になっているか</td></tr>
+          <tr><td><code>Depth</code></td><td>小さな interface の背後にある大きな振る舞い</td><td>caller は少ない知識で大きな効果を得ているか</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-callout" style="--i:1">
+    <strong>運用のコツ:</strong> 実装前は <code>grill-with-docs</code>、実装中は <code>tdd</code>、壊れたら <code>diagnose</code>、作業を外に渡すなら <code>to-issues</code>、泥団子化したら <code>improve-codebase-architecture</code>。順番より、失敗モードへの適合が大事。
+  </div>
+
+  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Source references</span>
+    <ul class="link-list">
+      <li><a href="https://github.com/mattpocock/skills" target="_blank" rel="noopener">GitHub: mattpocock/skills</a> — Skills For Real Engineers</li>
+      <li><code>README.md</code> — 目的、Quickstart、4つの失敗モード、スキル一覧</li>
+      <li><code>.claude-plugin/plugin.json</code> — Claude plugin として公開される 12 entries</li>
+      <li><code>skills/engineering/tdd/SKILL.md</code> — vertical slice の RED/GREEN loop</li>
+      <li><code>skills/engineering/diagnose/SKILL.md</code> — feedback loop first の診断手順</li>
+      <li><code>docs/adr/0001-explicit-setup-pointer-only-for-hard-dependencies.md</code> — hard / soft dependency の判断</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
