@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Khazix Skills — 実戦で磨かれた AI Skill と Prompt 集</title>
+  <meta name="description" content="KKKKhazix/khazix-skills の 3 つの Agent Skill と 1 つの Prompt を、用途・ワークフロー・制約から視覚的に整理します。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Khazix Skills — 実戦で磨かれた AI Skill と Prompt 集">
+  <meta property="og:description" content="neat-freak、hv-analysis、khazix-writer、Prompt 版 横縦分析法の使い分けと設計思想を視覚化。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/khazix-skills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Khazix Skills — 実戦で磨かれた AI Skill と Prompt 集">
+  <meta name="twitter:description" content="3 つの Agent Skill と 1 つの Prompt を、用途・流れ・制約から整理。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.018 78);
+      --foreground: oklch(0.18 0.035 55);
+      --card: oklch(0.998 0.008 76);
+      --card-foreground: oklch(0.18 0.035 55);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.18 0.035 55);
+      --primary: oklch(0.42 0.12 42);
+      --primary-foreground: oklch(0.985 0.018 78);
+      --secondary: oklch(0.94 0.035 75);
+      --secondary-foreground: oklch(0.24 0.05 55);
+      --muted: oklch(0.93 0.03 78);
+      --muted-foreground: oklch(0.48 0.04 58);
+      --accent: oklch(0.95 0.045 62);
+      --accent-foreground: oklch(0.22 0.045 50);
+      --destructive: oklch(0.56 0.2 24);
+      --border: oklch(0.84 0.04 70);
+      --input: oklch(0.84 0.04 70);
+      --ring: oklch(0.55 0.16 42);
+      --chart-1: oklch(0.55 0.16 42);
+      --chart-2: oklch(0.62 0.12 155);
+      --chart-3: oklch(0.48 0.08 230);
+      --chart-4: oklch(0.63 0.13 80);
+      --chart-5: oklch(0.45 0.11 18);
+      --code-bg: oklch(0.20 0.035 54);
+      --code-text: oklch(0.93 0.032 82);
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.026 55);
+        --foreground: oklch(0.95 0.02 78);
+        --card: oklch(0.20 0.03 55);
+        --card-foreground: oklch(0.95 0.02 78);
+        --popover: oklch(0.20 0.03 55);
+        --popover-foreground: oklch(0.95 0.02 78);
+        --primary: oklch(0.76 0.13 55);
+        --primary-foreground: oklch(0.16 0.026 55);
+        --secondary: oklch(0.24 0.035 58);
+        --secondary-foreground: oklch(0.95 0.02 78);
+        --muted: oklch(0.26 0.035 58);
+        --muted-foreground: oklch(0.70 0.025 78);
+        --accent: oklch(0.28 0.045 62);
+        --accent-foreground: oklch(0.95 0.02 78);
+        --destructive: oklch(0.70 0.18 24);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.70 0.12 58);
+        --chart-1: oklch(0.70 0.14 55);
+        --chart-2: oklch(0.69 0.11 155);
+        --chart-3: oklch(0.68 0.08 230);
+        --chart-4: oklch(0.76 0.11 82);
+        --chart-5: oklch(0.68 0.13 18);
+        --code-bg: oklch(0.12 0.02 55);
+        --code-text: oklch(0.90 0.032 82);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(78, 45, 22, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(78, 45, 22, 0.05); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+      box-shadow: 0 10px 40px rgba(78, 45, 22, 0.10);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.11em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.9rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 700; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 70%, var(--card) 30%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(78, 45, 22, 0.05); min-width: 0; }
+    .ve-kpi-card__value { display: block; font-variant-numeric: tabular-nums; font-size: 1.8rem; line-height: 1.1; font-weight: 800; letter-spacing: -0.04em; }
+    .ve-kpi-card__label { display: block; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 700; }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-1) 13%, transparent) 0%, transparent 46%),
+        linear-gradient(135deg, color-mix(in oklch, var(--chart-2) 9%, transparent) 0 1px, transparent 1px 28px);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 210px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); background: color-mix(in oklch, var(--muted) 60%, transparent); }
+
+    /* ============ Typography + layout ============ */
+    h1 { font-size: clamp(2rem, 5vw, 4.2rem); font-weight: 800; letter-spacing: -0.06em; line-height: 0.98; margin-bottom: 0.8rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.92rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.7; }
+    .lead { font-size: 1rem; line-height: 1.8; max-width: 60rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 800; margin: 2.7rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: -0.02em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.05rem; font-weight: 800; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.35rem; }
+    li { margin-bottom: 0.4rem; line-height: 1.65; }
+    small { color: var(--text-dim); line-height: 1.5; }
+    .hero-grid { display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 1rem; align-items: stretch; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1.2rem; }
+    .skill-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .skill-card { position: relative; overflow: hidden; }
+    .skill-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--accent-color, var(--chart-1)); }
+    .skill-card h3 { margin-top: 0; padding-left: 0.25rem; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.85rem; }
+    .pill { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; padding: 0.25rem 0.55rem; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-dim); background: color-mix(in oklch, var(--card) 70%, var(--muted) 30%); }
+    .axis { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .axis-card { border-left: 3px solid var(--axis-color, var(--chart-1)); }
+    .step-flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin: 1rem 0; }
+    .step-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; min-width: 0; position: relative; }
+    .step-card__num { font-family: var(--font-mono); color: var(--chart-1); font-weight: 700; font-size: 0.72rem; }
+    .step-card__title { display: block; margin: 0.35rem 0; font-weight: 800; }
+    .step-card__body { color: var(--text-dim); font-size: 0.8rem; line-height: 1.55; }
+    .badge { display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 999px; padding: 0.2rem 0.5rem; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; white-space: nowrap; }
+    .badge--skill { color: color-mix(in oklch, var(--chart-2) 70%, var(--text)); background: color-mix(in oklch, var(--chart-2) 14%, transparent); }
+    .badge--prompt { color: color-mix(in oklch, var(--chart-4) 75%, var(--text)); background: color-mix(in oklch, var(--chart-4) 14%, transparent); }
+    .badge--bad { color: oklch(0.50 0.16 25); background: oklch(0.95 0.045 25); }
+    .badge--good { color: oklch(0.42 0.12 145); background: oklch(0.94 0.05 145); }
+    .structure { font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.8; }
+    .structure .dir { color: var(--chart-2); }
+    .structure .file-main { color: var(--chart-4); }
+    .structure .comment { color: var(--muted-foreground); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card, .step-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; } }
+
+    @media (max-width: 1000px) {
+      body { padding: 24px; }
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 24px;
+        margin: 0 -24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+      .hero-grid, .axis { grid-template-columns: 1fr; }
+      .skill-grid { grid-template-columns: 1fr; }
+      .step-flow { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      body { padding: 18px; }
+      .toc { margin: 0 -18px; padding-left: 18px; padding-right: 18px; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .step-flow { grid-template-columns: 1fr; }
+      .ve-table-wrap { overflow-x: auto; }
+      .ve-table-wrap table { min-width: 720px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#map">Skill マップ</a>
+    <a href="#workflows">ワークフロー</a>
+    <a href="#install">導入と構造</a>
+    <a href="#guardrails">制約と使い分け</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <main class="main">
+    <h1>Khazix Skills</h1>
+    <p class="subtitle">KKKKhazix/khazix-skills — everyday AI skills, packaged as reusable agent instructions.</p>
+
+    <section id="overview" class="sec-head">1. 概要</section>
+    <div class="hero-grid">
+      <div class="ve-card ve-card--hero" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 何を集めたリポジトリか</span>
+        <p class="lead"><strong>Khazix Skills</strong> は、作者が日々の作業で使い続け、実用性を確認してから公開した AI Skill と Prompt の小さなコレクション。狙いは派手な万能化ではなく、特定の作業を「その人らしいやり方」まで含めて Agent に渡すこと。</p>
+        <div class="kpi-row">
+          <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">Agent Skills</span></div>
+          <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">Prompt</span></div>
+          <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">Agent hosts</span></div>
+          <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">License</span></div>
+        </div>
+      </div>
+      <div class="ve-card ve-card--elevated" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> 中心思想</span>
+        <p>このリポジトリの面白さは、単なる「便利プロンプト集」ではないところ。知識同期、深い調査、長文の文体再現という、Agent が雑になりやすい領域に対して、判断基準と失敗パターンを明文化している。</p>
+        <div class="ve-callout"><strong>読む観点:</strong> それぞれの Skill は「何をするか」だけでなく、「何をしないか」「どこから人間が判断するか」まで持っている。</div>
+      </div>
+    </div>
+
+    <section id="map" class="sec-head">2. Skill マップ</section>
+    <div class="skill-grid">
+      <article class="ve-card skill-card" style="--i:0; --accent-color: var(--chart-2);">
+        <span class="ve-section-label"><span class="ve-dot"></span> Knowledge cleanup</span>
+        <h3>neat-freak</h3>
+        <p>会話や実装が終わったあと、プロジェクト文書、Agent 向け設定、記憶レイヤーをまとめて点検し、古くなった前提を掃除する Skill。</p>
+        <div class="pill-row">
+          <span class="pill">/neat</span>
+          <span class="pill">sync up</span>
+          <span class="pill">docs hygiene</span>
+        </div>
+      </article>
+      <article class="ve-card skill-card" style="--i:1; --accent-color: var(--chart-3);">
+        <span class="ve-section-label"><span class="ve-dot"></span> Deep research</span>
+        <h3>hv-analysis</h3>
+        <p>研究対象を、縦軸の歴史と横軸の同時代比較で調べる Skill。最終成果物は、10,000 から 30,000 字級の PDF レポート。</p>
+        <div class="pill-row">
+          <span class="pill">vertical axis</span>
+          <span class="pill">horizontal axis</span>
+          <span class="pill">PDF report</span>
+        </div>
+      </article>
+      <article class="ve-card skill-card" style="--i:2; --accent-color: var(--chart-5);">
+        <span class="ve-section-label"><span class="ve-dot"></span> Voice encoding</span>
+        <h3>khazix-writer</h3>
+        <p>「数字生命卡兹克」の公众号長文を書くための文体 Skill。価値観、構造、禁句、自検手順、スタイル例まで含めて声を符号化する。</p>
+        <div class="pill-row">
+          <span class="pill">Chinese long-form</span>
+          <span class="pill">HKR</span>
+          <span class="pill">4-layer QA</span>
+        </div>
+      </article>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:3; margin-top:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> Prompt edition</span>
+      <p><strong>横縦分析法 Prompt 版</strong> は、Skill をインストールできない環境でも Deep Research モデルに貼って使える軽量版。Skill 版ほどの実行ハーネスは持たないが、考え方をすぐ試せる入口になっている。</p>
+    </div>
+
+    <section id="workflows" class="sec-head">3. ワークフロー</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> neat-freak の同期対象</span>
+      <p>neat-freak は、文書を「どこか 1 箇所に追記する」作業ではなく、読者の違う 3 レイヤーを分けて整える。ここを混ぜないので、次の Agent と人間の両方が迷いにくい。</p>
+      <div class="step-flow">
+        <div class="step-card"><span class="step-card__num">01</span><span class="step-card__title">変更を把握</span><span class="step-card__body">今回の会話と差分を見て、新しい事実と古い前提を分ける。</span></div>
+        <div class="step-card"><span class="step-card__num">02</span><span class="step-card__title">人向け docs</span><span class="step-card__body">README や docs に、外部読者が使う手順と背景を反映する。</span></div>
+        <div class="step-card"><span class="step-card__num">03</span><span class="step-card__title">Agent 向け root</span><span class="step-card__body">CLAUDE.md / AGENTS.md に、次回作業の判断材料を残す。</span></div>
+        <div class="step-card"><span class="step-card__num">04</span><span class="step-card__title">記憶レイヤー</span><span class="step-card__body">跨セッションの好みや非自明な前提だけを短く更新する。</span></div>
+        <div class="step-card"><span class="step-card__num">05</span><span class="step-card__title">矛盾チェック</span><span class="step-card__body">重複、期限切れ、相対日付、リンク切れを消す。</span></div>
+      </div>
+    </div>
+
+    <div class="axis">
+      <div class="ve-card axis-card" style="--i:1; --axis-color: var(--chart-3);">
+        <span class="ve-section-label"><span class="ve-dot"></span> hv-analysis vertical</span>
+        <h3>縦軸: 時間の深さ</h3>
+        <p>起源、誕生、変化、意思決定、危機、転換点を追う。単なる年表ではなく、なぜその形になったのかをストーリーとして復元する。</p>
+      </div>
+      <div class="ve-card axis-card" style="--i:2; --axis-color: var(--chart-2);">
+        <span class="ve-section-label"><span class="ve-dot"></span> hv-analysis horizontal</span>
+        <h3>横軸: 同時代の広さ</h3>
+        <p>現在の競合、代替、隣接概念、ユーザー評価を横並びで見る。そこで初めて、その対象の生態的位置が見える。</p>
+      </div>
+    </div>
+    <div class="ve-card ve-card--elevated" style="--i:3; margin-top:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> writer の品質ゲート</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>層</th><th>見るもの</th><th>失敗例</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>L1</td><td>禁句・禁用標点・空泛工具名</td><td>AI っぽい常套句が残る</td><td>機械的に落とす</td></tr>
+            <tr><td>L2</td><td>開頭、節奏、口語化、断裂</td><td>報告書のように均一な文章</td><td>文体の型を保つ</td></tr>
+            <tr><td>L3</td><td>具体例、知識の出し方、文化的接続</td><td>主張だけで人物や場面がない</td><td>内容の厚みを作る</td></tr>
+            <tr><td>L4</td><td>温度、独自性、姿勢、心流</td><td>情報は正しいが人間味がない</td><td>最後に「活人感」を見る</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="install" class="sec-head">4. 導入と構造</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> install pattern</span>
+      <p>Claude Code、Codex、OpenCode、OpenClaw など Skill 対応 Agent では、対象 Skill の GitHub URL を渡してインストールさせる想定。Prompt 版はコピーして Deep Research モデルに貼るだけで使う。</p>
+      <div class="ve-code-block">
+        <pre><code>Install this skill: https://github.com/KKKKhazix/khazix-skills/tree/main/&lt;skill-name&gt;
+
+# examples
+neat-freak
+hv-analysis
+khazix-writer</code></pre>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> repository shape</span>
+      <div class="structure">
+        <div><span class="dir">khazix-skills/</span></div>
+        <div>  <span class="file-main">README.md</span> <span class="comment">公開ページの入口、中国語版</span></div>
+        <div>  <span class="file-main">README.en.md</span> <span class="comment">英語版の入口</span></div>
+        <div>  <span class="dir">neat-freak/</span> <span class="comment">知識同期 Skill</span></div>
+        <div>  <span class="dir">hv-analysis/</span> <span class="comment">横縦分析レポート Skill</span></div>
+        <div>  <span class="dir">khazix-writer/</span> <span class="comment">公众号長文の文体 Skill</span></div>
+        <div>  <span class="dir">prompts/</span> <span class="comment">横縦分析法 Prompt 版</span></div>
+      </div>
+    </div>
+
+    <section id="guardrails" class="sec-head">5. 制約と使い分け</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> choose by job</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>やりたいこと</th><th>使うもの</th><th>向いている理由</th><th>避けるケース</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>作業後の文書・記憶の整合</td><td><span class="badge badge--skill">neat-freak</span></td><td>docs、root instruction、memory を別レイヤーとして点検する</td><td>新しい機能実装そのもの</td></tr>
+            <tr><td>製品・会社・概念の深掘り調査</td><td><span class="badge badge--skill">hv-analysis</span></td><td>時間軸と競争軸を交差させて判断を出す</td><td>単語の意味だけ知りたい時</td></tr>
+            <tr><td>カードズク本人の口調で中国語長文を書く</td><td><span class="badge badge--skill">khazix-writer</span></td><td>価値観、禁句、構造、自检まで文体を厳密に持つ</td><td>汎用的な「きれいな文章」が欲しい時</td></tr>
+            <tr><td>Skill を入れずに横縦分析を試す</td><td><span class="badge badge--prompt">Prompt 版</span></td><td>Deep Research モデルに貼るだけで方法論を動かせる</td><td>継続的な実行ハーネスや PDF 生成まで求める時</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card ve-card--elevated" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> design lesson</span>
+      <p>この Skill 集から学べるのは、Agent Skill は「手順」だけでなく「人格」「禁則」「検査方法」までまとめると強い、ということ。特に khazix-writer は、声を真似るという曖昧な作業を、HKR 选题、自检層、禁句、節奏ルールへ分解している。</p>
+      <div class="ve-callout"><strong>実務への応用:</strong> 自分用 Skill を作るなら、良い例だけでなく「やると即ダメになる癖」を先に言語化すると、出力のブレが大きく減る。</div>
+    </div>
+
+    <section id="links" class="sec-head">6. 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> official sources</span>
+      <ul>
+        <li><a href="https://github.com/KKKKhazix/khazix-skills" target="_blank" rel="noopener">GitHub: KKKKhazix/khazix-skills</a> — 本体リポジトリ</li>
+        <li><a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills</a> — Skill 形式の参照標準</li>
+        <li><a href="https://clawhub.ai" target="_blank" rel="noopener">ClawHub</a> — README で紹介されている配布先</li>
+        <li><a href="https://tessl.io/registry/khazix-skills/neat-freak" target="_blank" rel="noopener">Tessl: neat-freak</a> — neat-freak の registry ページ</li>
+        <li><a href="https://tessl.io/registry/khazix-skills/hv-analysis" target="_blank" rel="noopener">Tessl: hv-analysis</a> — hv-analysis の registry ページ</li>
+        <li><a href="https://tessl.io/registry/khazix-skills/khazix-writer" target="_blank" rel="noopener">Tessl: khazix-writer</a> — khazix-writer の registry ページ</li>
+      </ul>
+    </div>
+  </main>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
