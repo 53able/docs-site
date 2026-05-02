@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hermes Agent — 自己改善型 AI エージェント</title>
-  <meta name="description" content="Nous Research の Hermes Agent。学習ループ・スキル自動生成・クロスセッション記憶・マルチプラットフォーム Gateway。CLI とメッセージングの入口、ターミナルバックエンド、クイックスタートの視覚解説。">
+  <meta name="description" content="Nous Research の Hermes Agent。自己改善ループ、スキル、メモリ、マルチチャネル Gateway、React + Ink TUI、Atropos RL 環境、モデルプロバイダ切替の視覚解説。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Hermes Agent — 自己改善型 AI エージェント">
-  <meta property="og:description" content="Nous Research の Hermes Agent。学習ループ・スキル・メモリ・Gateway・複数ターミナルバックエンドの概要。">
+  <meta property="og:description" content="Nous Research の Hermes Agent。学習ループ、スキル、メモリ、Gateway、TUI、RL 環境の概要。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/hermes-agent.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Hermes Agent — 自己改善型 AI エージェント">
-  <meta name="twitter:description" content="学習ループ・スキル・Gateway・デプロイ先の技術概要。">
+  <meta name="twitter:description" content="学習ループ・スキル・Gateway・TUI・RL 環境の技術概要。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
@@ -118,6 +118,14 @@
     .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
     .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
     .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -180,6 +188,12 @@
     .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
     .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); border: 1px solid var(--border); }
     .pipeline .arrow { color: var(--text-dim); }
+    .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .feature-card { min-width: 0; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; }
+    .feature-card strong { display: block; margin-bottom: 0.35rem; }
+    .feature-card small { color: var(--muted-foreground); line-height: 1.5; }
+    .split-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    @media (max-width: 820px) { .feature-grid, .split-grid { grid-template-columns: 1fr; } }
 
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
@@ -192,8 +206,11 @@
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
     <a href="#learning">学習とメモリ</a>
+    <a href="#models">モデルと拡張</a>
     <a href="#interfaces">CLI と Gateway</a>
+    <a href="#tui">React + Ink TUI</a>
     <a href="#deploy">実行環境</a>
+    <a href="#research">研究環境</a>
     <a href="#quickstart">クイックスタート</a>
     <a href="#links">参考</a>
   </nav>
@@ -205,14 +222,14 @@
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
-    <p><strong>Hermes Agent</strong> は <a href="https://nousresearch.com" target="_blank" rel="noopener">Nous Research</a> が公開する Python 製の AI エージェント。単発のチャットではなく、<strong>スキルの自動生成・改善</strong>、<strong>永続メモリと会話検索</strong>、<strong>マルチチャネル Gateway</strong> を一体で持つ。モデルプロバイダは固定されず、<code>hermes model</code> で切り替え可能。</p>
+    <p><strong>Hermes Agent</strong> は <a href="https://nousresearch.com" target="_blank" rel="noopener">Nous Research</a> が公開する Python 製の AI エージェント。単発のチャットではなく、<strong>スキルの自動生成・改善</strong>、<strong>永続メモリと会話検索</strong>、<strong>マルチチャネル Gateway</strong>、<strong>実行環境の切替</strong>を一体で持つ。モデルプロバイダは固定されず、<code>hermes model</code> で切り替え可能。</p>
     <div class="kpi-row">
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">学習ループ</span><span class="ve-kpi-card__label">スキル生成・改善</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">1 Gateway</span><span class="ve-kpi-card__label">Telegram ほか</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">200+</span><span class="ve-kpi-card__label">OpenRouter モデル等</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">6 バックエンド</span><span class="ve-kpi-card__label">local〜Modal</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">agentskills.io</span><span class="ve-kpi-card__label">スキル互換</span></div>
     </div>
-    <p>解説の正はローカルの <code>repos/hermes-agent</code>（README・構成）に準拠する。詳細仕様は公式ドキュメントを参照。</p>
+    <p>このページは <a href="https://github.com/NousResearch/hermes-agent" target="_blank" rel="noopener">NousResearch/hermes-agent</a> の README、<code>pyproject.toml</code>、TUI と RL 環境のドキュメントをもとに、理解に必要な構造へ圧縮している。詳細仕様は公式ドキュメントを参照。</p>
   </div>
 
   <section id="learning" class="sec-head">2 — 学習とメモリ</section>
@@ -239,7 +256,21 @@
     <p>バッチ軌道生成、Atropos RL 連携、軌道圧縮など、ツール呼び出しモデル向けの研究機能も README に列挙されている。</p>
   </div>
 
-  <section id="interfaces" class="sec-head">3 — CLI とメッセージング Gateway</section>
+  <section id="models" class="sec-head">3 — モデルと拡張</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ロックインしない構成</span>
+    <p>README は「好きなモデルを使える」ことを前面に出している。Nous Portal、OpenRouter、NVIDIA NIM、Xiaomi MiMo、z.ai/GLM、Kimi/Moonshot、MiniMax、Hugging Face、OpenAI、独自エンドポイントを切り替えられる。</p>
+    <div class="feature-grid">
+      <div class="feature-card"><strong>Providers</strong><small><code>hermes model</code> でプロバイダとモデルを変更。OpenAI 互換 API だけに閉じない。</small></div>
+      <div class="feature-card"><strong>Extras</strong><small><code>pyproject.toml</code> は messaging、honcho、mcp、acp、bedrock、mistral、web などを optional dependency として分離。</small></div>
+      <div class="feature-card"><strong>Scripts</strong><small><code>hermes</code>、<code>hermes-agent</code>、<code>hermes-acp</code> の CLI エントリを提供。</small></div>
+    </div>
+    <div class="ve-callout">
+      <strong>設計の読みどころ:</strong> core は軽く保ち、チャネル・音声・MCP・ACP・クラウド実行・研究用途は extras で足す。利用環境の差分を「インストール時の選択」に押し出している。
+    </div>
+  </div>
+
+  <section id="interfaces" class="sec-head">4 — CLI とメッセージング Gateway</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 二つの入口</span>
     <p>対話の起点は <strong>ターミナル UI</strong>（<code>hermes</code>）か、<strong>Gateway</strong>（<code>hermes gateway</code>）経由のメッセージングのどちらか。起動後は多くのスラッシュコマンドが共通。</p>
@@ -262,7 +293,28 @@
     <strong>プラットフォーム:</strong> Telegram、Discord、Slack、WhatsApp、Signal、メールなど。音声メモの文字起こしや、チャネル間の会話連続性も README の機能表に含まれる。
   </div>
 
-  <section id="deploy" class="sec-head">4 — 実行環境（ターミナルバックエンド）</section>
+  <section id="tui" class="sec-head">5 — React + Ink TUI</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> TypeScript が画面、Python が実行</span>
+    <p><code>ui-tui/README.md</code> では、Hermes の TUI は React + Ink で画面を持ち、Python 側の <code>tui_gateway</code> がセッション、ツール、モデル呼び出し、コマンド処理を担うと説明されている。</p>
+    <div class="pipeline" aria-hidden="true">
+      <span class="step">entry.tsx</span>
+      <span class="arrow">→</span>
+      <span class="step">GatewayClient</span>
+      <span class="arrow">→</span>
+      <span class="step">python -m tui_gateway.entry</span>
+      <span class="arrow">→</span>
+      <span class="step">JSON-RPC over stdio</span>
+      <span class="arrow">→</span>
+      <span class="step">App</span>
+    </div>
+    <div class="split-grid">
+      <div class="feature-card"><strong>UI state</strong><small>transcript、streaming、queued messages、session lifecycle、tool progress、slash command、completion を Ink ツリーに合成する。</small></div>
+      <div class="feature-card"><strong>Prompt branches</strong><small><code>approval.request</code>、<code>clarify.request</code>、<code>sudo.request</code>、<code>secret.request</code> などの構造化入力をブロッキング分岐として扱う。</small></div>
+    </div>
+  </div>
+
+  <section id="deploy" class="sec-head">6 — 実行環境（ターミナルバックエンド）</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> どこで動かすか</span>
     <p>エージェントの実行環境はローカルからクラウドまで選択できる。Daytona / Modal はアイドル時コストが低いサーバレス系として README で言及されている。</p>
@@ -283,7 +335,29 @@
     </div>
   </div>
 
-  <section id="quickstart" class="sec-head">5 — クイックスタート</section>
+  <section id="research" class="sec-head">7 — 研究環境</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Atropos 連携</span>
+    <p><code>environments/README.md</code> は、Hermes のツール呼び出し能力を Atropos の RL 訓練・評価ループに接続する層として <code>environments/</code> を説明している。通常の会話エージェントだけでなく、ツール利用モデルの評価・SFT データ生成・RL 訓練に転用できる。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>層</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>HermesAgentBaseEnv</code></td><td>Terminal backend、tool resolution、agent loop、ToolContext を Atropos の BaseEnv に接続。</td></tr>
+          <tr><td><code>HermesAgentLoop</code></td><td>messages + tools を送信し、tool_calls を実行し、結果を会話に戻す multi-turn ループ。</td></tr>
+          <tr><td><code>ToolContext</code></td><td>報酬関数から同じ rollout の terminal/file/web/browser 状態を検証できるハンドル。</td></tr>
+          <tr><td><code>tool_call_parsers</code></td><td>VLLM の raw output から Hermes、Mistral、Qwen、DeepSeek、Kimi、GLM 形式の tool_calls を復元。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>二相構成:</strong> Phase 1 は OpenAI 互換サーバで評価・SFT データ生成、Phase 2 は VLLM ManagedServer で token/logprob を扱う本格 RL 訓練という切り分け。
+    </div>
+  </div>
+
+  <section id="quickstart" class="sec-head">8 — クイックスタート</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> インストール</span>
     <p>公式インストーラは Linux / macOS / WSL2 向け。ネイティブ Windows は非対応（WSL2 推奨）。</p>
@@ -307,7 +381,7 @@ hermes doctor       # 診断</code></pre>
     <p><code>hermes claw migrate</code> で設定・メモリ・スキル・API キー等をインポート可能。README にプリセットと <code>--dry-run</code> が記載されている。</p>
   </div>
 
-  <section id="links" class="sec-head">6 — 参考リンク</section>
+  <section id="links" class="sec-head">9 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
     <ul>
