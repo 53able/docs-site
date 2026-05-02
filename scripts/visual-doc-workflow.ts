@@ -1,16 +1,28 @@
 #!/usr/bin/env -S npx tsx
 /**
- * Visual documentation workflow CLI.
+ * docs-site 向けビジュアルドキュメント用ワークフロー CLI。
+ * ソースリポジトリの取得、著者向けランブックの出力、`docs/*.html` のレビューゲート検証（スコープ・メタタグ・公開パス）を行う。
  *
- * Usage:
- *   npm run docs:prepare -- --source <repos/name|name> [--doc <slug>]
- *   npm run docs:prepare -- --url <github-url> [--name <clone-name>] [--doc <slug>]
- *   npm run docs:validate -- --doc <slug|slug.html|docs/slug.html>
+ * @remarks
+ * **English:** Acquire source repos, emit authoring runbooks, and validate visual doc pages against the review gate (scope, meta tags, public paths).
  *
- * Direct:
- *   npx tsx scripts/visual-doc-workflow.ts prepare --source <repos/name|name> [--doc <slug>]
- *   npx tsx scripts/visual-doc-workflow.ts prepare --url <github-url> [--name <clone-name>] [--doc <slug>]
- *   npx tsx scripts/visual-doc-workflow.ts validate --doc <slug|slug.html|docs/slug.html>
+ * **サブコマンド概要**
+ * - `prepare`: `repos/*` をクローンまたは fast-forward、インベントリスキャン、`tmp/<slug>-runbook.md` を出力。
+ * - `validate`: `docs/*.html`、`index.html` へのリンク、`<head>` メタ、公開パス用 bash、git 変更スコープを検証。
+ *
+ * @example npm scripts
+ * ```bash
+ * npm run docs:prepare -- --source my-repo [--doc my-slug]
+ * npm run docs:prepare -- --url https://github.com/org/repo.git [--name clone-name] [--doc slug]
+ * npm run docs:validate -- --doc slug
+ * ```
+ *
+ * @example direct tsx
+ * ```bash
+ * npx tsx scripts/visual-doc-workflow.ts prepare --source my-repo [--doc slug]
+ * npx tsx scripts/visual-doc-workflow.ts prepare --url https://github.com/org/repo.git [--name name] [--doc slug]
+ * npx tsx scripts/visual-doc-workflow.ts validate --doc slug
+ * ```
  */
 
 import { spawnSync } from "node:child_process";
@@ -21,8 +33,13 @@ import { Command } from "commander";
 import prompts = require("prompts");
 import { z } from "zod";
 
+/** 対話モードで選択するワークフロー種別（ランブック準備かレビューゲート検証か）。 */
 const InteractiveModeSchema = z.enum(["prepare", "validate"]);
+
+/** `prepare` の対話フローで、既存の `repos/` を選ぶか Git URL を選ぶか。 */
 const InteractiveSourceModeSchema = z.enum(["source", "url"]);
+
+/** Commander がパースしたフラグ（`prepare` / `validate` 共通）。 */
 const CliOptionsSchema = z
   .object({
     doc: z.string().optional(),
@@ -31,10 +48,14 @@ const CliOptionsSchema = z
     url: z.string().optional(),
   })
   .strict();
+
+/** パース結果：サブコマンド名（任意）と検証済み CLI オプション。 */
 const ParsedArgsSchema = z.object({
   command: z.string().optional(),
   options: CliOptionsSchema,
 });
+
+/** `prompts` の応答。空文字はトリム後に {@link CliOptions} にマージされる。 */
 const InteractiveAnswersSchema = z
   .object({
     doc: z.string().trim().optional(),
@@ -45,6 +66,8 @@ const InteractiveAnswersSchema = z
     url: z.string().trim().optional(),
   })
   .strict();
+
+/** クローンまたは解決後の `repos/` 配下パスと、取得方法などのメタデータ（任意）。 */
 const SourceRepositorySchema = z.object({
   absolutePath: z.string(),
   relativePath: z.string(),
@@ -52,48 +75,84 @@ const SourceRepositorySchema = z.object({
   acquiredBy: z.enum(["clone", "fast-forward"]).optional(),
   pullOutput: z.string().optional(),
 });
+
+/** `docs/` 直下のビジュアルドキュメント HTML の正規表現。 */
 const DocumentPathSchema = z.object({
   input: z.string(),
   slug: z.string(),
   relativePath: z.string(),
   absolutePath: z.string(),
 });
+
+/** レビューゲート失敗時に報告する単一の問題。 */
 const ValidationFindingSchema = z.object({
   code: z.string(),
   message: z.string(),
   details: z.string().optional(),
 });
+
+/** {@link runCommand} の終了コードと標準出力・標準エラー。 */
 const CommandResultSchema = z.object({
   status: z.number(),
   stdout: z.string(),
   stderr: z.string(),
 });
 
+/** Zod パース後のフラグ: `--doc`, `--name`, `--source`, `--url`。 */
 type CliOptions = z.infer<typeof CliOptionsSchema>;
+
+/** {@link parseArgs} または対話入力で得た、一致したサブコマンドとそのオプション。 */
 type ParsedArgs = z.infer<typeof ParsedArgsSchema>;
+
+/** `prompts` の生の回答。{@link compactCliOptions} 前の型。 */
 type InteractiveAnswers = z.infer<typeof InteractiveAnswersSchema>;
+
+/** インベントリ・ランブック生成の参照元となる `repos/<name>` ツリー。 */
 type SourceRepository = z.infer<typeof SourceRepositorySchema>;
+
+/** 検証・ランブック生成の対象となる `docs/*.html` パス。 */
 type DocumentPath = z.infer<typeof DocumentPathSchema>;
+
+/** 検証失敗 1 件。詳細（例: stderr 抜粋）は任意。 */
 type ValidationFinding = z.infer<typeof ValidationFindingSchema>;
+
+/** `spawnSync` ラッパー {@link runCommand} の構造化出力。 */
 type CommandResult = z.infer<typeof CommandResultSchema>;
+
+/** `prompts` ライブラリが受け取る質問オブジェクトの型。 */
 type PromptQuestion = Parameters<typeof prompts>[0];
+
+/** テスト用に差し替え可能なプロンプト実行関数。 */
 type PromptRunner = (questions: PromptQuestion) => Promise<unknown>;
+
+/** オートコンプリート用: ドキュメントや `repos` の選択肢 1 行。 */
 type AutocompleteChoice = {
   title: string;
   value: string;
   description: string;
 };
+
+/**
+ * {@link evaluateReviewGate} 向けの依存注入面（ファイルシステム・git・公開パス検証）。
+ */
 type ReviewGateEnvironment = {
   changedNames: () => string[];
   exists: (absolutePath: string) => boolean;
   readText: (absolutePath: string) => Promise<string>;
   validatePublicPaths: (docPath: string) => Result<string>;
 };
+
+/** レビュースコープ: 表示用パターン文字列と、変更ファイルが許容かどうかの判定。 */
 type ReviewScopeRule = {
   pattern: string;
   matches: (file: string, docPath: string) => boolean;
 };
 
+/**
+ * ワークフロー結果の判別共用型。成功時は値、失敗時はメッセージと詳細オブジェクト。
+ *
+ * @typeParam T - `ok: true` 分枝で運ぶ値の型。
+ */
 type Result<T> =
   | {
       ok: true;
@@ -105,10 +164,20 @@ type Result<T> =
       details: Record<string, unknown>;
     };
 
+/** カレントワーキングディレクトリ。相対パスはここを基準に解決する。 */
 const WORKSPACE_ROOT = process.cwd();
+
+/** `docs-site-add-visual-doc` スキル由来のソースインベントリ用 bash。 */
 const SCAN_SCRIPT = ".cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh";
+
+/** 公開 HTML にローカル／ワークスペースパスが漏れていないか検査する bash。 */
 const PUBLIC_PATH_SCRIPT = ".cursor/skills/docs-site-add-visual-doc/scripts/validate-public-paths.sh";
 
+/**
+ * ビジュアルドキュメント PR で変更してよいファイルの許容パターン（`{docPath}` は対象 HTML に置換）。
+ *
+ * @remarks {@link matchesScope} が `validate` 時の git 変更のスコープ外を検出するために使用する。
+ */
 const REVIEW_SCOPE_RULES: ReviewScopeRule[] = [
   {
     pattern: "{docPath}",
@@ -156,33 +225,33 @@ const REVIEW_SCOPE_RULES: ReviewScopeRule[] = [
   },
 ];
 
-/** Wraps a successful operation in the shared CLI result shape. */
+/** 成功結果を共通の {@link Result} 形でラップする。 */
 const ok = <T>(value: T): Result<T> => ({ ok: true, value });
 
-/** Wraps a failed operation in the shared CLI result shape. */
+/** 失敗結果を共通の {@link Result} 形でラップする。 */
 const err = <T = never>(message: string, details: Record<string, unknown> = {}): Result<T> => ({
   ok: false,
   message,
   details,
 });
 
-/** Writes one stdout line. */
+/** 標準出力に 1 行書き込む。 */
 const print = (message: string): void => {
   process.stdout.write(`${message}\n`);
 };
 
-/** Writes one stderr line. */
+/** 標準エラーに 1 行書き込む。 */
 const printError = (message: string): void => {
   process.stderr.write(`${message}\n`);
 };
 
-/** Runs prompts behind a small adapter so tests can inject answers. */
+/** テストで差し替え可能な薄いアダプタで `prompts` を実行する。 */
 const runPrompts = async (questions: PromptQuestion): Promise<unknown> => prompts(questions);
 
-/** Converts a prompt choice value to searchable text. */
+/** オートコンプリートの選択肢の `value` を検索用文字列に変換する。 */
 const choiceValueText = (value: unknown): string => (typeof value === "string" ? value : "");
 
-/** Returns choices matching the current autocomplete input. */
+/** 現在の入力に一致するオートコンプリート候補だけを返す。 */
 const suggestChoices = async (input: string, choices: prompts.Choice[]): Promise<prompts.Choice[]> => {
   const query = input.trim().toLowerCase();
   return query.length === 0
@@ -192,7 +261,12 @@ const suggestChoices = async (input: string, choices: prompts.Choice[]): Promise
       );
 };
 
-/** Builds the Commander program without binding it to process globals. */
+/**
+ * Commander のプログラムを組み立てる。`process` にバインドせず、`onCommand` でディスパッチする。
+ *
+ * @param onCommand - サブコマンド名と検証済みオプションを受け取るコールバック。
+ * @returns 設定済みの `Command` インスタンス。
+ */
 const createProgram = (onCommand: (command: string, options: CliOptions) => void): Command => {
   const program = new Command();
   program
@@ -223,7 +297,11 @@ const createProgram = (onCommand: (command: string, options: CliOptions) => void
   return program;
 };
 
-/** Parses CLI arguments into a command and flag map through Commander. */
+/**
+ * argv を Commander でパースし、コマンド名とフラグマップを返す。
+ *
+ * @param argv - `process.argv` 相当（スクリプト名は含めない想定で結合側が付与）。
+ */
 const parseArgs = (argv: string[]): ParsedArgs => {
   const parsedCommands: ParsedArgs[] = [];
   const program = createProgram((command, options) => {
@@ -235,7 +313,7 @@ const parseArgs = (argv: string[]): ParsedArgs => {
   return ParsedArgsSchema.parse(parsedCommands.at(0) ?? { options: {} });
 };
 
-/** Removes empty prompt responses before turning them into CLI options. */
+/** 空のプロンプト回答を落としてから {@link CliOptions} に正規化する。 */
 const compactCliOptions = (answers: InteractiveAnswers): CliOptions =>
   CliOptionsSchema.parse({
     doc: answers.doc || undefined,
@@ -244,7 +322,7 @@ const compactCliOptions = (answers: InteractiveAnswers): CliOptions =>
     url: answers.url || undefined,
   });
 
-/** Lists existing Visual Documentation Pages as autocomplete choices. */
+/** `docs/*.html` を列挙し、オートコンプリート用の選択肢を作る。 */
 const listDocumentChoices = async (): Promise<AutocompleteChoice[]> => {
   const docsDir = path.join(WORKSPACE_ROOT, "docs");
   const entries = await readdir(docsDir, { withFileTypes: true });
@@ -261,7 +339,7 @@ const listDocumentChoices = async (): Promise<AutocompleteChoice[]> => {
     .sort((left, right) => left.title.localeCompare(right.title));
 };
 
-/** Lists existing Source Repositories as autocomplete choices. */
+/** `repos/` 直下のディレクトリを列挙し、オートコンプリート用の選択肢を作る。 */
 const listSourceChoices = async (): Promise<AutocompleteChoice[]> => {
   const reposDir = path.join(WORKSPACE_ROOT, "repos");
   if (!existsSync(reposDir)) {
@@ -279,7 +357,12 @@ const listSourceChoices = async (): Promise<AutocompleteChoice[]> => {
     .sort((left, right) => left.title.localeCompare(right.title));
 };
 
-/** Prompts for a documentation target when validate mode lacks --doc. */
+/**
+ * `validate` で `--doc` が無いとき、対話でドキュメントを選ぶ。
+ *
+ * @param promptRunner - プロンプト実行（テストでモック可能）。
+ * @param existingOptions - 既に渡っている CLI オプション。
+ */
 const collectValidateOptions = async (
   promptRunner: PromptRunner,
   existingOptions: CliOptions = {},
@@ -301,7 +384,12 @@ const collectValidateOptions = async (
   return compactCliOptions({ ...existingOptions, ...docAnswers });
 };
 
-/** Prompts for Source Repository inputs when prepare mode lacks --source or --url. */
+/**
+ * `prepare` で `--source` も `--url` も無いとき、対話で取得元を選ぶ。
+ *
+ * @param promptRunner - プロンプト実行（テストでモック可能）。
+ * @param existingOptions - 既に渡っている CLI オプション。
+ */
 const collectPrepareOptions = async (
   promptRunner: PromptRunner,
   existingOptions: CliOptions = {},
@@ -368,7 +456,11 @@ const collectPrepareOptions = async (
   return compactCliOptions({ ...existingOptions, ...optionAnswers });
 };
 
-/** Collects CLI mode and options from prompts when no argv is provided. */
+/**
+ * argv が空のとき、モードと不足オプションを対話で集める。
+ *
+ * @param promptRunner - 既定は {@link runPrompts}。
+ */
 const collectInteractiveArgs = async (promptRunner: PromptRunner = runPrompts): Promise<ParsedArgs> => {
   const modeAnswers = InteractiveAnswersSchema.parse(
     await promptRunner({
@@ -399,7 +491,12 @@ const collectInteractiveArgs = async (promptRunner: PromptRunner = runPrompts): 
   });
 };
 
-/** Parses argv and prompts for missing required options in command-specific scripts. */
+/**
+ * argv をパースし、サブコマンドごとに不足している必須オプションを対話で補う。
+ *
+ * @param argv - `main` から渡す引数列（通常は `process.argv.slice(2)`）。
+ * @param promptRunner - 既定は {@link runPrompts}。
+ */
 const collectCliArgs = async (argv: string[], promptRunner: PromptRunner = runPrompts): Promise<ParsedArgs> => {
   if (argv.length === 0) {
     return collectInteractiveArgs(promptRunner);
@@ -423,10 +520,14 @@ const collectCliArgs = async (argv: string[], promptRunner: PromptRunner = runPr
   return parsed;
 };
 
-/** Removes a trailing .git suffix from a repository-like name. */
+/** リポジトリ名っぽい文字列末尾の `.git` を除去する。 */
 const trimGitSuffix = (value: string): string => value.replace(/\.git$/u, "");
 
-/** Extracts a clone directory candidate from HTTPS or SSH Git URLs. */
+/**
+ * HTTPS / SSH の Git URL から、クローン先ディレクトリ名の候補（ベース名）を推定する。
+ *
+ * @param url - クローン元 URL。
+ */
 const basenameFromUrl = (url: string): string => {
   const pathname = (() => {
     try {
@@ -438,7 +539,11 @@ const basenameFromUrl = (url: string): string => {
   return trimGitSuffix(path.basename(pathname));
 };
 
-/** Converts a free-form name into a docs-site slug. */
+/**
+ * 任意の文字列を URL・ファイル名向けのスラッグへ正規化する。
+ *
+ * @param value - リポジトリ名やタイトルなど。
+ */
 const slugify = (value: string): string => {
   const normalized = value
     .replace(/([a-z0-9])([A-Z])/gu, "$1-$2")
@@ -448,14 +553,24 @@ const slugify = (value: string): string => {
   return normalized || "visual-doc";
 };
 
-/** Produces a slug with at most four hyphen-separated words unless an override is provided. */
+/**
+ * ハイフン区切りは最大 4 語までに切り詰めたスラッグを返す（上書き指定があればそれを優先）。
+ *
+ * @param value - ベースとなる文字列（例: クローン名）。
+ * @param override - ユーザー指定のドキュメントスラッグ。
+ */
 const boundedSlug = (value: string, override?: string): string => {
   const slug = slugify(override || value);
   const parts = slug.split("-").filter(Boolean);
   return parts.length <= 4 ? slug : parts.slice(0, 4).join("-");
 };
 
-/** Resolves supported doc inputs to one canonical docs/*.html path. */
+/**
+ * ユーザー入力（スラッグまたは `docs/foo.html` 形式）を `docs/` 直下の 1 ファイルへ正規化する。
+ *
+ * @param input - スラッグ、`docs/*.html`、相対パスなど。
+ * @throws  `docs/` の直下ファイルに解決できない場合。
+ */
 const normalizeDocPath = (input: string): DocumentPath => {
   const normalizedInput = input.replace(/\\/gu, "/").replace(/^\.?\//u, "");
   const withoutDocs = normalizedInput.startsWith("docs/")
@@ -476,11 +591,19 @@ const normalizeDocPath = (input: string): DocumentPath => {
   });
 };
 
-/** Converts an absolute workspace path to a portable repository-relative path. */
+/**
+ * ワークスペースルートからの相対パス（POSIX 風の `/`）に変換する。
+ *
+ * @param absolutePath - 絶対パス。
+ */
 const relativeFromRoot = (absolutePath: string): string =>
   path.relative(WORKSPACE_ROOT, absolutePath).replace(/\\/gu, "/");
 
-/** Resolves source input into a Source Repository under repos/. */
+/**
+ * `--source` / `--url` / `--name` から `repos/` 配下の {@link SourceRepository} を解決する。
+ *
+ * @throws `prepare` に必要な情報が無い、または `repos/` 外に解決した場合。
+ */
 const resolveSourcePath = ({ source, url, name }: CliOptions): SourceRepository => {
   const sourceOption = typeof source === "string" ? source : undefined;
   const urlOption = typeof url === "string" ? url : undefined;
@@ -510,7 +633,13 @@ const resolveSourcePath = ({ source, url, name }: CliOptions): SourceRepository 
   });
 };
 
-/** Runs a child process from the workspace root and captures text output. */
+/**
+ * ワークスペースルートを cwd に子プロセスを実行し、標準出力・標準エラー・終了コードを取得する。
+ *
+ * @param command - 実行ファイル名。
+ * @param args - 引数列。
+ * @param options - `cwd` を上書きする場合に指定。
+ */
 const runCommand = (command: string, args: string[], options: { cwd?: string } = {}): CommandResult => {
   const result = spawnSync(command, args, {
     cwd: WORKSPACE_ROOT,
@@ -524,7 +653,11 @@ const runCommand = (command: string, args: string[], options: { cwd?: string } =
   });
 };
 
-/** Resolves a repository-owned workflow support script before delegating to bash. */
+/**
+ * リポジトリ同梱のワークフロー補助スクリプトが存在するか確認し、相対パスを返す。
+ *
+ * @param relativePath - ワークスペースルートからの相対パス。
+ */
 const resolveWorkflowScriptPath = (relativePath: string): Result<string> => {
   const absolutePath = path.join(WORKSPACE_ROOT, relativePath);
   return existsSync(absolutePath)
@@ -534,7 +667,11 @@ const resolveWorkflowScriptPath = (relativePath: string): Result<string> => {
       });
 };
 
-/** Checks that an existing Source Repository can be safely fast-forwarded. */
+/**
+ * 既存ソースが git リポジトリでワーキングツリーがクリーンか検証する。
+ *
+ * @param source - 検査対象の {@link SourceRepository}。
+ */
 const assertCleanGitRepository = (source: SourceRepository): Result<SourceRepository> => {
   const gitDir = path.join(source.absolutePath, ".git");
   if (!existsSync(gitDir)) {
@@ -559,7 +696,11 @@ const assertCleanGitRepository = (source: SourceRepository): Result<SourceReposi
   return ok(source);
 };
 
-/** Clones a new Source Repository or fast-forwards an existing clean one. */
+/**
+ * ソースが無ければ `--url` でクローンし、あればクリーンな状態で `git pull --ff-only` する。
+ *
+ * @param options - CLI オプション（`--source`, `--url`, `--name` など）。
+ */
 const acquireSource = (options: CliOptions): Result<SourceRepository> => {
   const resolved = resolveSourcePath(options);
   const urlOption = typeof options.url === "string" ? options.url : undefined;
@@ -600,7 +741,11 @@ const acquireSource = (options: CliOptions): Result<SourceRepository> => {
   );
 };
 
-/** Runs the existing source inventory script and returns its text summary. */
+/**
+ * `scan-source.sh` を実行し、ソースツリーのインベントリ要約テキストを返す。
+ *
+ * @param source - スキャン対象の {@link SourceRepository}。
+ */
 const runSourceInventory = (source: SourceRepository): Result<string> => {
   const script = resolveWorkflowScriptPath(SCAN_SCRIPT);
   if (!script.ok) {
@@ -613,16 +758,20 @@ const runSourceInventory = (source: SourceRepository): Result<string> => {
     : err("Failed to scan Source Repository.", { source: source.relativePath, stderr: scan.stderr });
 };
 
-/** Reads git status with untracked files expanded to file-level entries. */
+/** `git status --short` の出力を取得する（未追跡はファイル粒度）。 */
 const gitStatusShort = (): string => runCommand("git", ["status", "--short", "--untracked-files=all"]).stdout.trim();
 
-/** Extracts a file path from one git status --short line. */
+/**
+ * `git status --short` の 1 行から、変更対象のファイルパスを取り出す。
+ *
+ * @param line - status の 1 行。
+ */
 const pathFromStatusLine = (line: string): string => {
   const rawPath = line.match(/^.. ?(.+)$/u)?.[1] ?? line.trim();
   return rawPath.includes(" -> ") ? (rawPath.split(" -> ").at(-1) ?? rawPath) : rawPath;
 };
 
-/** Returns all changed and untracked file names reported by git status. */
+/** 変更・未追跡として `git status` に現れるファイルパスを重複なく列挙する。 */
 const gitChangedNames = (): string[] => [
   ...new Set(
     gitStatusShort()
@@ -633,19 +782,30 @@ const gitChangedNames = (): string[] => [
   ),
 ];
 
-/** Lists the human-readable Review Scope patterns for a documentation target. */
+/** 対象ドキュメントに対するレビュースコープの人間可読パターン一覧。 */
 const allowedReviewScope = (docPath: string): string[] =>
   REVIEW_SCOPE_RULES.map((rule) => (rule.pattern === "{docPath}" ? docPath : rule.pattern));
 
-/** Checks whether a changed file belongs to the Review Scope. */
+/**
+ * 変更ファイルがレビュースコープ（許容変更範囲）に含まれるか。
+ *
+ * @param file - リポジトリ相対の変更ファイルパス。
+ * @param docPath - 対象ビジュアルドキュメント HTML のリポジトリ相対パス。
+ */
 const matchesScope = (file: string, docPath: string): boolean =>
   REVIEW_SCOPE_RULES.some((rule) => rule.matches(file, docPath));
 
-/** Determines whether a Visual Documentation Page is new or an update. */
+/** ビジュアルドキュメントページが既にディスク上に存在するかで new / update を返す。 */
 const pageStatus = (docPath: string): "new" | "update" =>
   existsSync(path.join(WORKSPACE_ROOT, docPath)) ? "update" : "new";
 
-/** Builds the Markdown runbook consumed by the authoring agent. */
+/**
+ * 著者エージェント向けの Markdown ランブック本文を生成する。
+ *
+ * @param source - 取得済みソースリポジトリ。
+ * @param doc - 対象 HTML の相対パスとスラッグ。
+ * @param inventory - インベントリスクリプトの出力テキスト。
+ */
 const buildRunbook = ({
   source,
   doc,
@@ -707,7 +867,12 @@ npx tsx scripts/visual-doc-workflow.ts validate --doc ${doc.slug}
 `;
 };
 
-/** Writes a runbook to the unversioned runbook location. */
+/**
+ * ランブックを `tmp/<slug>-runbook.md` に書き込み、リポジトリ相対パスを返す。
+ *
+ * @param doc - スラッグ（ファイル名のベース）。
+ * @param content - マークダウン全文。
+ */
 const writeRunbook = async ({ doc, content }: { doc: Pick<DocumentPath, "slug">; content: string }): Promise<string> => {
   const runbookDir = path.join(WORKSPACE_ROOT, "tmp");
   const runbookPath = path.join(runbookDir, `${doc.slug}-runbook.md`);
@@ -716,7 +881,12 @@ const writeRunbook = async ({ doc, content }: { doc: Pick<DocumentPath, "slug">;
   return relativeFromRoot(runbookPath);
 };
 
-/** Executes Prepare Mode: acquire source, scan it, and write the runbook. */
+/**
+ * `prepare` コマンド本体: ソース取得、スキャン、ランブック出力。
+ *
+ * @param options - CLI オプション。
+ * @returns 成功時はソースパス、ドキュメントパス、ページ状態、ランブック相対パスなど。
+ */
 const prepare = async (options: CliOptions): Promise<Result<Record<string, string>>> => {
   const acquired = acquireSource(options);
   if (!acquired.ok) {
@@ -741,24 +911,33 @@ const prepare = async (options: CliOptions): Promise<Result<Record<string, strin
   });
 };
 
-/** Extracts raw head content from an HTML string. */
+/** HTML 文字列から `<head>...</head>` 内のマークアップを抽出する。 */
 const headContent = (html: string): string => html.match(/<head\b[^>]*>([\s\S]*?)<\/head>/iu)?.[1] ?? "";
 
-/** True when head contains a twitter:card meta tag. */
+/** `<head>` 内に `twitter:card` の meta があるか。 */
 const hasTwitterCardInHead = (head: string): boolean =>
   /<meta\s+[^>]*name=["']twitter:card["'][^>]*>/iu.test(head);
 
-/** True when head contains an og:* property meta tag. */
+/** `<head>` 内に指定 `property` の Open Graph meta があるか。 */
 const hasOgPropertyInHead = (head: string, property: string): boolean =>
   new RegExp(`<meta\\s+[^>]*property=["']${property}["'][^>]*>`, "iu").test(head);
 
-/** Checks whether a required Open Graph or Twitter card meta tag exists inside head. */
+/**
+ * 必須の OGP / Twitter Card メタが `<head>` に含まれるか。
+ *
+ * @param html - 完全な HTML 文書。
+ * @param marker - `og:title` 等、または `twitter:card`。
+ */
 const hasHeadMeta = (html: string, marker: string): boolean => {
   const head = headContent(html);
   return marker === "twitter:card" ? hasTwitterCardInHead(head) : hasOgPropertyInHead(head, marker);
 };
 
-/** Delegates public path safety checks to the existing docs-site validation script. */
+/**
+ * `validate-public-paths.sh` に委譲し、公開 HTML にローカルパスが含まれていないか検査する。
+ *
+ * @param docPath - 検証対象の `docs/` 相対パス。
+ */
 const validatePublicPaths = (docPath: string): Result<string> => {
   const script = resolveWorkflowScriptPath(PUBLIC_PATH_SCRIPT);
   if (!script.ok) {
@@ -772,7 +951,7 @@ const validatePublicPaths = (docPath: string): Result<string> => {
   return ok(result.stdout.trim());
 };
 
-/** Extracts the most actionable text from a failed Result details object. */
+/** 失敗 {@link Result} の `details` から、表示に使う短いテキストを抜き出す。 */
 const failureDetailsText = (details: Record<string, unknown>): string | undefined => {
   const stderr = details.stderr;
   if (typeof stderr === "string") {
@@ -783,7 +962,11 @@ const failureDetailsText = (details: Record<string, unknown>): string | undefine
   return typeof script === "string" ? script : undefined;
 };
 
-/** Maps public path checker failures to review gate findings without hiding infrastructure errors. */
+/**
+ * 公開パス検証の失敗を {@link ValidationFinding} にマッピングする（インフラエラーコードを区別）。
+ *
+ * @param result - `ok: false` の {@link Result}。
+ */
 const publicPathFinding = (result: Extract<Result<string>, { ok: false }>): ValidationFinding =>
   ValidationFindingSchema.parse({
     code: result.details.script ? "public-path-check-failed" : "public-path-leak",
@@ -791,7 +974,7 @@ const publicPathFinding = (result: Extract<Result<string>, { ok: false }>): Vali
     details: failureDetailsText(result.details),
   });
 
-/** Creates the default Review Gate environment from the local workspace. */
+/** ローカルワークスペース向けの既定 {@link ReviewGateEnvironment} を組み立てる。 */
 const createReviewGateEnvironment = (): ReviewGateEnvironment => ({
   changedNames: gitChangedNames,
   exists: existsSync,
@@ -799,7 +982,13 @@ const createReviewGateEnvironment = (): ReviewGateEnvironment => ({
   validatePublicPaths,
 });
 
-/** Evaluates the Review Gate and returns all actionable Validation Findings. */
+/**
+ * レビューゲート（存在・index リンク・head メタ・公開パス・git スコープ）を評価する。
+ *
+ * @param doc - 正規化済みの {@link DocumentPath}。
+ * @param environment - テスト用に差し替え可能。省略時は {@link createReviewGateEnvironment}。
+ * @returns 違反の列（空なら合格）。
+ */
 const evaluateReviewGate = async (
   doc: DocumentPath,
   environment: ReviewGateEnvironment = createReviewGateEnvironment(),
@@ -871,7 +1060,11 @@ const evaluateReviewGate = async (
   return findings;
 };
 
-/** Executes Validate Mode and returns Review Gate findings without modifying files. */
+/**
+ * `validate` コマンド本体: ファイルは変更せず、レビューゲートの結果だけ返す。
+ *
+ * @param options - `doc` 必須の CLI オプション。
+ */
 const validate = async (options: CliOptions): Promise<Result<{ doc: string }>> => {
   if (!options.doc) {
     return err("validate requires --doc.");
@@ -886,7 +1079,12 @@ const validate = async (options: CliOptions): Promise<Result<{ doc: string }>> =
   return ok({ doc: doc.relativePath });
 };
 
-/** Formats a CLI result as JSON for stable human and agent consumption. */
+/**
+ * {@link Result} を JSON 文字列化する（人間・エージェント向けの安定した形）。
+ *
+ * @typeParam T - 成功時の値の型。
+ * @param result - 成功または失敗の Result。
+ */
 const formatResult = <T>(result: Result<T>): string => {
   if (result.ok) {
     return JSON.stringify({ ok: true, ...result.value }, null, 2);
@@ -894,7 +1092,11 @@ const formatResult = <T>(result: Result<T>): string => {
   return JSON.stringify({ ok: false, message: result.message, ...result.details }, null, 2);
 };
 
-/** Runs prepare or validate and returns a CLI-shaped result. */
+/**
+ * argv を解釈し `prepare` または `validate` を実行して CLI 向け {@link Result} を返す。
+ *
+ * @param argv - 通常は `process.argv.slice(2)`。
+ */
 const runWorkflow = async (argv: string[]): Promise<Result<Record<string, unknown>>> => {
   try {
     const { command, options } = await collectCliArgs(argv);
@@ -910,7 +1112,11 @@ const runWorkflow = async (argv: string[]): Promise<Result<Record<string, unknow
   }
 };
 
-/** Dispatches the requested CLI mode. */
+/**
+ * エントリポイント: ワークフローを実行し終了コードを返す（成功 0 / 失敗 1）。
+ *
+ * @param argv - `process.argv.slice(2)` と同等。
+ */
 const main = async (argv: string[]): Promise<number> => {
   const result = await runWorkflow(argv);
 
@@ -923,6 +1129,7 @@ const main = async (argv: string[]): Promise<number> => {
   return 1;
 };
 
+/** `tsx` で本ファイルが直接実行されたときだけ `main` を起動する。 */
 const isDirectRun = process.argv[1] ? path.basename(process.argv[1]) === "visual-doc-workflow.ts" : false;
 if (isDirectRun) {
   main(process.argv.slice(2)).then((code) => {
@@ -930,6 +1137,9 @@ if (isDirectRun) {
   });
 }
 
+/**
+ * 単体テストや外部ツール向けに公開するシンボル。
+ */
 export {
   basenameFromUrl,
   boundedSlug,
