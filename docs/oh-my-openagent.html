@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>oh-my-opencode — マルチモデル・エージェント・オーケストレーション</title>
-  <meta name="description" content="OpenCode 用マルチモデル・エージェント・ハーネス。11 の専門エージェント、ハッシュ錨定編集、背景エージェント並列実行、Claude Code 互換。">
+  <meta name="description" content="OpenCode 用マルチモデル・エージェント・ハーネス（oh-my-opencode v3.17.12 相当に同期）。11 の専門エージェント、Hashline、背景エージェント並列、Claude Code 互換。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="oh-my-opencode — マルチモデル・エージェント・オーケストレーション">
-  <meta property="og:description" content="OpenCode 用マルチモデル・エージェント・ハーネス。11 の専門エージェント、Hashline、背景エージェント並列実行、Claude Code 互換。">
+  <meta property="og:description" content="OpenCode 用マルチモデル・エージェント・ハーネス（oh-my-opencode v3.17.12 相当に同期）。11 の専門エージェント、Hashline、背景並列、Claude Code 互換。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/oh-my-openagent.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="oh-my-opencode — マルチモデル・エージェント・オーケストレーション">
-  <meta name="twitter:description" content="OpenCode 用マルチモデル・エージェント・ハーネス。Hashline・背景エージェント・Claude Code 互換。">
+  <meta name="twitter:description" content="oh-my-opencode v3.17.12 相当に同期。11 エージェント、Hashline、背景並列、Claude Code 互換。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -103,6 +103,14 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); overflow-x: auto; }
     .ve-code-block pre { margin: 0; padding: 1rem 1.25rem; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.8rem; color: var(--code-text); white-space: pre-wrap; word-break: break-word; display: block; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
     .ve-code-block .code-header { padding: 0.5rem 1.25rem; border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 0.5rem; }
     .ve-table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.825rem; }
@@ -318,7 +326,7 @@
   <!-- ============ Main ============ -->
   <div class="main">
     <h1>oh-my-opencode</h1>
-    <p class="subtitle">マルチモデル・エージェント・オーケストレーション for OpenCode — <span style="color:var(--chart-1)">oh-my-openagent</span></p>
+    <p class="subtitle">マルチモデル・エージェント・オーケストレーション for OpenCode — npm <code>oh-my-opencode</code> <span class="ve-badge ve-badge--dim" style="font-size:10px">v3.17.12</span> / プラグイン <span style="color:var(--chart-1)">oh-my-openagent</span></p>
 
     <!-- ========== S1: 概要 ========== -->
     <div id="s1" class="sec-head">
@@ -370,7 +378,7 @@
         <thead>
           <tr>
             <th>エージェント</th>
-            <th>デフォルトモデル</th>
+            <th>優先モデル（連鎖の先頭）</th>
             <th>役割</th>
             <th>制限</th>
           </tr>
@@ -378,38 +386,38 @@
         <tbody>
           <tr>
             <td><strong>Sisyphus</strong> <span class="ve-badge ve-badge--blue">order: 1</span></td>
-            <td><code>claude-opus-4-6</code></td>
-            <td>主オーケストレーター。計画・委譲・並列実行。Todo 駆動ワークフロー、32k 拡張思考。Kimi K2.5 / GLM-5 へフォールバック。</td>
+            <td><code>claude-opus-4-7</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">max</span></td>
+            <td>主オーケストレーター。計画・委譲・並列実行。接続プロバイダに応じて Kimi K2.5 / GLM-5 / GPT-5.5 などへフォールバック。</td>
             <td>—</td>
           </tr>
           <tr>
             <td><strong>Hephaestus</strong> <span class="ve-badge ve-badge--gold">深い実装</span></td>
-            <td><code>gpt-5.4</code></td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">medium</span></td>
             <td>自律深層ワーカー。目標を与えるだけでコードベース調査から実装まで完結。途中で止まらない鍛冶の神。</td>
             <td>—</td>
           </tr>
           <tr>
             <td><strong>Oracle</strong></td>
-            <td><code>gpt-5.4</code></td>
-            <td>アーキテクチャ決定・コードレビュー・デバッグ。読み取り専用の相談役。高い論理推論を持つ。</td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">high</span></td>
+            <td>アーキテクチャ決定・コードレビュー・デバッグ。読み取り専用の相談役。Gemini / Opus / GLM などへフォールバック。</td>
             <td>read-only（write/edit/task 禁止）</td>
           </tr>
           <tr>
             <td><strong>Librarian</strong></td>
-            <td><code>minimax-m2.7</code></td>
-            <td>マルチリポジトリ解析・ドキュメント検索・OSS 実装例調査。証拠ベースの回答。</td>
+            <td><code>gpt-5.4-mini-fast</code></td>
+            <td>マルチリポジトリ解析・ドキュメント検索・OSS 実装例調査。証拠ベースの回答。Minimax / Haiku などへフォールバック。</td>
             <td>write/edit/task 禁止</td>
           </tr>
           <tr>
             <td><strong>Explore</strong></td>
-            <td><code>grok-code-fast-1</code></td>
-            <td>高速なコードベース探索と文脈付き grep。</td>
+            <td><code>gpt-5.4-mini-fast</code></td>
+            <td>高速なコードベース探索と文脈付き grep。Librarian と同型の軽量連鎖。</td>
             <td>write/edit/task 禁止</td>
           </tr>
           <tr>
             <td><strong>Multimodal-Looker</strong></td>
-            <td><code>gpt-5.4</code></td>
-            <td>PDF・画像・ダイアグラムから情報を抽出するビジュアル専門家。</td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">medium</span></td>
+            <td>PDF・画像・ダイアグラムから情報を抽出するビジュアル専門家。Kimi / GLM-4.6v などへフォールバック。</td>
             <td>read のみ</td>
           </tr>
         </tbody>
@@ -422,25 +430,25 @@
         <thead>
           <tr>
             <th>エージェント</th>
-            <th>モデル</th>
+            <th>優先モデル（連鎖の先頭）</th>
             <th>役割</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td><strong>Prometheus</strong></td>
-            <td><code>claude-opus-4-6</code></td>
-            <td>戦略プランナー。インタビューモードで質問を繰り返し、詳細な作業計画を構築してから実行する。</td>
+            <td><code>claude-opus-4-7</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">max</span></td>
+            <td>戦略プランナー。インタビューモードで質問を繰り返し、詳細な作業計画を構築してから実行する。GPT-5.5 / Gemini などへフォールバック。</td>
           </tr>
           <tr>
             <td><strong>Metis</strong></td>
-            <td><code>claude-opus-4-6</code></td>
+            <td><code>claude-opus-4-7</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">max</span></td>
             <td>計画コンサルタント。隠れた意図・曖昧さ・AI の失敗ポイントを事前特定。</td>
           </tr>
           <tr>
             <td><strong>Momus</strong></td>
-            <td><code>gpt-5.4</code></td>
-            <td>計画レビュアー。明確性・検証可能性・完全性の基準で計画を検証。</td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">xhigh</span></td>
+            <td>計画レビュアー。明確性・検証可能性・完全性の基準で計画を検証。Opus / Gemini などへフォールバック。</td>
           </tr>
         </tbody>
       </table>
@@ -452,7 +460,7 @@
         <thead>
           <tr>
             <th>エージェント</th>
-            <th>モデル</th>
+            <th>優先モデル（連鎖の先頭）</th>
             <th>役割</th>
           </tr>
         </thead>
@@ -460,7 +468,7 @@
           <tr>
             <td><strong>Atlas</strong> <span class="ve-badge ve-badge--blue">order: 4</span></td>
             <td><code>claude-sonnet-4-6</code></td>
-            <td>Todo リストオーケストレーター。計画済みタスクを体系的に実行・管理・調整。</td>
+            <td>Todo リストオーケストレーター。計画済みタスクを体系的に実行・管理・調整。Kimi / GPT-5.5 / Minimax などへフォールバック。</td>
           </tr>
           <tr>
             <td><strong>Sisyphus-Junior</strong></td>
@@ -473,8 +481,9 @@
 
     <div style="margin-top:1rem">
       <p style="font-size:0.8rem;color:var(--text-dim)">
-        Tab キーでエージェントを切り替え時、コア順序は固定: Sisyphus (1) → Hephaestus (2) → Prometheus (3) → Atlas (4)。
-        エージェントは <code>@oracle</code> のように明示的に呼び出すことも可能。
+        実際に選ばれるモデルは接続プロバイダと可用性に依存する。上表のコードはフォールバック連鎖の先頭候補（上流のモデル要件定義に準拠）。
+        Tab 切り替え時のコア順序は固定: Sisyphus (1) → Hephaestus (2) → Prometheus (3) → Atlas (4)。
+        <code>@oracle</code> など明示呼び出しも可能。
       </p>
     </div>
 
@@ -533,29 +542,29 @@ flowchart TD
           <tr>
             <th>カテゴリ</th>
             <th>用途</th>
-            <th>デフォルトモデル</th>
+            <th>優先モデル（連鎖の先頭）</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td><code>visual-engineering</code></td>
             <td>フロントエンド・UI/UX・デザイン</td>
-            <td><code>claude-sonnet-4-6</code></td>
+            <td><code>gemini-3.1-pro</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">high</span></td>
           </tr>
           <tr>
             <td><code>deep</code></td>
             <td>自律的な調査・実行（Hephaestus モード）</td>
-            <td><code>gpt-5.4</code></td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">medium</span></td>
           </tr>
           <tr>
             <td><code>quick</code></td>
             <td>単一ファイル変更・タイポ修正など軽量タスク</td>
-            <td><code>minimax-m2.7-highspeed</code></td>
+            <td><code>gpt-5.4-mini</code></td>
           </tr>
           <tr>
             <td><code>ultrabrain</code></td>
             <td>難解なロジック・アーキテクチャ決定</td>
-            <td><code>gpt-5.4 xhigh</code></td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">xhigh</span></td>
           </tr>
           <tr>
             <td><em>カスタム</em></td>
