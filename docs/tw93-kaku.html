@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kaku — AI コーディングのための高速 macOS ターミナル</title>
+  <meta name="description" content="tw93/Kaku は WezTerm を深くカスタムした、AI コーディング向けの高速 macOS ターミナル。AI 補助、シェル連携、Lua 設定、軽量化された Rust ワークスペースの全体像を視覚化します。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Kaku — AI コーディングのための高速 macOS ターミナル">
+  <meta property="og:description" content="WezTerm 互換の土台に、AI 補助・シェルスイート・macOS 向けの磨かれた初期設定を重ねた Kaku の構造解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/tw93-kaku.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Kaku — AI コーディングのための高速 macOS ターミナル">
+  <meta name="twitter:description" content="tw93/Kaku の目的、AI 補助、シェル連携、設定、CLI、性能設計を視覚的に整理。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + page palette) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.018 78);
+      --foreground: oklch(0.17 0.025 255);
+      --card: oklch(0.998 0.01 82);
+      --card-foreground: var(--foreground);
+      --popover: var(--card);
+      --popover-foreground: var(--foreground);
+      --primary: oklch(0.34 0.1 248);
+      --primary-foreground: oklch(0.985 0.018 78);
+      --secondary: oklch(0.945 0.02 86);
+      --secondary-foreground: var(--foreground);
+      --muted: oklch(0.935 0.018 84);
+      --muted-foreground: oklch(0.43 0.03 255);
+      --accent: oklch(0.955 0.026 80);
+      --accent-foreground: var(--foreground);
+      --destructive: oklch(0.55 0.19 15);
+      --border: oklch(0.84 0.024 78);
+      --input: oklch(0.84 0.024 78);
+      --ring: oklch(0.72 0.17 76);
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.55 0.16 42);
+      --chart-4: oklch(0.62 0.12 155);
+      --chart-5: oklch(0.46 0.08 250);
+      --code-bg: oklch(0.19 0.03 255);
+      --code-text: oklch(0.91 0.025 86);
+      --font-body: 'Instrument Serif', Georgia, serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.025 255);
+        --foreground: oklch(0.94 0.015 86);
+        --card: oklch(0.18 0.03 255);
+        --card-foreground: var(--foreground);
+        --popover: var(--card);
+        --popover-foreground: var(--foreground);
+        --primary: oklch(0.79 0.16 78);
+        --primary-foreground: oklch(0.16 0.02 255);
+        --secondary: oklch(0.23 0.03 255);
+        --secondary-foreground: var(--foreground);
+        --muted: oklch(0.23 0.03 255);
+        --muted-foreground: oklch(0.72 0.03 86);
+        --accent: oklch(0.25 0.04 255);
+        --accent-foreground: var(--foreground);
+        --destructive: oklch(0.68 0.16 25);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.72 0.17 76);
+        --chart-1: oklch(0.74 0.16 78);
+        --chart-2: oklch(0.64 0.11 248);
+        --chart-3: oklch(0.67 0.13 42);
+        --chart-4: oklch(0.70 0.12 155);
+        --chart-5: oklch(0.86 0.04 86);
+        --code-bg: oklch(0.1 0.02 255);
+        --code-text: oklch(0.91 0.025 86);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 8px 30px rgba(30, 58, 95, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(30, 58, 95, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-2) 12%);
+      box-shadow: 0 10px 36px rgba(30, 58, 95, 0.10);
+      border-color: color-mix(in oklch, var(--border) 52%, var(--chart-2) 48%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.85rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.76rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 700; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 70%, var(--card) 30%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(30, 58, 95, 0.05); min-width: 0; }
+    .ve-kpi-card__value { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.45rem; line-height: 1.1; color: var(--primary); overflow-wrap: anywhere; }
+    .ve-kpi-card__label { display: block; font-family: var(--font-mono); font-size: 0.61rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.45rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.95rem; line-height: 1.65; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(rgba(30, 58, 95, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(30, 58, 95, 0.035) 1px, transparent 1px),
+        radial-gradient(ellipse at 18% 0%, oklch(0.72 0.17 76 / 0.16) 0%, transparent 42%);
+      background-size: 28px 28px, 28px 28px, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          radial-gradient(ellipse at 18% 0%, oklch(0.74 0.16 78 / 0.11) 0%, transparent 45%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 210px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-2); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-2); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography + layout ============ */
+    h1 { font-size: clamp(2.5rem, 6vw, 5.4rem); font-weight: 400; letter-spacing: -0.05em; line-height: 0.92; margin-bottom: 0.75rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.82rem; margin-bottom: 2rem; max-width: 58rem; line-height: 1.7; }
+    .sec-head { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.02em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-family: var(--font-mono); font-size: 0.92rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 1.08rem; line-height: 1.68; margin-bottom: 0.85rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.25rem; }
+    li { margin-bottom: 0.42rem; font-size: 1rem; line-height: 1.6; }
+    a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.78rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+    strong { font-weight: 600; }
+
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr); gap: 1rem; align-items: stretch; }
+    .lead { font-size: 1.28rem; line-height: 1.55; max-width: 48rem; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1.25rem; }
+    .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.75rem; counter-reset: flow; }
+    .flow-card { position: relative; min-width: 0; }
+    .flow-card::before {
+      counter-increment: flow;
+      content: counter(flow, decimal-leading-zero);
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.7rem;
+    }
+    .flow-card h3 { margin-top: 0; }
+    .compact { font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.6; color: var(--text-dim); }
+    .badge { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; padding: 0.18rem 0.5rem; font-family: var(--font-mono); font-size: 0.67rem; font-weight: 700; color: var(--primary); background: color-mix(in oklch, var(--card) 70%, var(--chart-2) 30%); margin: 0.15rem 0.2rem 0.15rem 0; }
+    .terminal-line { display: block; color: var(--code-text); }
+    .terminal-comment { color: color-mix(in oklch, var(--code-text) 60%, var(--chart-2) 40%); }
+    .source-list { display: grid; gap: 0.5rem; margin-top: 0.75rem; }
+    .source-list a { font-family: var(--font-mono); font-size: 0.8rem; }
+
+    @media (max-width: 920px) {
+      .hero-grid, .two-col { grid-template-columns: 1fr; }
+      .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .feature-grid, .flow, .kpi-row { grid-template-columns: 1fr; }
+      .ve-card { padding: 1rem; }
+    }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#position">設計ポジション</a>
+    <a href="#ai">AI ワークフロー</a>
+    <a href="#shell">シェル連携</a>
+    <a href="#config">設定と CLI</a>
+    <a href="#internals">内部構成</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <main class="main">
+    <h1>Kaku</h1>
+    <p class="subtitle">tw93/Kaku — a fast, out-of-the-box terminal built for AI coding.</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="hero-grid">
+      <div class="ve-card ve-card--hero" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+        <p class="lead"><strong>Kaku</strong> は、WezTerm をベースにした macOS 向けターミナル。ゼロ設定で使える見た目とキーバインド、AI コーディング支援、zsh/fish のシェル環境、Lua 設定互換をひとまとめにしている。</p>
+        <p>名前の由来は日本語の「書く」。考えをコードとして形にする場所、という意味づけで、同じ作者の Waza / Kami と並ぶツール群の一部として位置づけられている。</p>
+      </div>
+      <div class="ve-card ve-card--elevated" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> 初日に効くところ</span>
+        <span class="badge">macOS only</span>
+        <span class="badge">WezTerm compatible</span>
+        <span class="badge">Lua config</span>
+        <span class="badge">AI assistant</span>
+        <span class="badge">zsh / fish</span>
+        <p class="compact">Kaku は「設定を作り込む前から気持ちよく動く」ことを重視している。JetBrains Mono、macOS の明暗テーマ追従、低解像度ディスプレイ向けフォントサイズ、コピーやペイン操作の初期値が最初から整っている。</p>
+      </div>
+    </div>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">~40 MB</span><span class="ve-kpi-card__label">実行ファイルサイズ</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">~80 MB</span><span class="ve-kpi-card__label">リソース容量</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">~100 ms</span><span class="ve-kpi-card__label">Shell bootstrap</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Lua</span><span class="ve-kpi-card__label">WezTerm 設定互換</span></div>
+    </div>
+
+    <section id="position" class="sec-head">2 — 設計ポジション</section>
+    <div class="feature-grid">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Zero Config</span>
+        <p>フォント、テーマ、選択色、タブ/ペイン操作、コピー挙動など、AI コーディング時に邪魔になりやすい細部を初期値で整える。</p>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> AI coding</span>
+        <p>失敗コマンドの修復提案と、自然言語からコマンドを生成する入力補助を内蔵。危険なコマンドは自動実行せず、レビュー前提でプロンプトに戻す。</p>
+      </div>
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> Compatibility</span>
+        <p>WezTerm の Lua config と API 互換を維持する。既存設定を活かしながら、Kaku 側のバンドル初期値に自分の上書きを重ねる設計。</p>
+      </div>
+      <div class="ve-card" style="--i:3">
+        <span class="ve-section-label"><span class="ve-dot"></span> Shell suite</span>
+        <p>z、zsh-completions、syntax highlighting、autosuggestions、Starship、Delta、Lazygit、Yazi などを Kaku セッション内で自然に使えるようにする。</p>
+      </div>
+      <div class="ve-card" style="--i:4">
+        <span class="ve-section-label"><span class="ve-dot"></span> macOS polish</span>
+        <p>明暗テーマの自動切り替え、macOS フォントレンダリング、ウィンドウ装飾、Option キー挙動、リモートファイル操作などを macOS 前提で磨く。</p>
+      </div>
+      <div class="ve-card" style="--i:5">
+        <span class="ve-section-label"><span class="ve-dot"></span> Lightweight core</span>
+        <p>Rust ワークスペースの release profile は strip、LTO、panic abort などサイズと起動の軽さを重視。GPU 加速コアを削ぎ落としながら使う部分を残す。</p>
+      </div>
+    </div>
+
+    <section id="ai" class="sec-head">3 — AI ワークフロー</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 二つの入口</span>
+      <div class="flow">
+        <div class="ve-card ve-card--recessed flow-card">
+          <h3>設定</h3>
+          <p class="compact"><code>kaku ai</code> で AI settings panel を開き、Kaku Assistant を有効化。OpenAI-compatible な base URL、model、API key を設定する。</p>
+        </div>
+        <div class="ve-card ve-card--recessed flow-card">
+          <h3>失敗検知</h3>
+          <p class="compact">コマンドが非ゼロ終了したとき、コマンド、終了コード、作業ディレクトリ、git ブランチを LLM に渡す。</p>
+        </div>
+        <div class="ve-card ve-card--recessed flow-card">
+          <h3>修復提案</h3>
+          <p class="compact">提案はインライン表示され、<code>Cmd + Shift + E</code> でプロンプトへ貼り付けられる。自動実行はしない。</p>
+        </div>
+        <div class="ve-card ve-card--recessed flow-card">
+          <h3>自然言語</h3>
+          <p class="compact"><code># &lt;description&gt;</code> を入力すると、シェル実行前に捕捉され、コマンド候補へ変換される。</p>
+        </div>
+        <div class="ve-card ve-card--recessed flow-card">
+          <h3>レビュー</h3>
+          <p class="compact">危険な操作は「実行」ではなく「貼り付け」に留める。人間が読んでから Enter を押す設計になっている。</p>
+        </div>
+      </div>
+    </div>
+    <div class="ve-code-block" aria-label="Kaku AI natural language examples">
+      <pre><code><span class="terminal-comment"># Natural language to command examples</span>
+<span class="terminal-line"># list all files modified in the last 7 days</span>
+<span class="terminal-line"># find and kill the process on port 3000</span>
+<span class="terminal-line"># compress the src folder excluding node_modules</span></code></pre>
+    </div>
+    <div class="ve-callout">
+      <strong>安全側の境界:</strong> Ctrl+C、help flags、裸の package manager 呼び出し、git pull conflicts、非シェル foreground process では Assistant を起動しない。LLM 補助が「全部に割り込む」のではなく、事故りやすい範囲を避けている。
+    </div>
+
+    <section id="shell" class="sec-head">4 — シェル連携</section>
+    <div class="two-col">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Bundled shell suite</span>
+        <ul>
+          <li><strong>z:</strong> よく使うディレクトリを学習する smarter <code>cd</code>。</li>
+          <li><strong>zsh-completions:</strong> common CLI tools の補完を拡張。</li>
+          <li><strong>zsh-syntax-highlighting:</strong> 入力中にコマンドを色分け。</li>
+          <li><strong>zsh-autosuggestions:</strong> fish 風の履歴ベース補完。</li>
+        </ul>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Optional tools</span>
+        <ul>
+          <li><strong>Starship:</strong> git と環境情報を含む高速プロンプト。</li>
+          <li><strong>Delta:</strong> git diff / grep を読みやすくする pager。</li>
+          <li><strong>Lazygit:</strong> <code>Cmd + Shift + G</code> で current pane に起動。</li>
+          <li><strong>Yazi:</strong> <code>Cmd + Shift + Y</code> または <code>y</code> で起動し、終了時に cwd を同期。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="ve-card ve-card--elevated" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> Remote files</span>
+      <p>SSH セッション中に <code>Cmd + Shift + R</code> を押すと、現在の SSH target を検出して <code>sshfs</code> でローカルに mount し、Yazi で開ける。AI エージェントが遠隔サーバー上のファイルを触る場面でも、ターミナルの流れを切らずにファイル操作へ移れる。</p>
+    </div>
+
+    <section id="config" class="sec-head">5 — 設定と CLI</section>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>役割</th><th>代表的な使いどころ</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>kaku ai</code></td><td>AI settings panel を開く</td><td>Assistant と外部 AI coding tools の設定</td></tr>
+          <tr><td><code>kaku config</code></td><td>Lua 設定ファイルを開く</td><td>テーマ、フォント、キーバインド、ウィンドウ挙動を上書き</td></tr>
+          <tr><td><code>kaku doctor</code></td><td>環境診断</td><td>shell integration、PATH、optional tools の確認</td></tr>
+          <tr><td><code>kaku update</code></td><td>最新版確認と更新</td><td>release を追従</td></tr>
+          <tr><td><code>kaku init</code></td><td>zsh / fish integration を生成</td><td>初回セットアップ、CLI tools の provision</td></tr>
+          <tr><td><code>kaku cli</code></td><td>multiplexer を外部から操作</td><td>script や AI tools から pane / tab を開く</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-code-block" aria-label="Kaku Lua configuration sample">
+      <pre><code>local wezterm = require 'wezterm'
+local config = {}
+
+-- Kaku loads bundled defaults first, then applies your overrides.
+config.font_size = 16
+config.window_background_opacity = 0.95
+config.color_scheme = "Kaku Dark"
+config.copy_on_select = false
+
+return config</code></pre>
+    </div>
+
+    <section id="internals" class="sec-head">6 — 内部構成</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Rust workspace map</span>
+      <p>Kaku は WezTerm 由来の crate 群を抱えた Rust workspace と、macOS アプリ本体、GUI、mux、terminal rendering 周辺のサブシステムで構成される。外側は「すぐ使えるターミナル」だが、中身は GUI・PTY・SSH・mux・surface・font・escape parser を分けた大きめのターミナル実装だ。</p>
+      <div class="feature-grid">
+        <div class="ve-card ve-card--recessed">
+          <h3>App layer</h3>
+          <p class="compact"><code>kaku</code> / <code>kaku-gui</code> がアプリ起動、設定、macOS 統合、GUI の入口を担う。</p>
+        </div>
+        <div class="ve-card ve-card--recessed">
+          <h3>Terminal core</h3>
+          <p class="compact"><code>term</code> / <code>termwiz</code> / escape parser / font / surface が描画と端末プロトコルの土台。</p>
+        </div>
+        <div class="ve-card ve-card--recessed">
+          <h3>Mux and remote</h3>
+          <p class="compact"><code>mux</code>、SSH、UDS、remote crates がペイン、セッション、リモート操作の境界を担当。</p>
+        </div>
+      </div>
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>性能項目</th><th>Upstream</th><th>Kaku</th><th>方針</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Executable Size</td><td>約 67 MB</td><td>約 40 MB</td><td>symbol stripping と feature pruning</td></tr>
+          <tr><td>Resources Volume</td><td>約 100 MB</td><td>約 80 MB</td><td>asset optimization と lazy-loaded assets</td></tr>
+          <tr><td>Launch Latency</td><td>標準</td><td>Instant</td><td>just-in-time initialization</td></tr>
+          <tr><td>Shell Bootstrap</td><td>約 200 ms</td><td>約 100 ms</td><td>environment provisioning の最適化</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Source</span>
+      <p>このページは tw93/Kaku の README、Features、Configuration、CLI Reference、Cargo workspace から公開向けに要点を再構成した。</p>
+      <div class="source-list">
+        <a href="https://github.com/tw93/Kaku" target="_blank" rel="noopener">GitHub: tw93/Kaku</a>
+        <a href="https://github.com/tw93/Kaku/blob/main/README.md" target="_blank" rel="noopener">README.md</a>
+        <a href="https://github.com/tw93/Kaku/blob/main/docs/features.md" target="_blank" rel="noopener">docs/features.md</a>
+        <a href="https://github.com/tw93/Kaku/blob/main/docs/configuration.md" target="_blank" rel="noopener">docs/configuration.md</a>
+        <a href="https://github.com/tw93/Kaku/blob/main/docs/cli.md" target="_blank" rel="noopener">docs/cli.md</a>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
