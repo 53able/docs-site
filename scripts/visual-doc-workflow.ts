@@ -386,9 +386,17 @@ const collectInteractiveArgs = async (promptRunner: PromptRunner = runPrompts): 
     throw new Error("Interactive mode cancelled.");
   }
 
-  return modeAnswers.mode === "validate"
-    ? ParsedArgsSchema.parse({ command: "validate", options: await collectValidateOptions(promptRunner) })
-    : ParsedArgsSchema.parse({ command: "prepare", options: await collectPrepareOptions(promptRunner) });
+  if (modeAnswers.mode === "validate") {
+    return ParsedArgsSchema.parse({
+      command: "validate",
+      options: await collectValidateOptions(promptRunner),
+    });
+  }
+
+  return ParsedArgsSchema.parse({
+    command: "prepare",
+    options: await collectPrepareOptions(promptRunner),
+  });
 };
 
 /** Parses argv and prompts for missing required options in command-specific scripts. */
@@ -398,17 +406,21 @@ const collectCliArgs = async (argv: string[], promptRunner: PromptRunner = runPr
   }
 
   const parsed = parseArgs(argv);
-  return parsed.command === "validate"
-    ? ParsedArgsSchema.parse({
-        command: "validate",
-        options: await collectValidateOptions(promptRunner, parsed.options),
-      })
-    : parsed.command === "prepare"
-      ? ParsedArgsSchema.parse({
-          command: "prepare",
-          options: await collectPrepareOptions(promptRunner, parsed.options),
-        })
-      : parsed;
+  if (parsed.command === "validate") {
+    return ParsedArgsSchema.parse({
+      command: "validate",
+      options: await collectValidateOptions(promptRunner, parsed.options),
+    });
+  }
+
+  if (parsed.command === "prepare") {
+    return ParsedArgsSchema.parse({
+      command: "prepare",
+      options: await collectPrepareOptions(promptRunner, parsed.options),
+    });
+  }
+
+  return parsed;
 };
 
 /** Removes a trailing .git suffix from a repository-like name. */
@@ -473,17 +485,18 @@ const resolveSourcePath = ({ source, url, name }: CliOptions): SourceRepository 
   const sourceOption = typeof source === "string" ? source : undefined;
   const urlOption = typeof url === "string" ? url : undefined;
   const nameOption = typeof name === "string" ? name : undefined;
-  const cloneName = nameOption ? slugify(nameOption) : urlOption ? slugify(basenameFromUrl(urlOption)) : null;
+  const cloneNameFromName = nameOption ? slugify(nameOption) : null;
+  const cloneNameFromUrl = urlOption ? slugify(basenameFromUrl(urlOption)) : null;
+  const cloneName = cloneNameFromName ?? cloneNameFromUrl;
   const sourceValue = sourceOption || cloneName;
   if (!sourceValue) {
     throw new Error("prepare requires --source or --url.");
   }
 
-  const sourcePath = path.isAbsolute(sourceValue)
-    ? sourceValue
-    : sourceValue.startsWith("repos/")
-      ? path.join(WORKSPACE_ROOT, sourceValue)
-      : path.join(WORKSPACE_ROOT, "repos", sourceValue);
+  const relativeSourcePath = sourceValue.startsWith("repos/")
+    ? path.join(WORKSPACE_ROOT, sourceValue)
+    : path.join(WORKSPACE_ROOT, "repos", sourceValue);
+  const sourcePath = path.isAbsolute(sourceValue) ? sourceValue : relativeSourcePath;
 
   const relativePath = relativeFromRoot(sourcePath);
   if (!relativePath.startsWith("repos/")) {
@@ -564,9 +577,10 @@ const acquireSource = (options: CliOptions): Result<SourceRepository> => {
     }
 
     const clone = runCommand("git", ["clone", urlOption, resolved.absolutePath]);
-    return clone.status === 0
-      ? ok(SourceRepositorySchema.parse({ ...resolved, acquiredBy: "clone" }))
-      : err("Failed to clone Source Repository.", { source: resolved.relativePath, stderr: clone.stderr });
+    if (clone.status !== 0) {
+      return err("Failed to clone Source Repository.", { source: resolved.relativePath, stderr: clone.stderr });
+    }
+    return ok(SourceRepositorySchema.parse({ ...resolved, acquiredBy: "clone" }));
   }
 
   const clean = assertCleanGitRepository(resolved);
@@ -575,12 +589,15 @@ const acquireSource = (options: CliOptions): Result<SourceRepository> => {
   }
 
   const pull = runCommand("git", ["-C", resolved.absolutePath, "pull", "--ff-only"]);
-  return pull.status === 0
-    ? ok(SourceRepositorySchema.parse({ ...resolved, acquiredBy: "fast-forward", pullOutput: pull.stdout.trim() }))
-    : err("Blocked Source Repository: fast-forward pull failed.", {
-        source: resolved.relativePath,
-        stderr: pull.stderr || pull.stdout,
-      });
+  if (pull.status !== 0) {
+    return err("Blocked Source Repository: fast-forward pull failed.", {
+      source: resolved.relativePath,
+      stderr: pull.stderr || pull.stdout,
+    });
+  }
+  return ok(
+    SourceRepositorySchema.parse({ ...resolved, acquiredBy: "fast-forward", pullOutput: pull.stdout.trim() }),
+  );
 };
 
 /** Runs the existing source inventory script and returns its text summary. */
@@ -727,12 +744,18 @@ const prepare = async (options: CliOptions): Promise<Result<Record<string, strin
 /** Extracts raw head content from an HTML string. */
 const headContent = (html: string): string => html.match(/<head\b[^>]*>([\s\S]*?)<\/head>/iu)?.[1] ?? "";
 
+/** True when head contains a twitter:card meta tag. */
+const hasTwitterCardInHead = (head: string): boolean =>
+  /<meta\s+[^>]*name=["']twitter:card["'][^>]*>/iu.test(head);
+
+/** True when head contains an og:* property meta tag. */
+const hasOgPropertyInHead = (head: string, property: string): boolean =>
+  new RegExp(`<meta\\s+[^>]*property=["']${property}["'][^>]*>`, "iu").test(head);
+
 /** Checks whether a required Open Graph or Twitter card meta tag exists inside head. */
 const hasHeadMeta = (html: string, marker: string): boolean => {
   const head = headContent(html);
-  return marker === "twitter:card"
-    ? /<meta\s+[^>]*name=["']twitter:card["'][^>]*>/iu.test(head)
-    : new RegExp(`<meta\\s+[^>]*property=["']${marker}["'][^>]*>`, "iu").test(head);
+  return marker === "twitter:card" ? hasTwitterCardInHead(head) : hasOgPropertyInHead(head, marker);
 };
 
 /** Delegates public path safety checks to the existing docs-site validation script. */
@@ -743,7 +766,10 @@ const validatePublicPaths = (docPath: string): Result<string> => {
   }
 
   const result = runCommand("bash", [script.value, docPath]);
-  return result.status === 0 ? ok(result.stdout.trim()) : err("Public path validation failed.", { stderr: result.stderr });
+  if (result.status !== 0) {
+    return err("Public path validation failed.", { stderr: result.stderr });
+  }
+  return ok(result.stdout.trim());
 };
 
 /** Extracts the most actionable text from a failed Result details object. */
@@ -854,7 +880,10 @@ const validate = async (options: CliOptions): Promise<Result<{ doc: string }>> =
   const doc = normalizeDocPath(options.doc);
   const findings = await evaluateReviewGate(doc);
 
-  return findings.length === 0 ? ok({ doc: doc.relativePath }) : err("Review Gate failed.", { findings });
+  if (findings.length > 0) {
+    return err("Review Gate failed.", { findings });
+  }
+  return ok({ doc: doc.relativePath });
 };
 
 /** Formats a CLI result as JSON for stable human and agent consumption. */
@@ -865,20 +894,25 @@ const formatResult = <T>(result: Result<T>): string => {
   return JSON.stringify({ ok: false, message: result.message, ...result.details }, null, 2);
 };
 
+/** Runs prepare or validate and returns a CLI-shaped result. */
+const runWorkflow = async (argv: string[]): Promise<Result<Record<string, unknown>>> => {
+  try {
+    const { command, options } = await collectCliArgs(argv);
+    if (command === "prepare") {
+      return await prepare(options);
+    }
+    if (command === "validate") {
+      return await validate(options);
+    }
+    return err("Unknown command. Use prepare or validate.");
+  } catch (error) {
+    return err(error instanceof Error ? error.message : String(error));
+  }
+};
+
 /** Dispatches the requested CLI mode. */
 const main = async (argv: string[]): Promise<number> => {
-  const result = await (async (): Promise<Result<Record<string, unknown>>> => {
-    try {
-      const { command, options } = await collectCliArgs(argv);
-      return command === "prepare"
-        ? await prepare(options)
-        : command === "validate"
-          ? await validate(options)
-          : err("Unknown command. Use prepare or validate.");
-    } catch (error) {
-      return err(error instanceof Error ? error.message : String(error));
-    }
-  })();
+  const result = await runWorkflow(argv);
 
   if (result.ok) {
     print(formatResult(result));
