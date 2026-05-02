@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>oh-my-claudecode — Claude Code マルチエージェント・オーケストレーション</title>
-  <meta name="description" content="Claude Code 向けマルチエージェント・オーケストレーションシステム。Team・Autopilot・Ultrawork・Ralph など 8 つの実行モード、19 専門エージェント、31 スキルを図解。ゼロ設定・30-50% コスト削減。">
+  <meta name="description" content="Claude Code 向けマルチエージェント・オーケストレーションシステム。Team・Autopilot・Ultrawork・Ralph など 8 つの実行モード、19 専門エージェント、38 スキルを図解。ゼロ設定・30-50% コスト削減。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="oh-my-claudecode — Claude Code マルチエージェント・オーケストレーション">
-  <meta property="og:description" content="Claude Code 向けマルチエージェント・オーケストレーション。19 専門エージェント・31 スキル・スマートモデルルーティングを図解。">
+  <meta property="og:description" content="Claude Code 向けマルチエージェント・オーケストレーション。19 専門エージェント・38 スキル・スマートモデルルーティングを図解。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/oh-my-claudecode.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="oh-my-claudecode — Claude Code マルチエージェント・オーケストレーション">
-  <meta name="twitter:description" content="19 専門エージェント・31 スキル・8 実行モードを備えた Claude Code オーケストレーション。">
+  <meta name="twitter:description" content="19 専門エージェント・38 スキル・8 実行モードを備えた Claude Code オーケストレーション。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -464,7 +464,7 @@
         npm パッケージ名は <code>oh-my-claude-sisyphus</code>、Claude Marketplace では <code>oh-my-claudecode</code>。
       </p>
       <div class="badge-row">
-        <span class="hero-badge">v4.10.1</span>
+        <span class="hero-badge">v4.13.5</span>
         <span class="hero-badge hero-badge--gold">⭐ 11k stars</span>
         <span class="hero-badge">MIT</span>
         <span class="hero-badge">Node ≥ 20</span>
@@ -475,7 +475,7 @@
           <div class="kpi-label">専門エージェント</div>
         </div>
         <div class="ve-kpi-card">
-          <div class="kpi-value">31</div>
+          <div class="kpi-value">38</div>
           <div class="kpi-label">スキル (動作注入)</div>
         </div>
         <div class="ve-kpi-card">
@@ -493,7 +493,7 @@
       <span class="ve-section-label"><span class="ve-dot"></span> なぜ OMC か</span>
       <ul>
         <li><strong>ゼロ設定</strong> — インストール後すぐ使えるインテリジェントなデフォルト設定</li>
-        <li><strong>チームファースト</strong> — <code>/team N:executor "..."</code> が正規のマルチエージェント実行面。<code>plan → prd → exec → verify → fix</code> の 5 ステージパイプライン</li>
+        <li><strong>チームファースト</strong> — <code>/team N:executor "..."</code> が正規のマルチエージェント実行面（v4.1.7 以降。旧 swarm は Team に統合）。<code>plan → prd → exec → verify → fix</code> の 5 ステージパイプライン</li>
         <li><strong>自然言語インターフェース</strong> — コマンドを覚えなくてよい。やりたいことを書くだけ</li>
         <li><strong>自動並列化</strong> — 複雑なタスクを専門エージェントへ自動分散。Haiku / Sonnet / Opus を目的で使い分け</li>
         <li><strong>永続実行</strong> — ralph モードは <code>verifier</code> が完了を確認するまで絶対に停止しない</li>
@@ -519,6 +519,7 @@
         <div class="step-title">初期設定ウィザード</div>
         <code class="step-code">/setup
 /omc-setup</code>
+        <div class="step-body" style="margin-top:0.5rem;"><code>omc --plugin-dir …</code> で実行する場合は <code>omc setup --plugin-dir-mode</code> または事前に <code>OMC_PLUGIN_ROOT</code> を設定し、プラグイン同梱スキルとの二重登録を避ける（詳細は上流の REFERENCE.md Plugin directory flags）。</div>
         <div class="step-body" style="margin-top:0.5rem;">更新後にキャッシュを消したい場合</div>
         <code class="step-code">/omc-doctor</code>
       </div>
@@ -718,11 +719,12 @@ flowchart LR
               <td><code>code-reviewer</code></td><td>opus</td><td>包括的コードレビュー・API 契約・後方互換性確認</td>
             </tr>
             <tr>
-              <td rowspan="7"><span class="lane-badge lane-badge--domain">Domain</span></td>
+              <td rowspan="8"><span class="lane-badge lane-badge--domain">Domain</span></td>
               <td><code>test-engineer</code></td><td>sonnet</td><td>テスト戦略・カバレッジ・フレイキーテスト対策</td>
             </tr>
             <tr><td><code>designer</code></td><td>sonnet</td><td>UI/UX アーキテクチャ・インタラクションデザイン</td></tr>
             <tr><td><code>writer</code></td><td>haiku</td><td>ドキュメント・マイグレーションノート作成</td></tr>
+            <tr><td><code>document-specialist</code></td><td>sonnet</td><td>公式ドキュメント・API 参照・外部文献の調査と引用（コード実装探索は <code>explore</code>）</td></tr>
             <tr><td><code>qa-tester</code></td><td>sonnet</td><td>tmux 経由での CLI/サービスランタイム検証</td></tr>
             <tr><td><code>scientist</code></td><td>sonnet</td><td>データ分析・統計調査</td></tr>
             <tr><td><code>git-master</code></td><td>sonnet</td><td>Git 操作・コミット・リベース・履歴管理</td></tr>
@@ -741,7 +743,7 @@ flowchart LR
           <thead><tr><th>ティア</th><th>モデル</th><th>特性</th><th>割り当てエージェント</th></tr></thead>
           <tbody>
             <tr><td>LOW</td><td>haiku</td><td>高速・低コスト</td><td>explore, writer</td></tr>
-            <tr><td>MEDIUM</td><td>sonnet</td><td>バランス</td><td>executor, debugger, test-engineer, designer …</td></tr>
+            <tr><td>MEDIUM</td><td>sonnet</td><td>バランス</td><td>executor, debugger, test-engineer, designer, document-specialist, …</td></tr>
             <tr><td>HIGH</td><td>opus</td><td>最高品質推論</td><td>architect, planner, critic, code-reviewer, analyst</td></tr>
           </tbody>
         </table>
@@ -857,7 +859,8 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pr
           <thead><tr><th>コマンド</th><th>説明</th></tr></thead>
           <tbody>
             <tr><td><code>omc ask claude "..."</code></td><td>ローカル Claude CLI を呼び出し結果を <code>.omc/artifacts/ask/</code> に Markdown 保存</td></tr>
-            <tr><td><code>omc ask codex|gemini "..."</code></td><td>Codex / Gemini CLI へのプロキシ + 結果保存</td></tr>
+            <tr><td><code>omc ask codex|gemini "..."</code></td><td>Codex / Gemini CLI へのプロキシ + 結果保存（v4.4.0 以降は MCP の x/g ではなく CLI 経路が主）</td></tr>
+            <tr><td><code>omc autoresearch</code></td><td><strong>非推奨 shim。</strong>自動調査は <code>/deep-interview --autoresearch …</code> と状態保持スキル側へ移行</td></tr>
             <tr><td><code>omc wait --start</code></td><td>レート制限リセット時の自動再開デーモン（tmux 必須）</td></tr>
             <tr><td><code>omc hud</code></td><td>HUD ライブレンダリング。オーケストレーション状況をステータスバーに表示</td></tr>
             <tr><td><code>omc team status &lt;name&gt;</code></td><td>実行中チームタスクの状態確認</td></tr>
