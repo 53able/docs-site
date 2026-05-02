@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sandcastle — AI コーディングエージェントを隔離環境で動かす TypeScript ツールキット</title>
+  <meta name="description" content="Sandcastle は AI コーディングエージェントを sandbox 内で起動し、branch strategy、worktree、prompt、iteration、commit 取り込みまでを管理する TypeScript CLI / SDK です。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Sandcastle — AI コーディングエージェントを隔離環境で動かす TypeScript ツールキット">
+  <meta property="og:description" content="Docker / Podman / Vercel などの sandbox provider を差し替えながら、AI エージェント実行、ブランチ管理、prompt 展開、commit 回収を一つの流れにする。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/sandcastle.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Sandcastle — AI コーディングエージェントを隔離環境で動かす TypeScript ツールキット">
+  <meta name="twitter:description" content="AI agent を sandbox で動かし、worktree と branch strategy で変更を管理する TypeScript CLI / SDK。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.47 0.11 200);
+      --chart-4: oklch(0.62 0.12 155);
+      --chart-5: oklch(0.56 0.08 55);
+      --code-bg: oklch(0.965 0.012 248);
+      --code-text: #183153;
+      --font-body: 'Instrument Serif', Georgia, serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      --paper: #fbfaf7;
+      --ink-blue: #1e3a5f;
+      --gold: #b57614;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.72 0.12 248);
+        --chart-2: oklch(0.78 0.15 76);
+        --chart-3: oklch(0.70 0.11 200);
+        --chart-4: oklch(0.69 0.12 155);
+        --chart-5: oklch(0.73 0.09 55);
+        --code-bg: #111827;
+        --code-text: #c7d7ff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+        --paper: #151515;
+        --ink-blue: #9db7df;
+        --gold: #d4a73a;
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--border) 50%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-weight: 600; color: var(--ink-blue); }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.72 0.17 76 / 0.12); color: var(--chart-2); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(color-mix(in oklch, var(--chart-1) 8%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in oklch, var(--chart-1) 8%, transparent) 1px, transparent 1px),
+        radial-gradient(ellipse at 70% 0%, oklch(0.72 0.17 76 / 0.10) 0%, transparent 50%);
+      background-size: 32px 32px, 32px 32px, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          linear-gradient(color-mix(in oklch, var(--chart-1) 7%, transparent) 1px, transparent 1px),
+          linear-gradient(90deg, color-mix(in oklch, var(--chart-1) 7%, transparent) 1px, transparent 1px),
+          radial-gradient(ellipse at 70% 0%, oklch(0.78 0.15 76 / 0.09) 0%, transparent 55%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-2); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-2); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: clamp(2.25rem, 7vw, 5.5rem); font-weight: 600; letter-spacing: -0.04em; line-height: 0.9; margin-bottom: 0.75rem; text-wrap: balance; color: var(--ink-blue); }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.875rem; margin-bottom: 2rem; line-height: 1.65; }
+    .sec-head { font-family: var(--font-mono); font-size: 1rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: -0.02em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 1.05rem; line-height: 1.6; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.4rem; font-size: 0.98rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    strong { font-weight: 600; }
+
+    /* ============ Page-specific components ============ */
+    .hero-note { max-width: 46rem; font-size: 1.22rem; color: var(--text); }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 760px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .flow-rail { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.75rem; align-items: stretch; margin: 1rem 0; }
+    .flow-step { position: relative; background: var(--paper); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; min-width: 0; }
+    .flow-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -0.56rem;
+      width: 0.34rem;
+      height: 0.34rem;
+      border-top: 1.5px solid var(--chart-2);
+      border-right: 1.5px solid var(--chart-2);
+      transform: translateY(-50%) rotate(45deg);
+    }
+    .flow-step__num { font-family: var(--font-mono); font-size: 0.72rem; color: var(--chart-2); margin-bottom: 0.45rem; }
+    .flow-step__title { font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--ink-blue); }
+    .flow-step__body { font-size: 0.86rem; line-height: 1.55; color: var(--text-dim); }
+    @media (max-width: 900px) {
+      .flow-rail { grid-template-columns: 1fr; }
+      .flow-step:not(:last-child)::after { display: none; }
+    }
+
+    .api-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    @media (max-width: 760px) { .api-grid { grid-template-columns: 1fr; } }
+    .api-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem; min-width: 0; }
+    .api-card__name { font-family: var(--font-mono); color: var(--chart-1); font-size: 0.86rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .api-card__desc { font-size: 0.93rem; line-height: 1.58; color: var(--text-dim); }
+
+    .provider-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    @media (max-width: 900px) { .provider-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .provider-grid { grid-template-columns: 1fr; } }
+    .provider-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%); min-width: 0; }
+    .provider-card:nth-child(2n) { background: color-mix(in oklch, var(--card) 92%, var(--chart-2) 8%); }
+    .provider-card__name { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--ink-blue); }
+    .provider-card__type { display: inline-flex; font-family: var(--font-mono); font-size: 0.68rem; border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; color: var(--text-dim); margin-bottom: 0.6rem; }
+    .provider-card p { font-size: 0.9rem; line-height: 1.55; color: var(--text-dim); margin: 0; }
+
+    .guard-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    @media (max-width: 860px) { .guard-grid { grid-template-columns: 1fr; } }
+    .guard-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; }
+    .guard-card h3 { margin-top: 0; color: var(--ink-blue); }
+    .guard-card p { font-size: 0.93rem; color: var(--text-dim); margin-bottom: 0; }
+
+    .source-list { list-style: none; padding: 0; margin: 0; }
+    .source-list li { border-bottom: 1px solid var(--border); padding: 0.55rem 0; font-family: var(--font-mono); font-size: 0.82rem; }
+    .source-list li:last-child { border-bottom: 0; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card, .api-card, .provider-card, .guard-card, .flow-step { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.04s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#flow">実行フロー</a>
+    <a href="#api">公開 API</a>
+    <a href="#providers">Provider</a>
+    <a href="#prompts">Prompt</a>
+    <a href="#guards">運用ガード</a>
+    <a href="#links">参考</a>
+  </nav>
+
+  <div class="main">
+    <h1>Sandcastle</h1>
+    <p class="subtitle">AI coding agent orchestration / sandbox provider / branch strategy / prompt iteration / commit recovery</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
+      <p class="hero-note"><strong>Sandcastle</strong> は、AI コーディングエージェントを隔離された sandbox で動かし、変更を branch / worktree 経由で回収する TypeScript CLI / SDK。単発実行なら <code>run()</code>、長く使う環境なら <code>createSandbox()</code>、sandbox なしの探索から始めるなら <code>createWorktree()</code> が中心になる。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">run() で一発起動</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">agent provider</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">branch strategy</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">N</span><span class="ve-kpi-card__label">iteration loop</span></div>
+      </div>
+    </div>
+
+    <section id="flow" class="sec-head">2 — 実行フロー</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> host から commit まで</span>
+      <p>Sandcastle は「prompt を渡す」だけの薄いラッパーではない。sandbox を作る前に host 側で branch / worktree / env / prompt を解決し、sandbox 内で agent を起動し、最後に commit と session を host 側へ戻す。</p>
+      <div class="flow-rail" aria-label="Sandcastle execution flow">
+        <div class="flow-step" style="--i:0">
+          <div class="flow-step__num">01</div>
+          <div class="flow-step__title">resolve</div>
+          <div class="flow-step__body">cwd、branch strategy、prompt source、env、mount を host 側で確定。</div>
+        </div>
+        <div class="flow-step" style="--i:1">
+          <div class="flow-step__num">02</div>
+          <div class="flow-step__title">worktree</div>
+          <div class="flow-step__body">必要なら git worktree を作成。named branch は lock で並行利用を防ぐ。</div>
+        </div>
+        <div class="flow-step" style="--i:2">
+          <div class="flow-step__num">03</div>
+          <div class="flow-step__title">sandbox</div>
+          <div class="flow-step__body">provider が sandbox handle を作り、hooks と setup を実行。</div>
+        </div>
+        <div class="flow-step" style="--i:3">
+          <div class="flow-step__num">04</div>
+          <div class="flow-step__title">agent</div>
+          <div class="flow-step__body">agent provider が command を作り、stream を parse。idle timeout も監視。</div>
+        </div>
+        <div class="flow-step" style="--i:4">
+          <div class="flow-step__num">05</div>
+          <div class="flow-step__title">recover</div>
+          <div class="flow-step__body">commit、stdout、session、usage を result に集約。必要なら target branch へ merge。</div>
+        </div>
+      </div>
+      <div class="ve-callout"><strong>認知負荷の核:</strong> sandbox は実行境界、worktree は変更境界、branch strategy は merge 境界。3 つを分けて見ると設計が読みやすい。</div>
+    </div>
+
+    <section id="api" class="sec-head">3 — 公開 API</section>
+    <div class="api-grid">
+      <div class="api-card" style="--i:0">
+        <div class="api-card__name">run(options)</div>
+        <p class="api-card__desc">単発の AFK agent 実行。sandbox lifecycle を自動管理し、iteration、completion signal、commit、log path を返す。</p>
+      </div>
+      <div class="api-card" style="--i:1">
+        <div class="api-card__name">createSandbox(options)</div>
+        <p class="api-card__desc">同じ sandbox と同じ branch を複数回使う。実装 → レビューのような multi-run pipeline 向き。</p>
+      </div>
+      <div class="api-card" style="--i:2">
+        <div class="api-card__name">createWorktree(options)</div>
+        <p class="api-card__desc">worktree を first-class に扱う。先に探索し、後で sandboxed AFK run に渡せる。</p>
+      </div>
+      <div class="api-card" style="--i:3">
+        <div class="api-card__name">interactive(options)</div>
+        <p class="api-card__desc">agent を対話モードで起動。worktree interactive は sandbox 未指定なら no-sandbox provider を使う。</p>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:4; margin-top:1rem">
+      <span class="ve-section-label"><span class="ve-dot"></span> 最小コード</span>
+      <div class="ve-code-block">
+        <pre><code>import { run, claudeCode } from "@ai-hero/sandcastle";
+import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+
+const result = await run({
+  agent: claudeCode("claude-opus-4-6"),
+  sandbox: docker(),
+  promptFile: "prompt.md",
+  maxIterations: 3,
+});
+
+console.log(result.commits);</code></pre>
+      </div>
+    </div>
+
+    <section id="providers" class="sec-head">4 — Sandbox Provider</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> isolation boundary</span>
+      <p><code>SandboxProvider</code> は「どこで agent を動かすか」を差し替える小さな契約。built-in provider は実行場所だけでなく、使える branch strategy と同期方式も変える。</p>
+      <div class="provider-grid">
+        <div class="provider-card" style="--i:0">
+          <div class="provider-card__name">Docker</div>
+          <span class="provider-card__type">bind-mount</span>
+          <p>host の worktree を container へ mount。ローカルで最も一般的。</p>
+        </div>
+        <div class="provider-card" style="--i:1">
+          <div class="provider-card__name">Podman</div>
+          <span class="provider-card__type">bind-mount</span>
+          <p>rootless 寄りのローカル provider。Docker と同じ型の境界で扱える。</p>
+        </div>
+        <div class="provider-card" style="--i:2">
+          <div class="provider-card__name">Vercel</div>
+          <span class="provider-card__type">isolated</span>
+          <p>cloud sandbox。code in / commits out の sync が必要な境界。</p>
+        </div>
+        <div class="provider-card" style="--i:3">
+          <div class="provider-card__name">No-sandbox</div>
+          <span class="provider-card__type">none</span>
+          <p>host で直接 agent を動かす。interactive 系に限定される。</p>
+        </div>
+      </div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>Provider 型</th><th>実装者が満たす契約</th><th>設計上の意味</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>bind-mount</code></td><td><code>exec()</code>, <code>interactiveExec()</code>, file copy, <code>close()</code></td><td>host filesystem へ mount 経由で直接書く。sync が不要。</td></tr>
+            <tr><td><code>isolated</code></td><td><code>exec()</code>, <code>copyIn()</code>, <code>copyFileOut()</code>, <code>close()</code></td><td>sandbox 側 filesystem が独立。commit extraction が必要。</td></tr>
+            <tr><td><code>no-sandbox</code></td><td>host command execution</td><td>探索や対話用。AFK run の必須 sandbox 境界には使わない。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="prompts" class="sec-head">5 — Prompt と Iteration</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> workflow は prompt 側に置く</span>
+      <p>Sandcastle の prompt system は薄く、強い workflow 意見を押し付けない。<code>prompt</code> は literal、<code>promptFile</code> は template として扱われる。この差が重要。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>入力</th><th>処理</th><th>使いどころ</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>prompt</code></td><td>そのまま agent へ渡す。<code>promptArgs</code> と併用不可。</td><td>JavaScript 側で文字列を組む短い指示。</td></tr>
+            <tr><td><code>promptFile</code></td><td><code>{{KEY}}</code> substitution と shell expression expansion を実行。</td><td>issue / branch / command output を混ぜる再利用 prompt。</td></tr>
+            <tr><td><code>completionSignal</code></td><td>agent output に含まれたら iteration loop を早期停止。</td><td>タスク完了時に無駄な iteration を走らせない。</td></tr>
+            <tr><td><code>resumeSession</code></td><td>Claude Code session を移送して iteration 1 で resume。</td><td>前回の会話を sandbox 内で継続。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="guards" class="sec-head">6 — 運用ガード</section>
+    <div class="guard-grid">
+      <div class="guard-card" style="--i:0">
+        <h3>branch strategy</h3>
+        <p><code>head</code> は host 作業ツリーへ直接、<code>merge-to-head</code> は一時 branch、<code>branch</code> は明示 branch。変更境界が用途で変わる。</p>
+      </div>
+      <div class="guard-card" style="--i:1">
+        <h3>worktree lock</h3>
+        <p>named branch の worktree 共有を lock file で fail-fast。待機や retry ではなく「同じ branch を同時に使う caller error」と扱う。</p>
+      </div>
+      <div class="guard-card" style="--i:2">
+        <h3>idle timeout</h3>
+        <p>agent output が止まると timeout。streaming <code>onLine</code> は provider 契約の一部で、live feedback と timeout に必要。</p>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:3; margin-top:1rem">
+      <span class="ve-section-label"><span class="ve-dot"></span> 読んだ主要ソース</span>
+      <ul class="source-list">
+        <li>README.md — 価値提案、API、provider、CLI、prompt system</li>
+        <li>CONTEXT.md — 用語と関係性</li>
+        <li>src/index.ts — 公開 export</li>
+        <li>src/run.ts / src/createSandbox.ts / src/createWorktree.ts — 実行モデル</li>
+        <li>src/SandboxProvider.ts / src/Orchestrator.ts — provider 契約と iteration 制御</li>
+        <li>docs/adr/0007-worktree-locking.md — worktree lock の判断</li>
+      </ul>
+    </div>
+
+    <section id="links" class="sec-head">7 — 参考</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> public references</span>
+      <ul>
+        <li><a href="https://github.com/mattpocock/sandcastle" target="_blank" rel="noopener">GitHub: mattpocock/sandcastle</a> — 本体リポジトリ</li>
+        <li><a href="https://www.npmjs.com/package/@ai-hero/sandcastle" target="_blank" rel="noopener">npm: @ai-hero/sandcastle</a> — package registry</li>
+        <li><a href="https://www.docker.com/" target="_blank" rel="noopener">Docker</a> / <a href="https://podman.io/" target="_blank" rel="noopener">Podman</a> / <a href="https://vercel.com/" target="_blank" rel="noopener">Vercel</a> — built-in sandbox provider の前提環境</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
