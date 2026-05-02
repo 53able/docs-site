@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>oh-my-codex (OMX) — OpenAI Codex CLI ワークフロー強化レイヤー</title>
-  <meta name="description" content="oh-my-codex (OMX) は OpenAI Codex CLI の上で動くワークフロー強化レイヤー。40スキル・30エージェント・tmuxベースのチームランタイムを提供する。インストール・スキル・チームモード・アーキテクチャを網羅した技術解説。">
+  <meta name="description" content="oh-my-codex (OMX) は OpenAI Codex CLI の上で動くワークフロー強化レイヤー。39スキル・33エージェントプロンプト・tmuxベースのチームランタイムを提供する。インストール・スキル・チームモード・アーキテクチャを網羅した技術解説（上流 v0.15.3 同期）。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="oh-my-codex (OMX) — OpenAI Codex CLI ワークフロー強化レイヤー">
-  <meta property="og:description" content="40スキル・30エージェント・tmuxベースのチームランタイムを提供する Codex CLI 上のワークフロー強化レイヤー。">
+  <meta property="og:description" content="39スキル・33エージェントプロンプト・tmuxベースのチームランタイムを提供する Codex CLI 上のワークフロー強化レイヤー（v0.15.3 同期）。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/oh-my-codex.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="oh-my-codex (OMX) — OpenAI Codex CLI ワークフロー強化レイヤー">
-  <meta name="twitter:description" content="40スキル・30エージェント・tmuxベースのチームランタイムを提供する Codex CLI 上のワークフロー強化レイヤー。">
+  <meta name="twitter:description" content="39スキル・33エージェントプロンプト・tmuxベースのチームランタイムを提供する Codex CLI 上のワークフロー強化レイヤー（v0.15.3 同期）。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -114,6 +114,14 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.75; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
@@ -252,6 +260,7 @@
     <a href="#team">4 — チームランタイム</a>
     <a href="#arch">5 — アーキテクチャ</a>
     <a href="#commands">6 — コマンドリファレンス</a>
+    <a href="#links">7 — 参考リンク</a>
   </nav>
 
   <!-- ============ MAIN ============ -->
@@ -259,18 +268,18 @@
 
     <!-- Hero header -->
     <h1>oh-my-codex <span style="font-weight:400;color:var(--text-dim);">(OMX)</span></h1>
-    <p class="subtitle">npm install -g oh-my-codex &nbsp;·&nbsp; OpenAI Codex CLI のワークフロー強化レイヤー</p>
+    <p class="subtitle"><code>npm install -g @openai/codex oh-my-codex</code> &nbsp;·&nbsp; OpenAI Codex CLI のワークフロー強化レイヤー &nbsp;·&nbsp; 上流 v0.15.3 同期</p>
 
     <div class="ve-card ve-card--hero" style="--i:0;margin-bottom:1.5rem;">
       <span class="ve-section-label"><span class="ve-dot"></span> プロジェクト概要</span>
       <p>OMX は <strong>Codex CLI を置き換えない</strong>。Codex を実行エンジンとして維持しながら、再利用可能なロール・ワークフロースキル・永続状態管理を追加するレイヤーです。</p>
       <div class="kpi-row" style="margin-top:1rem;margin-bottom:0;">
         <div class="ve-kpi-card">
-          <div class="ve-kpi-card__value kpi-accent">40</div>
+          <div class="ve-kpi-card__value kpi-accent">39</div>
           <div class="ve-kpi-card__label">Skills</div>
         </div>
         <div class="ve-kpi-card">
-          <div class="ve-kpi-card__value kpi-accent">30</div>
+          <div class="ve-kpi-card__value kpi-accent">33</div>
           <div class="ve-kpi-card__label">Agent Prompts</div>
         </div>
         <div class="ve-kpi-card">
@@ -381,7 +390,7 @@
       <pre><code># 1. インストール
 npm install -g @openai/codex oh-my-codex
 
-# 2. セットアップ（プロンプト 30 本・スキル 40 本をインストール）
+# 2. セットアップ（プロンプト 33 本・スキル 39 本をインストール）
 omx setup
 
 # 3. インストール検証（9 項目 OK を確認）
@@ -399,8 +408,8 @@ $plan "map the safest implementation path"</code></pre>
       <span class="ve-section-label"><span class="ve-dot"></span> omx setup の出力（参考）</span>
       <div class="ve-code-block">
         <pre><code>[1/7] Creating directories...         Done.
-[2/7] Installing agent prompts...     Installed 30 agent prompts.
-[3/7] Installing skills...            Installed 40 skills.
+[2/7] Installing agent prompts...     Installed 33 agent prompts.
+[3/7] Installing skills...            Installed 39 skills.
 [4/7] Updating config.toml...         Done.
 [4.5/7] Verifying Team MCP comm tools...
   omx_state exports: team_send_message, team_broadcast,
@@ -627,8 +636,8 @@ omx team 6:executor "parallel team smoke"</code></pre>
 │   ├── <span class="d">omx-runtime/</span>    <span class="c"># Rust ランタイムコア</span>
 │   ├── <span class="d">omx-runtime-core/</span> <span class="c"># コアライブラリ</span>
 │   └── <span class="d">omx-mux/</span>        <span class="c"># tmux マルチプレクサバインディング</span>
-├── <span class="d">skills/</span>          <span class="c"># 40 スキル（SKILL.md 形式）</span>
-├── <span class="d">prompts/</span>         <span class="c"># 30 エージェントプロンプト（*.md）</span>
+├── <span class="d">skills/</span>          <span class="c"># 39 スキル（SKILL.md 形式）</span>
+├── <span class="d">prompts/</span>         <span class="c"># 33 エージェントプロンプト（*.md）</span>
 ├── <span class="d">missions/</span>        <span class="c"># オートリサーチミッション定義</span>
 ├── <span class="d">playground/</span>      <span class="c"># リサーチショーケースハブ</span>
 ├── <span class="f">AGENTS.md</span>       <span class="c"># オーケストレーションブレイン（自動生成）</span>
@@ -739,14 +748,28 @@ omx team 6:executor "parallel team smoke"</code></pre>
       </div>
     </div>
 
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+
     <div class="ve-card ve-card--recessed" style="--i:2;margin-top:1rem;">
-      <span class="ve-section-label"><span class="ve-dot"></span> 参考リンク</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・ドキュメント・コミュニティ</span>
       <ul>
         <li><a href="https://github.com/Yeachan-Heo/oh-my-codex" target="_blank" rel="noopener">GitHub: Yeachan-Heo/oh-my-codex</a> — 本体リポジトリ</li>
-        <li><a href="https://www.npmjs.com/package/oh-my-codex" target="_blank" rel="noopener">npm: oh-my-codex</a> — パッケージ</li>
+        <li><a href="https://www.npmjs.com/package/oh-my-codex" target="_blank" rel="noopener">npm: oh-my-codex</a> — パッケージ（<code>npm i -g oh-my-codex</code>）</li>
         <li><a href="https://yeachan-heo.github.io/oh-my-codex-website/" target="_blank" rel="noopener">公式 Website</a></li>
+        <li>
+          サイト内ドキュメント:
+          <a href="https://yeachan-heo.github.io/oh-my-codex-website/docs/getting-started.html" target="_blank" rel="noopener">Getting Started</a>
+          ·
+          <a href="https://yeachan-heo.github.io/oh-my-codex-website/docs/agents.html" target="_blank" rel="noopener">Agents</a>
+          ·
+          <a href="https://yeachan-heo.github.io/oh-my-codex-website/docs/skills.html" target="_blank" rel="noopener">Skills</a>
+          ·
+          <a href="https://yeachan-heo.github.io/oh-my-codex-website/docs/integrations.html" target="_blank" rel="noopener">Integrations</a>
+        </li>
+        <li><a href="https://github.com/Yeachan-Heo/oh-my-codex/blob/main/docs/openclaw-integration.md" target="_blank" rel="noopener">OpenClaw 連携ガイド</a>（リポジトリ内ドキュメント）</li>
         <li><a href="https://discord.gg/PUwSMR9XNk" target="_blank" rel="noopener">Discord コミュニティ</a></li>
         <li><a href="https://github.com/openai/codex" target="_blank" rel="noopener">OpenAI Codex CLI</a> — 実行エンジン本体</li>
+        <li><a href="https://github.com/Yeachan-Heo/oh-my-claudecode" target="_blank" rel="noopener">oh-my-claudecode</a> — Claude Code 向け姉妹プロジェクト</li>
       </ul>
     </div>
 
