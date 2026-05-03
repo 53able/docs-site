@@ -182,6 +182,14 @@
     .ve-section-label .ve-dot { background: var(--chart-1); }
     .ve-code-block { margin: 1rem 0; }
     code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
 
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
     .kpi-row .ve-kpi-card { min-width: 0; }
@@ -201,6 +209,7 @@
     <a href="#usage">インストール</a>
     <a href="#mcp-search">MCP 検索</a>
     <a href="#extras">引用・ベータなど</a>
+    <a href="#maintain">メンテナンス</a>
     <a href="#config-links">設定・参考リンク</a>
   </nav>
 
@@ -213,7 +222,7 @@
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
     <p><strong>Claude-Mem</strong> は <a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a> や <a href="https://docs.claude-mem.ai/gemini-cli/setup" target="_blank" rel="noopener">Gemini CLI</a> 向けのプラグインで、セッション終了や再接続後もプロジェクトの知識を継続させる。ツール使用の観察を自動で取り込み、セマンティック要約を生成し、SQLite と Chroma によるハイブリッド検索で保持。新しいセッション開始時に関連コンテキストを注入する。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">12.1</span><span class="ve-kpi-card__label">npm バージョン（例）</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">12.5</span><span class="ve-kpi-card__label">npm パッケージ版（2026-05 時点）</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">5+1</span><span class="ve-kpi-card__label">ライフサイクル + Smart Install</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">37777</span><span class="ve-kpi-card__label">Worker ポート</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">SQLite</span><span class="ve-kpi-card__label">+ Chroma</span></div>
@@ -322,7 +331,31 @@
     </table>
   </div>
 
-  <section id="config-links" class="sec-head">6 — 設定・参考リンク</section>
+  <section id="maintain" class="sec-head">6 — メンテナンスとソース地図</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 本ページの更新方針</span>
+    <p>ビジュアル解説は <a href="https://github.com/thedotmack/claude-mem" target="_blank" rel="noopener">thedotmack/claude-mem</a> の README・主要エントリと突き合わせて更新する。ローカル作業用のクローンやワークスペース固有のパスは公開 HTML に載せない（docs-site の検証スクリプトでブロックされる）。</p>
+    <p><strong>JiT で読む順</strong>（大きく変えない）: リポジトリのディレクトリ構成で負務を把握 → <code>README.md</code> でインストールと機能 → <code>openclaw/SKILL.md</code> や CLI エントリで公開 API → 必要なら <code>docs/</code>・<code>cursor-hooks/</code>・<code>plugin/</code> 配下へ。</p>
+  </div>
+  <div class="ve-table-wrap" style="margin-top:1rem">
+    <table>
+      <thead>
+        <tr><th>領域（リポジトリ相対パス）</th><th>ざっくりした役割</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>src/services/sqlite/SessionStore.ts</code></td><td>セッション永続化の中心。行数が大きく、変更の影響範囲も広い。</td></tr>
+        <tr><td><code>src/ui/viewer-template.html</code> / <code>plugin/ui/viewer.html</code></td><td>Web Viewer のテンプレートと配布物。UI 変更はここを追う。</td></tr>
+        <tr><td><code>src/services/worker/SearchManager.ts</code></td><td>検索オーケストレーション。MCP の search / timeline 周りの挙動に直結。</td></tr>
+        <tr><td><code>src/npx-cli/commands/install.ts</code></td><td><code>npx claude-mem install</code> の実装。IDE 検出やフック配置の入口。</td></tr>
+        <tr><td><code>PATHFINDER-2026-04-22/</code></td><td>データ整合・ライフサイクル・フック面などの設計メモ群（アーキ調査用）。</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="ve-callout" style="margin-top:1rem">
+    <strong>docs-site 側の検証:</strong> この HTML を直したあと、リポジトリルートで <code>npx tsx scripts/visual-doc-workflow.ts validate --doc claude-mem</code> を実行し、公開パス検証と整合チェックを通す。
+  </div>
+
+  <section id="config-links" class="sec-head">7 — 設定・参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 設定</span>
     <p>設定は <code>~/.claude-mem/settings.json</code>。初回起動時にデフォルトで自動作成される。AI モデル、Worker ポート、データディレクトリ、ログレベル、コンテキスト注入の細かいオプションを変更できる。環境変数を含む完全な一覧は <a href="https://docs.claude-mem.ai/configuration" target="_blank" rel="noopener">Configuration</a>。</p>
