@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ruflo — Claude Code 向けマルチエージェント基盤</title>
+  <meta name="description" content="Ruflo（旧 Claude Flow）は Claude Code 用のマルチエージェント・オーケストレーション。スウォーム、学習メモリ、連邦通信、Rust/WASM カーネルとプラグイン群の全体像。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Ruflo — Claude Code 向けマルチエージェント基盤">
+  <meta property="og:description" content="スウォーム、メモリ、連邦、セキュリティ、30+ プラグインで Claude Code に神経系を足す OSS の技術概要。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/ruflo.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Ruflo — Claude Code 向けマルチエージェント基盤">
+  <meta name="twitter:description" content="プラグイン、データフロー、クイックスタートと検証コマンドの要約。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Fragment+Mono:ital@0;1&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.97 0.012 200);
+      --foreground: oklch(0.22 0.045 220);
+      --card: oklch(0.995 0.008 200);
+      --card-foreground: oklch(0.22 0.045 220);
+      --popover: oklch(0.995 0.008 200);
+      --popover-foreground: oklch(0.22 0.045 220);
+      --primary: oklch(0.32 0.08 220);
+      --primary-foreground: oklch(0.98 0.01 200);
+      --secondary: oklch(0.92 0.025 200);
+      --secondary-foreground: oklch(0.24 0.06 220);
+      --muted: oklch(0.91 0.02 200);
+      --muted-foreground: oklch(0.42 0.04 215);
+      --accent: oklch(0.9 0.03 195);
+      --accent-foreground: oklch(0.22 0.05 220);
+      --destructive: oklch(0.52 0.18 25);
+      --border: oklch(0.86 0.025 200);
+      --input: oklch(0.86 0.025 200);
+      --ring: oklch(0.45 0.12 200);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.62 0.14 75);
+      --chart-3: oklch(0.48 0.09 160);
+      --chart-4: oklch(0.55 0.1 35);
+      --chart-5: oklch(0.4 0.08 260);
+      --code-bg: oklch(0.16 0.04 220);
+      --code-text: oklch(0.9 0.04 200);
+      --font-body: 'Bricolage Grotesque', system-ui, sans-serif;
+      --font-mono: 'Fragment Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.035 220);
+        --foreground: oklch(0.95 0.02 200);
+        --card: oklch(0.19 0.04 218);
+        --card-foreground: oklch(0.95 0.02 200);
+        --popover: oklch(0.19 0.04 218);
+        --popover-foreground: oklch(0.95 0.02 200);
+        --primary: oklch(0.78 0.1 195);
+        --primary-foreground: oklch(0.14 0.035 220);
+        --secondary: oklch(0.24 0.04 218);
+        --secondary-foreground: oklch(0.95 0.02 200);
+        --muted: oklch(0.26 0.045 215);
+        --muted-foreground: oklch(0.72 0.03 200);
+        --accent: oklch(0.24 0.045 215);
+        --accent-foreground: oklch(0.95 0.02 200);
+        --destructive: oklch(0.65 0.16 25);
+        --border: oklch(0.38 0.04 215 / 55%);
+        --input: oklch(0.38 0.04 215 / 55%);
+        --ring: oklch(0.62 0.12 195);
+        --chart-1: oklch(0.68 0.14 195);
+        --chart-2: oklch(0.72 0.14 75);
+        --chart-3: oklch(0.62 0.1 160);
+        --chart-4: oklch(0.7 0.11 40);
+        --chart-5: oklch(0.58 0.08 260);
+        --code-bg: oklch(0.12 0.04 220);
+        --code-text: oklch(0.88 0.04 200);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 12px 28px rgba(8, 40, 60, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(8, 40, 60, 0.06); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+      box-shadow: 0 20px 44px rgba(8, 40, 60, 0.1);
+      border-color: color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+        box-shadow: 0 20px 44px rgba(0, 0, 0, 0.28);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.95rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.72; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.875rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 68%, var(--card) 32%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(8, 40, 60, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.05rem; line-height: 1.2; color: var(--foreground); }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.65; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.75rem; background: color-mix(in oklch, var(--chart-2) 14%, transparent); color: var(--foreground); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(90deg, color-mix(in oklch, var(--border) 30%, transparent) 1px, transparent 1px),
+        linear-gradient(180deg, color-mix(in oklch, var(--border) 24%, transparent) 1px, transparent 1px),
+        radial-gradient(ellipse at 8% 0%, color-mix(in oklch, var(--chart-1) 10%, transparent) 0%, transparent 45%),
+        radial-gradient(ellipse at 94% 8%, color-mix(in oklch, var(--chart-2) 8%, transparent) 0%, transparent 40%);
+      background-size: 26px 26px, 26px 26px, auto, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 0.85rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.875rem; margin-bottom: 2rem; line-height: 1.55; max-width: 52rem; }
+    .sec-head { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.04em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h2, h3 { font-weight: 600; letter-spacing: -0.02em; }
+    h3 { font-size: 1.15rem; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 1.02rem; line-height: 1.72; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.35rem; }
+    li { margin-bottom: 0.4rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    small { color: var(--muted-foreground); font-size: 0.8rem; line-height: 1.5; }
+    strong { font-weight: 600; }
+
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr); gap: 1rem; align-items: stretch; margin-bottom: 1.25rem; }
+    .hero-copy { padding: 2rem; }
+    .hero-copy p { font-size: 1.06rem; }
+    .stack-sheet {
+      min-height: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(165deg, color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%), var(--card));
+      padding: 1.35rem;
+      display: grid;
+      gap: 0.65rem;
+      align-content: start;
+    }
+    .stack-line { min-height: 36px; border-radius: var(--radius-md); border: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 70%, var(--card) 30%); padding: 0.65rem 0.75rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted-foreground); }
+    .stack-line strong { color: var(--foreground); font-weight: 700; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; padding: 1rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+    .mermaid-wrap svg { max-width: 100%; }
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .kpi-row { grid-template-columns: 1fr; }
+      .hero-copy { padding: 1.35rem; }
+    }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#stack">データの流れ</a>
+    <a href="#plugins">プラグイン</a>
+    <a href="#install">クイックスタート</a>
+    <a href="#layout">リポジトリ構成</a>
+    <a href="#verify">検証</a>
+    <a href="#refs">参照</a>
+  </nav>
+
+  <div class="main">
+    <h1>Ruflo</h1>
+    <p class="subtitle">Claude Code 向けマルチエージェント・オーケストレーション。スウォーム、セッション横断メモリ、連邦通信、Rust/WASM カーネルを README と公開ツリーから要約したビジュアル解説。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="kpi-row">
+      <div class="ve-kpi-card" style="--i:0"><div class="ve-kpi-card__value">100+</div><div class="ve-kpi-card__label">specialized agents</div></div>
+      <div class="ve-kpi-card" style="--i:1"><div class="ve-kpi-card__value">32</div><div class="ve-kpi-card__label">plugins（README 記載）</div></div>
+      <div class="ve-kpi-card" style="--i:2"><div class="ve-kpi-card__value">WASM</div><div class="ve-kpi-card__label">Rust カーネル</div></div>
+      <div class="ve-kpi-card" style="--i:3"><div class="ve-kpi-card__value">Federation</div><div class="ve-kpi-card__label">マシン横断</div></div>
+    </div>
+    <div class="hero-grid">
+      <div class="ve-card ve-card--hero hero-copy" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
+        <p><strong>Ruflo</strong>（旧称 <strong>Claude Flow</strong>）は、<a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a> に「神経系」を足す OSS スタック。エージェントのスウォーム化、タスクからの学習、セッションをまたいだ記憶、他ホストのエージェントとの安全な連携までをプラグインとフックで束ねる。</p>
+        <p>ポリシー・埋め込み・証明系などは <strong>Rust で書かれた WASM カーネル</strong>が担当する、という位置づけが README で強調されている。利用者は通常どおり Claude Code でコードを書き、バックグラウンドでルーティングと調整が走る想定。</p>
+      </div>
+      <div class="stack-sheet" style="--i:1">
+        <div class="stack-line"><strong>Entry</strong><br>CLI / MCP / Claude Code プラグイン</div>
+        <div class="stack-line"><strong>Router → Swarm → Agents</strong><br>タスク分解と並列エージェント</div>
+        <div class="stack-line"><strong>Memory + Learning</strong><br>成功パターンの取り込みと検索</div>
+        <div class="stack-line"><strong>LLM Providers</strong><br>外部モデル API へのルーティング</div>
+      </div>
+    </div>
+    <div class="ve-callout">
+      <strong>名前の由来（README 抜粋）:</strong> 「Ru」は作者の「Ruv」、「flo」は flow。フロー状態と Rust 基盤を掛け合わせたブランド。
+    </div>
+
+    <section id="stack" class="sec-head">2 — データの流れ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 概念フロー</span>
+      <p>README に掲載の ASCII 図を Mermaid に再構成したもの。学習ループは Router 側へのフィードバックとして表現している。</p>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">flowchart TD
+  U[User] --> R[Ruflo CLI / MCP]
+  R --> Rt[Router]
+  Rt --> S[Swarm]
+  S --> A[Agents]
+  A --> M[Memory]
+  A --> L[LLM Providers]
+  M --> L
+  A -.->|Learning loop| Rt</pre>
+      </div>
+    </div>
+
+    <section id="plugins" class="sec-head">3 — プラグイン群</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ別（README の表を要約）</span>
+      <p>マーケットプレイス <code>ruvnet/ruflo</code> から個別インストールするモジュラー設計。以下は代表例のみ（全文は公開 README の折りたたみ表を参照）。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>カテゴリ</th><th>例</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Core / オーケストレーション</td><td><code>ruflo-core</code>, <code>ruflo-swarm</code>, <code>ruflo-autopilot</code></td><td>基盤・スウォーム・自律ループ</td></tr>
+            <tr><td>メモリ / 知識</td><td><code>ruflo-agentdb</code>, <code>ruflo-rag-memory</code>, <code>ruflo-rvf</code>, <code>ruflo-knowledge-graph</code></td><td>ベクトルDB、RAG、セッション復元、グラフ</td></tr>
+            <tr><td>品質 / セキュリティ</td><td><code>ruflo-testgen</code>, <code>ruflo-security-audit</code>, <code>ruflo-aidefence</code></td><td>テスト生成、CVE、プロンプト防御</td></tr>
+            <tr><td>方法論 / アーキテクチャ</td><td><code>ruflo-adr</code>, <code>ruflo-ddd</code>, <code>ruflo-sparc</code></td><td>ADR、DDD スキャフォールド、5 フェーズ開発</td></tr>
+            <tr><td>連邦 / 観測</td><td><code>ruflo-federation</code>, <code>ruflo-observability</code></td><td>マシン横断連携、テレメトリ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="install" class="sec-head">4 — クイックスタート</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Claude Code プラグイン（推奨）</span>
+      <p>README のコマンドをそのまま掲載。環境に合わせてプラグインの組み合わせを選ぶ。</p>
+      <div class="ve-code-block">
+        <pre><code># Add the marketplace
+/plugin marketplace add ruvnet/ruflo
+
+# Install core + any plugins you need
+/plugin install ruflo-core@ruflo
+/plugin install ruflo-swarm@ruflo
+/plugin install ruflo-autopilot@ruflo
+/plugin install ruflo-federation@ruflo</code></pre>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> UI / デモ</span>
+      <p>README のバッジより: <a href="https://flo.ruv.io/" target="_blank" rel="noopener">flo.ruv.io</a>（UI ベータ）、<a href="https://goal.ruv.io/" target="_blank" rel="noopener">goal.ruv.io</a>、<a href="https://goal.ruv.io/agents" target="_blank" rel="noopener">Live Agents</a>。</p>
+    </div>
+
+    <section id="layout" class="sec-head">5 — リポジトリ構成（要約）</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> トップレベル</span>
+      <p>スキャン結果に基づき、ツリーの要点だけを表にした。詳細なファイル一覧はクローン後のエクスプローラや GitHub のファイルビューで確認する。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>パス</th><th>内容の目安</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>agents/</code></td><td>YAML 定義のアーキテクト・コーダー・レビュアー等</td></tr>
+            <tr><td><code>bin/</code></td><td>CLI エントリ（<code>cli.js</code> など）</td></tr>
+            <tr><td><code>plugin/</code></td><td>配布用プラグインパッケージの束ね</td></tr>
+            <tr><td><code>plugins/</code></td><td><code>ruflo-*</code> 各プラグインのソース</td></tr>
+            <tr><td><code>ruflo/</code></td><td>アプライアンス用サブプロジェクト（Docker 等）</td></tr>
+            <tr><td><code>v2/</code> / <code>v3/</code></td><td>世代別の大きなサブツリー（レガシーと次世代フロー）</td></tr>
+            <tr><td><code>tests/</code></td><td>RVF・統合テスト等</td></tr>
+            <tr><td><code>.claude/</code>, <code>.claude-plugin/</code></td><td>Claude Code 向け設定・マーケットメタデータ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="verify" class="sec-head">6 — 検証</section>
+    <div class="ve-card ve-card--recessed" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> docs-site ワークフロー</span>
+      <p>本ページを更新したあと、docs-site リポジトリのルートで次を実行して公開パス検証などを行う（<code>visual-doc-workflow.ts</code> の仕様に従う）。</p>
+      <div class="ve-code-block">
+        <pre><code>npx tsx scripts/visual-doc-workflow.ts validate --doc ruflo</code></pre>
+      </div>
+      <p style="margin-bottom:0"><small>公開 HTML にはローカル絶対パスやクローン作業用ディレクトリ名を書かない。</small></p>
+    </div>
+
+    <section id="refs" class="sec-head">7 — 参照</section>
+    <div class="ve-card ve-card--recessed" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公開リンク</span>
+      <ul>
+        <li><a href="https://github.com/ruvnet/claude-flow" target="_blank" rel="noopener">github.com/ruvnet/claude-flow</a> — メインリポジトリ（README のバッジ・スター参照先）</li>
+        <li>Claude Code マーケットプレイス識別子 <code>ruvnet/ruflo</code>（<code>/plugin marketplace add</code> の引数）</li>
+        <li><a href="https://flo.ruv.io/" target="_blank" rel="noopener">flo.ruv.io</a> — Web UI ベータ</li>
+      </ul>
+      <p style="margin-top:1rem;margin-bottom:0"><small>解説は公開 README とスキャン要約に基づく。バージョンやプラグイン一覧は上流の変更に追随しうる。</small></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    securityLevel: 'strict',
+    themeVariables: {
+      primaryColor: '#e8f4f8',
+      primaryTextColor: '#0f172a',
+      primaryBorderColor: '#7dd3c0',
+      lineColor: '#0d9488',
+      secondaryColor: '#ccfbf1',
+      tertiaryColor: '#f0fdfa',
+      fontFamily: 'Fragment Mono, monospace',
+      fontSize: '13px'
+    }
+  });
+</script>
+</body>
+</html>
