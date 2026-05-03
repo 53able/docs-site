@@ -17,41 +17,42 @@
   <meta name="twitter:description" content="プラグイン、データフロー、クイックスタートと検証コマンドの要約。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Fragment+Mono:ital@0;1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Azeret+Mono:ital,wght@0,400;0,500;0,600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <style>
+    /* ============ THEME (Spell UI + emerald / slate) ============ */
     :root {
       --radius: 0.625rem;
       --radius-sm: calc(var(--radius) - 4px);
       --radius-md: calc(var(--radius) - 2px);
       --radius-lg: var(--radius);
-      --background: oklch(0.97 0.012 200);
-      --foreground: oklch(0.22 0.045 220);
-      --card: oklch(0.995 0.008 200);
-      --card-foreground: oklch(0.22 0.045 220);
-      --popover: oklch(0.995 0.008 200);
-      --popover-foreground: oklch(0.22 0.045 220);
-      --primary: oklch(0.32 0.08 220);
-      --primary-foreground: oklch(0.98 0.01 200);
-      --secondary: oklch(0.92 0.025 200);
-      --secondary-foreground: oklch(0.24 0.06 220);
-      --muted: oklch(0.91 0.02 200);
-      --muted-foreground: oklch(0.42 0.04 215);
-      --accent: oklch(0.9 0.03 195);
-      --accent-foreground: oklch(0.22 0.05 220);
+      --background: oklch(0.985 0.012 195);
+      --foreground: oklch(0.2 0.04 220);
+      --card: oklch(0.997 0.006 195);
+      --card-foreground: oklch(0.2 0.04 220);
+      --popover: oklch(0.997 0.006 195);
+      --popover-foreground: oklch(0.2 0.04 220);
+      --primary: oklch(0.32 0.09 195);
+      --primary-foreground: oklch(0.98 0.01 195);
+      --secondary: oklch(0.94 0.02 195);
+      --secondary-foreground: oklch(0.24 0.05 220);
+      --muted: oklch(0.93 0.018 195);
+      --muted-foreground: oklch(0.44 0.04 220);
+      --accent: oklch(0.92 0.03 175);
+      --accent-foreground: oklch(0.22 0.06 200);
       --destructive: oklch(0.52 0.18 25);
-      --border: oklch(0.86 0.025 200);
-      --input: oklch(0.86 0.025 200);
-      --ring: oklch(0.45 0.12 200);
-      --chart-1: oklch(0.45 0.12 200);
-      --chart-2: oklch(0.62 0.14 75);
-      --chart-3: oklch(0.48 0.09 160);
-      --chart-4: oklch(0.55 0.1 35);
+      --border: oklch(0.84 0.03 195);
+      --input: oklch(0.84 0.03 195);
+      --ring: oklch(0.42 0.11 175);
+      --chart-1: oklch(0.42 0.11 175);
+      --chart-2: oklch(0.62 0.14 72);
+      --chart-3: oklch(0.48 0.09 200);
+      --chart-4: oklch(0.55 0.1 150);
       --chart-5: oklch(0.4 0.08 260);
       --code-bg: oklch(0.16 0.04 220);
-      --code-text: oklch(0.9 0.04 200);
-      --font-body: 'Bricolage Grotesque', system-ui, sans-serif;
-      --font-mono: 'Fragment Mono', 'SF Mono', Consolas, monospace;
+      --code-text: oklch(0.9 0.04 185);
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
       --bg: var(--background);
       --surface: var(--card);
       --surface2: var(--muted);
@@ -61,39 +62,40 @@
     @media (prefers-color-scheme: dark) {
       :root {
         --background: oklch(0.14 0.035 220);
-        --foreground: oklch(0.95 0.02 200);
-        --card: oklch(0.19 0.04 218);
-        --card-foreground: oklch(0.95 0.02 200);
-        --popover: oklch(0.19 0.04 218);
-        --popover-foreground: oklch(0.95 0.02 200);
-        --primary: oklch(0.78 0.1 195);
+        --foreground: oklch(0.94 0.02 185);
+        --card: oklch(0.19 0.04 220);
+        --card-foreground: oklch(0.94 0.02 185);
+        --popover: oklch(0.19 0.04 220);
+        --popover-foreground: oklch(0.94 0.02 185);
+        --primary: oklch(0.78 0.12 175);
         --primary-foreground: oklch(0.14 0.035 220);
-        --secondary: oklch(0.24 0.04 218);
-        --secondary-foreground: oklch(0.95 0.02 200);
-        --muted: oklch(0.26 0.045 215);
-        --muted-foreground: oklch(0.72 0.03 200);
-        --accent: oklch(0.24 0.045 215);
-        --accent-foreground: oklch(0.95 0.02 200);
+        --secondary: oklch(0.24 0.04 220);
+        --secondary-foreground: oklch(0.94 0.02 185);
+        --muted: oklch(0.26 0.04 220);
+        --muted-foreground: oklch(0.72 0.03 185);
+        --accent: oklch(0.24 0.045 220);
+        --accent-foreground: oklch(0.94 0.02 185);
         --destructive: oklch(0.65 0.16 25);
-        --border: oklch(0.38 0.04 215 / 55%);
-        --input: oklch(0.38 0.04 215 / 55%);
-        --ring: oklch(0.62 0.12 195);
-        --chart-1: oklch(0.68 0.14 195);
-        --chart-2: oklch(0.72 0.14 75);
-        --chart-3: oklch(0.62 0.1 160);
-        --chart-4: oklch(0.7 0.11 40);
-        --chart-5: oklch(0.58 0.08 260);
-        --code-bg: oklch(0.12 0.04 220);
-        --code-text: oklch(0.88 0.04 200);
+        --border: oklch(0.42 0.05 220 / 55%);
+        --input: oklch(0.42 0.05 220 / 55%);
+        --ring: oklch(0.72 0.12 175);
+        --chart-1: oklch(0.72 0.12 175);
+        --chart-2: oklch(0.74 0.14 85);
+        --chart-3: oklch(0.65 0.1 200);
+        --chart-4: oklch(0.68 0.11 150);
+        --chart-5: oklch(0.62 0.08 260);
+        --code-bg: oklch(0.11 0.035 220);
+        --code-text: oklch(0.88 0.04 185);
       }
     }
 
+    /* ============ Spell UI static ============ */
     .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
-    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 12px 28px rgba(8, 40, 60, 0.08); }
-    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(8, 40, 60, 0.06); }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 12px 28px rgba(12, 46, 42, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(12, 46, 42, 0.06); }
     .ve-card--hero {
       background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
-      box-shadow: 0 20px 44px rgba(8, 40, 60, 0.1);
+      box-shadow: 0 20px 44px rgba(12, 46, 42, 0.1);
       border-color: color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%);
     }
     @media (prefers-color-scheme: dark) {
@@ -114,7 +116,7 @@
     .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
     .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
     .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 68%, var(--card) 32%); }
-    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(8, 40, 60, 0.05); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(12, 46, 42, 0.05); }
     .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.05rem; line-height: 1.2; color: var(--foreground); }
     .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
     .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.65; color: var(--muted-foreground); }
@@ -125,11 +127,11 @@
     body {
       background: var(--bg);
       background-image:
-        linear-gradient(90deg, color-mix(in oklch, var(--border) 30%, transparent) 1px, transparent 1px),
-        linear-gradient(180deg, color-mix(in oklch, var(--border) 24%, transparent) 1px, transparent 1px),
-        radial-gradient(ellipse at 8% 0%, color-mix(in oklch, var(--chart-1) 10%, transparent) 0%, transparent 45%),
-        radial-gradient(ellipse at 94% 8%, color-mix(in oklch, var(--chart-2) 8%, transparent) 0%, transparent 40%);
-      background-size: 26px 26px, 26px 26px, auto, auto;
+        linear-gradient(90deg, color-mix(in oklch, var(--border) 32%, transparent) 1px, transparent 1px),
+        linear-gradient(180deg, color-mix(in oklch, var(--border) 26%, transparent) 1px, transparent 1px),
+        radial-gradient(ellipse at 12% 0%, color-mix(in oklch, var(--chart-1) 12%, transparent) 0%, transparent 42%),
+        radial-gradient(ellipse at 88% 8%, color-mix(in oklch, var(--chart-2) 10%, transparent) 0%, transparent 38%);
+      background-size: 28px 28px, 28px 28px, auto, auto;
       color: var(--text);
       font-family: var(--font-body);
       padding: 40px;
@@ -163,12 +165,12 @@
       .sec-head { scroll-margin-top: 52px; }
     }
 
-    h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 0.85rem; text-wrap: balance; }
+    h1 { font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 700; letter-spacing: -0.04em; line-height: 1.05; margin-bottom: 0.85rem; text-wrap: balance; }
     .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.875rem; margin-bottom: 2rem; line-height: 1.55; max-width: 52rem; }
     .sec-head { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.04em; }
     .sec-head:first-of-type { margin-top: 0; }
     h2, h3 { font-weight: 600; letter-spacing: -0.02em; }
-    h3 { font-size: 1.15rem; margin: 1.5rem 0 0.75rem; }
+    h3 { font-size: 1.2rem; margin: 1.5rem 0 0.75rem; }
     p { font-size: 1.02rem; line-height: 1.72; margin-bottom: 0.75rem; }
     ul { margin: 0 0 1rem; padding-left: 1.35rem; }
     li { margin-bottom: 0.4rem; line-height: 1.6; }
@@ -180,7 +182,7 @@
 
     .hero-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr); gap: 1rem; align-items: stretch; margin-bottom: 1.25rem; }
     .hero-copy { padding: 2rem; }
-    .hero-copy p { font-size: 1.06rem; }
+    .hero-copy p { font-size: 1.08rem; }
     .stack-sheet {
       min-height: 100%;
       border: 1px solid var(--border);
@@ -194,10 +196,18 @@
     .stack-line { min-height: 36px; border-radius: var(--radius-md); border: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 70%, var(--card) 30%); padding: 0.65rem 0.75rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted-foreground); }
     .stack-line strong { color: var(--foreground); font-weight: 700; }
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .pkg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .pkg-card { min-width: 0; border-top: 3px solid var(--chart-1); }
+    .pkg-card:nth-child(2) { border-top-color: var(--chart-2); }
+    .pkg-card:nth-child(3) { border-top-color: var(--chart-3); }
+    .pkg-card:nth-child(4) { border-top-color: var(--chart-4); }
+    .pkg-title { font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; margin-bottom: 0.45rem; }
+    .pkg-body { color: var(--muted-foreground); font-size: 0.92rem; line-height: 1.58; margin: 0; }
     .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; padding: 1rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
     .mermaid-wrap svg { max-width: 100%; }
+    .code-label { border-bottom: 1px solid color-mix(in oklch, var(--border) 70%, transparent); color: var(--muted-foreground); font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; padding: 0.7rem 1rem 0.5rem; text-transform: uppercase; }
     @media (max-width: 900px) {
-      .hero-grid { grid-template-columns: 1fr; }
+      .hero-grid, .pkg-grid { grid-template-columns: 1fr; }
       .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 560px) {
@@ -225,7 +235,7 @@
 
   <div class="main">
     <h1>Ruflo</h1>
-    <p class="subtitle">Claude Code 向けマルチエージェント・オーケストレーション。スウォーム、セッション横断メモリ、連邦通信、Rust/WASM カーネルを README と公開ツリーから要約したビジュアル解説。</p>
+    <p class="subtitle"><a href="https://github.com/ruvnet/claude-flow" target="_blank" rel="noopener">ruvnet/claude-flow</a>（Ruflo / 旧 Claude Flow）。Claude Code 向けマルチエージェント・オーケストレーション。スウォーム、セッション横断メモリ、連邦通信、Rust/WASM カーネルを README と公開ツリーから要約したビジュアル解説。</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="kpi-row">
@@ -293,6 +303,7 @@
       <span class="ve-section-label"><span class="ve-dot"></span> Claude Code プラグイン（推奨）</span>
       <p>README のコマンドをそのまま掲載。環境に合わせてプラグインの組み合わせを選ぶ。</p>
       <div class="ve-code-block">
+        <div class="code-label">Claude Code /plugin</div>
         <pre><code># Add the marketplace
 /plugin marketplace add ruvnet/ruflo
 
@@ -336,6 +347,7 @@
       <span class="ve-section-label"><span class="ve-dot"></span> docs-site ワークフロー</span>
       <p>本ページを更新したあと、docs-site リポジトリのルートで次を実行して公開パス検証などを行う（<code>visual-doc-workflow.ts</code> の仕様に従う）。</p>
       <div class="ve-code-block">
+        <div class="code-label">validate</div>
         <pre><code>npx tsx scripts/visual-doc-workflow.ts validate --doc ruflo</code></pre>
       </div>
       <p style="margin-bottom:0"><small>公開 HTML にはローカル絶対パスやクローン作業用ディレクトリ名を書かない。</small></p>
@@ -343,12 +355,31 @@
 
     <section id="refs" class="sec-head">7 — 参照</section>
     <div class="ve-card ve-card--recessed" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 公開リンク</span>
-      <ul>
-        <li><a href="https://github.com/ruvnet/claude-flow" target="_blank" rel="noopener">github.com/ruvnet/claude-flow</a> — メインリポジトリ（README のバッジ・スター参照先）</li>
-        <li>Claude Code マーケットプレイス識別子 <code>ruvnet/ruflo</code>（<code>/plugin marketplace add</code> の引数）</li>
-        <li><a href="https://flo.ruv.io/" target="_blank" rel="noopener">flo.ruv.io</a> — Web UI ベータ</li>
-      </ul>
+      <span class="ve-section-label"><span class="ve-dot"></span> 公開ソース</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>参照先</th>
+              <th>内容</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://github.com/ruvnet/claude-flow" target="_blank" rel="noopener">ruvnet/claude-flow</a></td>
+              <td>メインリポジトリ（README、バッジ、プラグイン一覧の一次情報）。</td>
+            </tr>
+            <tr>
+              <td><code>ruvnet/ruflo</code></td>
+              <td>Claude Code マーケットプレイス ID（<code>/plugin marketplace add</code> の引数）。</td>
+            </tr>
+            <tr>
+              <td><a href="https://flo.ruv.io/" target="_blank" rel="noopener">flo.ruv.io</a></td>
+              <td>Web UI ベータ（README バッジより）。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <p style="margin-top:1rem;margin-bottom:0"><small>解説は公開 README とスキャン要約に基づく。バージョンやプラグイン一覧は上流の変更に追随しうる。</small></p>
     </div>
   </div>
@@ -382,21 +413,7 @@
 })();
 </script>
 <script>
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'base',
-    securityLevel: 'strict',
-    themeVariables: {
-      primaryColor: '#e8f4f8',
-      primaryTextColor: '#0f172a',
-      primaryBorderColor: '#7dd3c0',
-      lineColor: '#0d9488',
-      secondaryColor: '#ccfbf1',
-      tertiaryColor: '#f0fdfa',
-      fontFamily: 'Fragment Mono, monospace',
-      fontSize: '13px'
-    }
-  });
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'strict' });
 </script>
 </body>
 </html>
