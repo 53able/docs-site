@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ruflo — Claude Code 向けマルチエージェント基盤</title>
-  <meta name="description" content="Ruflo（旧 Claude Flow）は Claude Code 用のマルチエージェント・オーケストレーション。スウォーム、学習メモリ、連邦通信、Rust/WASM カーネルとプラグイン群の全体像。">
+  <meta name="description" content="Ruflo（旧 Claude Flow）は Claude Code に協調層を足す OSS。単発エージェントの摩擦（分担・記憶・連携・観測）をスウォーム・ベクトル記憶・連邦・WASM で下支えする全体像。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
@@ -225,6 +225,7 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
+    <a href="#problem">狙い</a>
     <a href="#stack">データの流れ</a>
     <a href="#plugins">プラグイン</a>
     <a href="#install">クイックスタート</a>
@@ -234,7 +235,7 @@
 
   <div class="main">
     <h1>Ruflo</h1>
-    <p class="subtitle"><a href="https://github.com/ruvnet/claude-flow" target="_blank" rel="noopener">ruvnet/claude-flow</a>（Ruflo / 旧 Claude Flow）。Claude Code 向けマルチエージェント・オーケストレーション。スウォーム、セッション横断メモリ、連邦通信、Rust/WASM カーネルを README と公開ツリーから要約したビジュアル解説。</p>
+    <p class="subtitle"><a href="https://github.com/ruvnet/claude-flow" target="_blank" rel="noopener">ruvnet/claude-flow</a>（Ruflo / 旧 Claude Flow）。<strong>Claude Code のエージェントを「単発で動かす」から「チームとして回す」へ近づける</strong>ためのオーケストレーション層。README と公開ツリーから要約したビジュアル解説。</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="kpi-row">
@@ -243,10 +244,16 @@
       <div class="ve-kpi-card" style="--i:2"><div class="ve-kpi-card__value">WASM</div><div class="ve-kpi-card__label">Rust カーネル</div></div>
       <div class="ve-kpi-card" style="--i:3"><div class="ve-kpi-card__value">Federation</div><div class="ve-kpi-card__label">マシン横断</div></div>
     </div>
+    <div class="ve-card ve-card--elevated" id="problem" style="--i:0;margin-bottom:1.25rem">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何のためか（README の問題意識に沿って）</span>
+      <p><strong>Claude Code 単体だと起きやすいこと。</strong>対話はできるが、複数エージェントの<strong>分担・合意・再開</strong>は人間かプロンプト任せになりがち。セッションをまたいだ<strong>記憶の再利用</strong>、別マシン／別チームとの<strong>安全な連携</strong>、セキュリティ・コスト・観測を<strong>同じ枠</strong>で扱う、といった「運用の神経」は薄くなりやすい。</p>
+      <p><strong>Ruflo が足すもの（一言で）。</strong>エージェントを<strong>ルータとスウォーム</strong>で束ね、<strong>ベクトル記憶と学習ループ</strong>で「うまくいったやり方」を残し、必要なら<strong>連邦</strong>で信頼境界をまたいで協調し、ポリシー・埋め込み・証明系は<strong>Rust/WASM</strong>側に寄せる——という<strong>協調用の下回り</strong>。あなたはコードを書き続け、裏でルーティングと調整が走る、という README の約束に近い。</p>
+      <p style="margin-bottom:0"><small>万能の「自律 AGI」ではなく、<strong>エンジニアリングワークを複数エージェントで回すときの摩擦</strong>を減らすスタック、と読むと理解しやすい。</small></p>
+    </div>
     <div class="hero-grid">
       <div class="ve-card ve-card--hero hero-copy" style="--i:0">
         <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
-        <p><strong>Ruflo</strong>（旧称 <strong>Claude Flow</strong>）は、<a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a> に「神経系」を足す OSS スタック。エージェントのスウォーム化、タスクからの学習、セッションをまたいだ記憶、他ホストのエージェントとの安全な連携までをプラグインとフックで束ねる。</p>
+        <p><strong>Ruflo</strong>（旧称 <strong>Claude Flow</strong>）は、上の「協調用の下回り」を <a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a> に載せる OSS スタック。具体的にはスウォーム、学習、セッション横断の記憶、連邦、各種プラグインを<strong>フック</strong>で束ねる。</p>
         <p>ポリシー・埋め込み・証明系などは <strong>Rust で書かれた WASM カーネル</strong>が担当する、という位置づけが README で強調されている。<code>init</code> 後は通常どおり Claude Code でコードを書き、<strong>フック</strong>がタスクのルーティング・成功パターンからの学習・エージェント調整をバックグラウンドで担う、と説明されている（README では多数の MCP/CLI を逐一覚えなくてよい、という導線）。</p>
       </div>
       <div class="stack-sheet" style="--i:1">
