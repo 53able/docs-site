@@ -3,55 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claude-Mem — Claude Code / Gemini CLI 向け永続メモリ圧縮</title>
-  <meta name="description" content="Claude Code / Gemini CLI のセッションをまたいでコンテキストを保持するプラグイン。ツール利用の観察を圧縮・要約し、将来のセッションに注入する。">
+  <title>Claude-Mem — Claude Code 向け永続メモリ圧縮</title>
+  <meta name="description" content="thedotmack/claude-mem はツール観察を圧縮・要約し、SQLite と Chroma でハイブリッド検索。Worker とライフサイクルフックでセッションをまたいでコンテキストを注入する。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Claude-Mem — Claude Code / Gemini CLI 向け永続メモリ圧縮">
-  <meta property="og:description" content="Claude Code / Gemini CLI のセッションをまたいでコンテキストを保持するプラグイン。ツール利用の観察を圧縮・要約し、将来のセッションに注入する。">
+  <meta property="og:title" content="Claude-Mem — Claude Code 向け永続メモリ圧縮">
+  <meta property="og:description" content="ライフサイクルフック、Worker（37777）、SQLite、Chroma、MCP 検索の流れを一枚で把握する Claude-Mem の技術概要。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/claude-mem.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Claude-Mem — Claude Code / Gemini CLI 向け永続メモリ圧縮">
-  <meta name="twitter:description" content="Claude Code / Gemini CLI のセッションをまたいでコンテキストを保持するプラグイン。ツール利用の観察を圧縮・要約し、将来のセッションに注入する。">
+  <meta name="twitter:title" content="Claude-Mem — Claude Code 向け永続メモリ圧縮">
+  <meta name="twitter:description" content="セッション横断のメモリ圧縮とハイブリッド検索の全体像。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Azeret+Mono:ital,wght@0,400;0,500;0,600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <style>
-    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    /* ============ THEME (Spell UI + amber / warm slate) ============ */
     :root {
       --radius: 0.625rem;
       --radius-sm: calc(var(--radius) - 4px);
       --radius-md: calc(var(--radius) - 2px);
       --radius-lg: var(--radius);
-      --background: oklch(1 0 0);
-      --foreground: oklch(0.145 0 0);
-      --card: oklch(1 0 0);
-      --card-foreground: oklch(0.145 0 0);
-      --popover: oklch(1 0 0);
-      --popover-foreground: oklch(0.145 0 0);
-      --primary: oklch(0.205 0 0);
-      --primary-foreground: oklch(0.985 0 0);
-      --secondary: oklch(0.97 0 0);
-      --secondary-foreground: oklch(0.205 0 0);
-      --muted: oklch(0.97 0 0);
-      --muted-foreground: oklch(0.556 0 0);
-      --accent: oklch(0.97 0 0);
-      --accent-foreground: oklch(0.205 0 0);
-      --destructive: oklch(0.577 0.245 27.325);
-      --border: oklch(0.922 0 0);
-      --input: oklch(0.922 0 0);
-      --ring: oklch(0.708 0 0);
-      --chart-1: oklch(0.646 0.222 41.116);
-      --chart-2: oklch(0.6 0.118 184.704);
-      --chart-3: oklch(0.398 0.07 227.392);
-      --chart-4: oklch(0.828 0.189 84.429);
-      --chart-5: oklch(0.769 0.188 70.08);
-      --code-bg: var(--muted);
-      --code-text: #032f62;
-      --font-body: 'DM Sans', system-ui, sans-serif;
-      --font-mono: 'Fira Code', 'SF Mono', Consolas, monospace;
+      --background: oklch(0.985 0.01 85);
+      --foreground: oklch(0.22 0.04 55);
+      --card: oklch(0.997 0.006 85);
+      --card-foreground: oklch(0.22 0.04 55);
+      --popover: oklch(0.997 0.006 85);
+      --popover-foreground: oklch(0.22 0.04 55);
+      --primary: oklch(0.38 0.09 55);
+      --primary-foreground: oklch(0.98 0.01 85);
+      --secondary: oklch(0.94 0.02 75);
+      --secondary-foreground: oklch(0.26 0.05 55);
+      --muted: oklch(0.93 0.02 80);
+      --muted-foreground: oklch(0.44 0.04 55);
+      --accent: oklch(0.92 0.03 70);
+      --accent-foreground: oklch(0.24 0.06 50);
+      --destructive: oklch(0.52 0.18 25);
+      --border: oklch(0.86 0.03 80);
+      --input: oklch(0.86 0.03 80);
+      --ring: oklch(0.55 0.14 55);
+      --chart-1: oklch(0.58 0.14 55);
+      --chart-2: oklch(0.52 0.12 200);
+      --chart-3: oklch(0.48 0.09 160);
+      --chart-4: oklch(0.62 0.12 35);
+      --chart-5: oklch(0.42 0.08 280);
+      --code-bg: oklch(0.18 0.04 55);
+      --code-text: oklch(0.9 0.04 85);
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
       --bg: var(--background);
       --surface: var(--card);
       --surface2: var(--muted);
@@ -60,88 +61,84 @@
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --background: oklch(0.1149 0 0);
-        --foreground: oklch(0.985 0 0);
-        --card: oklch(0.205 0 0);
-        --card-foreground: oklch(0.985 0 0);
-        --popover: oklch(0.205 0 0);
-        --popover-foreground: oklch(0.985 0 0);
-        --primary: oklch(0.922 0 0);
-        --primary-foreground: oklch(0.205 0 0);
-        --secondary: oklch(22.213% 0.00003 271.152);
-        --secondary-foreground: oklch(0.985 0 0);
-        --muted: oklch(0.269 0 0);
-        --muted-foreground: oklch(0.708 0 0);
-        --accent: oklch(0.269 0 0);
-        --accent-foreground: oklch(0.985 0 0);
-        --destructive: oklch(0.704 0.191 22.216);
-        --border: oklch(1 0 0 / 10%);
-        --input: oklch(1 0 0 / 15%);
-        --ring: oklch(0.556 0 0);
-        --chart-1: oklch(0.488 0.243 264.376);
-        --chart-2: oklch(0.696 0.17 162.48);
-        --chart-3: oklch(0.769 0.188 70.08);
-        --chart-4: oklch(0.627 0.265 303.9);
-        --chart-5: oklch(0.645 0.246 16.439);
-        --code-bg: #0f0f0f;
-        --code-text: #9ecbff;
-        --bg: var(--background);
-        --surface: var(--card);
-        --surface2: var(--muted);
-        --text: var(--foreground);
-        --text-dim: var(--muted-foreground);
+        --background: oklch(0.15 0.03 55);
+        --foreground: oklch(0.94 0.02 85);
+        --card: oklch(0.2 0.035 55);
+        --card-foreground: oklch(0.94 0.02 85);
+        --popover: oklch(0.2 0.035 55);
+        --popover-foreground: oklch(0.94 0.02 85);
+        --primary: oklch(0.82 0.12 70);
+        --primary-foreground: oklch(0.15 0.03 55);
+        --secondary: oklch(0.26 0.04 55);
+        --secondary-foreground: oklch(0.94 0.02 85);
+        --muted: oklch(0.28 0.04 55);
+        --muted-foreground: oklch(0.74 0.03 80);
+        --accent: oklch(0.26 0.045 55);
+        --accent-foreground: oklch(0.94 0.02 85);
+        --destructive: oklch(0.65 0.16 25);
+        --border: oklch(0.42 0.05 55 / 55%);
+        --input: oklch(0.42 0.05 55 / 55%);
+        --ring: oklch(0.78 0.14 65);
+        --chart-1: oklch(0.78 0.14 65);
+        --chart-2: oklch(0.68 0.12 200);
+        --chart-3: oklch(0.65 0.1 160);
+        --chart-4: oklch(0.72 0.12 40);
+        --chart-5: oklch(0.62 0.08 280);
+        --code-bg: oklch(0.12 0.035 55);
+        --code-text: oklch(0.88 0.04 85);
       }
     }
 
     /* ============ Spell UI static ============ */
     .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
-    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
-    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 12px 28px rgba(62, 42, 8, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(62, 42, 8, 0.06); }
     .ve-card--hero {
-      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+      box-shadow: 0 20px 44px rgba(62, 42, 8, 0.1);
+      border-color: color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%);
     }
     @media (prefers-color-scheme: dark) {
       .ve-card--hero {
-        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
-        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+        background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+        box-shadow: 0 20px 44px rgba(0, 0, 0, 0.28);
       }
     }
-    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 1rem; color: var(--muted-foreground); }
     .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
-    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
-    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
-    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.95rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.72; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
-    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
-    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
-    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
-    .ve-table-wrap tbody tr:hover { background: var(--border); }
-    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
-    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
-    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
-    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.875rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 68%, var(--card) 32%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(62, 42, 8, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.05rem; line-height: 1.2; color: var(--foreground); }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-4); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.65; color: var(--muted-foreground); }
     .ve-callout strong { color: var(--foreground); font-weight: 600; }
-    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.75rem; background: color-mix(in oklch, var(--chart-4) 14%, transparent); color: var(--foreground); padding: 1px 5px; border-radius: var(--radius-sm); }
 
-    /* ============ Reset + base ============ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: var(--bg);
-      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.646 0.222 41.116 / 0.06) 0%, transparent 50%);
+      background-image:
+        linear-gradient(90deg, color-mix(in oklch, var(--border) 32%, transparent) 1px, transparent 1px),
+        linear-gradient(180deg, color-mix(in oklch, var(--border) 26%, transparent) 1px, transparent 1px),
+        radial-gradient(ellipse at 10% 0%, color-mix(in oklch, var(--chart-1) 12%, transparent) 0%, transparent 42%),
+        radial-gradient(ellipse at 92% 6%, color-mix(in oklch, var(--chart-4) 10%, transparent) 0%, transparent 38%);
+      background-size: 28px 28px, 28px 28px, auto, auto;
       color: var(--text);
       font-family: var(--font-body);
       padding: 40px;
       min-height: 100vh;
     }
-    @media (prefers-color-scheme: dark) {
-      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.488 0.243 264.376 / 0.08) 0%, transparent 50%); }
-    }
-
-    /* ============ Wrap + TOC (responsive nav) ============ */
     .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
-    .main { min-width: 0; max-width: 72rem; }
+    .main { min-width: 0; max-width: 74rem; }
     .toc {
       position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
       max-height: calc(100dvh - 48px); overflow-y: auto;
@@ -149,7 +146,7 @@
     .toc::-webkit-scrollbar { width: 3px; }
     .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
     .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
-    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
     .toc a:hover { color: var(--text); background: var(--surface2); }
     .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
     @media (max-width: 1000px) {
@@ -168,28 +165,59 @@
       .sec-head { scroll-margin-top: 52px; }
     }
 
-    /* ============ Typography ============ */
-    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
-    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
-    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    h1 { font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 700; letter-spacing: -0.04em; line-height: 1.05; margin-bottom: 0.85rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.875rem; margin-bottom: 2rem; line-height: 1.55; max-width: 52rem; }
+    .sec-head { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.04em; }
     .sec-head:first-of-type { margin-top: 0; }
-    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
-    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
-    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
-    li { margin-bottom: 0.35rem; }
-    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
-    a:hover { color: var(--chart-3); }
-    .ve-section-label .ve-dot { background: var(--chart-1); }
-    .ve-code-block { margin: 1rem 0; }
+    h2, h3 { font-weight: 600; letter-spacing: -0.02em; }
+    h3 { font-size: 1.2rem; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 1.02rem; line-height: 1.72; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.35rem; }
+    li { margin-bottom: 0.4rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
+    a:hover { color: var(--chart-4); }
     code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    small { color: var(--muted-foreground); font-size: 0.8rem; line-height: 1.5; }
+    strong { font-weight: 600; }
 
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr); gap: 1rem; align-items: stretch; margin-bottom: 1.25rem; }
+    .hero-copy { padding: 2rem; }
+    .hero-copy p { font-size: 1.08rem; }
+    .stack-sheet {
+      min-height: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(165deg, color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%), var(--card));
+      padding: 1.35rem;
+      display: grid;
+      gap: 0.65rem;
+      align-content: start;
+    }
+    .stack-line { min-height: 36px; border-radius: var(--radius-md); border: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 70%, var(--card) 30%); padding: 0.65rem 0.75rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted-foreground); }
+    .stack-line strong { color: var(--foreground); font-weight: 700; }
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
-    .kpi-row .ve-kpi-card { min-width: 0; }
-    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+    .pkg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .pkg-card { min-width: 0; border-top: 3px solid var(--chart-1); }
+    .pkg-card:nth-child(2) { border-top-color: var(--chart-2); }
+    .pkg-card:nth-child(3) { border-top-color: var(--chart-3); }
+    .pkg-card:nth-child(4) { border-top-color: var(--chart-4); }
+    .pkg-title { font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; margin-bottom: 0.45rem; }
+    .pkg-body { color: var(--muted-foreground); font-size: 0.92rem; line-height: 1.58; margin: 0; }
+    .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; padding: 1rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+    .mermaid-wrap svg { max-width: 100%; }
+    .code-label { border-bottom: 1px solid color-mix(in oklch, var(--border) 70%, transparent); color: var(--muted-foreground); font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; padding: 0.7rem 1rem 0.5rem; text-transform: uppercase; }
+    @media (max-width: 900px) {
+      .hero-grid, .pkg-grid { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .kpi-row { grid-template-columns: 1fr; }
+      .hero-copy { padding: 1.35rem; }
+    }
 
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; } }
   </style>
 </head>
 <body>
@@ -197,145 +225,204 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
-    <a href="#architecture">アーキテクチャ</a>
-    <a href="#usage">インストール</a>
+    <a href="#architecture">構成要素</a>
+    <a href="#pipeline">データの流れ</a>
+    <a href="#install">インストール</a>
     <a href="#mcp-search">MCP 検索</a>
-    <a href="#extras">引用・ベータなど</a>
-    <a href="#config-links">設定・参考リンク</a>
+    <a href="#extras">引用・ベータ・要件</a>
+    <a href="#maintain">メンテナンス</a>
+    <a href="#references">参照</a>
   </nav>
 
   <div class="main">
-  <h1>Claude-Mem</h1>
-  <p class="subtitle">Claude Code / Gemini CLI 向けの永続メモリ圧縮。セッションをまたいでコンテキストを保持し、ツール利用の観察を要約して将来のセッションに注入する。</p>
+    <h1>Claude-Mem</h1>
+    <p class="subtitle">thedotmack/claude-mem — ツール観察を圧縮し、SQLite と Chroma でハイブリッド検索。Worker とライフサイクルフックでセッションをまたいでコンテキストを注入する OSS</p>
 
-  <section id="overview" class="sec-head">1 — 概要</section>
-  <div class="ve-card ve-card--elevated" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-    <p><strong>Claude-Mem</strong> は <a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a> や <a href="https://docs.claude-mem.ai/gemini-cli/setup" target="_blank" rel="noopener">Gemini CLI</a> 向けのプラグインで、セッション終了や再接続後もプロジェクトの知識を継続させる。ツール使用の観察を自動で取り込み、セマンティック要約を生成し、SQLite と Chroma によるハイブリッド検索で保持。新しいセッション開始時に関連コンテキストを注入する。</p>
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="hero-grid">
+      <div class="ve-card ve-card--hero hero-copy" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 何を解決するか</span>
+        <p><strong>Claude-Mem</strong> は <a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a>、<a href="https://docs.claude-mem.ai/gemini-cli/setup" target="_blank" rel="noopener">Gemini CLI</a>、OpenCode（<code>--ide opencode</code>）など向けに、セッションをまたいでプロジェクトの文脈を保持する。</p>
+        <p>ツール実行の観察を取り込み、セマンティック要約を生成。<strong>SQLite</strong> と <strong>Chroma</strong> によるハイブリッド検索で保持し、新しいセッション開始時に関連コンテキストを注入する。トークン効率のため <strong>Progressive Disclosure</strong>（段階的に詳細を取りに行く）が設計の軸になる。</p>
+      </div>
+      <div class="stack-sheet" style="--i:1">
+        <div class="stack-line"><strong>5 + Smart Install</strong><br>SessionStart → UserPromptSubmit → PostToolUse → Stop → SessionEnd（+ 依存キャッシュ用プリフック）</div>
+        <div class="stack-line"><strong>Worker :37777</strong><br>HTTP API・Web Viewer・検索エンドポイント（Bun で管理）</div>
+        <div class="stack-line"><strong>SQLite + Chroma</strong><br>永続ストアとベクトル検索の二層</div>
+        <div class="stack-line"><strong>mem-search Skill</strong><br>自然言語で履歴を問い合わせるプラグインスキル</div>
+      </div>
+    </div>
+
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">12.1</span><span class="ve-kpi-card__label">npm バージョン（例）</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">5+1</span><span class="ve-kpi-card__label">ライフサイクル + Smart Install</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">37777</span><span class="ve-kpi-card__label">Worker ポート</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">SQLite</span><span class="ve-kpi-card__label">+ Chroma</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">12.5.0</span><span class="ve-kpi-card__label">npm パッケージ版（公開 manifest）</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">AGPL-3.0</span><span class="ve-kpi-card__label">ライセンス</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">37777</span><span class="ve-kpi-card__label">既定 Worker ポート</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node 18+</span><span class="ve-kpi-card__label">ランタイム要件</span></div>
     </div>
-    <p>主な機能: 永続メモリ、Progressive Disclosure、mem-search スキル、Web Viewer（<code>localhost:37777</code>）、<strong>Claude Desktop</strong> からの検索スキル、<code>&lt;private&gt;</code> タグ、観察 ID による<strong>引用</strong>、コンテキスト注入の細かい設定、<strong>ベータチャンネル</strong>（Endless Mode など）。</p>
-  </div>
 
-  <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 構成要素</span>
-    <p>5 つのライフサイクルフックでセッションイベントにフックする: <strong>SessionStart</strong> → <strong>UserPromptSubmit</strong> → <strong>PostToolUse</strong> → <strong>Stop</strong> → <strong>SessionEnd</strong>。あわせて依存関係チェック用の <strong>Smart Install</strong>（プリフック、ライフサイクル外）があり、フックスクリプトは README では計 6 本と説明される。ビルド成果物は <code>plugin/scripts/</code> 配下に配置される。</p>
-    <div class="ve-table-wrap">
-      <table>
-        <thead>
-          <tr><th>コンポーネント</th><th>説明</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Worker Service</td><td>HTTP API がポート 37777（デフォルト）で待ち受け、Web Viewer と検索系エンドポイント（README では 10 本の検索系）を提供。Bun で管理・起動。</td></tr>
-          <tr><td>Database</td><td><code>src/services/sqlite/</code>。SQLite3 で <code>~/.claude-mem/claude-mem.db</code>。セッション・観察・要約を保存。</td></tr>
-          <tr><td>Chroma</td><td><code>src/services/sync/ChromaSync.ts</code>。ベクトル埋め込みでセマンティック検索。</td></tr>
-          <tr><td>Viewer UI</td><td><code>src/ui/viewer/</code>。React の Web UI。http://localhost:37777 で表示。ビルド成果は <code>plugin/ui/viewer.html</code>。</td></tr>
-          <tr><td>mem-search Skill</td><td><code>plugin/skills/mem-search/SKILL.md</code>。過去作業の検索用 HTTP API。履歴に関する質問で自動起動。</td></tr>
-        </tbody>
-      </table>
+    <section id="architecture" class="sec-head">2 — 構成要素</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> レイヤー</span>
+      <p>公式 README が示すコアは「フックで観察を拾う → Worker が処理・検索を提供 → DB とベクトルに載せる → 次セッションで注入」という一本線。ビルド済みフックは <code>plugin/scripts/</code> に置かれ、各 IDE 向けインストーラが配置する。</p>
+      <div class="pkg-grid">
+        <div class="ve-card ve-card--recessed pkg-card" style="--i:1">
+          <div class="pkg-title">Lifecycle Hooks</div>
+          <p class="pkg-body">Claude Code のセッションイベントに接続。Smart Install はライフサイクル外の依存プリチェック。</p>
+        </div>
+        <div class="ve-card ve-card--recessed pkg-card" style="--i:2">
+          <div class="pkg-title">Worker Service</div>
+          <p class="pkg-body">既定ポート 37777。Web Viewer、検索系 HTTP、SSE など。README では検索系エンドポイントが 10 本と説明される。</p>
+        </div>
+        <div class="ve-card ve-card--recessed pkg-card" style="--i:3">
+          <div class="pkg-title">SQLite</div>
+          <p class="pkg-body">セッション・観察・要約を <code>~/.claude-mem/claude-mem.db</code> に保存。スキーマ詳細は公式 Architecture の Database 章へ。</p>
+        </div>
+        <div class="ve-card ve-card--recessed pkg-card" style="--i:4">
+          <div class="pkg-title">Chroma + Skills</div>
+          <p class="pkg-body">ベクトル同期とハイブリッド検索。<code>plugin/skills/mem-search/</code> などから HTTP API を叩く。</p>
+        </div>
+      </div>
     </div>
-  </div>
-  <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> プライバシー</span>
-    <p><code>&lt;private&gt;content&lt;/private&gt;</code> でユーザーが指定した範囲は保存されない。タグの除去はフック層（<code>src/utils/tag-stripping.ts</code>）で行い、Worker や DB に渡る前に処理する。</p>
-  </div>
+    <div class="ve-card ve-card--elevated" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> プライバシー</span>
+      <p><code>&lt;private&gt;…&lt;/private&gt;</code> で囲んだ範囲は保存対象外。タグ除去はフック層（例: <code>src/utils/tag-stripping.ts</code>）で行い、Worker や DB に渡す前に処理する想定だ。</p>
+    </div>
 
-  <section id="usage" class="sec-head">3 — インストールと使い方</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 推奨（npx）</span>
-    <p>ターミナルで次を実行すると、フック・Worker・依存関係のセットアップまで一括で行える:</p>
-    <div class="ve-code-block">
-      <pre><code>npx claude-mem install</code></pre>
+    <section id="pipeline" class="sec-head">3 — データの流れ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 観察から注入まで</span>
+      <p>セッション中にフックが観察をキューへ載せ、Worker が要約・インデックス・ベクトル同期を担当。新セッションでは <code>SessionStart</code> やコンテキスト注入設定に従い、関連チャンクだけがプロンプトへ差し込まれる。</p>
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+flowchart LR
+  subgraph capture["取り込み"]
+    A["IDE / CLI"] --> B["Lifecycle Hooks"]
+    B --> C["Observation Queue"]
+  end
+  subgraph process["処理"]
+    C --> D["Worker HTTP"]
+    D --> E["Summarize / Index"]
+  end
+  subgraph store["永続化"]
+    E --> F[("SQLite")]
+    E --> G[("Chroma")]
+  end
+  subgraph inject["再利用"]
+    F --> H["Context Injection"]
+    G --> H
+    H --> A
+  end
+        </div>
+      </div>
+      <div class="ve-callout">
+        <strong>MCP 経路</strong> — エージェントは MCP ツールでメモリを検索し、3 層ワークフローでトークンを抑える。詳細は公式 <a href="https://docs.claude-mem.ai/usage/search-tools" target="_blank" rel="noopener">Search Tools</a>。
+      </div>
     </div>
-    <p>Gemini CLI 向け（<code>~/.gemini</code> を自動検出）:</p>
-    <div class="ve-code-block">
-      <pre><code>npx claude-mem install --ide gemini-cli</code></pre>
+
+    <section id="install" class="sec-head">4 — インストール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 推奨コマンド</span>
+      <p><code>npx claude-mem install</code> がフック・Worker・依存関係まで一括セットアップする。グローバル <code>npm install -g claude-mem</code> は <strong>SDK のみ</strong>でフック登録はされない点に注意。</p>
+      <div class="ve-code-block">
+        <div class="code-label">Claude Code / 既定</div>
+        <pre><code>npx claude-mem install</code></pre>
+      </div>
+      <div class="ve-code-block">
+        <div class="code-label">Gemini CLI</div>
+        <pre><code>npx claude-mem install --ide gemini-cli</code></pre>
+      </div>
+      <div class="ve-code-block">
+        <div class="code-label">OpenCode</div>
+        <pre><code>npx claude-mem install --ide opencode</code></pre>
+      </div>
     </div>
-    <p>Claude Code または Gemini CLI を再起動すると、前セッションのコンテキストが新しいセッションに自動で載る。</p>
-  </div>
-  <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> マーケットプレイス（Claude Code）</span>
-    <p>IDE 内からインストールする場合:</p>
-    <div class="ve-code-block">
-      <pre><code>/plugin marketplace add thedotmack/claude-mem
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> マーケットプレイス（Claude Code）</span>
+      <div class="ve-code-block">
+        <div class="code-label">plugin</div>
+        <pre><code>/plugin marketplace add thedotmack/claude-mem
 
 /plugin install claude-mem</code></pre>
+      </div>
     </div>
-  </div>
-  <div class="ve-callout" style="margin-top:1rem">
-    <strong>注意:</strong> <code>npm install -g claude-mem</code> は <strong>SDK / ライブラリのみ</strong>で、プラグインフックや Worker の登録は行われない。必ず <code>npx claude-mem install</code> か上記 <code>/plugin</code> 手順を使う。
-  </div>
-  <div class="ve-card ve-card--recessed" style="--i:2;margin-top:1rem">
-    <span class="ve-section-label"><span class="ve-dot"></span> OpenClaw</span>
-    <p><a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> ゲートウェイに永続メモリとして導入する場合:</p>
-    <div class="ve-code-block">
-      <pre><code>curl -fsSL https://install.cmem.ai/openclaw.sh | bash</code></pre>
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> OpenClaw Gateway</span>
+      <p><a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> ゲートウェイ向けワンライナー。詳細は <a href="https://docs.claude-mem.ai/openclaw-integration" target="_blank" rel="noopener">OpenClaw Integration</a>。</p>
+      <div class="ve-code-block">
+        <div class="code-label">shell</div>
+        <pre><code>curl -fsSL https://install.cmem.ai/openclaw.sh | bash</code></pre>
+      </div>
     </div>
-    <p>インストーラが依存関係・プラグイン・AI プロバイダ設定・Worker 起動などをまとめて行う。Telegram / Discord / Slack などへのリアルタイム観察フィードも任意で設定可能。詳細は <a href="https://docs.claude-mem.ai/openclaw-integration" target="_blank" rel="noopener">OpenClaw 連携ガイド</a>。</p>
-  </div>
 
-  <section id="mcp-search" class="sec-head">4 — MCP 検索</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 3 層ワークフロー（核）</span>
-    <p>トークン効率のため、<strong>search</strong> → <strong>timeline</strong> → <strong>get_observations</strong> の 3 段階で絞り込んでから詳細を取得する。MCP にはこの流れを強制する説明用ツール <code>__IMPORTANT</code> も登録されている。さらに <code>smart_search</code> / <code>smart_outline</code> / <code>smart_unfold</code>（コードベース探索）やコーパス構築系（<code>build_corpus</code> など）も追加されている。一覧と例は <a href="https://docs.claude-mem.ai/usage/search-tools" target="_blank" rel="noopener">Search Tools</a> を参照。</p>
-    <div class="ve-table-wrap">
+    <section id="mcp-search" class="sec-head">5 — MCP 検索（3 層）</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> トークン効率</span>
+      <p>公式 README のパターン: <strong>search</strong> でコンパクトなインデックスと ID → <strong>timeline</strong> で前後の時系列 → <strong>get_observations</strong> で必要 ID だけ全文取得。先に絞り込むことで詳細取得のトークンを大きく削る。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>層</th><th>ツール</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td><code>search</code></td><td>全文検索・フィルタ付きのインデックス（目安 50–100 トークン/件）</td></tr>
+            <tr><td>2</td><td><code>timeline</code></td><td>注目観察の前後コンテキスト</td></tr>
+            <tr><td>3</td><td><code>get_observations</code></td><td>ID 指定で詳細のみ（複数 ID をまとめて）。目安 500–1000 トークン/件</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><small>ツール集合の最新一覧や追加の <code>smart_*</code> 系は <a href="https://docs.claude-mem.ai/usage/search-tools" target="_blank" rel="noopener">Search Tools</a> を正とする。</small></p>
+    </div>
+
+    <section id="extras" class="sec-head">6 — 引用・ベータ・要件</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 引用と Viewer</span>
+      <p>観察には ID が付き、<code>http://localhost:37777/api/observation/{id}</code> や Web Viewer 上で参照できる。Claude Desktop から mem-search で辿る流れも README で案内されている。</p>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> ベータチャンネル</span>
+      <p>Viewer の Settings から安定版とベータを切り替え可能。Endless Mode などは <a href="https://docs.claude-mem.ai/beta-features" target="_blank" rel="noopener">Beta Features</a> を参照。</p>
+    </div>
+    <div class="ve-table-wrap" style="margin-top:1rem">
       <table>
         <thead>
-          <tr><th>レイヤー</th><th>ツール</th><th>役割</th></tr>
+          <tr><th>要件</th><th>メモ</th></tr>
         </thead>
         <tbody>
-          <tr><td>1</td><td><code>search</code></td><td>コンパクトなインデックスと ID を取得（結果あたり約 50–100 トークン）</td></tr>
-          <tr><td>2</td><td><code>timeline</code></td><td>気になる結果の前後の時系列コンテキストを取得</td></tr>
-          <tr><td>3</td><td><code>get_observations</code></td><td>フィルタした ID の観察の詳細のみ取得（結果あたり約 500–1000 トークン）。複数 ID はまとめて指定する。</td></tr>
+          <tr><td>Node.js</td><td>18.0.0 以上</td></tr>
+          <tr><td>Claude Code</td><td>プラグイン対応の最新版</td></tr>
+          <tr><td>Bun</td><td>未導入時は自動インストール</td></tr>
+          <tr><td>uv</td><td>ベクトル用 Python パッケージ管理。未導入時は自動インストール</td></tr>
+          <tr><td>SQLite 3</td><td>バンドル済み（README 記載）</td></tr>
         </tbody>
       </table>
     </div>
-    <p>最初に <code>search</code> でインデックスを取り、必要な ID を選んでから <code>get_observations</code> で詳細を取ることで、トークンが約 10 倍節約できる。</p>
-  </div>
 
-  <section id="extras" class="sec-head">5 — 引用・ベータ・要件</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 引用と Desktop</span>
-    <p>過去の観察を ID で参照できる。<code>http://localhost:37777/api/observation/{id}</code> や Web Viewer 上で確認可能。Claude Desktop の会話から mem-search スキルでメモリを検索する流れも README で案内されている。</p>
-  </div>
-  <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> ベータチャンネル</span>
-    <p>Web Viewer（<code>localhost:37777</code>）の Settings から安定版とベータを切り替え可能。Endless Mode など実験機能の詳細は <a href="https://docs.claude-mem.ai/beta-features" target="_blank" rel="noopener">Beta Features</a>。</p>
-  </div>
-  <div class="ve-table-wrap" style="margin-top:1rem">
-    <table>
-      <thead>
-        <tr><th>要件</th><th>メモ</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Node.js</td><td>18.0.0 以上（README 記載）</td></tr>
-        <tr><td>Claude Code</td><td>プラグイン対応の最新版</td></tr>
-        <tr><td>Bun</td><td>未導入時は自動インストール</td></tr>
-        <tr><td>uv</td><td>ベクトル検索用 Python パッケージ管理。未導入時は自動インストール</td></tr>
-        <tr><td>SQLite 3</td><td>バンドル済み（README 記載）</td></tr>
-      </tbody>
-    </table>
-  </div>
+    <section id="maintain" class="sec-head">7 — メンテナンス</section>
+    <div class="ve-card ve-card--recessed" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> docs-site での更新</span>
+      <p>本 HTML を直したら、リポジトリルートで <code>npx tsx scripts/visual-doc-workflow.ts validate --doc claude-mem</code> を実行する。公開ページにはローカル絶対パスやクローン作業用のディレクトリ名を書かない。</p>
+      <p><strong>ソースの読み順（JiT）</strong>: ディレクトリ構成 → <code>README.md</code> → 公式 Mintlify → 必要なら <code>src/services/sqlite/</code>・<code>src/services/worker/</code>・<code>plugin/</code> へ。</p>
+    </div>
 
-  <section id="config-links" class="sec-head">6 — 設定・参考リンク</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 設定</span>
-    <p>設定は <code>~/.claude-mem/settings.json</code>。初回起動時にデフォルトで自動作成される。AI モデル、Worker ポート、データディレクトリ、ログレベル、コンテキスト注入の細かいオプションを変更できる。環境変数を含む完全な一覧は <a href="https://docs.claude-mem.ai/configuration" target="_blank" rel="noopener">Configuration</a>。</p>
-  </div>
-  <div class="ve-card" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> 参考</span>
-    <ul>
-      <li><a href="https://docs.claude-mem.ai/" target="_blank" rel="noopener">公式ドキュメント（Mintlify）</a></li>
-      <li><a href="https://docs.claude-mem.ai/troubleshooting" target="_blank" rel="noopener">トラブルシューティング</a></li>
-      <li><a href="https://github.com/thedotmack/claude-mem" target="_blank" rel="noopener">GitHub: thedotmack/claude-mem</a></li>
-      <li>Viewer: <a href="http://localhost:37777" target="_blank" rel="noopener">http://localhost:37777</a>（Worker 起動後）</li>
-    </ul>
-  </div>
+    <section id="references" class="sec-head">8 — 参照</section>
+    <div class="ve-card ve-card--recessed" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公開ソース</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>参照先</th><th>内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><a href="https://github.com/thedotmack/claude-mem" target="_blank" rel="noopener">thedotmack/claude-mem</a></td><td>リポジトリ、Issue、リリース</td></tr>
+            <tr><td><a href="https://docs.claude-mem.ai/" target="_blank" rel="noopener">docs.claude-mem.ai</a></td><td>公式ドキュメント（Mintlify）</td></tr>
+            <tr><td><a href="https://docs.claude-mem.ai/installation" target="_blank" rel="noopener">Installation</a></td><td>詳細インストール手順</td></tr>
+            <tr><td><a href="https://docs.claude-mem.ai/troubleshooting" target="_blank" rel="noopener">Troubleshooting</a></td><td>よくある不具合</td></tr>
+            <tr><td><a href="http://localhost:37777" target="_blank" rel="noopener">http://localhost:37777</a></td><td>Web Viewer（Worker 起動後のみ有効）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:1rem;margin-bottom:0"><small>このビジュアルページは公開 README と公式ドキュメントを要約したもの。機密値やマシン固有のパスは載せていない。</small></p>
+    </div>
   </div>
 </div>
 
@@ -365,6 +452,9 @@
   window.addEventListener('scroll', updateActive, { passive: true });
   updateActive();
 })();
+</script>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'strict' });
 </script>
 </body>
 </html>

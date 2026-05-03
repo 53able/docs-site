@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claude Context — 意味検索でコードベースをエージェントのコンテキストへ</title>
-  <meta name="description" content="zilliztech/claude-context は MCP サーバーと core ライブラリで、リポジトリをベクトル化し Claude Code などのエージェントに意味検索コンテキストを渡すモノレポ。構成・データの流れ・導入手順を整理する。">
+  <title>Ruflo — Claude Code 向けマルチエージェント基盤</title>
+  <meta name="description" content="Ruflo（旧 Claude Flow）は Claude Code に協調層を足す OSS。単発エージェントの摩擦（分担・記憶・連携・観測）をスウォーム・ベクトル記憶・連邦・WASM で下支えする全体像。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Claude Context — 意味検索でコードベースをエージェントのコンテキストへ">
-  <meta property="og:description" content="MCP、@zilliz/claude-context-core、IDE 拡張でコードをインデックスし、セマンティック検索でエージェントへ供給する Claude Context の技術概要。">
-  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/claude-context.html">
+  <meta property="og:title" content="Ruflo — Claude Code 向けマルチエージェント基盤">
+  <meta property="og:description" content="スウォーム、メモリ、連邦、セキュリティ。README 掲載の 32 ネイティブ Claude Code プラグイン＋21 npm プラグインで Claude Code に神経系を足す OSS の技術概要。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/ruflo.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Claude Context — 意味検索でコードベースをエージェントのコンテキストへ">
-  <meta name="twitter:description" content="ベクトルDB、埋め込み、同期、MCP ツールの流れを一枚で把握できる解説。">
+  <meta name="twitter:title" content="Ruflo — Claude Code 向けマルチエージェント基盤">
+  <meta name="twitter:description" content="プラグイン、データフロー、クイックスタートとリポジトリ構成の要約。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Azeret+Mono:ital,wght@0,400;0,500;0,600&display=swap" rel="stylesheet">
@@ -225,153 +225,150 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
-    <a href="#architecture">モノレポ構成</a>
-    <a href="#pipeline">データの流れ</a>
-    <a href="#mcp-setup">MCP セットアップ</a>
-    <a href="#packages">パッケージと役割</a>
-    <a href="#clients">クライアント対応</a>
-    <a href="#references">参照</a>
-    <a href="#docs-site">本サイト連携</a>
+    <a href="#problem">狙い</a>
+    <a href="#stack">データの流れ</a>
+    <a href="#plugins">プラグイン</a>
+    <a href="#install">クイックスタート</a>
+    <a href="#layout">リポジトリ構成</a>
+    <a href="#refs">参照</a>
   </nav>
 
   <div class="main">
-    <h1>Claude Context</h1>
-    <p class="subtitle">zilliztech/claude-context — コードベースをベクトル化し、MCP 経由で意味検索コンテキストをコーディングエージェントへ渡す OSS</p>
+    <h1>Ruflo</h1>
+    <p class="subtitle"><a href="https://github.com/ruvnet/claude-flow" target="_blank" rel="noopener">ruvnet/claude-flow</a>（Ruflo / 旧 Claude Flow）。<strong>Claude Code のエージェントを「単発で動かす」から「チームとして回す」へ近づける</strong>ためのオーケストレーション層。README と公開ツリーから要約したビジュアル解説。</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="kpi-row">
+      <div class="ve-kpi-card" style="--i:0"><div class="ve-kpi-card__value">100+</div><div class="ve-kpi-card__label">specialized agents</div></div>
+      <div class="ve-kpi-card" style="--i:1"><div class="ve-kpi-card__value">32+21</div><div class="ve-kpi-card__label">plugins（native + npm）</div></div>
+      <div class="ve-kpi-card" style="--i:2"><div class="ve-kpi-card__value">WASM</div><div class="ve-kpi-card__label">Rust カーネル</div></div>
+      <div class="ve-kpi-card" style="--i:3"><div class="ve-kpi-card__value">Federation</div><div class="ve-kpi-card__label">マシン横断</div></div>
+    </div>
+    <div class="ve-card ve-card--elevated" id="problem" style="--i:0;margin-bottom:1.25rem">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何のためか（README の問題意識に沿って）</span>
+      <p><strong>Claude Code 単体だと起きやすいこと。</strong>対話はできるが、複数エージェントの<strong>分担・合意・再開</strong>は人間かプロンプト任せになりがち。セッションをまたいだ<strong>記憶の再利用</strong>、別マシン／別チームとの<strong>安全な連携</strong>、セキュリティ・コスト・観測を<strong>同じ枠</strong>で扱う、といった「運用の神経」は薄くなりやすい。</p>
+      <p><strong>Ruflo が足すもの（一言で）。</strong>エージェントを<strong>ルータとスウォーム</strong>で束ね、<strong>ベクトル記憶と学習ループ</strong>で「うまくいったやり方」を残し、必要なら<strong>連邦</strong>で信頼境界をまたいで協調し、ポリシー・埋め込み・証明系は<strong>Rust/WASM</strong>側に寄せる——という<strong>協調用の下回り</strong>。あなたはコードを書き続け、裏でルーティングと調整が走る、という README の約束に近い。</p>
+      <p style="margin-bottom:0"><small>万能の「自律 AGI」ではなく、<strong>エンジニアリングワークを複数エージェントで回すときの摩擦</strong>を減らすスタック、と読むと理解しやすい。</small></p>
+    </div>
     <div class="hero-grid">
       <div class="ve-card ve-card--hero hero-copy" style="--i:0">
-        <span class="ve-section-label"><span class="ve-dot"></span> 何を解決するか</span>
-        <p><strong>Claude Context</strong> は、巨大リポジトリでも「関連コードだけ」をセマンティック検索で取り出し、Claude Code やその他の MCP 対応エージェントのコンテキストに載せるための仕組みだ。</p>
-        <p>ディレクトリ丸ごと読み込む代わりに、<strong>分割・埋め込み・ベクトルストア</strong>に載せたあと、クエリに近いチャンクだけを返す。コストとトークンを抑えつつ、発見性を上げるのが狙い。</p>
+        <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
+        <p><strong>Ruflo</strong>（旧称 <strong>Claude Flow</strong>）は、上の「協調用の下回り」を <a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a> に載せる OSS スタック。具体的にはスウォーム、学習、セッション横断の記憶、連邦、各種プラグインを<strong>フック</strong>で束ねる。</p>
+        <p>ポリシー・埋め込み・証明系などは <strong>Rust で書かれた WASM カーネル</strong>が担当する、という位置づけが README で強調されている。<code>init</code> 後は通常どおり Claude Code でコードを書き、<strong>フック</strong>がタスクのルーティング・成功パターンからの学習・エージェント調整をバックグラウンドで担う、と説明されている（README では多数の MCP/CLI を逐一覚えなくてよい、という導線）。</p>
       </div>
       <div class="stack-sheet" style="--i:1">
-        <div class="stack-line"><strong>Model Context Protocol</strong><br>エージェントと外部ツールの標準接続</div>
-        <div class="stack-line"><strong>Milvus / Zilliz Cloud</strong><br>スケーラブルなベクトル検索バックエンド</div>
-        <div class="stack-line"><strong>Embeddings</strong><br>OpenAI・Voyage・Ollama など複数プロバイダ</div>
-        <div class="stack-line"><strong>IDE / ブラウザ</strong><br>VS Code 拡張と Chrome 拡張で補助 UI</div>
+        <div class="stack-line"><strong>Entry</strong><br>CLI / MCP / Claude Code プラグイン</div>
+        <div class="stack-line"><strong>Router → Swarm → Agents</strong><br>タスク分解と並列エージェント</div>
+        <div class="stack-line"><strong>Memory + Learning</strong><br>成功パターンの取り込みと検索</div>
+        <div class="stack-line"><strong>LLM Providers</strong><br>外部モデル API へのルーティング</div>
       </div>
     </div>
-
-    <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MCP</span><span class="ve-kpi-card__label">@zilliz/claude-context-mcp</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">core</span><span class="ve-kpi-card__label">@zilliz/claude-context-core</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">pnpm</span><span class="ve-kpi-card__label">workspace モノレポ</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node 20+</span><span class="ve-kpi-card__label">ランタイム要件</span></div>
+    <div class="ve-callout">
+      <strong>名前の由来（README 抜粋）:</strong> 「Ru」は作者の「Ruv」、「flo」は flow。フロー状態と Rust 基盤を掛け合わせたブランド。
     </div>
 
-    <section id="architecture" class="sec-head">2 — モノレポ構成</section>
+    <section id="stack" class="sec-head">2 — データの流れ</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> レイヤー</span>
-      <p>公式リポジトリは <code>packages/</code> 配下にコアロジックと配布物を分けたモノレポ。<code>evaluation/</code> で検索品質の実験、<code>examples/</code> で最小利用例、<code>docs/</code> で詳細ドキュメントが置かれている。</p>
-      <div class="pkg-grid">
-        <div class="ve-card ve-card--recessed pkg-card" style="--i:1">
-          <div class="pkg-title">packages/core</div>
-          <p class="pkg-body">AST ベースの分割、同期（Merkle 等）、埋め込み抽象、Milvus REST / SDK クライアント。エージェントに依存しない中核。</p>
-        </div>
-        <div class="ve-card ve-card--recessed pkg-card" style="--i:2">
-          <div class="pkg-title">packages/mcp</div>
-          <p class="pkg-body">MCP サーバー実装。スナップショット取得・検索ツールをエージェントへ公開。Node で <code>npx</code> 実行が前提の導線。</p>
-        </div>
-        <div class="ve-card ve-card--recessed pkg-card" style="--i:3">
-          <div class="pkg-title">packages/vscode-extension</div>
-          <p class="pkg-body">エディタ内の意味検索 UI とコマンド。Marketplace からインストール可能な製品版の入り口。</p>
-        </div>
-        <div class="ve-card ve-card--recessed pkg-card" style="--i:4">
-          <div class="pkg-title">packages/chrome-extension</div>
-          <p class="pkg-body">ブラウザ側の補助（GitHub 上のコード閲覧など）とストレージ連携。開発用スタブでオフライン検証も可能。</p>
-        </div>
-      </div>
-    </div>
-
-    <section id="pipeline" class="sec-head">3 — データの流れ</section>
-    <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> インデックスから検索まで</span>
-      <p>ローカルのワークスペースや指定パスを走査し、無視パターンでファイルを落としたうえでチャンク化する。各チャンクを埋め込みモデルへ通し、ベクトル DB に upsert。エージェントがクエリを投げると近傍検索でチャンクとメタデータが返る。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> 概念フロー</span>
+      <p>README に掲載の ASCII 図を Mermaid に再構成したもの。学習ループは Router 側へのフィードバックとして表現している。</p>
       <div class="mermaid-wrap">
-        <div class="mermaid">
-flowchart LR
-  subgraph ingest["取り込み"]
-    A["ソースツリー"] --> B["分割・フィルタ"]
-    B --> C["Embedding API"]
-    C --> D[("Milvus / Zilliz")]
-  end
-  subgraph serve["配信"]
-    D --> E["MCP ツール"]
-    E --> F["コーディングエージェント"]
-  end
-        </div>
-      </div>
-      <div class="ve-callout">
-        <strong>非同期インデックス</strong> — 大規模リポジトリではバックグラウンド同期や増分更新の設計が重要。公式の <code>docs/dive-deep/</code> にワークフローとファイル包含ルールの詳細がある。
+        <pre class="mermaid">flowchart TD
+  U[User] --> R[Ruflo（CLI/MCP）]
+  R --> Rt[Router]
+  Rt --> S[Swarm]
+  S --> A[Agents]
+  A --> M[Memory]
+  A --> L[LLM Providers]
+  M --> L
+  A -.->|Learning loop| Rt</pre>
       </div>
     </div>
 
-    <section id="mcp-setup" class="sec-head">4 — MCP セットアップ</section>
+    <section id="plugins" class="sec-head">3 — プラグイン群</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> Claude Code 向けの典型例</span>
-      <p>ベクトル DB のエンドポイントとトークン、埋め込み用の API キーを環境変数で渡し、<code>npx</code> で MCP パッケージを起動する。値はプレースホルダに置き換えて使うこと。</p>
-      <div class="ve-code-block">
-        <div class="code-label">claude mcp add</div>
-        <pre><code>claude mcp add claude-context \
-  -e OPENAI_API_KEY=sk-your-openai-api-key \
-  -e MILVUS_ADDRESS=your-zilliz-cloud-public-endpoint \
-  -e MILVUS_TOKEN=your-zilliz-cloud-api-key \
-  -- npx @zilliz/claude-context-mcp@latest</code></pre>
-      </div>
-      <p><small>詳細は <a href="https://docs.anthropic.com/en/docs/claude-code/mcp" target="_blank" rel="noopener">Claude Code MCP ドキュメント</a> と、<a href="https://github.com/zilliztech/claude-context" target="_blank" rel="noopener">zilliztech/claude-context</a> の README を参照。</small></p>
-    </div>
-
-    <section id="packages" class="sec-head">5 — パッケージと役割</section>
-    <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> npm で公開される主なモジュール</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ別（README の折りたたみ表に準拠）</span>
+      <p>マーケットプレイス <code>ruvnet/ruflo</code> から個別インストールするモジュラー設計。32 件は README の「All 32 plugins」見出しに対応。全名は上流 README の表を参照。</p>
       <div class="ve-table-wrap">
         <table>
           <thead>
-            <tr>
-              <th>パッケージ</th>
-              <th>役割</th>
-              <th>主な利用者</th>
-            </tr>
+            <tr><th>カテゴリ</th><th>代表プラグイン</th><th>役割の目安</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td><code>@zilliz/claude-context-mcp</code></td>
-              <td>MCP サーバー。検索・同期系ツールをエージェントへ提供。</td>
-              <td>Claude Code、Cursor、Codex CLI など</td>
-            </tr>
-            <tr>
-              <td><code>@zilliz/claude-context-core</code></td>
-              <td>インデックス・ベクトルDB・埋め込みの共通ロジック。</td>
-              <td>MCP 本体、拡張、独自スクリプト</td>
-            </tr>
-            <tr>
-              <td>VS Code 拡張（Marketplace）</td>
-              <td>セマンティック検索 UI とワークスペース連携。</td>
-              <td>VS Code / Cursor 系ユーザー</td>
-            </tr>
-            <tr>
-              <td>Chrome 拡張</td>
-              <td>ブラウザ上のコード文脈取得と補助。</td>
-              <td>Web 上のレビュー・調査フロー</td>
-            </tr>
+            <tr><td>Core &amp; Orchestration</td><td><code>ruflo-core</code>, <code>ruflo-swarm</code>, <code>ruflo-autopilot</code>, <code>ruflo-loop-workers</code>, <code>ruflo-workflows</code>, <code>ruflo-federation</code></td><td>基盤・スウォーム・自律ループ・スケジュール・ワークフロー・連邦</td></tr>
+            <tr><td>Memory &amp; Knowledge</td><td><code>ruflo-agentdb</code>, <code>ruflo-rag-memory</code>, <code>ruflo-rvf</code>, <code>ruflo-ruvector</code>, <code>ruflo-knowledge-graph</code></td><td>ベクトル記憶、ハイブリッド検索、セッション復元、GPU 検索系、グラフ</td></tr>
+            <tr><td>Intelligence &amp; Learning</td><td><code>ruflo-intelligence</code>, <code>ruflo-daa</code>, <code>ruflo-ruvllm</code>, <code>ruflo-goals</code></td><td>成功からの学習、動的挙動、ローカル LLM ルーティング、目標分解</td></tr>
+            <tr><td>Code Quality &amp; Testing</td><td><code>ruflo-testgen</code>, <code>ruflo-browser</code>, <code>ruflo-jujutsu</code>, <code>ruflo-docs</code></td><td>テスト生成、Playwright、diff リスク、ドキュメント自動化</td></tr>
+            <tr><td>Security &amp; Compliance</td><td><code>ruflo-security-audit</code>, <code>ruflo-aidefence</code></td><td>CVE スキャン、プロンプト防御・PII 検知など</td></tr>
+            <tr><td>Architecture &amp; Methodology</td><td><code>ruflo-adr</code>, <code>ruflo-ddd</code>, <code>ruflo-sparc</code></td><td>ADR、DDD スキャフォールド、5 フェーズ開発</td></tr>
+            <tr><td>DevOps &amp; Observability</td><td><code>ruflo-migrations</code>, <code>ruflo-observability</code>, <code>ruflo-cost-tracker</code></td><td>DB マイグレーション、ログ/トレース/メトリクス、トークン課金</td></tr>
+            <tr><td>Extensibility</td><td><code>ruflo-wasm</code>, <code>ruflo-plugin-creator</code></td><td>WASM サンドボックス、自作プラグインの足場</td></tr>
+            <tr><td>Domain-Specific</td><td><code>ruflo-iot-cognitum</code>, <code>ruflo-neural-trader</code>, <code>ruflo-market-data</code></td><td>IoT、トレーディング、市場データ取り込み</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <section id="clients" class="sec-head">6 — クライアント対応</section>
-    <div class="ve-card ve-card--elevated" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 設定ファイルの差</span>
-      <p>README では Claude Code のほか、OpenAI Codex CLI（TOML）、Gemini CLI、Qwen Code、Cursor、Void など、<strong>MCP クライアントごとの設定断片</strong>が並んでいる。キー名やトップレベル構造がクライアントで微妙に異なるので、そのままコピペせず公式の MCP 仕様と突き合わせること。</p>
-      <ul>
-        <li>Cursor は <code>~/.cursor/mcp.json</code> またはプロジェクト直下の <code>.cursor/mcp.json</code> が一般的。</li>
-        <li>Codex CLI は <code>mcp_servers</code> というトップレベルキーに注意（README 内に明記あり）。</li>
-        <li>起動タイムアウトを延ばす例（<code>startup_timeout_ms</code>）も掲載されている。</li>
-      </ul>
+    <section id="install" class="sec-head">4 — クイックスタート</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Claude Code プラグイン（推奨）</span>
+      <p>README のコマンドをそのまま掲載。環境に合わせてプラグインの組み合わせを選ぶ。</p>
+      <div class="ve-code-block">
+        <div class="code-label">Claude Code /plugin</div>
+        <pre><code># Add the marketplace
+/plugin marketplace add ruvnet/ruflo
+
+# Install core + any plugins you need
+/plugin install ruflo-core@ruflo
+/plugin install ruflo-swarm@ruflo
+/plugin install ruflo-autopilot@ruflo
+/plugin install ruflo-federation@ruflo</code></pre>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> CLI と MCP（任意）</span>
+      <p>README ではプラグインの次に、シェル経由の <code>init</code> と Claude Code への MCP 登録が併記されている。</p>
+      <div class="ve-code-block">
+        <div class="code-label">install / init</div>
+        <pre><code>curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/ruflo@main/scripts/install.sh | bash
+# または
+npx ruflo@latest init --wizard</code></pre>
+      </div>
+      <div class="ve-code-block">
+        <div class="code-label">claude mcp add</div>
+        <pre><code>claude mcp add ruflo -- npx -y @claude-flow/cli@latest</code></pre>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> UI / デモ</span>
+      <p>README のバッジより: <a href="https://flo.ruv.io/" target="_blank" rel="noopener">flo.ruv.io</a>（マルチモデル＋MCP・ブラウザ内 WASM ギャラリーの UI ベータ）、<a href="https://goal.ruv.io/" target="_blank" rel="noopener">goal.ruv.io</a>（GOAP 系ゴールプランナー）、<a href="https://goal.ruv.io/agents" target="_blank" rel="noopener">Live Agents</a>。</p>
     </div>
 
-    <section id="references" class="sec-head">7 — 参照</section>
+    <section id="layout" class="sec-head">5 — リポジトリ構成（要約）</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> トップレベル</span>
+      <p>GitHub 上のソースツリーと README から要約。npm パッケージ名は <code>package.json</code> 上 <code>claude-flow</code>、表示名・README は <strong>Ruflo</strong>。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>パス</th><th>内容の目安</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>agents/</code></td><td>YAML 定義のアーキテクト・コーダー・レビュアー等</td></tr>
+            <tr><td><code>bin/</code></td><td>CLI エントリ（<code>cli.js</code> 等。<code>package.json</code> の <code>bin</code> は <code>claude-flow</code>）</td></tr>
+            <tr><td><code>docs/</code></td><td>リポジトリ内ドキュメント（ADR へのリンク例は README に記載）</td></tr>
+            <tr><td><code>scripts/</code></td><td>インストール等（README の one-line <code>curl</code> が参照）</td></tr>
+            <tr><td><code>plugin/</code></td><td>配布用プラグインパッケージの束ね</td></tr>
+            <tr><td><code>plugins/</code></td><td><code>ruflo-*</code> 各プラグインのソース</td></tr>
+            <tr><td><code>ruflo/</code></td><td>Web UI（Ruvocal）などサブプロジェクト（README は <code>ruflo/src/ruvocal/</code> を言及）</td></tr>
+            <tr><td><code>v2/</code> / <code>v3/</code></td><td>世代別の大きなサブツリー（CLI 共有物・Goal UI 等）</td></tr>
+            <tr><td><code>tests/</code></td><td>RVF・統合テスト等</td></tr>
+            <tr><td><code>.claude/</code>, <code>.claude-plugin/</code></td><td>Claude Code 向け設定・マーケットメタデータ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="refs" class="sec-head">6 — 参照</section>
     <div class="ve-card ve-card--recessed" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 公開ソース</span>
       <div class="ve-table-wrap">
@@ -384,62 +381,21 @@ flowchart LR
           </thead>
           <tbody>
             <tr>
-              <td><a href="https://github.com/zilliztech/claude-context" target="_blank" rel="noopener">zilliztech/claude-context</a></td>
-              <td>リポジトリ全体、インストール、バッジ、ディスコード。</td>
+              <td><a href="https://github.com/ruvnet/claude-flow" target="_blank" rel="noopener">ruvnet/claude-flow</a></td>
+              <td>メインリポジトリ（README、バッジ、プラグイン一覧の一次情報）。</td>
             </tr>
             <tr>
-              <td><a href="https://www.npmjs.com/package/@zilliz/claude-context-mcp" target="_blank" rel="noopener">npm — claude-context-mcp</a></td>
-              <td>MCP パッケージのバージョンと依存関係。</td>
+              <td><code>ruvnet/ruflo</code></td>
+              <td>Claude Code マーケットプレイス ID（<code>/plugin marketplace add</code> の引数）。</td>
             </tr>
             <tr>
-              <td><a href="https://www.npmjs.com/package/@zilliz/claude-context-core" target="_blank" rel="noopener">npm — claude-context-core</a></td>
-              <td>コアライブラリの API 境界の手がかり。</td>
-            </tr>
-            <tr>
-              <td><a href="https://deepwiki.com/zilliztech/claude-context" target="_blank" rel="noopener">DeepWiki</a></td>
-              <td>AI 生成のドキュメントナビゲーション。</td>
+              <td><a href="https://flo.ruv.io/" target="_blank" rel="noopener">flo.ruv.io</a></td>
+              <td>Web UI ベータ（README バッジより）。</td>
             </tr>
           </tbody>
         </table>
       </div>
-      <p style="margin-top:1rem;margin-bottom:0"><small>このビジュアルページは上記公開リポジトリの README とパッジ構造を要約したもの。機密値やローカルパスは載せていない。</small></p>
-    </div>
-
-    <section id="docs-site" class="sec-head">8 — 本サイト（docs-site）との連携</section>
-    <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> ビジュアル資料の位置づけ</span>
-      <p>このページは <strong>Claude Context</strong>（<a href="https://github.com/zilliztech/claude-context" target="_blank" rel="noopener">zilliztech/claude-context</a>）の構成と MCP 利用の要点をまとめた <strong>Spell UI 形式の解説</strong>である。一次情報は公式リポジトリの README・ドキュメント・パッケージソースを正とする。資料の追記・修正は docs-site リポジトリで行い、ミラー用に取得した上流クローンは Git のコミット対象に含めない。</p>
-    </div>
-    <div class="ve-card ve-card--elevated" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> 作成フロー（メンテナ用）</span>
-      <ol style="margin-top:0.5rem">
-        <li>統合スキル <strong>docs-site-add-visual-doc</strong> に従い、<code>index.html</code>・<code>docs/defuddle.html</code> など既存ページの体裁と Unfurl（OG）形式を揃える。</li>
-        <li>本文・メタにローカル絶対パスや作業ツリー専用のパスを載せない（検証スクリプトで検出する）。</li>
-        <li>トップページの資料リストに <code>docs/claude-context.html</code> へのカードがあることを確認する。</li>
-      </ol>
-    </div>
-    <div class="ve-card" style="--i:2">
-      <span class="ve-section-label"><span class="ve-dot"></span> レビューゲート</span>
-      <div class="ve-table-wrap">
-        <table aria-label="公開前チェックリスト">
-          <thead>
-            <tr><th>項目</th><th>期待する状態</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>ページ実体</td><td><code>docs/claude-context.html</code> が存在し、ブラウザで開ける</td></tr>
-            <tr><td>メタタグ</td><td><code>og:title</code> / <code>og:url</code> / <code>og:description</code> / <code>twitter:card</code> が揃っている</td></tr>
-            <tr><td>インデックス</td><td>サイトトップの資料リストから本ページへリンクされている</td></tr>
-            <tr><td>パス検証</td><td><code>scripts/validate-public-paths.sh</code> がエラーなく完了する</td></tr>
-            <tr><td>Git</td><td>上流リポジトリのミラーディレクトリがステージされていない</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="ve-callout" style="margin-top:1rem">
-      <strong>検証コマンド:</strong> リポジトリルートで次を実行し、ビジュアル資料パイプラインの検証に通す。
-    </div>
-    <div class="ve-code-block">
-      <pre><code>npx tsx scripts/visual-doc-workflow.ts validate --doc claude-context</code></pre>
+      <p style="margin-top:1rem;margin-bottom:0"><small>解説は公開 README とスキャン要約に基づく。バージョンやプラグイン一覧は上流の変更に追随しうる。</small></p>
     </div>
   </div>
 </div>
