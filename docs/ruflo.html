@@ -4,54 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ruflo — Claude Code 向けマルチエージェント基盤</title>
-  <meta name="description" content="Ruflo（旧 Claude Flow）は Claude Code 用のマルチエージェント・オーケストレーション。スウォーム、学習メモリ、連邦通信、Rust/WASM カーネルとプラグイン群の全体像。">
+  <meta name="description" content="Ruflo（旧 Claude Flow）は Claude Code に協調層を足す OSS。単発エージェントの摩擦（分担・記憶・連携・観測）をスウォーム・ベクトル記憶・連邦・WASM で下支えする全体像。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Ruflo — Claude Code 向けマルチエージェント基盤">
-  <meta property="og:description" content="スウォーム、メモリ、連邦、セキュリティ、30+ プラグインで Claude Code に神経系を足す OSS の技術概要。">
+  <meta property="og:description" content="スウォーム、メモリ、連邦、セキュリティ。README 掲載の 32 ネイティブ Claude Code プラグイン＋21 npm プラグインで Claude Code に神経系を足す OSS の技術概要。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/ruflo.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Ruflo — Claude Code 向けマルチエージェント基盤">
-  <meta name="twitter:description" content="プラグイン、データフロー、クイックスタートと検証コマンドの要約。">
+  <meta name="twitter:description" content="プラグイン、データフロー、クイックスタートとリポジトリ構成の要約。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Fragment+Mono:ital@0;1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Azeret+Mono:ital,wght@0,400;0,500;0,600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <style>
+    /* ============ THEME (Spell UI + emerald / slate) ============ */
     :root {
       --radius: 0.625rem;
       --radius-sm: calc(var(--radius) - 4px);
       --radius-md: calc(var(--radius) - 2px);
       --radius-lg: var(--radius);
-      --background: oklch(0.97 0.012 200);
-      --foreground: oklch(0.22 0.045 220);
-      --card: oklch(0.995 0.008 200);
-      --card-foreground: oklch(0.22 0.045 220);
-      --popover: oklch(0.995 0.008 200);
-      --popover-foreground: oklch(0.22 0.045 220);
-      --primary: oklch(0.32 0.08 220);
-      --primary-foreground: oklch(0.98 0.01 200);
-      --secondary: oklch(0.92 0.025 200);
-      --secondary-foreground: oklch(0.24 0.06 220);
-      --muted: oklch(0.91 0.02 200);
-      --muted-foreground: oklch(0.42 0.04 215);
-      --accent: oklch(0.9 0.03 195);
-      --accent-foreground: oklch(0.22 0.05 220);
+      --background: oklch(0.985 0.012 195);
+      --foreground: oklch(0.2 0.04 220);
+      --card: oklch(0.997 0.006 195);
+      --card-foreground: oklch(0.2 0.04 220);
+      --popover: oklch(0.997 0.006 195);
+      --popover-foreground: oklch(0.2 0.04 220);
+      --primary: oklch(0.32 0.09 195);
+      --primary-foreground: oklch(0.98 0.01 195);
+      --secondary: oklch(0.94 0.02 195);
+      --secondary-foreground: oklch(0.24 0.05 220);
+      --muted: oklch(0.93 0.018 195);
+      --muted-foreground: oklch(0.44 0.04 220);
+      --accent: oklch(0.92 0.03 175);
+      --accent-foreground: oklch(0.22 0.06 200);
       --destructive: oklch(0.52 0.18 25);
-      --border: oklch(0.86 0.025 200);
-      --input: oklch(0.86 0.025 200);
-      --ring: oklch(0.45 0.12 200);
-      --chart-1: oklch(0.45 0.12 200);
-      --chart-2: oklch(0.62 0.14 75);
-      --chart-3: oklch(0.48 0.09 160);
-      --chart-4: oklch(0.55 0.1 35);
+      --border: oklch(0.84 0.03 195);
+      --input: oklch(0.84 0.03 195);
+      --ring: oklch(0.42 0.11 175);
+      --chart-1: oklch(0.42 0.11 175);
+      --chart-2: oklch(0.62 0.14 72);
+      --chart-3: oklch(0.48 0.09 200);
+      --chart-4: oklch(0.55 0.1 150);
       --chart-5: oklch(0.4 0.08 260);
       --code-bg: oklch(0.16 0.04 220);
-      --code-text: oklch(0.9 0.04 200);
-      --font-body: 'Bricolage Grotesque', system-ui, sans-serif;
-      --font-mono: 'Fragment Mono', 'SF Mono', Consolas, monospace;
+      --code-text: oklch(0.9 0.04 185);
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
       --bg: var(--background);
       --surface: var(--card);
       --surface2: var(--muted);
@@ -61,39 +62,40 @@
     @media (prefers-color-scheme: dark) {
       :root {
         --background: oklch(0.14 0.035 220);
-        --foreground: oklch(0.95 0.02 200);
-        --card: oklch(0.19 0.04 218);
-        --card-foreground: oklch(0.95 0.02 200);
-        --popover: oklch(0.19 0.04 218);
-        --popover-foreground: oklch(0.95 0.02 200);
-        --primary: oklch(0.78 0.1 195);
+        --foreground: oklch(0.94 0.02 185);
+        --card: oklch(0.19 0.04 220);
+        --card-foreground: oklch(0.94 0.02 185);
+        --popover: oklch(0.19 0.04 220);
+        --popover-foreground: oklch(0.94 0.02 185);
+        --primary: oklch(0.78 0.12 175);
         --primary-foreground: oklch(0.14 0.035 220);
-        --secondary: oklch(0.24 0.04 218);
-        --secondary-foreground: oklch(0.95 0.02 200);
-        --muted: oklch(0.26 0.045 215);
-        --muted-foreground: oklch(0.72 0.03 200);
-        --accent: oklch(0.24 0.045 215);
-        --accent-foreground: oklch(0.95 0.02 200);
+        --secondary: oklch(0.24 0.04 220);
+        --secondary-foreground: oklch(0.94 0.02 185);
+        --muted: oklch(0.26 0.04 220);
+        --muted-foreground: oklch(0.72 0.03 185);
+        --accent: oklch(0.24 0.045 220);
+        --accent-foreground: oklch(0.94 0.02 185);
         --destructive: oklch(0.65 0.16 25);
-        --border: oklch(0.38 0.04 215 / 55%);
-        --input: oklch(0.38 0.04 215 / 55%);
-        --ring: oklch(0.62 0.12 195);
-        --chart-1: oklch(0.68 0.14 195);
-        --chart-2: oklch(0.72 0.14 75);
-        --chart-3: oklch(0.62 0.1 160);
-        --chart-4: oklch(0.7 0.11 40);
-        --chart-5: oklch(0.58 0.08 260);
-        --code-bg: oklch(0.12 0.04 220);
-        --code-text: oklch(0.88 0.04 200);
+        --border: oklch(0.42 0.05 220 / 55%);
+        --input: oklch(0.42 0.05 220 / 55%);
+        --ring: oklch(0.72 0.12 175);
+        --chart-1: oklch(0.72 0.12 175);
+        --chart-2: oklch(0.74 0.14 85);
+        --chart-3: oklch(0.65 0.1 200);
+        --chart-4: oklch(0.68 0.11 150);
+        --chart-5: oklch(0.62 0.08 260);
+        --code-bg: oklch(0.11 0.035 220);
+        --code-text: oklch(0.88 0.04 185);
       }
     }
 
+    /* ============ Spell UI static ============ */
     .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
-    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 12px 28px rgba(8, 40, 60, 0.08); }
-    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(8, 40, 60, 0.06); }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 12px 28px rgba(12, 46, 42, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(12, 46, 42, 0.06); }
     .ve-card--hero {
       background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
-      box-shadow: 0 20px 44px rgba(8, 40, 60, 0.1);
+      box-shadow: 0 20px 44px rgba(12, 46, 42, 0.1);
       border-color: color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%);
     }
     @media (prefers-color-scheme: dark) {
@@ -114,7 +116,7 @@
     .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
     .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
     .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 68%, var(--card) 32%); }
-    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(8, 40, 60, 0.05); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(12, 46, 42, 0.05); }
     .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.05rem; line-height: 1.2; color: var(--foreground); }
     .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
     .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.65; color: var(--muted-foreground); }
@@ -125,11 +127,11 @@
     body {
       background: var(--bg);
       background-image:
-        linear-gradient(90deg, color-mix(in oklch, var(--border) 30%, transparent) 1px, transparent 1px),
-        linear-gradient(180deg, color-mix(in oklch, var(--border) 24%, transparent) 1px, transparent 1px),
-        radial-gradient(ellipse at 8% 0%, color-mix(in oklch, var(--chart-1) 10%, transparent) 0%, transparent 45%),
-        radial-gradient(ellipse at 94% 8%, color-mix(in oklch, var(--chart-2) 8%, transparent) 0%, transparent 40%);
-      background-size: 26px 26px, 26px 26px, auto, auto;
+        linear-gradient(90deg, color-mix(in oklch, var(--border) 32%, transparent) 1px, transparent 1px),
+        linear-gradient(180deg, color-mix(in oklch, var(--border) 26%, transparent) 1px, transparent 1px),
+        radial-gradient(ellipse at 12% 0%, color-mix(in oklch, var(--chart-1) 12%, transparent) 0%, transparent 42%),
+        radial-gradient(ellipse at 88% 8%, color-mix(in oklch, var(--chart-2) 10%, transparent) 0%, transparent 38%);
+      background-size: 28px 28px, 28px 28px, auto, auto;
       color: var(--text);
       font-family: var(--font-body);
       padding: 40px;
@@ -163,12 +165,12 @@
       .sec-head { scroll-margin-top: 52px; }
     }
 
-    h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 0.85rem; text-wrap: balance; }
+    h1 { font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 700; letter-spacing: -0.04em; line-height: 1.05; margin-bottom: 0.85rem; text-wrap: balance; }
     .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.875rem; margin-bottom: 2rem; line-height: 1.55; max-width: 52rem; }
     .sec-head { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.04em; }
     .sec-head:first-of-type { margin-top: 0; }
     h2, h3 { font-weight: 600; letter-spacing: -0.02em; }
-    h3 { font-size: 1.15rem; margin: 1.5rem 0 0.75rem; }
+    h3 { font-size: 1.2rem; margin: 1.5rem 0 0.75rem; }
     p { font-size: 1.02rem; line-height: 1.72; margin-bottom: 0.75rem; }
     ul { margin: 0 0 1rem; padding-left: 1.35rem; }
     li { margin-bottom: 0.4rem; line-height: 1.6; }
@@ -180,7 +182,7 @@
 
     .hero-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr); gap: 1rem; align-items: stretch; margin-bottom: 1.25rem; }
     .hero-copy { padding: 2rem; }
-    .hero-copy p { font-size: 1.06rem; }
+    .hero-copy p { font-size: 1.08rem; }
     .stack-sheet {
       min-height: 100%;
       border: 1px solid var(--border);
@@ -194,10 +196,18 @@
     .stack-line { min-height: 36px; border-radius: var(--radius-md); border: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 70%, var(--card) 30%); padding: 0.65rem 0.75rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted-foreground); }
     .stack-line strong { color: var(--foreground); font-weight: 700; }
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .pkg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .pkg-card { min-width: 0; border-top: 3px solid var(--chart-1); }
+    .pkg-card:nth-child(2) { border-top-color: var(--chart-2); }
+    .pkg-card:nth-child(3) { border-top-color: var(--chart-3); }
+    .pkg-card:nth-child(4) { border-top-color: var(--chart-4); }
+    .pkg-title { font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; margin-bottom: 0.45rem; }
+    .pkg-body { color: var(--muted-foreground); font-size: 0.92rem; line-height: 1.58; margin: 0; }
     .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; padding: 1rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
     .mermaid-wrap svg { max-width: 100%; }
+    .code-label { border-bottom: 1px solid color-mix(in oklch, var(--border) 70%, transparent); color: var(--muted-foreground); font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; padding: 0.7rem 1rem 0.5rem; text-transform: uppercase; }
     @media (max-width: 900px) {
-      .hero-grid { grid-template-columns: 1fr; }
+      .hero-grid, .pkg-grid { grid-template-columns: 1fr; }
       .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 560px) {
@@ -215,30 +225,36 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
+    <a href="#problem">狙い</a>
     <a href="#stack">データの流れ</a>
     <a href="#plugins">プラグイン</a>
     <a href="#install">クイックスタート</a>
     <a href="#layout">リポジトリ構成</a>
-    <a href="#verify">検証</a>
     <a href="#refs">参照</a>
   </nav>
 
   <div class="main">
     <h1>Ruflo</h1>
-    <p class="subtitle">Claude Code 向けマルチエージェント・オーケストレーション。スウォーム、セッション横断メモリ、連邦通信、Rust/WASM カーネルを README と公開ツリーから要約したビジュアル解説。</p>
+    <p class="subtitle"><a href="https://github.com/ruvnet/claude-flow" target="_blank" rel="noopener">ruvnet/claude-flow</a>（Ruflo / 旧 Claude Flow）。<strong>Claude Code のエージェントを「単発で動かす」から「チームとして回す」へ近づける</strong>ためのオーケストレーション層。README と公開ツリーから要約したビジュアル解説。</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="kpi-row">
       <div class="ve-kpi-card" style="--i:0"><div class="ve-kpi-card__value">100+</div><div class="ve-kpi-card__label">specialized agents</div></div>
-      <div class="ve-kpi-card" style="--i:1"><div class="ve-kpi-card__value">32</div><div class="ve-kpi-card__label">plugins（README 記載）</div></div>
+      <div class="ve-kpi-card" style="--i:1"><div class="ve-kpi-card__value">32+21</div><div class="ve-kpi-card__label">plugins（native + npm）</div></div>
       <div class="ve-kpi-card" style="--i:2"><div class="ve-kpi-card__value">WASM</div><div class="ve-kpi-card__label">Rust カーネル</div></div>
       <div class="ve-kpi-card" style="--i:3"><div class="ve-kpi-card__value">Federation</div><div class="ve-kpi-card__label">マシン横断</div></div>
+    </div>
+    <div class="ve-card ve-card--elevated" id="problem" style="--i:0;margin-bottom:1.25rem">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何のためか（README の問題意識に沿って）</span>
+      <p><strong>Claude Code 単体だと起きやすいこと。</strong>対話はできるが、複数エージェントの<strong>分担・合意・再開</strong>は人間かプロンプト任せになりがち。セッションをまたいだ<strong>記憶の再利用</strong>、別マシン／別チームとの<strong>安全な連携</strong>、セキュリティ・コスト・観測を<strong>同じ枠</strong>で扱う、といった「運用の神経」は薄くなりやすい。</p>
+      <p><strong>Ruflo が足すもの（一言で）。</strong>エージェントを<strong>ルータとスウォーム</strong>で束ね、<strong>ベクトル記憶と学習ループ</strong>で「うまくいったやり方」を残し、必要なら<strong>連邦</strong>で信頼境界をまたいで協調し、ポリシー・埋め込み・証明系は<strong>Rust/WASM</strong>側に寄せる——という<strong>協調用の下回り</strong>。あなたはコードを書き続け、裏でルーティングと調整が走る、という README の約束に近い。</p>
+      <p style="margin-bottom:0"><small>万能の「自律 AGI」ではなく、<strong>エンジニアリングワークを複数エージェントで回すときの摩擦</strong>を減らすスタック、と読むと理解しやすい。</small></p>
     </div>
     <div class="hero-grid">
       <div class="ve-card ve-card--hero hero-copy" style="--i:0">
         <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
-        <p><strong>Ruflo</strong>（旧称 <strong>Claude Flow</strong>）は、<a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a> に「神経系」を足す OSS スタック。エージェントのスウォーム化、タスクからの学習、セッションをまたいだ記憶、他ホストのエージェントとの安全な連携までをプラグインとフックで束ねる。</p>
-        <p>ポリシー・埋め込み・証明系などは <strong>Rust で書かれた WASM カーネル</strong>が担当する、という位置づけが README で強調されている。利用者は通常どおり Claude Code でコードを書き、バックグラウンドでルーティングと調整が走る想定。</p>
+        <p><strong>Ruflo</strong>（旧称 <strong>Claude Flow</strong>）は、上の「協調用の下回り」を <a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a> に載せる OSS スタック。具体的にはスウォーム、学習、セッション横断の記憶、連邦、各種プラグインを<strong>フック</strong>で束ねる。</p>
+        <p>ポリシー・埋め込み・証明系などは <strong>Rust で書かれた WASM カーネル</strong>が担当する、という位置づけが README で強調されている。<code>init</code> 後は通常どおり Claude Code でコードを書き、<strong>フック</strong>がタスクのルーティング・成功パターンからの学習・エージェント調整をバックグラウンドで担う、と説明されている（README では多数の MCP/CLI を逐一覚えなくてよい、という導線）。</p>
       </div>
       <div class="stack-sheet" style="--i:1">
         <div class="stack-line"><strong>Entry</strong><br>CLI / MCP / Claude Code プラグイン</div>
@@ -257,7 +273,7 @@
       <p>README に掲載の ASCII 図を Mermaid に再構成したもの。学習ループは Router 側へのフィードバックとして表現している。</p>
       <div class="mermaid-wrap">
         <pre class="mermaid">flowchart TD
-  U[User] --> R[Ruflo CLI / MCP]
+  U[User] --> R[Ruflo（CLI/MCP）]
   R --> Rt[Router]
   Rt --> S[Swarm]
   S --> A[Agents]
@@ -270,19 +286,23 @@
 
     <section id="plugins" class="sec-head">3 — プラグイン群</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ別（README の表を要約）</span>
-      <p>マーケットプレイス <code>ruvnet/ruflo</code> から個別インストールするモジュラー設計。以下は代表例のみ（全文は公開 README の折りたたみ表を参照）。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ別（README の折りたたみ表に準拠）</span>
+      <p>マーケットプレイス <code>ruvnet/ruflo</code> から個別インストールするモジュラー設計。32 件は README の「All 32 plugins」見出しに対応。全名は上流 README の表を参照。</p>
       <div class="ve-table-wrap">
         <table>
           <thead>
-            <tr><th>カテゴリ</th><th>例</th><th>役割</th></tr>
+            <tr><th>カテゴリ</th><th>代表プラグイン</th><th>役割の目安</th></tr>
           </thead>
           <tbody>
-            <tr><td>Core / オーケストレーション</td><td><code>ruflo-core</code>, <code>ruflo-swarm</code>, <code>ruflo-autopilot</code></td><td>基盤・スウォーム・自律ループ</td></tr>
-            <tr><td>メモリ / 知識</td><td><code>ruflo-agentdb</code>, <code>ruflo-rag-memory</code>, <code>ruflo-rvf</code>, <code>ruflo-knowledge-graph</code></td><td>ベクトルDB、RAG、セッション復元、グラフ</td></tr>
-            <tr><td>品質 / セキュリティ</td><td><code>ruflo-testgen</code>, <code>ruflo-security-audit</code>, <code>ruflo-aidefence</code></td><td>テスト生成、CVE、プロンプト防御</td></tr>
-            <tr><td>方法論 / アーキテクチャ</td><td><code>ruflo-adr</code>, <code>ruflo-ddd</code>, <code>ruflo-sparc</code></td><td>ADR、DDD スキャフォールド、5 フェーズ開発</td></tr>
-            <tr><td>連邦 / 観測</td><td><code>ruflo-federation</code>, <code>ruflo-observability</code></td><td>マシン横断連携、テレメトリ</td></tr>
+            <tr><td>Core &amp; Orchestration</td><td><code>ruflo-core</code>, <code>ruflo-swarm</code>, <code>ruflo-autopilot</code>, <code>ruflo-loop-workers</code>, <code>ruflo-workflows</code>, <code>ruflo-federation</code></td><td>基盤・スウォーム・自律ループ・スケジュール・ワークフロー・連邦</td></tr>
+            <tr><td>Memory &amp; Knowledge</td><td><code>ruflo-agentdb</code>, <code>ruflo-rag-memory</code>, <code>ruflo-rvf</code>, <code>ruflo-ruvector</code>, <code>ruflo-knowledge-graph</code></td><td>ベクトル記憶、ハイブリッド検索、セッション復元、GPU 検索系、グラフ</td></tr>
+            <tr><td>Intelligence &amp; Learning</td><td><code>ruflo-intelligence</code>, <code>ruflo-daa</code>, <code>ruflo-ruvllm</code>, <code>ruflo-goals</code></td><td>成功からの学習、動的挙動、ローカル LLM ルーティング、目標分解</td></tr>
+            <tr><td>Code Quality &amp; Testing</td><td><code>ruflo-testgen</code>, <code>ruflo-browser</code>, <code>ruflo-jujutsu</code>, <code>ruflo-docs</code></td><td>テスト生成、Playwright、diff リスク、ドキュメント自動化</td></tr>
+            <tr><td>Security &amp; Compliance</td><td><code>ruflo-security-audit</code>, <code>ruflo-aidefence</code></td><td>CVE スキャン、プロンプト防御・PII 検知など</td></tr>
+            <tr><td>Architecture &amp; Methodology</td><td><code>ruflo-adr</code>, <code>ruflo-ddd</code>, <code>ruflo-sparc</code></td><td>ADR、DDD スキャフォールド、5 フェーズ開発</td></tr>
+            <tr><td>DevOps &amp; Observability</td><td><code>ruflo-migrations</code>, <code>ruflo-observability</code>, <code>ruflo-cost-tracker</code></td><td>DB マイグレーション、ログ/トレース/メトリクス、トークン課金</td></tr>
+            <tr><td>Extensibility</td><td><code>ruflo-wasm</code>, <code>ruflo-plugin-creator</code></td><td>WASM サンドボックス、自作プラグインの足場</td></tr>
+            <tr><td>Domain-Specific</td><td><code>ruflo-iot-cognitum</code>, <code>ruflo-neural-trader</code>, <code>ruflo-market-data</code></td><td>IoT、トレーディング、市場データ取り込み</td></tr>
           </tbody>
         </table>
       </div>
@@ -293,6 +313,7 @@
       <span class="ve-section-label"><span class="ve-dot"></span> Claude Code プラグイン（推奨）</span>
       <p>README のコマンドをそのまま掲載。環境に合わせてプラグインの組み合わせを選ぶ。</p>
       <div class="ve-code-block">
+        <div class="code-label">Claude Code /plugin</div>
         <pre><code># Add the marketplace
 /plugin marketplace add ruvnet/ruflo
 
@@ -304,14 +325,28 @@
       </div>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> CLI と MCP（任意）</span>
+      <p>README ではプラグインの次に、シェル経由の <code>init</code> と Claude Code への MCP 登録が併記されている。</p>
+      <div class="ve-code-block">
+        <div class="code-label">install / init</div>
+        <pre><code>curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/ruflo@main/scripts/install.sh | bash
+# または
+npx ruflo@latest init --wizard</code></pre>
+      </div>
+      <div class="ve-code-block">
+        <div class="code-label">claude mcp add</div>
+        <pre><code>claude mcp add ruflo -- npx -y @claude-flow/cli@latest</code></pre>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:2">
       <span class="ve-section-label"><span class="ve-dot"></span> UI / デモ</span>
-      <p>README のバッジより: <a href="https://flo.ruv.io/" target="_blank" rel="noopener">flo.ruv.io</a>（UI ベータ）、<a href="https://goal.ruv.io/" target="_blank" rel="noopener">goal.ruv.io</a>、<a href="https://goal.ruv.io/agents" target="_blank" rel="noopener">Live Agents</a>。</p>
+      <p>README のバッジより: <a href="https://flo.ruv.io/" target="_blank" rel="noopener">flo.ruv.io</a>（マルチモデル＋MCP・ブラウザ内 WASM ギャラリーの UI ベータ）、<a href="https://goal.ruv.io/" target="_blank" rel="noopener">goal.ruv.io</a>（GOAP 系ゴールプランナー）、<a href="https://goal.ruv.io/agents" target="_blank" rel="noopener">Live Agents</a>。</p>
     </div>
 
     <section id="layout" class="sec-head">5 — リポジトリ構成（要約）</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> トップレベル</span>
-      <p>スキャン結果に基づき、ツリーの要点だけを表にした。詳細なファイル一覧はクローン後のエクスプローラや GitHub のファイルビューで確認する。</p>
+      <p>GitHub 上のソースツリーと README から要約。npm パッケージ名は <code>package.json</code> 上 <code>claude-flow</code>、表示名・README は <strong>Ruflo</strong>。</p>
       <div class="ve-table-wrap">
         <table>
           <thead>
@@ -319,11 +354,13 @@
           </thead>
           <tbody>
             <tr><td><code>agents/</code></td><td>YAML 定義のアーキテクト・コーダー・レビュアー等</td></tr>
-            <tr><td><code>bin/</code></td><td>CLI エントリ（<code>cli.js</code> など）</td></tr>
+            <tr><td><code>bin/</code></td><td>CLI エントリ（<code>cli.js</code> 等。<code>package.json</code> の <code>bin</code> は <code>claude-flow</code>）</td></tr>
+            <tr><td><code>docs/</code></td><td>リポジトリ内ドキュメント（ADR へのリンク例は README に記載）</td></tr>
+            <tr><td><code>scripts/</code></td><td>インストール等（README の one-line <code>curl</code> が参照）</td></tr>
             <tr><td><code>plugin/</code></td><td>配布用プラグインパッケージの束ね</td></tr>
             <tr><td><code>plugins/</code></td><td><code>ruflo-*</code> 各プラグインのソース</td></tr>
-            <tr><td><code>ruflo/</code></td><td>アプライアンス用サブプロジェクト（Docker 等）</td></tr>
-            <tr><td><code>v2/</code> / <code>v3/</code></td><td>世代別の大きなサブツリー（レガシーと次世代フロー）</td></tr>
+            <tr><td><code>ruflo/</code></td><td>Web UI（Ruvocal）などサブプロジェクト（README は <code>ruflo/src/ruvocal/</code> を言及）</td></tr>
+            <tr><td><code>v2/</code> / <code>v3/</code></td><td>世代別の大きなサブツリー（CLI 共有物・Goal UI 等）</td></tr>
             <tr><td><code>tests/</code></td><td>RVF・統合テスト等</td></tr>
             <tr><td><code>.claude/</code>, <code>.claude-plugin/</code></td><td>Claude Code 向け設定・マーケットメタデータ</td></tr>
           </tbody>
@@ -331,24 +368,33 @@
       </div>
     </div>
 
-    <section id="verify" class="sec-head">6 — 検証</section>
+    <section id="refs" class="sec-head">6 — 参照</section>
     <div class="ve-card ve-card--recessed" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> docs-site ワークフロー</span>
-      <p>本ページを更新したあと、docs-site リポジトリのルートで次を実行して公開パス検証などを行う（<code>visual-doc-workflow.ts</code> の仕様に従う）。</p>
-      <div class="ve-code-block">
-        <pre><code>npx tsx scripts/visual-doc-workflow.ts validate --doc ruflo</code></pre>
+      <span class="ve-section-label"><span class="ve-dot"></span> 公開ソース</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>参照先</th>
+              <th>内容</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://github.com/ruvnet/claude-flow" target="_blank" rel="noopener">ruvnet/claude-flow</a></td>
+              <td>メインリポジトリ（README、バッジ、プラグイン一覧の一次情報）。</td>
+            </tr>
+            <tr>
+              <td><code>ruvnet/ruflo</code></td>
+              <td>Claude Code マーケットプレイス ID（<code>/plugin marketplace add</code> の引数）。</td>
+            </tr>
+            <tr>
+              <td><a href="https://flo.ruv.io/" target="_blank" rel="noopener">flo.ruv.io</a></td>
+              <td>Web UI ベータ（README バッジより）。</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <p style="margin-bottom:0"><small>公開 HTML にはローカル絶対パスやクローン作業用ディレクトリ名を書かない。</small></p>
-    </div>
-
-    <section id="refs" class="sec-head">7 — 参照</section>
-    <div class="ve-card ve-card--recessed" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 公開リンク</span>
-      <ul>
-        <li><a href="https://github.com/ruvnet/claude-flow" target="_blank" rel="noopener">github.com/ruvnet/claude-flow</a> — メインリポジトリ（README のバッジ・スター参照先）</li>
-        <li>Claude Code マーケットプレイス識別子 <code>ruvnet/ruflo</code>（<code>/plugin marketplace add</code> の引数）</li>
-        <li><a href="https://flo.ruv.io/" target="_blank" rel="noopener">flo.ruv.io</a> — Web UI ベータ</li>
-      </ul>
       <p style="margin-top:1rem;margin-bottom:0"><small>解説は公開 README とスキャン要約に基づく。バージョンやプラグイン一覧は上流の変更に追随しうる。</small></p>
     </div>
   </div>
@@ -382,21 +428,7 @@
 })();
 </script>
 <script>
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'base',
-    securityLevel: 'strict',
-    themeVariables: {
-      primaryColor: '#e8f4f8',
-      primaryTextColor: '#0f172a',
-      primaryBorderColor: '#7dd3c0',
-      lineColor: '#0d9488',
-      secondaryColor: '#ccfbf1',
-      tertiaryColor: '#f0fdfa',
-      fontFamily: 'Fragment Mono, monospace',
-      fontSize: '13px'
-    }
-  });
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'strict' });
 </script>
 </body>
 </html>
