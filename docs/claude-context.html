@@ -162,6 +162,14 @@
     a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
     a:hover { color: var(--chart-2); }
     code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); overflow-wrap: break-word; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
     .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
     .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
@@ -215,6 +223,7 @@
     <a href="#inclusion">インデックス対象</a>
     <a href="#modes">利用形態</a>
     <a href="#sources">根拠</a>
+    <a href="#docs-site">本サイト連携</a>
   </nav>
 
   <div class="main">
@@ -397,31 +406,69 @@
       </ul>
       <p>外部リンク: <a href="https://github.com/zilliztech/claude-context" target="_blank" rel="noopener">GitHub: zilliztech/claude-context</a></p>
     </div>
+
+    <section id="docs-site" class="sec-head">9 — 本サイト（docs-site）との連携</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ビジュアル資料の位置づけ</span>
+      <p>このページは <strong>Claude Context</strong>（<a href="https://github.com/zilliztech/claude-context" target="_blank" rel="noopener">zilliztech/claude-context</a>）の構成と MCP 利用の要点をまとめた <strong>Spell UI 形式の解説</strong>である。一次情報は公式リポジトリの README・ドキュメント・パッケージソースを正とする。資料の追記・修正は docs-site リポジトリで行い、ミラー用に取得した上流クローンは Git のコミット対象に含めない。</p>
+    </div>
+    <div class="ve-card ve-card--elevated" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 作成フロー（メンテナ用）</span>
+      <ol style="margin-top:0.5rem">
+        <li>統合スキル <strong>docs-site-add-visual-doc</strong> に従い、<code>index.html</code>・<code>docs/defuddle.html</code> など既存ページの体裁と Unfurl（OG）形式を揃える。</li>
+        <li>本文・メタにローカル絶対パスや作業ツリー専用のパスを載せない（検証スクリプトで検出する）。</li>
+        <li>トップページの資料リストに <code>docs/claude-context.html</code> へのカードがあることを確認する。</li>
+      </ol>
+    </div>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> レビューゲート</span>
+      <div class="ve-table-wrap">
+        <table aria-label="公開前チェックリスト">
+          <thead>
+            <tr><th>項目</th><th>期待する状態</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>ページ実体</td><td><code>docs/claude-context.html</code> が存在し、ブラウザで開ける</td></tr>
+            <tr><td>メタタグ</td><td><code>og:title</code> / <code>og:url</code> / <code>og:description</code> / <code>twitter:card</code> が揃っている</td></tr>
+            <tr><td>インデックス</td><td>サイトトップの資料リストから本ページへリンクされている</td></tr>
+            <tr><td>パス検証</td><td><code>scripts/validate-public-paths.sh</code> がエラーなく完了する</td></tr>
+            <tr><td>Git</td><td>上流リポジトリのミラーディレクトリがステージされていない</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>検証コマンド:</strong> リポジトリルートで次を実行し、ビジュアル資料パイプラインの検証に通す。
+    </div>
+    <div class="ve-code-block">
+      <pre><code>npx tsx scripts/visual-doc-workflow.ts validate --doc claude-context</code></pre>
+    </div>
   </div>
 </div>
 
 <script>
 (function() {
-  const toc = document.getElementById('toc');
+  var toc = document.getElementById('toc');
   if (!toc) return;
-  const links = toc.querySelectorAll('a[href^="#"]');
-  const sections = [];
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
   links.forEach(function(a) {
-    const id = a.getAttribute('href').slice(1);
-    const el = document.getElementById(id);
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
     if (el) sections.push({ link: a, head: el });
   });
-  const updateActive = function() {
-    const top = window.scrollY + 24;
-    const current = sections.reduce(function(active, s) {
-      const rect = s.head.getBoundingClientRect();
-      const docTop = rect.top + window.scrollY;
-      return docTop <= top ? s : active;
-    }, sections[0] || null);
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
     sections.forEach(function(s) {
       s.link.classList.toggle('active', s === current);
     });
-  };
+  }
   window.addEventListener('scroll', updateActive, { passive: true });
   updateActive();
 })();
