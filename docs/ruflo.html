@@ -9,7 +9,7 @@
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Ruflo — Claude Code 向けマルチエージェント基盤">
-  <meta property="og:description" content="スウォーム、メモリ、連邦、セキュリティ、30+ プラグインで Claude Code に神経系を足す OSS の技術概要。">
+  <meta property="og:description" content="スウォーム、メモリ、連邦、セキュリティ。README 掲載の 32 ネイティブ Claude Code プラグイン＋21 npm プラグインで Claude Code に神経系を足す OSS の技術概要。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/ruflo.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
@@ -239,7 +239,7 @@
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="kpi-row">
       <div class="ve-kpi-card" style="--i:0"><div class="ve-kpi-card__value">100+</div><div class="ve-kpi-card__label">specialized agents</div></div>
-      <div class="ve-kpi-card" style="--i:1"><div class="ve-kpi-card__value">32</div><div class="ve-kpi-card__label">plugins（README 記載）</div></div>
+      <div class="ve-kpi-card" style="--i:1"><div class="ve-kpi-card__value">32+21</div><div class="ve-kpi-card__label">plugins（native + npm）</div></div>
       <div class="ve-kpi-card" style="--i:2"><div class="ve-kpi-card__value">WASM</div><div class="ve-kpi-card__label">Rust カーネル</div></div>
       <div class="ve-kpi-card" style="--i:3"><div class="ve-kpi-card__value">Federation</div><div class="ve-kpi-card__label">マシン横断</div></div>
     </div>
@@ -247,7 +247,7 @@
       <div class="ve-card ve-card--hero hero-copy" style="--i:0">
         <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
         <p><strong>Ruflo</strong>（旧称 <strong>Claude Flow</strong>）は、<a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a> に「神経系」を足す OSS スタック。エージェントのスウォーム化、タスクからの学習、セッションをまたいだ記憶、他ホストのエージェントとの安全な連携までをプラグインとフックで束ねる。</p>
-        <p>ポリシー・埋め込み・証明系などは <strong>Rust で書かれた WASM カーネル</strong>が担当する、という位置づけが README で強調されている。利用者は通常どおり Claude Code でコードを書き、バックグラウンドでルーティングと調整が走る想定。</p>
+        <p>ポリシー・埋め込み・証明系などは <strong>Rust で書かれた WASM カーネル</strong>が担当する、という位置づけが README で強調されている。<code>init</code> 後は通常どおり Claude Code でコードを書き、<strong>フック</strong>がタスクのルーティング・成功パターンからの学習・エージェント調整をバックグラウンドで担う、と説明されている（README では多数の MCP/CLI を逐一覚えなくてよい、という導線）。</p>
       </div>
       <div class="stack-sheet" style="--i:1">
         <div class="stack-line"><strong>Entry</strong><br>CLI / MCP / Claude Code プラグイン</div>
@@ -266,7 +266,7 @@
       <p>README に掲載の ASCII 図を Mermaid に再構成したもの。学習ループは Router 側へのフィードバックとして表現している。</p>
       <div class="mermaid-wrap">
         <pre class="mermaid">flowchart TD
-  U[User] --> R[Ruflo CLI / MCP]
+  U[User] --> R[Ruflo（CLI/MCP）]
   R --> Rt[Router]
   Rt --> S[Swarm]
   S --> A[Agents]
@@ -279,19 +279,23 @@
 
     <section id="plugins" class="sec-head">3 — プラグイン群</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ別（README の表を要約）</span>
-      <p>マーケットプレイス <code>ruvnet/ruflo</code> から個別インストールするモジュラー設計。以下は代表例のみ（全文は公開 README の折りたたみ表を参照）。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ別（README の折りたたみ表に準拠）</span>
+      <p>マーケットプレイス <code>ruvnet/ruflo</code> から個別インストールするモジュラー設計。32 件は README の「All 32 plugins」見出しに対応。全名は上流 README の表を参照。</p>
       <div class="ve-table-wrap">
         <table>
           <thead>
-            <tr><th>カテゴリ</th><th>例</th><th>役割</th></tr>
+            <tr><th>カテゴリ</th><th>代表プラグイン</th><th>役割の目安</th></tr>
           </thead>
           <tbody>
-            <tr><td>Core / オーケストレーション</td><td><code>ruflo-core</code>, <code>ruflo-swarm</code>, <code>ruflo-autopilot</code></td><td>基盤・スウォーム・自律ループ</td></tr>
-            <tr><td>メモリ / 知識</td><td><code>ruflo-agentdb</code>, <code>ruflo-rag-memory</code>, <code>ruflo-rvf</code>, <code>ruflo-knowledge-graph</code></td><td>ベクトルDB、RAG、セッション復元、グラフ</td></tr>
-            <tr><td>品質 / セキュリティ</td><td><code>ruflo-testgen</code>, <code>ruflo-security-audit</code>, <code>ruflo-aidefence</code></td><td>テスト生成、CVE、プロンプト防御</td></tr>
-            <tr><td>方法論 / アーキテクチャ</td><td><code>ruflo-adr</code>, <code>ruflo-ddd</code>, <code>ruflo-sparc</code></td><td>ADR、DDD スキャフォールド、5 フェーズ開発</td></tr>
-            <tr><td>連邦 / 観測</td><td><code>ruflo-federation</code>, <code>ruflo-observability</code></td><td>マシン横断連携、テレメトリ</td></tr>
+            <tr><td>Core &amp; Orchestration</td><td><code>ruflo-core</code>, <code>ruflo-swarm</code>, <code>ruflo-autopilot</code>, <code>ruflo-loop-workers</code>, <code>ruflo-workflows</code>, <code>ruflo-federation</code></td><td>基盤・スウォーム・自律ループ・スケジュール・ワークフロー・連邦</td></tr>
+            <tr><td>Memory &amp; Knowledge</td><td><code>ruflo-agentdb</code>, <code>ruflo-rag-memory</code>, <code>ruflo-rvf</code>, <code>ruflo-ruvector</code>, <code>ruflo-knowledge-graph</code></td><td>ベクトル記憶、ハイブリッド検索、セッション復元、GPU 検索系、グラフ</td></tr>
+            <tr><td>Intelligence &amp; Learning</td><td><code>ruflo-intelligence</code>, <code>ruflo-daa</code>, <code>ruflo-ruvllm</code>, <code>ruflo-goals</code></td><td>成功からの学習、動的挙動、ローカル LLM ルーティング、目標分解</td></tr>
+            <tr><td>Code Quality &amp; Testing</td><td><code>ruflo-testgen</code>, <code>ruflo-browser</code>, <code>ruflo-jujutsu</code>, <code>ruflo-docs</code></td><td>テスト生成、Playwright、diff リスク、ドキュメント自動化</td></tr>
+            <tr><td>Security &amp; Compliance</td><td><code>ruflo-security-audit</code>, <code>ruflo-aidefence</code></td><td>CVE スキャン、プロンプト防御・PII 検知など</td></tr>
+            <tr><td>Architecture &amp; Methodology</td><td><code>ruflo-adr</code>, <code>ruflo-ddd</code>, <code>ruflo-sparc</code></td><td>ADR、DDD スキャフォールド、5 フェーズ開発</td></tr>
+            <tr><td>DevOps &amp; Observability</td><td><code>ruflo-migrations</code>, <code>ruflo-observability</code>, <code>ruflo-cost-tracker</code></td><td>DB マイグレーション、ログ/トレース/メトリクス、トークン課金</td></tr>
+            <tr><td>Extensibility</td><td><code>ruflo-wasm</code>, <code>ruflo-plugin-creator</code></td><td>WASM サンドボックス、自作プラグインの足場</td></tr>
+            <tr><td>Domain-Specific</td><td><code>ruflo-iot-cognitum</code>, <code>ruflo-neural-trader</code>, <code>ruflo-market-data</code></td><td>IoT、トレーディング、市場データ取り込み</td></tr>
           </tbody>
         </table>
       </div>
@@ -314,14 +318,28 @@
       </div>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> CLI と MCP（任意）</span>
+      <p>README ではプラグインの次に、シェル経由の <code>init</code> と Claude Code への MCP 登録が併記されている。</p>
+      <div class="ve-code-block">
+        <div class="code-label">install / init</div>
+        <pre><code>curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/ruflo@main/scripts/install.sh | bash
+# または
+npx ruflo@latest init --wizard</code></pre>
+      </div>
+      <div class="ve-code-block">
+        <div class="code-label">claude mcp add</div>
+        <pre><code>claude mcp add ruflo -- npx -y @claude-flow/cli@latest</code></pre>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:2">
       <span class="ve-section-label"><span class="ve-dot"></span> UI / デモ</span>
-      <p>README のバッジより: <a href="https://flo.ruv.io/" target="_blank" rel="noopener">flo.ruv.io</a>（UI ベータ）、<a href="https://goal.ruv.io/" target="_blank" rel="noopener">goal.ruv.io</a>、<a href="https://goal.ruv.io/agents" target="_blank" rel="noopener">Live Agents</a>。</p>
+      <p>README のバッジより: <a href="https://flo.ruv.io/" target="_blank" rel="noopener">flo.ruv.io</a>（マルチモデル＋MCP・ブラウザ内 WASM ギャラリーの UI ベータ）、<a href="https://goal.ruv.io/" target="_blank" rel="noopener">goal.ruv.io</a>（GOAP 系ゴールプランナー）、<a href="https://goal.ruv.io/agents" target="_blank" rel="noopener">Live Agents</a>。</p>
     </div>
 
     <section id="layout" class="sec-head">5 — リポジトリ構成（要約）</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> トップレベル</span>
-      <p>スキャン結果に基づき、ツリーの要点だけを表にした。詳細なファイル一覧はクローン後のエクスプローラや GitHub のファイルビューで確認する。</p>
+      <p>GitHub 上のソースツリーと README から要約。npm パッケージ名は <code>package.json</code> 上 <code>claude-flow</code>、表示名・README は <strong>Ruflo</strong>。</p>
       <div class="ve-table-wrap">
         <table>
           <thead>
@@ -329,11 +347,13 @@
           </thead>
           <tbody>
             <tr><td><code>agents/</code></td><td>YAML 定義のアーキテクト・コーダー・レビュアー等</td></tr>
-            <tr><td><code>bin/</code></td><td>CLI エントリ（<code>cli.js</code> など）</td></tr>
+            <tr><td><code>bin/</code></td><td>CLI エントリ（<code>cli.js</code> 等。<code>package.json</code> の <code>bin</code> は <code>claude-flow</code>）</td></tr>
+            <tr><td><code>docs/</code></td><td>リポジトリ内ドキュメント（ADR へのリンク例は README に記載）</td></tr>
+            <tr><td><code>scripts/</code></td><td>インストール等（README の one-line <code>curl</code> が参照）</td></tr>
             <tr><td><code>plugin/</code></td><td>配布用プラグインパッケージの束ね</td></tr>
             <tr><td><code>plugins/</code></td><td><code>ruflo-*</code> 各プラグインのソース</td></tr>
-            <tr><td><code>ruflo/</code></td><td>アプライアンス用サブプロジェクト（Docker 等）</td></tr>
-            <tr><td><code>v2/</code> / <code>v3/</code></td><td>世代別の大きなサブツリー（レガシーと次世代フロー）</td></tr>
+            <tr><td><code>ruflo/</code></td><td>Web UI（Ruvocal）などサブプロジェクト（README は <code>ruflo/src/ruvocal/</code> を言及）</td></tr>
+            <tr><td><code>v2/</code> / <code>v3/</code></td><td>世代別の大きなサブツリー（CLI 共有物・Goal UI 等）</td></tr>
             <tr><td><code>tests/</code></td><td>RVF・統合テスト等</td></tr>
             <tr><td><code>.claude/</code>, <code>.claude-plugin/</code></td><td>Claude Code 向け設定・マーケットメタデータ</td></tr>
           </tbody>
