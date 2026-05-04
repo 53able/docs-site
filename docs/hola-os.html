@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>holaOS — オープンエージェントコンピュータ</title>
+  <meta name="description" content="holaOS（holaboss-ai/holaOS）は、ブラウザ・ファイル・アプリを人間と AI が共有するデスクトップと TypeScript ランタイムで構成されるオープンソースのエージェント環境。モノレポ構成と主要パッケージの技術概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="holaOS — オープンエージェントコンピュータ">
+  <meta property="og:description" content="Electron デスクトップ、api-server ランタイム、harness、state-store、SDK レイヤーまでを一枚で把握するビジュアル解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/hola-os.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="holaOS — オープンエージェントコンピュータ">
+  <meta name="twitter:description" content="holaboss-ai/holaOS のアーキテクチャとクイックスタートを日本語で整理した資料。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Victor+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.62 0.14 85);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.55 0.14 155);
+      --code-bg: var(--muted);
+      --code-text: #0c4a6e;
+      --font-body: 'Barlow', system-ui, sans-serif;
+      --font-mono: 'Victor Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.72 0.11 195);
+        --chart-2: oklch(0.78 0.12 95);
+        --chart-3: oklch(0.627 0.265 303.9);
+        --chart-4: oklch(0.769 0.188 70.08);
+        --chart-5: oklch(0.65 0.12 160);
+        --code-bg: #0f172a;
+        --code-text: #7dd3fc;
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin-top: 0.75rem; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--muted) 70%, var(--chart-1) 30%); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-1) 14%, transparent) 0%, transparent 52%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .mermaid-wrap { position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--muted); overflow: hidden; min-height: 280px; margin: 1rem 0; }
+    .mermaid-zoom { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 10; }
+    .mermaid-zoom button { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); width: 28px; height: 28px; font-family: var(--font-mono); font-size: 0.875rem; cursor: pointer; color: var(--text-dim); transition: color 0.15s, background 0.15s; display: flex; align-items: center; justify-content: center; }
+    .mermaid-zoom button:hover { color: var(--text); background: var(--accent); }
+    .mermaid-inner { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 20px; transition: transform 0.15s; cursor: default; user-select: none; }
+    .mermaid-inner.zoomed { cursor: grab; }
+    .mermaid-inner.dragging { cursor: grabbing; }
+    .mermaid-inner svg { max-width: 100%; height: auto; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#stack">システム構成</a>
+    <a href="#packages">モノレポ</a>
+    <a href="#runtime">ランタイム</a>
+    <a href="#desktop">デスクトップ</a>
+    <a href="#sdk">SDK</a>
+    <a href="#install">セットアップ</a>
+    <a href="#links">リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>holaOS</h1>
+  <p class="subtitle">Open Agent Computer · holaboss-ai/holaOS · TypeScript / Electron</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何をするプロジェクトか</span>
+    <p><strong>holaOS</strong> は、デジタル作業を人間と AI エージェントが<strong>同じブラウザ・ファイル・アプリ</strong>上で分担するためのオープンソース環境。メモリ・実行・ゴールを一つのワークスペースに閉じ、文脈が毎回リセットされない「共有コンピュータ」として設計されている。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node 24</span><span class="ve-kpi-card__label">推奨ランタイム</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Electron</span><span class="ve-kpi-card__label">デスクトップ</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">TS</span><span class="ve-kpi-card__label">ランタイム実装</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+    </div>
+    <div class="ve-callout">
+      <strong>プラットフォーム:</strong> 公式 README では macOS が主対象とされ、Windows / Linux は進行中として位置付けられている。詳細は <a href="https://github.com/holaboss-ai/holaOS" target="_blank" rel="noopener">GitHub リポジトリ</a> のバッジとドキュメントを参照。
+    </div>
+  </div>
+
+  <section id="stack" class="sec-head">2 — システム構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> データの流れ（概念図）</span>
+    <p>ユーザーが触れる <strong>Electron デスクトップ</strong>が、ローカルの <strong>api-server</strong> と対話し、エージェント実行は <strong>harness-host</strong> と <strong>harnesses</strong> 経由でツール・スキルに接続する。ワークスペース状態は <strong>state-store</strong> 側で永続化される想定の分割になっている。</p>
+    <div class="mermaid-wrap" id="hola-arch-wrap">
+      <div class="mermaid-zoom">
+        <button type="button" id="hola-zin" title="拡大">+</button>
+        <button type="button" id="hola-zout" title="縮小">−</button>
+        <button type="button" id="hola-zreset" title="リセット">↺</button>
+      </div>
+      <div class="mermaid-inner" id="hola-arch-inner">
+        <div class="mermaid">
+flowchart TD
+  subgraph desk["デスクトップ層"]
+    UI["Electron + Vite UI"]
+  end
+  subgraph rt["ランタイム層"]
+    API["api-server\nHTTP / WS"]
+    HH["harness-host"]
+    HS["harnesses\nツール・スキル"]
+    SS["state-store"]
+  end
+  subgraph dev["開発者向け"]
+    SDK["sdk/\nクライアント"]
+  end
+  UI --> API
+  API --> HH
+  HH --> HS
+  API --> SS
+  SDK --> API
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section id="packages" class="sec-head">3 — モノレポの主なディレクトリ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 責務のマップ</span>
+    <p>リポジトリは npm workspaces 風の複数パッケージで構成される。以下は README とディレクトリ構造から抽出した<strong>読み取り用の要約</strong>（パスはリポジトリルートからの相対表記）。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>領域</th><th>代表パス</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>デスクトップ</td><td><code>desktop/</code></td><td>Electron メインプロセス、ブラウザペイン、オンボーディング UI、<code>package.json</code> ベースのフロントエンド。</td></tr>
+          <tr><td>ランタイム API</td><td><code>runtime/api-server/</code></td><td>セッション、メモリ、統合、キュー、画像生成などアプリとエージェントのオーケストレーション中心。</td></tr>
+          <tr><td>ハーネス</td><td><code>runtime/harness-host/</code> · <code>runtime/harnesses/</code></td><td>エージェント実行ホストと、ブラウザツール・MCP・スキルポリシーなどの能力実装。</td></tr>
+          <tr><td>状態</td><td><code>runtime/state-store/</code></td><td>永続ストア・マイグレーション・CLI デバッグ用エントリ。</td></tr>
+          <tr><td>SDK</td><td><code>sdk/app-sdk/</code> · <code>sdk/bridge/</code> · <code>sdk/runtime-client/</code></td><td>型付きクライアント、ブリッジ、ランタイム呼び出しの公開面。</td></tr>
+          <tr><td>サイト</td><td><code>website/docs/</code></td><td>製品ドキュメント（公開サイト用コンテンツ）。</td></tr>
+          <tr><td>スクリプト</td><td><code>scripts/</code></td><td>インストーラ（例: <code>install.sh</code>）やクイックセットアップ。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="runtime" class="sec-head">4 — ランタイムの焦点</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> api-server と周辺</span>
+    <p><code>runtime/api-server</code> には大規模な <code>app.ts</code> を中心に、ターン処理・メモリ書き戻し・統合（Composio 等）・ワーカー・ブラウザツール橋渡しなどのモジュールが集約されている。ハーネス側は <code>runtime/harnesses</code> にポリシー・ネイティブ Web 検索・ワークスペーススキル等のファイルがまとまり、<code>harness-host</code> が実行時の境界として機能する。</p>
+    <ul>
+      <li><strong>メモリとリコール:</strong> 埋め込み・マニフェスト・バックフィル系ワーカーなど、長期コンテキストを前提としたファイル群が存在する。</li>
+      <li><strong>セッションとタスク:</strong> チェックポイント、TODO、サブエージェント、ターミナルセッションなど「作業の継続性」を支えるコンポーネントが並ぶ。</li>
+      <li><strong>進化（evolve）:</strong> スキルレビューやポストラン処理など、エージェント出力を次の行動に変換するパイプラインがコードベース上に配置されている。</li>
+    </ul>
+  </div>
+
+  <section id="desktop" class="sec-head">5 — デスクトップ（Electron）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> UI とブラウザペイン</span>
+    <p><code>desktop/electron</code> 以下にメインプロセス、プリロード、ブラウザペイン（タブ状態・HTTP サービス・インポート等）がまとまっている。Renderer 側は Vite + TypeScript で、ダッシュボード・マーケットプレイス・公開フローなどの UI モジュールが <code>desktop/src</code> に配置される構成になっている。</p>
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top:0.75rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> ローカル開発の入口</span>
+      <p style="margin-bottom:0">リポジトリ README の手順では、ルートでデスクトップ依存を入れ、<code>desktop/.env</code> を整えたうえでランタイムのローカル準備と型検査を行い、必要なら開発サーバを起動する流れが案内されている。詳細手順は <code>INSTALL.md</code> および <code>desktop/README.md</code> を正とする。</p>
+    </div>
+  </div>
+
+  <section id="sdk" class="sec-head">6 — SDK レイヤー</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公開クライアント</span>
+    <p><code>sdk/app-sdk</code> には Kubb 等で生成された型・React フック・Zod スキーマが大量に含まれ、マーケットプレイスやワークスペース操作の契約が機械可読になっている。<code>sdk/runtime-client</code> はランタイム API への薄いクライアント層、<code>sdk/bridge</code> はデスクトップとランタイムの橋渡し（DB・プレゼンテーション・ターンコンテキスト等）を担う。</p>
+  </div>
+
+  <section id="install" class="sec-head">7 — クイックスタート</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ワンライナー（macOS / Linux / WSL）</span>
+    <p>README に記載の公式インストーラ。Git / Node が未導入の場合もスクリプト側で整備する想定になっている。</p>
+    <div class="ve-code-block"><pre><code>curl -fsSL https://raw.githubusercontent.com/holaboss-ai/holaOS/main/scripts/install.sh | bash -s -- --launch</code></pre></div>
+    <h3>コーディングエージェントへの一括指示</h3>
+    <p>README に掲載の「ワンラインエージェントセットアップ」用テキストは、スクリプト URL と <code>desktop:*</code> npm スクリプトの順序をエージェントに明示する用途。長文はリポジトリの README を参照。</p>
+    <div class="ve-code-block" style="max-height: 12rem;"><pre><code>Run the holaOS install script from https://raw.githubusercontent.com/holaboss-ai/holaOS/main/scripts/install.sh. Follow README for desktop:install, env setup, prepare-runtime:local, and typecheck; only start desktop:dev if asked for --launch.</code></pre></div>
+  </div>
+
+  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・ソース</span>
+    <ul>
+      <li><a href="https://github.com/holaboss-ai/holaOS" target="_blank" rel="noopener">GitHub: holaboss-ai/holaOS</a> — ソース・Issue・CI</li>
+      <li><a href="https://www.holaos.ai/docs" target="_blank" rel="noopener">holaos.ai/docs</a> — 製品ドキュメント（環境工学、ワークスペース、メモリ、ハーネス等）</li>
+      <li><a href="https://www.holaos.ai/docs/getting-started/quick-start" target="_blank" rel="noopener">Quick Start</a> — 最短でローカル環境を立ち上げる手順</li>
+      <li><a href="https://www.holaos.ai/docs/contribute/runtime/apis" target="_blank" rel="noopener">Runtime APIs</a> — ワークスペース・ラン・ストリーミング等の運用面</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  look: 'classic',
+  themeVariables: {
+    primaryColor: isDark ? '#134e4a' : '#ccfbf1',
+    primaryBorderColor: isDark ? '#2dd4bf' : '#0d9488',
+    primaryTextColor: isDark ? '#f0fdfa' : '#134e4a',
+    secondaryColor: isDark ? '#1e293b' : '#ecfeff',
+    secondaryBorderColor: isDark ? '#64748b' : '#94a3b8',
+    secondaryTextColor: isDark ? '#e2e8f0' : '#1e293b',
+    tertiaryColor: isDark ? '#27201a' : '#fef9c3',
+    tertiaryBorderColor: isDark ? '#ca8a04' : '#ca8a04',
+    tertiaryTextColor: isDark ? '#fef9c3' : '#422006',
+    lineColor: isDark ? '#64748b' : '#64748b',
+    fontFamily: 'Barlow, system-ui, sans-serif',
+    fontSize: '15px',
+  },
+});
+</script>
+<script>
+(function() {
+  var inner = document.getElementById('hola-arch-inner');
+  if (inner) {
+    var scale = 1, tx = 0, ty = 0, dragging = false, startX, startY, startTX, startTY;
+    function applyT() {
+      inner.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+      inner.classList.toggle('zoomed', scale > 1);
+    }
+    var zin = document.getElementById('hola-zin');
+    var zout = document.getElementById('hola-zout');
+    var zreset = document.getElementById('hola-zreset');
+    if (zin) zin.addEventListener('click', function() { scale = Math.min(scale + 0.25, 4); applyT(); });
+    if (zout) zout.addEventListener('click', function() { scale = Math.max(scale - 0.25, 0.5); if (scale <= 1) { tx = 0; ty = 0; } applyT(); });
+    if (zreset) zreset.addEventListener('click', function() { scale = 1; tx = 0; ty = 0; applyT(); });
+    inner.addEventListener('wheel', function(e) {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      scale = Math.min(Math.max(scale - e.deltaY * 0.001, 0.5), 4);
+      if (scale <= 1) { tx = 0; ty = 0; }
+      applyT();
+    }, { passive: false });
+    inner.addEventListener('mousedown', function(e) {
+      if (scale <= 1) return;
+      dragging = true; startX = e.clientX; startY = e.clientY; startTX = tx; startTY = ty;
+      inner.classList.add('dragging');
+    });
+    window.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      tx = startTX + (e.clientX - startX);
+      ty = startTY + (e.clientY - startY);
+      applyT();
+    });
+    window.addEventListener('mouseup', function() { dragging = false; inner.classList.remove('dragging'); });
+  }
+
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
