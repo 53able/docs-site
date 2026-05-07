@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kami — 丁寧なドキュメントを届けるデザインシステム</title>
-  <meta name="description" content="tw93/kami のビジュアル解説。温かなパーチメントとインクブルのアクセントで、履歴書からスライドまで八種類の文書をエージェントが安定して組版できる仕組みを、やさしくご案内します。">
+  <title>Kami — tw93/kami 文書組版スキル</title>
+  <meta name="description" content="tw93/kami のビジュアル解説。パーチメント地とインクブル一色のルール、八つの文書テンプレ、エージェント向けの組版フローを整理する。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Kami — 丁寧なドキュメントを届けるデザインシステム">
-  <meta property="og:description" content="Good content deserves good paper。Kaku・Waza・Kami 三部作の「紙」として、エージェント向けの組版制約と八つのテンプレートを紹介します。">
+  <meta property="og:title" content="Kami — tw93/kami 文書組版スキル">
+  <meta property="og:description" content="八テンプレ、パーチメント＋インクブル、Kaku・Waza・Kami のうち「紙」担当。組版フローと CLI を短くまとめた。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/kami.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Kami — 丁寧なドキュメントを届けるデザインシステム">
-  <meta name="twitter:description" content="温かなキャンバスとインクブル一色のルールで、プロ品質の PDF とスライドを再現しやすくする Claude Skill。">
+  <meta name="twitter:title" content="Kami — tw93/kami 文書組版スキル">
+  <meta name="twitter:description" content="Claude Skill。八テンプレ、WeasyPrint 既定、CJK は日本語ベストエフォート。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
@@ -195,7 +195,7 @@
 <div class="wrap">
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
-    <a href="#welcome">ようこそ</a>
+    <a href="#welcome">概要</a>
     <a href="#why">なぜ Kami か</a>
     <a href="#trilogy">三部作</a>
     <a href="#flow">届くまで</a>
@@ -207,13 +207,13 @@
 
   <div class="main">
     <h1>Kami</h1>
-    <p class="subtitle">紙（かみ）に乗せたいアイデアへ、ようこそ。ここでは <a href="https://github.com/tw93/kami" target="_blank" rel="noopener">tw93/kami</a> が大切にしている「読みたくなる一枚」を、やさしい言葉と図でご案内します。</p>
+    <p class="subtitle"><a href="https://github.com/tw93/kami" target="_blank" rel="noopener">tw93/kami</a> の要約ページ。スローガン、三部作での位置、テンプレ八種、デザイン制約、導入コマンドを並べた。</p>
 
-    <section id="welcome" class="sec-head">ようこそ</section>
+    <section id="welcome" class="sec-head">概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> おもてなしの一文</span>
-      <p><strong>Good content deserves good paper.</strong> すばらしい内容には、それにふさわしい紙面が必要です。Kami は UI フレームワークではなく、<strong>印刷物としての品格</strong>を保つための制約の言語です。エージェントが毎回バラバラの「無難なグレー」に流されないよう、温かなパーチメントとインクブル一色のルールで、八つの文書タイプを支えています。</p>
-      <p>英語と中国語を第一級に、日本語はベストエフォートの CJK 経路で。納品前に視覚チェックを挟む前提で、日本語の組版も丁寧に扱えます。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> スローガンと役割</span>
+      <p><strong>Good content deserves good paper.</strong> Kami は UI フレームワークではなく、紙面のトーンとレイアウトを固定する<strong>制約セット</strong>だ。パーチメント地（<code>#f5f4ed</code>）とインクブル（<code>#1B365D</code>）だけで八つの文書タイプを回す。</p>
+      <p>英語・中国語テンプレが第一級。日本語は CJK 経路でベストエフォート。出す前に目視で崩れを見る想定。</p>
       <div class="kpi-row">
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">8</span><span class="ve-kpi-card__label">ドキュメント種別</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">14</span><span class="ve-kpi-card__label">SVG 図版プリミティブ</span></div>
@@ -224,17 +224,17 @@
 
     <section id="why" class="sec-head">なぜ Kami か</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 迷子にならないための地図</span>
-      <p>AI はもう、人間が手で書くより速く文書を下書きできます。足りないのは能力ではなく<strong>一貫したデザインシステム</strong>です。セッションごとにレイアウトが変わると、読者は疲れ、チームはブランドを守れません。Kami は「エージェントが迷わず再現できる」ほどシンプルで、「そのまま配って恥ずかしくない」ほど厳しめのルールを両立させます。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> 問題設定</span>
+      <p>下書き速度は十分なのに、セッションごとにフォントと余白が変わると読みにくい。Kami は再現しやすいルールを薄く積む。複雑さはテンプレ側に閉じる。</p>
       <div class="ve-callout">
-        <strong>心遣いのポイント:</strong> 明示的なプロンプトが最優先。次に編集判断、習慣メモ、フロントマター、ビルトイン既定…と重みづけされ、プロフィール（任意の <code>brand.md</code>）は静かに隙間を埋めるだけ。読み手の意図を奪いはしません。
+        <strong>brand.md の順位:</strong> あなたのプロンプトが先。続いて編集判断、習慣メモ、YAML 既定、ビルトイン既定。任意の <code>brand.md</code> は欠けた部分だけ埋め、プロンプトを上書きしない。
       </div>
     </div>
 
     <section id="trilogy" class="sec-head">三部作のなかの Kami</section>
     <div class="ve-card ve-card--recessed" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> Kaku · Waza · Kami</span>
-      <p>ひとつの物語の三つの章のように、役割が分かれています。</p>
+      <p>作者が切り分けた三ツール。名前だけ日本語で揃っている。</p>
       <ul>
         <li><strong>Kaku（書く）</strong> — コードを書くための高速ターミナル環境（<a href="https://github.com/tw93/Kaku" target="_blank" rel="noopener">Kaku</a>）</li>
         <li><strong>Waza（技）</strong> — 習慣と反復を鍛える（<a href="https://github.com/tw93/Waza" target="_blank" rel="noopener">Waza</a>）</li>
@@ -244,7 +244,7 @@
 
     <section id="flow" class="sec-head">アイデアが紙になるまで</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> ざっくりした旅路</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> 処理の流れ</span>
       <p>自然言語で依頼すると、スキルが言語・用途・テンプレを選び、必要なら素材確認や蒸留（distill）を挟んでから、HTML ベースの組版へ進みます。スライドは WeasyPrint 経由の PDF を既定に、編集可能な PPTX が要望にだけ応じます。</p>
       <div class="mermaid-wrap">
         <pre class="mermaid">%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#e8ecf4", "primaryTextColor": "#1b365d", "primaryBorderColor": "#1b365d", "lineColor": "#5a7aa5", "secondaryColor": "#f5f0e6", "tertiaryColor": "#faf6ed", "fontFamily": "Source Sans 3, system-ui, sans-serif", "fontSize": "15px"}}}%%
@@ -263,7 +263,7 @@ flowchart TD
 
     <section id="doc-types" class="sec-head">八つの文書タイプ</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 用途に合わせてお選びください</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> テンプレ対応</span>
       <div class="ve-table-wrap">
         <table>
           <thead>
@@ -281,7 +281,7 @@ flowchart TD
           </tbody>
         </table>
       </div>
-      <p>長文やスライドの<strong>なかに埋め込む図</strong>だけが欲しい場合は、専用テンプレではなく <code>assets/diagrams/</code> の SVG プリミティブ（フロー、象限、棒グラフなど）へルーティングします。段落で十分伝わるなら、無理に図を増やさないのが礼儀です。</p>
+      <p>長文やスライドの<strong>中だけ</strong>に図が要るなら <code>assets/diagrams/</code> の SVG テンプレへ振る。段落で足りる話に図を足さない（スキル側も同趣旨）。</p>
     </div>
 
     <section id="design" class="sec-head">デザインの約束</section>
@@ -302,31 +302,31 @@ flowchart TD
           </tbody>
         </table>
       </div>
-      <p>言語ごとにセリフを一本化（中国語: TsangerJinKai02、日本語: YuMincho、英語: Charter など）。詳細は上流リポジトリの <code>references/design.md</code> と <code>CHEATSHEET.md</code> をご覧ください。</p>
+      <p>言語ごとにセリフを一本化（中国語: TsangerJinKai02、日本語: YuMincho、英語: Charter など）。細部は <code>references/design.md</code> と <code>CHEATSHEET.md</code>。</p>
     </div>
 
     <section id="start" class="sec-head">はじめの一歩</section>
     <div class="ve-card ve-card--elevated" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> Claude Code から</span>
-      <p>すでに開発環境にお越しの方へ、いちばん短い招待状です。</p>
+      <p>Claude Code なら一行。</p>
       <div class="ve-code-block">
         <pre><code>npx skills add tw93/kami -a claude-code -g -y</code></pre>
       </div>
       <p>汎用エージェント向けには <code>-a '*'</code>、Claude Desktop ではリリースの ZIP を Skills にそのままアップロードする方法もあります。更新は同じ URL から差し替えるだけ、とのことです。</p>
       <div class="ve-callout">
-        <strong>任意のおもてなし:</strong> ホームディレクトリに <code>~/.config/kami/brand.md</code> を置くと、名前・トーン・既定通貨などを静かに覚えてくれます。テンプレは <a href="https://github.com/tw93/kami/blob/main/references/brand.example.md" target="_blank" rel="noopener">brand.example.md</a> をご参照ください。
+        <strong>任意:</strong> <code>~/.config/kami/brand.md</code> に名前・トーン・通貨ロケールなどを書いておくと、曖昧な依頼のときだけ参照される。雛形は <a href="https://github.com/tw93/kami/blob/main/references/brand.example.md" target="_blank" rel="noopener">brand.example.md</a>。
       </div>
     </div>
 
     <section id="links" class="sec-head">公式リンク</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> さらに深く知りたい方へ</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> 参照</span>
       <ul>
         <li><a href="https://github.com/tw93/kami" target="_blank" rel="noopener">GitHub: tw93/kami</a> — 本体・Issue・リリース</li>
         <li><a href="https://github.com/tw93/kami/releases/latest/download/kami.zip" target="_blank" rel="noopener">最新の kami.zip</a> — Desktop 向け</li>
         <li>スキル本文はリポジトリ内の <code>SKILL.md</code>、設計思想は <code>README.md</code> が入口です</li>
       </ul>
-      <p style="margin-top: 1rem; color: var(--text-dim); font-size: 0.875rem;">このページは資料サイト用のビジュアル解説です。挙動の正は常に公式リポジトリの最新版に従ってください。気になる点があれば、遠慮なく Issue で声をかけてくださいね。</p>
+      <p style="margin-top: 1rem; color: var(--text-dim); font-size: 0.875rem;">この HTML は docs-site 側の要約。挙動と数値の正は <a href="https://github.com/tw93/kami" target="_blank" rel="noopener">tw93/kami</a> の最新コミットに合わせる。バグと要望は同リポジトリの Issue に書いてよい。</p>
     </div>
   </div>
 </div>
