@@ -4,9 +4,12 @@ description: >-
   Adds Spell UI visual documentation pages to docs-site from repos/ sources: optional clone into repos/,
   Context Engineering (JiT loading, structured extraction, self-refinement), scan-source.sh inventory,
   Think–Structure–Style and templates, writes docs/<name>.html, links index.html, opens draft PRs.
+  Encodes requested reading tone in concrete wording (short steps, clear labels, respectful imperatives)
+  instead of meta section titles or brochure taglines. Aligns index card titles with the page title and subject matter.
   Use when converting READMEs, SKILLs, or cloned repos under repos/ into docs-site pages.
   Do not use for non-docs-site projects, source outside repos/, standalone generic HTML outside this site,
-  or large in-place rewrites of existing pages (do focused edits instead).
+  large in-place rewrites of existing pages (do focused edits instead), or pages that only name a vibe in headings
+  without substantive content.
 ---
 
 # docs-site ビジュアル解説（統合スキル）
@@ -18,6 +21,7 @@ description: >-
 | **JiT Loading** | ソース走査・参照読み込み | 必要な時だけ読み、コンテキストを汚染しない |
 | **Structured Extraction** | コンテンツ分類 → コンポーネント | 生ソースを視覚コンポーネントへ変換 |
 | **Self-Refinement** | 生成後の検証 | 既存 `docs/*.html` との整合で品質担保 |
+| **Factual copy** | 見出し・index カード・メタ | トーンは本文の書き方で示し、雰囲気ラベル見出しにしない |
 
 ## スコープ
 
@@ -100,6 +104,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 - セクション **4 本以上**なら TOC 付きレイアウト（`references/responsive-nav.md`、`docs/defuddle.html` の Scroll Spy）。
 - 審美: フォント・パレット・アクセントを選ぶ。**禁止**: Inter / Roboto / violet / cyan-magenta-pink（詳細は `spell-ui-map.md`）。
 - **ASCII 表を避ける**: 複雑な表は HTML テーブル化（`visual-explainer-core.md`）。
+- **文体**: 依頼に「丁寧に」「ホスピタリティ」などがあっても、**見出しでトーンを名指ししない**。`references/copy-tone.md` を読み、事実・手順ベースのラベルにする。
 
 ---
 
@@ -113,6 +118,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 4. **Mermaid・表・図**: `visual-explainer-core.md` の Diagram Types と **`references/libraries.md`**。
 5. **コードブロック可読性**: グローバル `code { background: ...; padding: ... }` を使う場合、`.ve-code-block pre code` で必ず打ち消す。打ち消しが無いとコード行が帯状になり読めない。
 6. **パスの公開化**: 本文・ラベル・出典表記では、読み取り元の `repos/<clone-dir>/...` を公開向けに言い換える。例: `repos/mattpocock/skills/README.md` は `mattpocock/skills の README.md` または `README.md` と書く。
+7. **index カードとページの整合**: `.index-doc-title` はページの `<title>` / 主題と矛盾させない。キャッチコピー専用のカードタイトルにしない（`references/copy-tone.md`）。
 
 ```css
 .ve-code-block pre code {
@@ -154,6 +160,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 6. コードブロックがある場合、`.ve-code-block pre code` が `background: transparent` / `padding: 0` を持ち、インラインコード用背景がコード全体に漏れていない。
 7. `git status` で `repos/` がステージングされていない。
 8. `scripts/validate-public-paths.sh docs/<名前>.html` を実行し、ローカル絶対パスと `repos/<名前>/...` 表記が公開 HTML に残っていないことを確認する。
+9. 見出し・リード・メタ description に、**雰囲気の単語だけ**が載っていない。トーンの修正依頼があれば `references/copy-tone.md` に沿って差し替え、ユーザーが **stop-slop** スキルを添付している場合はその手順に従う。
 
 **全項目チェック:** `references/checklist.md` を読んで残りの項目を確認する。
 
@@ -163,7 +170,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 
 ### index.html へのリンク追加
 
-`.doc-list` に既存と同形式のリンクカードを 1 件追加する（コメント「追加する資料はここに」の直前が無難）。
+`.doc-list` に既存と同形式のリンクカードを 1 件追加する（コメント「追加する資料はここに」の直前が無難）。`index-doc-title` は **`docs/<名前>.html` の `<title>` と主題**に合わせ、ページとカードで言い回しが食い違わないようにする（詳細は `references/copy-tone.md`）。
 
 ```html
 <li>
@@ -211,6 +218,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 | フォント・パレットが既存と被る | `references/spell-ui-map.md` の差別化チェック |
 | `repos/` がステージに混入した | `git reset HEAD repos/` で除外してからコミット |
 | 公開 HTML に `/Users/...` や `repos/<名前>/...` が残った | `scripts/validate-public-paths.sh docs/<名前>.html` の検出箇所を、GitHub URL・プロジェクト名・リポジトリ内相対パスへ置換 |
+| 見出しやカードが「歓迎」「おもてなし」などラベル先行で違和感がある | `references/copy-tone.md` で見出しを事実・手順ラベルへ置換し、本文で丁寧さを担保する |
 | commit-diffs または pr-creation スキルを部分的に読んで実行した | スキル内のすべての参照ファイルを読み直し、未実施ステップを実行する |
 
 ---
@@ -231,6 +239,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 | タイミング | ファイル |
 |-----------|---------|
 | Phase 1 のファイル一覧把握 | `scripts/scan-source.sh` を実行 |
+| トーン・見出し・index カードの違和感 | `references/copy-tone.md` |
 | コンテンツ変換で迷った時 | `references/context-extraction.md` |
 | コンポーネント選択・フォント | `references/spell-ui-map.md` |
 | Spell UI 実装仕様（CSS 詳細） | `references/spell-ui-integration.md` + `references/spell-ui-tokens.css` + `references/spell-ui-static.css` |

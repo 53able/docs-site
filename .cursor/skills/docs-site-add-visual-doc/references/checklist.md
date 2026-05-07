@@ -20,3 +20,5 @@
 - [ ] `index.html` / `docs/opentui.html` 等とトーンが大きく乖離していない
 - [ ] Mermaid 利用時は `references/libraries.md` のテーマ・ズーム方針に沿っている
 - [ ] `references/visual-explainer-core.md` の Anti-Patterns（スロップ検査）を一通り確認した
+- [ ] `references/copy-tone.md` に沿い、見出しが事実・手順ベースで、トーンを単語だけで宣言していない
+- [ ] `index.html` のカードタイトルがページ `<title>` / 主題と揃っており、キャッチコピーだけになっていない
