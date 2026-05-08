@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Paperclip — ゼロヒューマン企業のためのオーケストレーション</title>
-  <meta name="description" content="ゼロヒューマン企業のためのオーケストレーション Paperclip の紹介。">
+  <meta name="description" content="paperclipai/paperclip の概要・機能・クイックスタート・開発コマンドを Spell UI で整理したビジュアル資料。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Paperclip — ゼロヒューマン企業のためのオーケストレーション">
-  <meta property="og:description" content="ゼロヒューマン企業のためのオーケストレーション Paperclip の紹介。">
-  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/paperclip-master.html">
+  <meta property="og:description" content="paperclipai/paperclip の概要・機能・クイックスタート・開発コマンドを Spell UI で整理したビジュアル資料。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/paperclipai-paperclip.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Paperclip — ゼロヒューマン企業のためのオーケストレーション">
-  <meta name="twitter:description" content="ゼロヒューマン企業のためのオーケストレーション Paperclip の紹介。">
+  <meta name="twitter:description" content="paperclipai/paperclip の概要・機能・クイックスタート・開発コマンドを Spell UI で整理したビジュアル資料。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -110,13 +110,24 @@
     }
     .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
     .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
-    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 24rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block--tall { max-height: 32rem; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+      white-space: pre;
+      overflow-x: auto;
+    }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
-    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
     .ve-table-wrap tbody tr:hover { background: var(--border); }
     .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
     .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
@@ -171,7 +182,7 @@
     /* ============ Typography ============ */
     h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
     .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
-    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 1rem; }
     .sec-head:first-of-type { margin-top: 0; }
     h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
     p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
@@ -200,20 +211,24 @@
     <a href="#features">特徴</a>
     <a href="#problems">解決する問題</a>
     <a href="#special">なぜ特別か</a>
+    <a href="#not-for">向かない用途</a>
+    <a href="#architecture">構成の俯瞰</a>
     <a href="#quickstart">クイックスタート</a>
     <a href="#development">開発</a>
+    <a href="#telemetry">テレメトリ</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
   <h1>Paperclip</h1>
-  <p class="subtitle">ゼロヒューマン企業のためのオープンソースオーケストレーション。AI エージェントのチームを編成し、ゴールを割り当て、ダッシュボードで作業とコストを追跡する。</p>
+  <p class="subtitle">ゼロヒューマン企業のためのオープンソースオーケストレーション（paperclipai/paperclip）。AI エージェントのチームを編成し、ゴールを割り当て、ダッシュボードで作業とコストを追跡する。</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--elevated" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
     <p><strong>Paperclip</strong> は、Node.js サーバーと React UI で、AI エージェントのチームをオーケストレーションして「会社」を運営するオープンソースプロジェクト。OpenClaw が「従業員」なら、Paperclip は「会社」に相当する。自前のエージェントを持ち込み、ゴールを設定し、エージェントの作業とコストを一つのダッシュボードで管理する。</p>
     <p>外見はタスクマネージャーのようだが、内部には組織図・予算・ガバナンス・ゴール整合・エージェント間調整がある。プルリクではなくビジネスゴールを管理する。</p>
+    <div class="ve-callout" style="margin-top:1rem"><strong>ロードマップ:</strong> <strong>Clipmart</strong>（プリビルト会社テンプレの公開・ワンクリック投入）は README で COMING SOON として案内されている。</div>
     <div class="kpi-row">
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node</span><span class="ve-kpi-card__label">サーバー</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">React</span><span class="ve-kpi-card__label">UI</span></div>
@@ -246,7 +261,7 @@
           <tr><td>Cost Control</td><td>エージェントごとの月次予算。上限に達したら停止。暴走コストを防ぐ。</td></tr>
           <tr><td>Multi-Company</td><td>1 デプロイで複数会社。完全なデータ分離。ポートフォリオを一つのコントロールプレーンで。</td></tr>
           <tr><td>Ticket System</td><td>会話はすべてトレース、決定は説明付き。ツール呼び出しの完全トレースと不変監査ログ。</td></tr>
-          <tr><td>Governance</td><td>承認ゲート、設定のリビジョン、ロールバックで悪い変更を安全に戻せる。</td></tr>
+          <tr><td>Governance</td><td>ボードとして承認・戦略の上書き・エージェントの一時停止・終了が可能。実行ポリシーと監査ログとセット。</td></tr>
           <tr><td>Org Chart</td><td>階層・役割・報告ライン。エージェントに上司・肩書き・職務記述がある。</td></tr>
           <tr><td>Mobile Ready</td><td>どこからでも自律ビジネスを監視・管理できる。</td></tr>
         </tbody>
@@ -268,6 +283,7 @@
           <tr><td>エージェント設定がフォルダに散らばり、タスク管理・連携を毎回自作している。</td><td>組織図・チケット・委譲・ガバナンスが標準装備。スクリプトの山ではなく会社として運営できる。</td></tr>
           <tr><td>暴走ループでトークンが数百ドル消え、気づいたときにはクォータ超過。</td><td>コスト追跡で予算を可視化し、超過時はエージェントをスロットル。予算で優先度を管理。</td></tr>
           <tr><td>定期ジョブ（サポート・SNS・レポート）を手動で起動している。</td><td>Heartbeats でスケジュール実行。管理職が監督。</td></tr>
+          <tr><td>アイデアのたびにリポジトリを探し Claude Code を開き、タブを守り続ける。</td><td>Paperclip にタスクを追加し、コーディングエージェントが完了まで実行。管理側が成果をレビュー。</td></tr>
         </tbody>
       </table>
     </div>
@@ -287,7 +303,7 @@
 
   <section id="special" class="sec-head">4 — なぜ特別か</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> オーケストレーションの正しさ</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> オーケストレーションの要点</span>
     <div class="ve-table-wrap">
       <table>
         <thead>
@@ -299,59 +315,138 @@
           <tr><td>Runtime skill injection</td><td>エージェントは実行時に Paperclip のワークフローやプロジェクトコンテキストを学習可能。再学習不要。</td></tr>
           <tr><td>Governance with rollback</td><td>承認ゲートが強制され、設定はリビジョン管理。悪い変更は安全にロールバック可能。</td></tr>
           <tr><td>Goal-aware execution</td><td>タスクはゴールの親子関係を持ち、エージェントは「なぜ」を一貫して把握できる。</td></tr>
+          <tr><td>Portable company templates</td><td>組織・エージェント・スキル等をエクスポート／インポート。シークレットのスクラブと衝突解消付き。</td></tr>
           <tr><td>True multi-company isolation</td><td>すべてのエンティティは会社スコープ。1 デプロイで複数会社を完全に分離したデータ・監査で運用可能。</td></tr>
         </tbody>
       </table>
     </div>
   </div>
-  <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> Paperclip が向いていないもの</span>
-    <p>チャットボットではなく「仕事」を持つエージェント用。ワークフロー Builder やプロンプトマネージャーではなく、組織図・ゴール・予算・ガバナンスで「会社」をモデルする。単一エージェント用ではなく、チーム向け。</p>
+
+  <section id="not-for" class="sec-head">5 — Paperclip が向いていないもの</section>
+  <div class="ve-card ve-card--recessed" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> README の境界定義（要約）</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>種別</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>チャットボットではない</td><td>エージェントは「仕事」を持つ。雑談 UI ではなくチケットと Heartbeat 中心。</td></tr>
+          <tr><td>エージェントフレームワークではない</td><td>エージェントの作り方は規定しない。複数エージェントの会社運営にフォーカス。</td></tr>
+          <tr><td>ワークフロー Builder ではない</td><td>ドラッグ&amp;ドロップのパイプラインではなく、組織図・ゴール・予算・ガバナンスで会社をモデル化。</td></tr>
+          <tr><td>プロンプトマネージャーではない</td><td>プロンプト・モデル・ランタイムはエージェント側。Paperclip は組織と作業の座組を管理。</td></tr>
+          <tr><td>単一エージェント向けではない</td><td>チーム前提。1 体だけなら過剰になりやすい。</td></tr>
+          <tr><td>コードレビュー専用ツールではない</td><td>PR の代替ではなく作業オーケストレーション。レビュープロセスは別途持ち込む。</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <section id="quickstart" class="sec-head">5 — クイックスタート</section>
+  <section id="architecture" class="sec-head">6 — 構成の俯瞰</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> コントロールプレーン（README 要約）</span>
+    <p>ラッパーではなくフル制御面。主要サブシステムの一例:</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>領域</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Identity &amp; Access</td><td>デプロイモード（trusted local / authenticated）、ボードユーザー、エージェント API キー、会社メンバーシップ等。</td></tr>
+          <tr><td>Org Chart &amp; Agents</td><td>役割・予算・報告ライン・権限。Claude / Codex / CLI / HTTP アダプタなど。</td></tr>
+          <tr><td>Work &amp; Tasks</td><td>Issue の会社／プロジェクト／ゴールリンク、原子的チェックアウト、ブロッカー、コメント、添付、ワークプロダクト。</td></tr>
+          <tr><td>Heartbeat Execution</td><td>DB ベースのウェイクアップ、予算チェック、ワークスペース解決、シークレット注入、アダプタ実行、リカバリ。</td></tr>
+          <tr><td>Workspaces &amp; Runtime</td><td>プロジェクトワークスペース、git worktree 等の実行環境、プレビュー URL・開発サーバー連携。</td></tr>
+          <tr><td>Governance &amp; Approvals</td><td>ボード承認、実行ポリシー、監査ログ、エージェント停止／再開。</td></tr>
+          <tr><td>Budget &amp; Costs</td><td>会社・エージェント・プロジェクト・Issue 単位のコスト追跡とハードストップ。</td></tr>
+          <tr><td>Routines &amp; Schedules</td><td>cron / webhook / API トリガの定期実行と Issue 生成。</td></tr>
+          <tr><td>Plugins</td><td>プロセス外ワーカー、ホストサービス、ジョブ、ツール／UI 拡張。</td></tr>
+          <tr><td>Secrets &amp; Storage</td><td>インスタンス／会社シークレット、暗号化ローカルストレージ、オブジェクトストレージ、添付。</td></tr>
+          <tr><td>Company Portability</td><td>組織一式のエクスポート／インポート（シークレット除去・衝突処理）。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="quickstart" class="sec-head">7 — クイックスタート</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> セルフホスト・オープンソース</span>
-    <p>Paperclip アカウントは不要。一発セットアップ:</p>
+    <p>Paperclip アカウントは不要。既定は trusted local（ループバック）で最短初回起動:</p>
     <div class="ve-code-block">
       <pre><code>npx paperclipai onboard --yes</code></pre>
     </div>
-    <p>手動で起動する場合:</p>
+    <p>認証付き／LAN・Tailnet 公開で初めたい場合はバインドプリセットを明示:</p>
+    <div class="ve-code-block">
+      <pre><code>npx paperclipai onboard --yes --bind lan
+# または
+npx paperclipai onboard --yes --bind tailnet</code></pre>
+    </div>
+    <p>既に設定がある状態で <code>onboard</code> を再実行すると既存設定は維持。変更は <code>paperclipai configure</code>。</p>
+    <p>手動クローン:</p>
     <div class="ve-code-block">
       <pre><code>git clone https://github.com/paperclipai/paperclip.git
 cd paperclip
 pnpm install
 pnpm dev</code></pre>
     </div>
-    <p>API サーバーは <code>http://localhost:3100</code>。組み込み PostgreSQL が自動作成され、追加セットアップは不要。</p>
-    <div class="ve-callout"><strong>要件:</strong> Node.js 20+、pnpm 9.15+</div>
+    <p>API は <code>http://localhost:3100</code>。開発時は UI も API サーバのミドルウェア経由で同一オリジン。組み込み PostgreSQL が自動作成され、追加 DB セットアップは不要。</p>
+    <div class="ve-callout"><strong>要件:</strong> Node.js 20+、pnpm 9.15+（リポジトリの <code>package.json</code> の engines / packageManager に準拠）</div>
   </div>
 
-  <section id="development" class="sec-head">6 — 開発</section>
+  <section id="development" class="sec-head">8 — 開発</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 開発用コマンド</span>
-    <p>リポジトリ clone 後、主なスクリプト:</p>
-    <div class="ve-code-block">
-      <pre><code>pnpm dev          # API + UI のフル開発（watch）
-pnpm dev:once     # ファイル監視なしで 1 回起動
-pnpm dev:server   # サーバーのみ
-pnpm build        # 全体ビルド
-pnpm typecheck    # 型チェック
-pnpm test:run     # テスト実行
-pnpm db:generate  # DB マイグレーション生成
-pnpm db:migrate   # マイグレーション適用</code></pre>
+    <span class="ve-section-label"><span class="ve-dot"></span> よく使うスクリプト</span>
+    <p>clone 後のエントリ（README / <code>package.json</code> に整合）:</p>
+    <div class="ve-code-block ve-code-block--tall">
+      <pre><code>pnpm dev              # API + UI、ウォッチ
+pnpm dev:once         # ウォッチなしで 1 回起動（既定でローカルマイグレーション適用など）
+pnpm dev:server       # サーバーのみ
+pnpm dev:list         # 管理済み dev ランナーの確認
+pnpm dev:stop         # dev ランナー停止
+pnpm storybook        # UI Storybook（ポート 6006）
+pnpm build            # 全体ビルド
+pnpm typecheck        # 型チェック
+pnpm test             # 既定は Vitest のみ（README の cheap default）
+pnpm test:watch       # Vitest ウォッチ
+pnpm test:e2e         # Playwright（ブラウザ。通常フローとは別）
+pnpm db:generate      # DB マイグレーション生成
+pnpm db:migrate       # マイグレーション適用</code></pre>
     </div>
-    <p>詳細は <code>doc/DEVELOPING.md</code> を参照。</p>
+    <p><code>pnpm test</code> は Playwright を含まない。ブラウザ系は <code>pnpm test:e2e</code> 等で個別実行。</p>
+    <p>詳細は上游リポジトリの <code>doc/DEVELOPING.md</code> を参照。</p>
   </div>
 
-  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <section id="telemetry" class="sec-head">9 — テレメトリ</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> 既定 ON と無効化</span>
+    <p>匿名の利用状況テレメトリが既定で有効。個人情報・Issue 本文・プロンプト・ファイルパス・シークレットは収集対象外。プライベート repo 参照はインストール単位の salt でハッシュ化される、と README に記載されている。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>方法</th><th>設定</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>環境変数</td><td><code>PAPERCLIP_TELEMETRY_DISABLED=1</code></td></tr>
+          <tr><td>標準の追跡拒否</td><td><code>DO_NOT_TRACK=1</code></td></tr>
+          <tr><td>CI</td><td><code>CI=true</code> のとき自動無効</td></tr>
+          <tr><td>設定ファイル</td><td><code>telemetry.enabled: false</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">10 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・コミュニティ</span>
     <ul>
+      <li><a href="https://paperclip.ing/docs" target="_blank" rel="noopener">公式ドキュメント（paperclip.ing）</a></li>
       <li><a href="https://github.com/paperclipai/paperclip" target="_blank" rel="noopener">GitHub: paperclipai/paperclip</a></li>
-      <li><a href="https://discord.gg/m4HZY7xNG3" target="_blank" rel="noopener">Discord</a> — コミュニティ</li>
-      <li><a href="https://github.com/paperclipai/paperclip/issues" target="_blank" rel="noopener">GitHub Issues</a> — バグ・要望</li>
-      <li><a href="https://github.com/paperclipai/paperclip/discussions" target="_blank" rel="noopener">GitHub Discussions</a> — アイデア・RFC</li>
+      <li><a href="https://github.com/gsxdsm/awesome-paperclip" target="_blank" rel="noopener">awesome-paperclip</a> — プラグイン・関連リンク集</li>
+      <li><a href="https://discord.gg/m4HZY7xNG3" target="_blank" rel="noopener">Discord</a></li>
+      <li><a href="https://x.com/papercliping" target="_blank" rel="noopener">X（@papercliping）</a></li>
+      <li><a href="https://github.com/paperclipai/paperclip/issues" target="_blank" rel="noopener">GitHub Issues</a></li>
+      <li><a href="https://github.com/paperclipai/paperclip/discussions" target="_blank" rel="noopener">GitHub Discussions</a></li>
+      <li><a href="https://github.com/paperclipai/paperclip/blob/master/ROADMAP.md" target="_blank" rel="noopener">ROADMAP.md</a></li>
     </ul>
   </div>
   </div>
