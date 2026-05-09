@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>pi-mono — tools for building AI agents</title>
-  <meta name="description" content="badlogic の pi-mono を、Pi coding agent、統一 LLM API、エージェント基盤、TUI / Web UI、拡張・スキル・パッケージ、セッション管理の観点で整理したビジュアル解説。">
+  <title>pi — Pi Agent Harness（earendil-works）</title>
+  <meta name="description" content="earendil-works/pi のモノレポを、Pi coding agent、統一 LLM API、エージェント基盤、TUI / Web UI、拡張・スキル・パッケージ、セッション管理の観点で整理したビジュアル解説。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="pi-mono — tools for building AI agents">
-  <meta property="og:description" content="Pi coding agent、統一 LLM API、エージェント基盤、TUI / Web UI、拡張・スキル・パッケージ、セッション管理をまとめた badlogic/pi-mono のビジュアル解説。">
-  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/pi-mono.html">
+  <meta property="og:title" content="pi — Pi Agent Harness（earendil-works）">
+  <meta property="og:description" content="Pi coding agent、統一 LLM API、エージェント基盤、TUI / Web UI、拡張・スキル・パッケージ、セッション管理をまとめた earendil-works/pi のビジュアル解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/pi.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="pi-mono — tools for building AI agents">
+  <meta name="twitter:title" content="pi — Pi Agent Harness（earendil-works）">
   <meta name="twitter:description" content="Pi coding agent、統一 LLM API、エージェント基盤、拡張・スキル・パッケージ、セッション管理を整理したビジュアル解説。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -228,8 +228,8 @@
   </nav>
 
   <div class="main">
-  <h1>pi-mono</h1>
-  <p class="subtitle">minimal terminal coding harness, unified LLM API, agent runtime, TUI, web UI — badlogic</p>
+  <h1>pi</h1>
+  <p class="subtitle">Pi Agent Harness mono repo — earendil-works（CLI・統一 LLM API・エージェントランタイム・TUI / Web UI）</p>
 
   <!-- ===================== 1 概要 ===================== -->
   <section id="overview" class="sec-head">1 — 概要</section>
@@ -237,11 +237,11 @@
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
     <div class="badge-row">
       <span class="badge badge--accent">pi.dev</span>
-      <span class="badge">0.71.0</span>
+      <span class="badge">0.74.0</span>
       <span class="badge">MIT</span>
       <span class="badge">TypeScript</span>
     </div>
-    <p><strong>pi-mono</strong> は、AI エージェントを作るための TypeScript モノレポ。ルート README は「Tools for building AI agents」と定義し、中心となる <code>@mariozechner/pi-coding-agent</code> は <strong>minimal terminal coding harness</strong> として位置づけられている。</p>
+    <p><strong>pi</strong>（GitHub: <a href="https://github.com/earendil-works/pi" target="_blank" rel="noopener">earendil-works/pi</a>）は、Pi agent harness の TypeScript モノレポ。ルート README は「Pi Agent Harness Mono Repo」とし、中心となる <code>@earendil-works/pi-coding-agent</code> は対話型コーディングエージェント CLI（read / write / edit / bash）として位置づけられている。</p>
     <p>Pi は「ワークフローをツールに合わせる」のではなく、拡張・スキル・プロンプトテンプレート・テーマ・Pi Packages で <strong>ユーザー側の運用に合わせて変形する</strong> ことを狙っている。</p>
     <div class="kpi-row">
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">5</span><span class="ve-kpi-card__label">主要パッケージ</span></div>
@@ -258,9 +258,9 @@
   <section id="agent" class="sec-head">2 — Pi coding agent</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 使い始め</span>
-    <p><code>@mariozechner/pi-coding-agent</code> は、<code>read</code>・<code>write</code>・<code>edit</code>・<code>bash</code> を標準ツールとして持つ対話型コーディングエージェント CLI。API キーでも、既存サブスクリプションの <code>/login</code> でも始められる。</p>
+    <p><code>@earendil-works/pi-coding-agent</code> は、<code>read</code>・<code>write</code>・<code>edit</code>・<code>bash</code> を標準ツールとして持つ対話型コーディングエージェント CLI。API キーでも、既存サブスクリプションの <code>/login</code> でも始められる。</p>
     <div class="ve-code-block">
-      <pre><code>npm install -g @mariozechner/pi-coding-agent
+      <pre><code>npm install -g @earendil-works/pi-coding-agent
 
 # API key で起動
 export ANTHROPIC_API_KEY=sk-ant-...
@@ -296,7 +296,7 @@ pi
   <section id="packages" class="sec-head">3 — パッケージ一覧</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> モノレポ構成</span>
-    <p>全主要パッケージは <code>0.71.0</code> で揃っている。Pi 本体だけでなく、統一 LLM API、低レベルのエージェントランタイム、差分レンダリング TUI、AI チャット向け Web UI に責務が分かれている。</p>
+    <p>全主要パッケージは <code>0.74.0</code> 系で揃っている。Pi 本体だけでなく、統一 LLM API、低レベルのエージェントランタイム、差分レンダリング TUI、AI チャット向け Web UI に責務が分かれている。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
@@ -307,24 +307,24 @@ pi
         </thead>
         <tbody>
           <tr>
-            <td><code>@mariozechner/pi-coding-agent</code></td>
+            <td><code>@earendil-works/pi-coding-agent</code></td>
             <td>Pi CLI 本体。read / bash / edit / write ツール、セッション管理、TUI、JSON / RPC / SDK 連携を提供。</td>
           </tr>
           <tr>
-            <td><code>@mariozechner/pi-ai</code></td>
+            <td><code>@earendil-works/pi-ai</code></td>
             <td>自動モデル発見、プロバイダー設定、トークン・コスト計測、コンテキスト永続化、モデル間ハンドオフを持つ統一 LLM API。</td>
           </tr>
           <tr>
-            <td><code>@mariozechner/pi-agent-core</code></td>
+            <td><code>@earendil-works/pi-agent-core</code></td>
             <td>ツール呼び出し、状態管理、添付ファイル対応を持つ汎用エージェント基盤。</td>
           </tr>
           <tr>
-            <td><code>@mariozechner/pi-tui</code></td>
+            <td><code>@earendil-works/pi-tui</code></td>
             <td>差分レンダリング付きターミナル UI ライブラリ。</td>
           </tr>
           <tr>
-            <td><code>@mariozechner/pi-web-ui</code></td>
-            <td><code>@mariozechner/pi-ai</code> を使う AI チャット向け再利用 Web UI コンポーネント。</td>
+            <td><code>@earendil-works/pi-web-ui</code></td>
+            <td><code>@earendil-works/pi-ai</code> を使う AI チャット向け再利用 Web UI コンポーネント。</td>
           </tr>
         </tbody>
       </table>
@@ -354,7 +354,7 @@ pi --fork &lt;path|id&gt;    # 特定セッションから分岐</code></pre>
   <div class="ve-card ve-card--recessed" style="--i:1; margin-top:1rem">
     <span class="ve-section-label"><span class="ve-dot"></span> OSS セッション共有</span>
     <p>README は、OSS で Pi や他の coding agent を使った作業セッションの共有を呼びかけている。狙いは、toy benchmark ではなく実作業のツール呼び出し・失敗・修正を集め、モデル・プロンプト・ツール・評価を改善すること。</p>
-    <p>共有ツールは <a href="https://github.com/badlogic/pi-share-hf" target="_blank" rel="noopener">badlogic/pi-share-hf</a>。作者自身の作業セッションは <a href="https://huggingface.co/datasets/badlogicgames/pi-mono" target="_blank" rel="noopener">badlogicgames/pi-mono</a> として Hugging Face で公開されている。</p>
+    <p>共有ツールは <a href="https://github.com/badlogic/pi-share-hf" target="_blank" rel="noopener">badlogic/pi-share-hf</a>。作者自身の作業セッションは README の表記どおり <a href="https://huggingface.co/datasets/badlogicgames/pi-mono" target="_blank" rel="noopener">Hugging Face: badlogicgames/pi-mono</a>（データセット名は従来の <code>pi-mono</code> のまま）で公開されている。</p>
   </div>
 
   <!-- ===================== 5 拡張モデル ===================== -->
@@ -421,14 +421,15 @@ npm run check        # Biome / tsgo / browser smoke / web-ui check
   <section id="links" class="sec-head">7 — リンク</section>
   <div class="ve-callout" style="margin-top:0;">
     <p><strong>公式サイト</strong>: <a href="https://pi.dev" target="_blank" rel="noopener">pi.dev</a></p>
-    <p><strong>リポジトリ</strong>: <a href="https://github.com/badlogic/pi-mono" target="_blank" rel="noopener">badlogic/pi-mono</a></p>
+    <p><strong>リポジトリ</strong>: <a href="https://github.com/earendil-works/pi" target="_blank" rel="noopener">earendil-works/pi</a>（旧 badlogic/pi-mono）</p>
     <p><strong>Discord</strong>: <a href="https://discord.com/invite/3cU7Bz4UPx" target="_blank" rel="noopener">discord.com/invite/3cU7Bz4UPx</a></p>
-    <p><strong>Pi coding agent</strong>: <a href="https://www.npmjs.com/package/@mariozechner/pi-coding-agent" target="_blank" rel="noopener">@mariozechner/pi-coding-agent</a></p>
-    <p><strong>LLM API</strong>: <a href="https://www.npmjs.com/package/@mariozechner/pi-ai" target="_blank" rel="noopener">@mariozechner/pi-ai</a></p>
+    <p><strong>Pi coding agent</strong>: <a href="https://www.npmjs.com/package/@earendil-works/pi-coding-agent" target="_blank" rel="noopener">@earendil-works/pi-coding-agent</a></p>
+    <p><strong>LLM API</strong>: <a href="https://www.npmjs.com/package/@earendil-works/pi-ai" target="_blank" rel="noopener">@earendil-works/pi-ai</a></p>
+    <p><strong>pi-chat（別リポ）</strong>: <a href="https://github.com/earendil-works/pi-chat" target="_blank" rel="noopener">earendil-works/pi-chat</a>（Slack / チャット向け README 記載）</p>
     <p><strong>セッション共有ツール</strong>: <a href="https://github.com/badlogic/pi-share-hf" target="_blank" rel="noopener">badlogic/pi-share-hf</a></p>
     <p><strong>公開セッション</strong>: <a href="https://huggingface.co/datasets/badlogicgames/pi-mono" target="_blank" rel="noopener">Hugging Face: badlogicgames/pi-mono</a></p>
-    <p><strong>CONTRIBUTING</strong>: <a href="https://github.com/badlogic/pi-mono/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a></p>
-    <p><strong>AGENTS.md</strong>: <a href="https://github.com/badlogic/pi-mono/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a></p>
+    <p><strong>CONTRIBUTING</strong>: <a href="https://github.com/earendil-works/pi/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a></p>
+    <p><strong>AGENTS.md</strong>: <a href="https://github.com/earendil-works/pi/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a></p>
   </div>
   </div><!-- /main -->
 </div><!-- /wrap -->
