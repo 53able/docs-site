@@ -86,7 +86,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 
 | 読むファイル | 目的 |
 |-------------|------|
-| `index.html` | `.doc-list` の形式・Unfurl コメントとメタの並び |
+| `index.html` | `.doc-list` の形式（各 `<a>` の `data-updated` / `title="更新: …"`・末尾のソート用 `<script>` は **`data-updated` のみ参照**）・Unfurl コメントとメタの並び |
 | `docs/defuddle.html`（末尾スクリプト含む） | `<style>` 順序・コンポーネント・体裁・Scroll Spy パターン |
 | `references/visual-explainer-core.md` | Think → Structure → Style、品質、Anti-Patterns |
 
@@ -154,7 +154,7 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 
 1. `docs/<名前>.html` が存在し、ブラウザで開ける構造になっている。
 2. `<head>` に `og:title` / `og:url` / `og:description` / `twitter:card` がコメント付きで揃っている。
-3. `index.html` の `.doc-list` にリンクカードが追加されている。
+3. `index.html` の `.doc-list` にリンクカードが追加され、`<a>` に **`data-updated="YYYY-MM-DD"`** と **`title="更新: YYYY-MM-DD"`** が付いている（`data-updated` の欠落はソート用 script が日付 `0` 扱いにし、意図した新着順にならない。**script は `title` を読まない**ため `title` 欠落で script が壊れることはないが、既存 index と形式を揃えるため **両方必須**）。
 4. 4 セクション以上の場合、Scroll Spy スクリプトが `defuddle.html` のパターン（`toggle('active', s === current)`）と一致している。
 5. フォントとアクセントカラーが既存 `docs/*.html` と被っていない（`references/spell-ui-map.md` の差別化チェック）。
 6. コードブロックがある場合、`.ve-code-block pre code` が `background: transparent` / `padding: 0` を持ち、インラインコード用背景がコード全体に漏れていない。
@@ -170,16 +170,27 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 
 ### index.html へのリンク追加
 
-`.doc-list` に既存と同形式のリンクカードを 1 件追加する（コメント「追加する資料はここに」の直前が無難）。`index-doc-title` は **`docs/<名前>.html` の `<title>` と主題**に合わせ、ページとカードで言い回しが食い違わないようにする（詳細は `references/copy-tone.md`）。
+`.doc-list` に既存と同形式のリンクカードを 1 件追加する（**`.doc-list` 末尾の説明コメント直前**が無難。コメント内に `href="docs/....html"` の生パターンを書かない — 将来の一括置換やツールが誤マッチするため）。
+
+**更新日ソート（必須）:** `index.html` 末尾のインライン `<script>` が、各カードの `<a>` の **`data-updated` 属性だけ**を読み、**新しい日付が上**になるよう `li` を並べ替える（`title` は参照しない）。追加する `<a>` には **`data-updated`** と **`title="更新: YYYY-MM-DD"`** を **両方** 付ける（`data-updated` を付け、末尾の `<script>` を編集しない限り、ソート用 script の挙動は壊れない）。
+
+**`data-updated` の値（どちらかでよい）:**
+
+1. **推奨:** リポジトリルートで `git log -1 --format=%cs -- docs/<ファイル名>.html` を実行し、出力された `YYYY-MM-DD` を使う（そのファイルに既にコミット履歴がある場合）。
+2. **初回追加で未コミットのとき:** 作業日の日付を `YYYY-MM-DD` で入れる（初回マージ後は次回以降の更新で Git 日付と近づく）。
+
+`index-doc-title` は **`docs/<名前>.html` の `<title>` と主題**に合わせ、ページとカードで言い回しが食い違わないようにする（詳細は `references/copy-tone.md`）。
 
 ```html
 <li>
-  <a class="ve-card ve-card--link" href="docs/<ファイル名>.html">
+  <a class="ve-card ve-card--link" href="docs/<ファイル名>.html" data-updated="YYYY-MM-DD" title="更新: YYYY-MM-DD">
     <span class="index-doc-title">（資料のタイトル）</span>
     <span class="index-doc-file">docs/<ファイル名>.html</span>
   </a>
 </li>
 ```
+
+**触らない:** `index.html` の `.doc-list` 直後〜`</body>` 手前の **ソート用 `<script>`** と、既存カードの `data-updated` 属性を一括削除・リフォーマットしない（並び順の契約を壊す）。
 
 ### ブランチ・コミット
 
@@ -215,6 +226,9 @@ bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone
 | Scroll Spy が動かない | `docs/defuddle.html` 末尾スクリプトを再コピー。`toggle` パターンを確認 |
 | コードブロックがベージュ/灰色の帯で読みにくい | グローバル `code` スタイルが漏れている。`.ve-code-block pre code { background: transparent; padding: 0; }` を追加 |
 | `doc-list` の位置が分からない | `rg -n "doc-list" index.html` |
+| 新規カードが一覧の一番下に固定され、新着にならない | `<a>` に `data-updated="YYYY-MM-DD"` を付け忘れている（script は欠落を日付 0 扱い）。Phase 6 の日付ルールで追加する |
+| `title="更新: …"` を付け忘れた | ソート順は `data-updated` のみで決まるため script は動くが、既存カードと形式がずれる。`data-updated` と同じ `YYYY-MM-DD` で `title="更新: YYYY-MM-DD"` を補う |
+| 一括ツールで `data-updated` を消した | `git log -1 --format=%cs -- docs/<ファイル名>.html` で復元し、ソート用 `<script>` が残っているか確認 |
 | フォント・パレットが既存と被る | `references/spell-ui-map.md` の差別化チェック |
 | `repos/` がステージに混入した | `git reset HEAD repos/` で除外してからコミット |
 | 公開 HTML に `/Users/...` や `repos/<名前>/...` が残った | `scripts/validate-public-paths.sh docs/<名前>.html` の検出箇所を、GitHub URL・プロジェクト名・リポジトリ内相対パスへ置換 |
