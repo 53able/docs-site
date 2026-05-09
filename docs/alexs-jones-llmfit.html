@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>llmfit — ハードウェアに合わせたローカル LLM 選定ツール</title>
+  <meta name="description" content="RAM・CPU・GPU を検出し、数百モデルを品質・速度・適合度でスコアリングする Rust 製 CLI/TUI。llmfit serve の REST API、Python バインディング、Tauri デスクトップ、エージェント向け llmfit-advisor スキルまでを整理した技術概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="llmfit — ハードウェアに合わせたローカル LLM 選定ツール">
+  <meta property="og:description" content="RAM・CPU・GPU を検出し、ローカルで動く LLM と量子化を推奨。TUI・CLI・REST・Docker・エージェント連携の入口を一枚にまとめた資料。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/alexs-jones-llmfit.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="llmfit — ハードウェアに合わせたローカル LLM 選定ツール">
+  <meta name="twitter:description" content="Rust 製のモデル適合分析。TUI、llmfit serve、OpenClaw 向けアドバイザースキルまで。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.01 200);
+      --foreground: oklch(0.18 0.04 250);
+      --card: oklch(1 0.005 200);
+      --card-foreground: oklch(0.18 0.04 250);
+      --popover: oklch(1 0.005 200);
+      --popover-foreground: oklch(0.18 0.04 250);
+      --primary: oklch(0.22 0.06 250);
+      --primary-foreground: oklch(0.98 0.01 200);
+      --secondary: oklch(0.94 0.02 200);
+      --secondary-foreground: oklch(0.22 0.06 250);
+      --muted: oklch(0.94 0.02 195);
+      --muted-foreground: oklch(0.45 0.03 240);
+      --accent: oklch(0.93 0.03 195);
+      --accent-foreground: oklch(0.22 0.06 250);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.02 210);
+      --input: oklch(0.88 0.02 210);
+      --ring: oklch(0.55 0.08 200);
+      --chart-1: oklch(0.52 0.12 200);
+      --chart-2: oklch(0.45 0.06 250);
+      --chart-3: oklch(0.65 0.14 180);
+      --chart-4: oklch(0.72 0.1 85);
+      --chart-5: oklch(0.6 0.08 230);
+      --code-bg: var(--muted);
+      --code-text: #0c4a6e;
+      --font-body: 'Montserrat', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.12 0.03 250);
+        --foreground: oklch(0.96 0.01 200);
+        --card: oklch(0.17 0.04 245);
+        --card-foreground: oklch(0.96 0.01 200);
+        --popover: oklch(0.17 0.04 245);
+        --popover-foreground: oklch(0.96 0.01 200);
+        --primary: oklch(0.88 0.04 200);
+        --primary-foreground: oklch(0.15 0.04 250);
+        --secondary: oklch(0.22 0.04 245);
+        --secondary-foreground: oklch(0.96 0.01 200);
+        --muted: oklch(0.24 0.04 240);
+        --muted-foreground: oklch(0.72 0.04 200);
+        --accent: oklch(0.24 0.04 240);
+        --accent-foreground: oklch(0.96 0.01 200);
+        --destructive: oklch(0.65 0.2 25);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.55 0.1 200);
+        --chart-1: oklch(0.72 0.14 195);
+        --chart-2: oklch(0.62 0.08 250);
+        --chart-3: oklch(0.68 0.12 175);
+        --chart-4: oklch(0.75 0.12 90);
+        --chart-5: oklch(0.58 0.06 230);
+        --code-bg: oklch(0.14 0.03 250);
+        --code-text: #7dd3fc;
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.85rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.52 0.12 200 / 0.12); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.52 0.12 200 / 0.07) 0%, transparent 45%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 25% 0%, oklch(0.72 0.14 195 / 0.09) 0%, transparent 48%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; }
+    @media (max-width: 720px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; background: var(--card); }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.65rem; font-weight: 700; color: var(--chart-1); letter-spacing: 0.08em; margin-bottom: 0.35rem; }
+    .step-card__title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.35rem; }
+    .step-card__body { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#workspace">リポジトリ構成</a>
+    <a href="#interfaces">利用形態</a>
+    <a href="#tui">TUI の要点</a>
+    <a href="#api">REST とダッシュボード</a>
+    <a href="#agent">エージェント連携</a>
+    <a href="#install">インストール</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>llmfit</h1>
+  <p class="subtitle">AlexsJones / llmfit — マシンの RAM・CPU・GPU に合うローカル LLM を推奨するツール</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> このプロジェクトがすること</span>
+    <p class="lead" style="font-size: 1.02rem; line-height: 1.7; margin-bottom: 1.25rem;">ハードウェアを検出し、モデルごとに<strong>品質・速度・適合度・コンテキスト</strong>の合成スコアを付与。最適な量子化・推定 tok/s・実行モード（GPU / CPU+GPU / CPU）を返す。デフォルトは対話式 TUI。コミュニティベンチマーク（<code>b</code>）やダウンロードマネージャ（<code>D</code>）、ハードウェアシミュレーション（<code>S</code>）など、README に定義されたショートカットで周辺機能にアクセスする。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><div class="ve-kpi-card__value">0.9.22</div><div class="ve-kpi-card__label">Workspace 版（公開時点）</div></div>
+      <div class="ve-kpi-card"><div class="ve-kpi-card__value">3</div><div class="ve-kpi-card__label">Cargo workspace メンバー</div></div>
+      <div class="ve-kpi-card"><div class="ve-kpi-card__value">7+</div><div class="ve-kpi-card__label">用途フィルタ（use-case）</div></div>
+      <div class="ve-kpi-card"><div class="ve-kpi-card__value">MIT</div><div class="ve-kpi-card__label">ライセンス</div></div>
+    </div>
+    <div class="ve-callout">
+      <strong>出典:</strong> 本ページの事実は <a href="https://github.com/AlexsJones/llmfit" target="_blank" rel="noopener">GitHub: AlexsJones/llmfit</a> の README・API ドキュメント・Cargo ワークスペース定義に基づく。数値やフラグはリリースで変わり得るため、運用前にリポジトリの最新版を確認すること。
+    </div>
+  </div>
+
+  <section id="workspace" class="sec-head">2 — リポジトリ構成</section>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Cargo と周辺パッケージ</span>
+    <p>ルートの <code>Cargo.toml</code> は <code>llmfit-core</code>・<code>llmfit-tui</code>・<code>llmfit-desktop</code> をメンバーとするワークスペース。<code>default-members</code> は core と tui。デスクトップは Tauri。Python バインディングは <code>llmfit-python/</code>、ブラウザ UI は <code>llmfit-web/</code>（Vite）。モデルメタやスクリプトは <code>data/</code> と <code>scripts/</code> に分かれる。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>パス</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>llmfit-core/</code></td><td>適合計算・モデルカタログ・共有ロジック</td></tr>
+          <tr><td><code>llmfit-tui/</code></td><td>既定エントリ。Ratatui ベースの対話 UI</td></tr>
+          <tr><td><code>llmfit-desktop/</code></td><td>Tauri + 埋め込み UI のネイティブアプリ</td></tr>
+          <tr><td><code>llmfit-web/</code></td><td><code>llmfit serve</code> 向けフロント資産</td></tr>
+          <tr><td><code>llmfit-python/</code></td><td>PyPI 向けパッケージ（<code>uv</code> / pip で配布）</td></tr>
+          <tr><td><code>skills/llmfit-advisor/</code></td><td>エージェント向け SKILL（OpenClaw メタ付き）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="interfaces" class="sec-head">3 — 利用形態</section>
+  <div class="ve-card" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> 同じコアを複数面から触る</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>入口</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>llmfit</code>（引数なし）</td><td>ローカルで一覧・絞り込み・比較</td></tr>
+          <tr><td>サブコマンド / フラグ</td><td><code>recommend</code>、<code>--json</code>、用途・最小適合度などのフィルタ</td></tr>
+          <tr><td><code>llmfit serve</code></td><td>HTTP API と同一オリジンの Web ダッシュボード（既定ポート例: 8787）</td></tr>
+          <tr><td>Docker イメージ</td><td><code>recommend</code> 等の JSON をパイプ処理向けに取得</td></tr>
+          <tr><td>Python / エージェント</td><td><code>llmfit</code> バイナリを呼び出し、JSON を解釈してプロバイダ設定へ写す</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="tui" class="sec-head">4 — TUI の要点</section>
+  <div class="ve-card" style="--i:3">
+    <span class="ve-section-label"><span class="ve-dot"></span> モードとショートカットの抜粋</span>
+    <p>Vim 風のモード（Normal / Visual / Select）で操作が分岐。README のキーバインド表を要約すると、検索は <code>/</code>、適合フィルタは <code>f</code>、ソート列は <code>s</code>、コミュニティベンチマークは <code>b</code>、詳細は <code>Enter</code>、終了は <code>q</code>。Plan モード（<code>p</code>）では「このモデルに必要なVRAMや文脈長は？」を逆算する。</p>
+    <div class="step-flow">
+      <div class="step-card">
+        <div class="step-card__num">STEP 1</div>
+        <div class="step-card__title">ハードウェア検出</div>
+        <div class="step-card__body">起動時に CPU・RAM・GPU（NVIDIA / AMD / Apple など）を読み、バックエンド名と利用可能メモリを表示。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">STEP 2</div>
+        <div class="step-card__title">スコアで並べ替え</div>
+        <div class="step-card__body">合成スコア・推定 tok/s・量子化・メモリ使用率・用途カテゴリを一覧し、フィルタとソートで候補を絞る。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">STEP 3</div>
+        <div class="step-card__title">取得と比較</div>
+        <div class="step-card__body"><code>d</code> で取得、<code>m</code> / <code>c</code> でマルチ比較。Visual モードで範囲選択し、属性横並びの表で読む。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">STEP 4</div>
+        <div class="step-card__title">JSON へ切り替え</div>
+        <div class="step-card__body">スクリプトや CI では <code>llmfit recommend --json</code> 等で同じコア結果を機械可読に渡す。</div>
+      </div>
+    </div>
+  </div>
+
+  <section id="api" class="sec-head">5 — REST とダッシュボード</section>
+  <div class="ve-card" style="--i:4">
+    <span class="ve-section-label"><span class="ve-dot"></span><code>llmfit serve</code></span>
+    <p>クラスタの各ノードで推奨モデルを HTTP で問い合わせ、外部のスケジューラや UI で集約する想定。<code>GET /health</code>、<code>GET /api/v1/system</code>、推奨系エンドポイントでノードのハードウェアとランキングを取得する。ダッシュボード用アセットは <code>llmfit-web</code> でビルドしてからバイナリに埋め込む手順が API ドキュメントに記載されている。</p>
+    <div class="ve-code-block">
+      <pre><code>llmfit serve --port 8787
+# 例: メモリ上書きで応答を検証
+llmfit --memory 24G --ram 64G --cpu-cores 16 --max-context 8192 serve --port 8787</code></pre>
+    </div>
+  </div>
+
+  <section id="agent" class="sec-head">6 — エージェント連携</section>
+  <div class="ve-card ve-card--elevated" style="--i:5">
+    <span class="ve-section-label"><span class="ve-dot"></span>llmfit-advisor スキル</span>
+    <p>リポジトリ同梱の <code>skills/llmfit-advisor/SKILL.md</code> は、ローカルモデル選定をエージェントに委ねる手順を定義する。トリガー例: 「この GPU で動くモデルは？」「コーディング向けにローカルで何を選ぶ？」。推奨フローは (1) <code>llmfit --json system</code> で環境確認、(2) <code>llmfit recommend --json --limit N</code> で上位候補、(3) Ollama タグや vLLM / LM Studio の識別子へマッピング、(4) 設定ファイル（例: OpenClaw の <code>openclaw.json</code>）へ反映、の四段。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド例</th><th>返却の用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>llmfit --json system</code></td><td>CPU 名、コア数、RAM、GPU 名、VRAM、unified memory フラグ</td></tr>
+          <tr><td><code>llmfit recommend --json --limit 5</code></td><td>上位5件のスコア・<code>fit_level</code>・<code>best_quant</code>・<code>estimated_tps</code></td></tr>
+          <tr><td><code>llmfit recommend --json --use-case coding --limit 3</code></td><td>用途別に絞った推奨</td></tr>
+          <tr><td><code>llmfit recommend --json --min-fit good</code></td><td><code>marginal</code> 以下を除外して安定運用向けに絞る</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="border-left-color: var(--chart-2); margin-top: 1rem;">
+      <strong>適合度:</strong> <code>perfect</code> / <code>good</code> / <code>marginal</code> / <code>TooTight</code>。スキルでは <code>TooTight</code> をユーザーに勧めない、と明記されている。
+    </div>
+  </div>
+
+  <section id="install" class="sec-head">7 — インストール</section>
+  <div class="ve-card ve-card--recessed" style="--i:6">
+    <span class="ve-section-label"><span class="ve-dot"></span> README に載る主な経路</span>
+    <p>パッケージマネージャ（Scoop / Homebrew / MacPorts）、<code>install.sh</code>、<code>uv tool install</code>、コンテナ、ソースからの <code>cargo build --release</code>。エージェントスキル側では Homebrew と cargo の両方をインストール候補として列挙している。</p>
+    <div class="ve-code-block">
+      <pre><code>brew install llmfit
+# または
+uv tool install -U llmfit
+uvx llmfit</code></pre>
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <div class="ve-card" style="--i:7">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・周辺</span>
+    <ul>
+      <li><a href="https://github.com/AlexsJones/llmfit" target="_blank" rel="noopener">GitHub: AlexsJones/llmfit</a> — ソース・Issue・リリース</li>
+      <li><a href="https://crates.io/crates/llmfit" target="_blank" rel="noopener">crates.io: llmfit</a> — Rust クレート</li>
+      <li><a href="https://llmfit.axjns.dev/install.sh" target="_blank" rel="noopener">install.sh</a>（README 記載のホスト）— クイックインストール</li>
+      <li><a href="https://localmaxxing.com" target="_blank" rel="noopener">localmaxxing.com</a> — コミュニティベンチマークのデータソース（README 記載）</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
