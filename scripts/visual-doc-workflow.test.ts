@@ -152,6 +152,8 @@ describe("visual-doc-workflow pure helpers", () => {
     expect(matchesScope("docs/design-docs/visual-doc-workflow.md", "docs/system-design.html")).toBe(true);
     expect(matchesScope("scripts/visual-doc-workflow.ts", "docs/system-design.html")).toBe(true);
     expect(matchesScope("README.md", "docs/system-design.html")).toBe(false);
+    expect(matchesScope("docs/pi-mono.html", "docs/pi.html")).toBe(true);
+    expect(matchesScope("docs/pi-mono.html", "docs/system-design.html")).toBe(false);
   });
 
   it("evaluates review gate findings through an injected environment", async () => {
@@ -271,13 +273,13 @@ describe("visual-doc-workflow pure helpers", () => {
   });
 
   it("runs validate through tsx and emits stable JSON", () => {
-    const result = spawnSync("npx", ["tsx", "scripts/visual-doc-workflow.ts", "validate", "--doc", "pi-mono"], {
+    const result = spawnSync("npx", ["tsx", "scripts/visual-doc-workflow.ts", "validate", "--doc", "pi"], {
       encoding: "utf8",
     });
 
     expect(result.status).toBe(0);
     expect(result.stdout).toMatch(/"ok": true/u);
-    expect(result.stdout).toMatch(/"doc": "docs\/pi-mono.html"/u);
+    expect(result.stdout).toMatch(/"doc": "docs\/pi.html"/u);
   });
 
   it("rejects invalid doc paths through tsx", () => {

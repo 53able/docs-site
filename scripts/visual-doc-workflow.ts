@@ -188,6 +188,10 @@ const REVIEW_SCOPE_RULES: ReviewScopeRule[] = [
     matches: (file) => file === "index.html",
   },
   {
+    pattern: "docs/pi-mono.html (removed when validating docs/pi.html)",
+    matches: (file, docPath) => file === "docs/pi-mono.html" && docPath === "docs/pi.html",
+  },
+  {
     pattern: "CONTEXT.md",
     matches: (file) => file === "CONTEXT.md",
   },
