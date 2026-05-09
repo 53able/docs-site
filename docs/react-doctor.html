@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React Doctor — React コードベースのヘルススコアと静的解析</title>
+  <meta name="description" content="millionco/react-doctor の概要。0〜100 のスコア、Oxlint / Knip 連携、エージェント向けスキルインストール、GitHub Actions、設定ファイルと CLI の要点を整理したビジュアル資料。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="React Doctor — React コードベースのヘルススコアと静的解析">
+  <meta property="og:description" content="millionco/react-doctor の概要。スコア、Lint、デッドコード検出、CI、設定の要点を Spell UI で整理。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/react-doctor.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="React Doctor — React コードベースのヘルススコアと静的解析">
+  <meta name="twitter:description" content="millionco/react-doctor の概要。スコア、Lint、デッドコード、CI、設定を整理。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Red+Hat+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + Sora / Red Hat Mono + teal) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.55 0.14 160);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Sora', system-ui, sans-serif;
+      --font-mono: 'Red Hat Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.72 0.14 195);
+        --chart-2: oklch(0.78 0.14 95);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.7 0.12 165);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout--amber { border-left-color: var(--chart-2); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.45 0.12 200 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.72 0.14 195 / 0.09) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 1rem; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#install">スキャンとスコア</a>
+    <a href="#agents">エージェント連携</a>
+    <a href="#ci">GitHub Actions</a>
+    <a href="#config">設定と無視</a>
+    <a href="#plugins">Lint プラグイン</a>
+    <a href="#cli">CLI と API</a>
+    <a href="#layout">リポジトリ構成</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>React Doctor</h1>
+  <p class="subtitle">React / Next.js / Vite / React Native 向けのヘルス診断。Oxlint ベースのルールと Knip によるデッドコード検出で 0〜100 のスコアを出す（<a href="https://github.com/millionco/react-doctor" target="_blank" rel="noopener">millionco/react-doctor</a>）。</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
+    <p>プロジェクトルートで 1 コマンド走らせると、状態管理・副作用・パフォーマンス・アーキテクチャ・セキュリティ・アクセシビリティ・デッドコードなど横断の診断がまとまり、<strong>0〜100 のヘルススコア</strong>と修正可能なメッセージが返る。フレームワークと React のメジャーバージョンに応じてルールが自動で切り替わる。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">0–100</span><span class="ve-kpi-card__label">スコア帯</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">75+</span><span class="ve-kpi-card__label">Great</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">50–74</span><span class="ve-kpi-card__label">Needs work</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">&lt;50</span><span class="ve-kpi-card__label">Critical</span></div>
+    </div>
+    <p>デモとリーダーボードは <a href="https://react.doctor" target="_blank" rel="noopener">react.doctor</a>。npm パッケージ名は <code>react-doctor</code>。</p>
+  </div>
+
+  <section id="install" class="sec-head">2 — スキャンとスコア</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> プロジェクトへの実行</span>
+    <p>リポジトリのルートで次を実行する。結果にスコアと上位のルール違反が表示される。</p>
+    <div class="ve-code-block"><pre><code>npx -y react-doctor@latest .</code></pre></div>
+    <div class="ve-callout ve-callout--amber" style="margin-top:1rem">
+      <strong>既存の Lint 設定:</strong> <code>.oxlintrc.json</code> や <code>.eslintrc.json</code> がある場合、そのルールがスキャンにマージされスコアに反映される。マージを止めたい場合は設定で <code>adoptExistingLintConfig: false</code>。
+    </div>
+  </div>
+
+  <section id="agents" class="sec-head">3 — エージェント連携</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> スキルのインストール</span>
+    <p>コーディングエージェント向けにベストプラクティス用スキルを配置する対話フローがある。Claude Code、Cursor、Codex、OpenCode など検出されたエージェントを選べる。<code>--yes</code> でプロンプトを省略できる。</p>
+    <div class="ve-code-block"><pre><code>npx -y react-doctor@latest install</code></pre></div>
+  </div>
+
+  <section id="ci" class="sec-head">4 — GitHub Actions</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ワークフロー例</span>
+    <p><code>pull_request</code> で <code>github-token</code> を渡すと、指摘を PR コメントとして投稿できる。<code>diff</code> に基づく部分スキャンでは履歴取得のため <code>fetch-depth: 0</code> が推奨される。</p>
+    <div class="ve-code-block"><pre><code>- uses: actions/checkout@v5
+  with:
+    fetch-depth: 0
+- uses: millionco/react-doctor@main
+  with:
+    diff: main
+    github-token: ${{ secrets.GITHUB_TOKEN }}</code></pre></div>
+    <p>アクションは <code>score</code> 出力も公開するため、後続ステップの条件に使える。</p>
+  </div>
+
+  <section id="config" class="sec-head">5 — 設定と無視</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> react-doctor.config.json</span>
+    <p>ルートに JSON を置くか、<code>package.json</code> の <code>"reactDoctor"</code> キーで同様の構造を書ける。CLI フラグは常に設定より優先する。</p>
+    <div class="ve-code-block"><pre><code>{
+  "ignore": {
+    "rules": ["react/no-danger", "jsx-a11y/no-autofocus"],
+    "files": ["src/generated/**"],
+    "overrides": [
+      {
+        "files": ["components/diff/**"],
+        "rules": ["react-doctor/no-array-index-as-key"]
+      }
+    ]
+  }
+}</code></pre></div>
+    <h3>無視の階層</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>キー</th><th>効果</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>ignore.rules</code></td><td>指定ルールを全体で無効化</td></tr>
+          <tr><td><code>ignore.files</code></td><td>マッチしたファイル上のすべてのルールを無効化</td></tr>
+          <tr><td><code>ignore.overrides</code></td><td>ディレクトリごとに特定ルールだけ無効化</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><code>.gitignore</code>、<code>.eslintignore</code>、<code>.oxlintignore</code>、<code>.prettierignore</code>、および <code>.gitattributes</code> の <code>linguist-vendored</code> / <code>linguist-generated</code> を尊重する。行コメントの <code>// eslint-disable*</code> と <code>// oxlint-disable*</code> も解釈される。</p>
+    <h3>インライン抑制（React Doctor 用）</h3>
+    <div class="ve-code-block"><pre><code>// react-doctor-disable-next-line react-doctor/no-cascading-set-state
+useEffect(() => {
+  setA(value);
+  setB(value);
+}, [value]);</code></pre></div>
+    <p>同一行で複数ルールを止めるときはルール ID をカンマ区切り。JSX 内ではブロックコメントや JSX コメントの置き方が ESLint と同様の慣習に合わせる。</p>
+  </div>
+
+  <section id="plugins" class="sec-head">6 — Lint プラグイン</section>
+  <div class="ve-card ve-card--recessed" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Oxlint / ESLint</span>
+    <p>同じルールセットが <strong>Oxlint プラグイン</strong>と <strong>ESLint フラット設定用プラグイン</strong>の両方として提供される。既存の Lint パイプラインに組み込みたい場合はこちらを使う。</p>
+    <h3>Oxlint（.oxlintrc.json）</h3>
+    <div class="ve-code-block"><pre><code>{
+  "jsPlugins": [{ "name": "react-doctor", "specifier": "react-doctor/oxlint-plugin" }],
+  "rules": {
+    "react-doctor/no-fetch-in-effect": "warn",
+    "react-doctor/no-derived-state-effect": "warn"
+  }
+}</code></pre></div>
+    <h3>ESLint（flat config）</h3>
+    <div class="ve-code-block"><pre><code>import reactDoctor from "react-doctor/eslint-plugin";
+
+export default [
+  reactDoctor.configs.recommended,
+  reactDoctor.configs.next,
+  reactDoctor.configs["react-native"],
+  reactDoctor.configs["tanstack-start"],
+  reactDoctor.configs["tanstack-query"],
+];</code></pre></div>
+    <p>全ルール一覧の実体は upstream の <a href="https://github.com/millionco/react-doctor/blob/main/packages/react-doctor/src/oxlint-config.ts" target="_blank" rel="noopener"><code>oxlint-config.ts</code></a> を参照。</p>
+  </div>
+
+  <section id="cli" class="sec-head">7 — CLI と API</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 主要オプション</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>フラグ</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--no-lint</code></td><td>Lint をスキップ</td></tr>
+          <tr><td><code>--no-dead-code</code></td><td>デッドコード検出をスキップ</td></tr>
+          <tr><td><code>--diff [base]</code></td><td>指定ブランチとの差分ファイルだけスキャン</td></tr>
+          <tr><td><code>--staged</code></td><td>ステージ済みファイルのみ（pre-commit 向け）</td></tr>
+          <tr><td><code>--json</code></td><td>構造化 JSON を標準出力（人可読ログは抑制）</td></tr>
+          <tr><td><code>--explain &lt;file:line&gt;</code></td><td>その位置でルールが発火した理由や抑制が効かない理由を表示</td></tr>
+          <tr><td><code>--annotations</code></td><td>GitHub Actions のアノテーション形式で診断を出力</td></tr>
+          <tr><td><code>--fail-on &lt;level&gt;</code></td><td><code>error</code> / <code>warning</code> / <code>none</code> で終了コードを制御</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Node API</h3>
+    <div class="ve-code-block"><pre><code>import { diagnose, toJsonReport, summarizeDiagnostics } from "react-doctor/api";
+
+const result = await diagnose("./path/to/your/react-project");
+console.log(result.score);
+console.log(result.diagnostics);</code></pre></div>
+    <p><code>diagnose</code> の第 2 引数で <code>{ lint?: boolean, deadCode?: boolean }</code> を渡せる。<code>toJsonReport</code> と <code>summarizeDiagnostics</code> で JSON レポート用の組み立てができる。型定義は <a href="https://github.com/millionco/react-doctor/blob/main/packages/react-doctor/src/api.ts" target="_blank" rel="noopener"><code>api.ts</code></a>。</p>
+  </div>
+
+  <section id="layout" class="sec-head">8 — リポジトリ構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> モノレポの俯瞰</span>
+    <p>pnpm workspace と Turborepo で管理されている。CLI とルール実装の本体、公開サイト、エージェント向けスキル定義が分離されている。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>領域</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>packages/react-doctor</code></td><td>CLI バイナリ、Oxlint/ESLint プラグイン、スキャン・スコアリング・設定読み込みの中核</td></tr>
+          <tr><td><code>packages/website</code></td><td>スコア共有やバッジなどの Web 面（Next 系）</td></tr>
+          <tr><td><code>skills/react-doctor</code></td><td>エージェント向けに配布するスキルメタデータ</td></tr>
+          <tr><td><code>action.yml</code></td><td>GitHub Action のエントリ</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>開発者向け:</strong> クローン後は <code>pnpm install</code> と <code>pnpm build</code>。ローカルバイナリは <code>node packages/react-doctor/bin/react-doctor.js &lt;path&gt;</code> で試せる。
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">9 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+    <ul>
+      <li><a href="https://github.com/millionco/react-doctor" target="_blank" rel="noopener">GitHub: millionco/react-doctor</a></li>
+      <li><a href="https://www.npmjs.com/package/react-doctor" target="_blank" rel="noopener">npm: react-doctor</a></li>
+      <li><a href="https://react.doctor" target="_blank" rel="noopener">デモサイト</a></li>
+      <li><a href="https://www.react.doctor/leaderboard" target="_blank" rel="noopener">リーダーボード</a>（ベンチマークリポジトリ由来の自動更新）</li>
+      <li><a href="https://github.com/millionco/react-doctor/issues" target="_blank" rel="noopener">Issue トラッカー</a></li>
+    </ul>
+    <h3>ライセンス</h3>
+    <p>MIT。</p>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
