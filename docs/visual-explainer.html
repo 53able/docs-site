@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>visual-explainer — Visual Explainer v0.6.3</title>
-  <meta name="description" content="複雑なターミナル出力を自己完結 HTML に変換する Agent Skill。v0.6.3 の Marketplace 対応、multi-diagram、diagram-shell、Class/C4 図、共有フローを整理。">
+  <title>visual-explainer — Visual Explainer v0.7.1</title>
+  <meta name="description" content="複雑なターミナル出力を自己完結 HTML に変換する Agent Skill。v0.7.1 の Pi パッケージ、`pi install` 優先、OpenCode・Cursor・OpenClaw ガイド、`/share-page` への統一を整理。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="visual-explainer — Visual Explainer v0.6.3">
-  <meta property="og:description" content="複雑なターミナル出力を自己完結 HTML に変換する Agent Skill。Marketplace 対応、multi-diagram、diagram-shell、Class/C4 図、共有フローを整理。">
+  <meta property="og:title" content="visual-explainer — Visual Explainer v0.7.1">
+  <meta property="og:description" content="複雑なターミナル出力を自己完結 HTML に変換する Agent Skill。Pi パッケージ、複数ハーネス向け導線、diagram-shell、共有は `/share-page`。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/visual-explainer.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="visual-explainer — Visual Explainer v0.6.3">
-  <meta name="twitter:description" content="複雑なターミナル出力を自己完結 HTML に変換する Agent Skill。v0.6.3 の主要更新を整理。">
+  <meta name="twitter:title" content="visual-explainer — Visual Explainer v0.7.1">
+  <meta name="twitter:description" content="複雑なターミナル出力を自己完結 HTML に変換する Agent Skill。v0.7.1 の導入と互換の要点を整理。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -110,6 +110,14 @@
     .ve-code-block { background: var(--code-bg, var(--muted)); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text, var(--foreground)); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text, var(--foreground));
+      padding: 0;
+      tab-size: 2;
+    }
     .ve-code-filename { position: absolute; top: -12px; left: 24px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; line-height: 1; padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--card); color: var(--card-foreground); }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
@@ -226,7 +234,7 @@
 
   <div class="main">
   <h1>visual-explainer</h1>
-  <p class="subtitle">v0.6.3 — 複雑なターミナル出力を、自己完結 HTML の図・表・レビュー・スライドに変換する Agent Skill。</p>
+  <p class="subtitle">v0.7.1 — 複雑なターミナル出力を、自己完結 HTML の図・表・レビュー・スライドに変換する Agent Skill。</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="hero-grid">
@@ -240,11 +248,11 @@
     </div>
     <div class="hero-note">
       <div class="ve-kpi-card" style="--i:1">
-        <div class="ve-kpi-card__value">0.6.3</div>
+        <div class="ve-kpi-card__value">0.7.1</div>
         <div class="ve-kpi-card__label">current version</div>
       </div>
       <div class="ve-card ve-card--recessed" style="--i:2">
-        <p class="version-note">Claude Code Marketplace / Pi / Codex に対応。Mermaid は zoom・pan・expand 付きの diagram-shell を正とする。</p>
+        <p class="version-note">Pi は <code>package.json</code> の <code>pi</code> メタデータでスキルとプロンプトを直参照。Codex は <code>~/.codex/skills/</code>。Mermaid は diagram-shell を正とする。</p>
       </div>
     </div>
   </div>
@@ -252,57 +260,100 @@
   <section id="updates" class="sec-head">2 — 最新更新点</section>
   <div class="feature-grid">
     <div class="ve-card feature-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-1)"></span> v0.6.3</span>
-      <h2>bare Mermaid を禁止</h2>
-      <p><code>&lt;pre class="mermaid"&gt;</code> だけでは図が小さくなりやすく、ズーム・パンもない。新しい説明では <code>templates/mermaid-flowchart.html</code> の <code>diagram-shell</code> パターンを丸ごと使う。</p>
+      <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-1)"></span> v0.7.1</span>
+      <h2>Pi をパッケージとして扱う</h2>
+      <p><code>pi install git:github.com/nicobailon/visual-explainer</code> で、リポジトリ内の <code>plugins/visual-explainer/</code> と <code>commands/</code> を正として読み込める。手動コピーと併用すると衝突するため、旧手順のファイルは README の手順どおり削除してから切り替える。</p>
     </div>
     <div class="ve-card feature-card" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-2)"></span> v0.6.0</span>
-      <h2>multi-diagram 対応</h2>
-      <p>ページ内に複数の Mermaid 図を置けるよう、図ごとの状態をクロージャで持つ <code>initDiagram(shell)</code> 方式へ移行。ID 衝突を避け、タッチ操作や double-click fit も扱う。</p>
+      <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-2)"></span> v0.7.1</span>
+      <h2>ハーネス別の軽量ガイド</h2>
+      <p>Pi・Codex CLI・OpenCode・Cursor・OpenClaw 向けに、コピー先パスやルール参照だけを README に整理。ランタイム用のアダプタやスキル複製は増やさない方針。</p>
     </div>
     <div class="ve-card feature-card" style="--i:2">
-      <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-4)"></span> v0.6.1</span>
-      <h2>Pi のワンコマンド導入</h2>
-      <p><code>install-pi.sh</code> が追加され、スキル本体とプロンプトを <code>~/.pi/agent</code> 配下へコピーし、<code>{{skill_dir}}</code> を実インストール先にパッチする。</p>
+      <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-4)"></span> v0.7.1</span>
+      <h2><code>/share</code> から <code>/share-page</code> へ</h2>
+      <p>非推奨だった共有コマンド名を整理し、テンプレートとドキュメントを <code>/share-page</code> に統一。<code>share.sh</code> の説明はインストール済みスキルディレクトリ基準の表現に揃えた。</p>
     </div>
     <div class="ve-card feature-card" style="--i:3">
-      <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-5)"></span> v0.5.x</span>
-      <h2>Marketplace 構造へ整理</h2>
-      <p>Claude Code plugin marketplace 仕様に合わせ、スキルは <code>plugins/visual-explainer/</code> に配置。Claude Code ではコマンドが <code>/visual-explainer:diff-review</code> のように名前空間付きになる。</p>
+      <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-5)"></span> v0.6.3</span>
+      <h2>bare Mermaid は禁止</h2>
+      <p><code>templates/mermaid-flowchart.html</code> の <code>diagram-shell</code> を丸ごと使う。v0.6.0 では multi-diagram 用の <code>initDiagram(shell)</code> とズーム UI を導入済み。</p>
     </div>
   </div>
 
   <section id="install" class="sec-head">3 — インストール</section>
+  <div class="ve-table-wrap" style="margin-bottom:1rem;--i:0">
+    <table aria-label="ハーネス別のサポート概要">
+      <thead>
+        <tr><th>ハーネス</th><th>要点</th><th>主な導線</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Claude Code</td><td>マーケットプレース</td><td><code>plugins/visual-explainer/</code> を正としたレイアウト</td></tr>
+        <tr><td>Pi</td><td>パッケージメタデータ + インストーラ</td><td><code>package.json</code> の <code>pi.skills</code> / <code>pi.prompts</code>、または <code>install-pi.sh</code></td></tr>
+        <tr><td>Codex CLI</td><td>ネイティブ skill パス + 任意プロンプト</td><td><code>~/.codex/skills/visual-explainer</code>、任意で <code>~/.codex/prompts/</code></td></tr>
+        <tr><td>OpenCode / opencode</td><td>観測された skill / command パス</td><td><code>~/.config/opencode/skill/visual-explainer</code> など</td></tr>
+        <tr><td>Cursor</td><td>ルールベース</td><td><code>configs/cursor/visual-explainer.mdc</code> をルールに追加</td></tr>
+        <tr><td>OpenClaw</td><td>軽量 AGENTS / ルール</td><td><code>configs/openclaw/AGENTS.md</code> と正規スキルディレクトリ参照</td></tr>
+      </tbody>
+    </table>
+  </div>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-1)"></span> 導入方法</span>
+    <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-1)"></span> 導入手順</span>
 
     <h2>Claude Code（マーケットプレース）</h2>
     <div class="ve-code-block">
       <pre><code>/plugin marketplace add nicobailon/visual-explainer
 /plugin install visual-explainer@visual-explainer-marketplace</code></pre>
     </div>
-    <p>コマンドは <code>/visual-explainer:コマンド名</code> のように名前空間付きになります。</p>
+    <p>スラッシュコマンドは <code>/visual-explainer:コマンド名</code> のように名前空間付き。</p>
 
-    <h2>Pi（ワンコマンド）</h2>
+    <h2>Pi（推奨: パッケージインストール）</h2>
+    <div class="ve-code-block">
+      <pre><code>pi install git:github.com/nicobailon/visual-explainer</code></pre>
+    </div>
+    <p>ローカル clone から入れる場合は <code>pi install ./visual-explainer</code>（リポジトリルートがカレント）。</p>
+    <div class="ve-callout" style="margin:1rem 0;">
+      <strong>旧手動コピーからの移行:</strong> 以前 <code>install-pi.sh</code> や手コピーで入れたファイルが残っていると、パッケージ版と衝突する。README にある <code>rm -rf ~/.pi/agent/skills/visual-explainer</code> とプロンプト削除のあと、上記 <code>pi install</code> を使う。
+    </div>
+    <h3>レガシー: curl インストーラ</h3>
     <div class="ve-code-block">
       <pre><code>curl -fsSL https://raw.githubusercontent.com/nicobailon/visual-explainer/main/install-pi.sh | bash</code></pre>
     </div>
-    <p>ローカルに clone している場合は、リポジトリ直下で <code>./install-pi.sh</code> を実行しても同じ導入フローになる。</p>
-    <div class="ve-code-block">
-      <pre><code>git clone --depth 1 https://github.com/nicobailon/visual-explainer.git
-cd visual-explainer && ./install-pi.sh</code></pre>
-    </div>
+    <p>コピー先に展開する方式。パッケージ管理より手元ファイルを優先したい場合向け。</p>
 
-    <h2>OpenAI Codex</h2>
+    <h2>Codex CLI</h2>
     <div class="ve-code-block">
       <pre><code>git clone --depth 1 https://github.com/nicobailon/visual-explainer.git /tmp/visual-explainer
-cp -r /tmp/visual-explainer/plugins/visual-explainer ~/.agents/skills/visual-explainer
-mkdir -p ~/.codex/prompts
+
+mkdir -p ~/.codex/skills ~/.codex/prompts
+cp -R /tmp/visual-explainer/plugins/visual-explainer ~/.codex/skills/visual-explainer
+
+# 任意（ビルドがプロンプトをサポートしている場合のみ）:
 cp /tmp/visual-explainer/plugins/visual-explainer/commands/*.md ~/.codex/prompts/
+
 rm -rf /tmp/visual-explainer</code></pre>
     </div>
-    <p><code>$visual-explainer</code> で呼び出すか、プロンプトを入れた場合は <code>/prompts:diff-review</code> などを利用する。Codex の slash prompts は deprecated 扱いだが、まだ動作する。</p>
+    <p><code>$visual-explainer</code> でスキルを指す。プロンプトを入れた環境では <code>/prompts:diff-review</code> など（Codex 側の slash prompts は非推奨扱いだが動作しうる）。</p>
+
+    <h2>OpenCode / opencode</h2>
+    <div class="ve-code-block">
+      <pre><code>git clone --depth 1 https://github.com/nicobailon/visual-explainer.git /tmp/visual-explainer
+
+mkdir -p ~/.config/opencode/skill ~/.config/opencode/command
+cp -R /tmp/visual-explainer/plugins/visual-explainer ~/.config/opencode/skill/visual-explainer
+
+# 任意のコマンドテンプレート:
+cp /tmp/visual-explainer/plugins/visual-explainer/commands/*.md ~/.config/opencode/command/
+
+rm -rf /tmp/visual-explainer</code></pre>
+    </div>
+    <p>エージェントに <code>visual-explainer</code> スキルの利用を依頼する。コマンドテンプレの挙動はビルド依存。</p>
+
+    <h2>Cursor</h2>
+    <p>リポジトリの <code>configs/cursor/visual-explainer.mdc</code> をプロジェクトルールに追加するか、内容をルール UI に貼る。ネイティブ Agent Skills としての公式サポートは謳わず、正規スキルへ誘導するルール扱い。</p>
+
+    <h2>OpenClaw</h2>
+    <p><code>configs/openclaw/AGENTS.md</code> を軽いガイドとして使い、実体は <code>plugins/visual-explainer/</code> を参照する。</p>
   </div>
 
   <section id="commands" class="sec-head">4 — コマンド一覧</section>
@@ -344,12 +395,13 @@ rm -rf /tmp/visual-explainer</code></pre>
             <td>ドキュメントの内容を実際のコードと照合して検証</td>
           </tr>
           <tr>
-            <td><code>/share</code></td>
-            <td>HTML を Vercel にデプロイして公開 URL を取得</td>
+            <td><code>/share-page</code></td>
+            <td>HTML を Vercel にデプロイしてライブ URL を取得</td>
           </tr>
         </tbody>
       </table>
     </div>
+  <p>スクロール形式のページを出す各コマンドは、<code>--slides</code> でスライドデッキ出力に切り替え可能（例: <code>/diff-review --slides</code>、<code>/project-recap --slides 2w</code>）。</p>
 
   <section id="diagram-rules" class="sec-head">5 — 図解生成のルール</section>
   <div class="ve-card" style="--i:0">
@@ -414,20 +466,23 @@ plugins/
 
   <section id="share" class="sec-head">7 — 共有フロー</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-2)"></span> /share</span>
-    <p><code>/share</code> は生成済み HTML を Vercel にデプロイし、ライブ URL と claim URL を返す共有用コマンド。内部では HTML を一時ディレクトリへ <code>index.html</code> としてコピーし、<code>vercel-deploy</code> skill で claimable deployment を作る。</p>
+    <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-2)"></span> /share-page</span>
+    <p><code>/share-page</code> は生成済み HTML を Vercel にデプロイし、ライブ URL と claim URL を返す。内部では <code>plugins/visual-explainer/scripts/share.sh</code> が HTML を一時ディレクトリの <code>index.html</code> として扱い、Pi 向け <code>vercel-deploy</code> スキルがある標準配置を前提にする。</p>
     <div class="ve-code-block">
-      <pre><code>bash {{skill_dir}}/scripts/share.sh ~/.agent/diagrams/my-diagram.html</code></pre>
+      <pre><code>bash plugins/visual-explainer/scripts/share.sh ~/.agent/diagrams/my-diagram.html</code></pre>
     </div>
+    <p class="version-note">上記 <code>plugins/...</code> はリポジトリ内パス。実運用ではインストール済みスキル直下の <code>scripts/share.sh</code> を指す。</p>
   </div>
 
   <section id="limits" class="sec-head">8 — 制限</section>
   <div class="ve-card" style="--i:0">
     <ul class="mini-list">
-      <li>表示にはブラウザが必要</li>
-      <li>OS のテーマ切り替え後、Mermaid の SVG を反映するにはページの再読み込みが必要</li>
-      <li>結果はモデルの能力に依存する</li>
-      <li>共有 URL は公開デプロイになるため、機密情報を含む HTML には向かない</li>
+      <li>生成 HTML は自己完結だが、自動でブラウザを開けるかはハーネス・サンドボックス・ポリシー次第</li>
+      <li>既定の出力先は harness により <code>~/.agent/diagrams/</code> など（ユーザーが別パスを指定しない限り）</li>
+      <li>OS テーマ切替後は Mermaid の SVG を合わせるためにページ再読み込みが必要な場合がある</li>
+      <li><code>/share-page</code> は <code>share.sh</code> が Pi 互換の <code>vercel-deploy</code> スキルを想定。他ハーネスでは共有だけ別途用意が必要なことがある</li>
+      <li>結果の品質はモデル能力に依存する</li>
+      <li>共有 URL は公開デプロイになりうるため、機密を含む HTML には不向き</li>
     </ul>
   </div>
 
@@ -436,7 +491,7 @@ plugins/
     <p>Anthropic の <a href="https://github.com/anthropics/skills" target="_blank" rel="noopener">frontend-design skill</a> と <a href="https://github.com/Dammyjay93/interface-design" target="_blank" rel="noopener">interface-design</a> のアイデアを参考にしています。</p>
     <p><strong>ライセンス</strong>：MIT</p>
     <p><strong>リポジトリ</strong>：<a href="https://github.com/nicobailon/visual-explainer" target="_blank" rel="noopener">nicobailon/visual-explainer</a>（GitHub）</p>
-    <p><strong>参照バージョン</strong>：<code>0.6.3</code></p>
+    <p><strong>参照バージョン</strong>：<code>0.7.1</code>（<a href="https://github.com/nicobailon/visual-explainer/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG</a>）</p>
   </div>
   </div><!-- /main -->
 </div><!-- /wrap -->
