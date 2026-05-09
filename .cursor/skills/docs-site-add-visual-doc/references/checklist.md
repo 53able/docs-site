@@ -10,6 +10,7 @@
 - [ ] 解説ページが `docs/` にあり、Spell UI と既存 `docs/*.html` の体裁に揃っている
 - [ ] `<head>` に Unfurl（description ＋ Open Graph ＋ Twitter Card、コメント付き）が含まれている
 - [ ] index の `.doc-list` にリンクカードを追加している
+- [ ] そのカードの `<a>` に `data-updated="YYYY-MM-DD"` と `title="更新: YYYY-MM-DD"` がある（**末尾のソート用 script は `data-updated` のみ参照**する。`data-updated` 欠落は日付 0 扱いで新着順にならない / `title` は script 非参照だが既存 index と形式を揃えるため必須）
 - [ ] コードブロックがある場合、`.ve-code-block pre code` でインラインコード用の `background` / `padding` を打ち消し、コードが帯状表示になっていない
 - [ ] `scripts/validate-public-paths.sh docs/<名前>.html` を実行し、公開 HTML に `/Users/...` などのローカル絶対パスや `repos/<名前>/...` が残っていない
 - [ ] main に直接コミットしておらず、ブランチでコミットしている（`repos/` はコミットに含めない）
