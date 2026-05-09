@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agent Skills — AI エージェント向けプロダクションエンジニアリングスキル集</title>
-  <meta name="description" content="19 のエンジニアリングスキルを 6 フェーズ（Define → Plan → Build → Verify → Review → Ship）に整理し、Claude Code / Cursor / Gemini CLI 等に導入できる OSS。各スキルは手順・検証ゲート・アンチ合理化表を内包。">
+  <meta name="description" content="22 のスキルディレクトリ（メタ含む）を 6 フェーズに整理し、Claude Code / Cursor / Gemini / OpenCode / Copilot 等に導入できる OSS。各スキルは手順・検証ゲート・アンチ合理化表を内包。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Agent Skills — AI エージェント向けプロダクションエンジニアリングスキル集">
-  <meta property="og:description" content="19 のエンジニアリングスキルを 6 フェーズに整理。AI エージェントがシニアエンジニアと同じ規律でコードを書けるようにするワークフロー集。Claude Code / Cursor / Gemini CLI 対応。">
+  <meta property="og:description" content="22 スキル・6 フェーズ・7 コマンド。source-driven / doubt-driven を含む Build フェーズと、メタの using-agent-skills。Claude Code マーケットプレースほか複数 IDE 向けドキュメント付き。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/agent-skills.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Agent Skills — AI エージェント向けプロダクションエンジニアリングスキル集">
-  <meta name="twitter:description" content="19 スキル・6 フェーズ・7 コマンド。AI エージェントをシニアエンジニア品質のワークフローで動かす OSS。">
+  <meta name="twitter:description" content="22 スキルディレクトリ・6 フェーズ・7 コマンド。AI エージェント向けプロダクション品質ワークフロー集（addyosmani/agent-skills）。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
@@ -121,6 +121,14 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
@@ -262,7 +270,7 @@
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
     <a href="#lifecycle">ライフサイクル</a>
-    <a href="#skills">19 スキル</a>
+    <a href="#skills">22 スキル</a>
     <a href="#commands">コマンド</a>
     <a href="#personas">ペルソナ</a>
     <a href="#setup">セットアップ</a>
@@ -278,7 +286,7 @@
       <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
       <p><strong>Agent Skills</strong> は、AI コーディングエージェントがシニアエンジニアと同じ品質規律でソフトウェアを開発できるように設計されたワークフロー集。各スキルは「手順（Process）・アンチ合理化表（Rationalizations）・検証要件（Verification）」の 3 要素で構成され、エージェントが最短ルートを選んで仕様・テスト・セキュリティレビューをスキップする問題を防ぐ。</p>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">19</span><span class="ve-kpi-card__label">コアスキル</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">22</span><span class="ve-kpi-card__label">skills/ 配下</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">6</span><span class="ve-kpi-card__label">開発フェーズ</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">7</span><span class="ve-kpi-card__label">スラッシュコマンド</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">エージェントペルソナ</span></div>
@@ -341,7 +349,7 @@
 10. shipping-and-launch         → 安全にデプロイ</code></pre>
       </div>
       <div class="ve-callout">
-        <strong>柔軟な適用:</strong> すべてのタスクがすべてのスキルを必要とするわけではない。バグ修正なら <code>debugging-and-error-recovery</code> → <code>test-driven-development</code> → <code>code-review-and-quality</code> の 3 スキルで十分なことが多い。
+        <strong>柔軟な適用:</strong> すべてのタスクがすべてのスキルを必要とするわけではない。バグ修正なら <code>debugging-and-error-recovery</code> → <code>test-driven-development</code> → <code>code-review-and-quality</code> の 3 スキルで十分なことが多い。公式仕様に縛りたい作業では <code>source-driven-development</code>、本番直前の判断では <code>doubt-driven-development</code> を足す。
       </div>
     </div>
 
@@ -360,6 +368,8 @@ flowchart TD
     D4 --> B2["UI 作業<br/>frontend-ui-engineering"]
     D4 --> B3["API 設計<br/>api-and-interface-design"]
     D4 --> B4["コンテキスト不足<br/>context-engineering"]
+    D4 --> B5["公式根拠<br/>source-driven-development"]
+    D4 --> B6["高リスク検証<br/>doubt-driven-development"]
     A --> D5{"検証フェーズ"}
     D5 --> V1["テスト<br/>test-driven-development"]
     D5 --> V2["ブラウザ検証<br/>browser-testing-with-devtools"]
@@ -377,8 +387,30 @@ flowchart TD
       </div>
     </div>
 
-    <!-- ===== 3 — 19 スキル ===== -->
-    <section id="skills" class="sec-head">3 — 19 スキル</section>
+    <!-- ===== 3 — スキル一覧 ===== -->
+    <section id="skills" class="sec-head">3 — スキル一覧（22）</section>
+
+    <!-- Meta -->
+    <div class="phase-row">
+      <div class="phase-header">
+        <span class="phase-badge">Meta</span>
+        <span style="font-size:0.8125rem;color:var(--text-dim)">どのスキルを当てるか</span>
+      </div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>スキル</th><th>何をするか</th><th>いつ使うか</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>using-agent-skills</code></td>
+              <td>着手中の作業を適切なスキルワークフローへマッピングし、共通の運用ルールを定義</td>
+              <td>セッション開始時や、どのスキルを適用すべきか決めたいとき</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
     <!-- Define -->
     <div class="phase-row">
@@ -455,6 +487,16 @@ flowchart TD
               <td><code>context-engineering</code></td>
               <td>適切な情報を適切なタイミングでエージェントに渡す — rules ファイル・コンテキストパッキング・MCP 統合</td>
               <td>セッション開始時・タスク切り替え時・出力品質が低下したとき</td>
+            </tr>
+            <tr>
+              <td><code>source-driven-development</code></td>
+              <td>公式ドキュメントに根拠を置く — 出典の検証・引用・未検証箇所の明示</td>
+              <td>フレームワークやライブラリの判断を権威ある情報で裏付けたいとき</td>
+            </tr>
+            <tr>
+              <td><code>doubt-driven-development</code></td>
+              <td>非自明な判断を対話的に疑う — CLAIM → EXTRACT → DOUBT → RECONCILE → STOP（必要なら別モデル検証）</td>
+              <td>本番・セキュリティ・不可逆変更などリスクが高いとき、自信過剰な出力を早めに検証したいとき</td>
             </tr>
             <tr>
               <td><code>frontend-ui-engineering</code></td>
@@ -691,9 +733,10 @@ flowchart TD
         <span class="tool-pill">Cursor</span>
         <span class="tool-pill">Gemini CLI</span>
         <span class="tool-pill">Windsurf</span>
+        <span class="tool-pill">OpenCode</span>
         <span class="tool-pill">GitHub Copilot</span>
-        <span class="tool-pill">OpenAI Codex</span>
-        <span class="tool-pill">その他エージェント</span>
+        <span class="tool-pill">Kiro</span>
+        <span class="tool-pill">Codex / その他</span>
       </div>
     </div>
 
@@ -704,6 +747,9 @@ flowchart TD
         <pre><code>/plugin marketplace add addyosmani/agent-skills
 /plugin install agent-skills@addy-agent-skills</code></pre>
       </div>
+      <div class="ve-callout" style="margin-top:0.75rem;">
+        <strong>SSH で失敗する場合:</strong> マーケットプレースの clone が SSH 前提のことがある。GitHub に SSH 鍵を登録するか、HTTPS でカタログを追加してからインストールする（例: <code>/plugin marketplace add https://github.com/addyosmani/agent-skills.git</code> → 同じ <code>@addy-agent-skills</code> 名で install）。
+      </div>
       <h3>ローカル / 開発</h3>
       <div class="ve-code-block">
         <pre><code>git clone https://github.com/addyosmani/agent-skills.git
@@ -713,7 +759,7 @@ claude --plugin-dir /path/to/agent-skills</code></pre>
 
     <div class="ve-card" style="--i:2">
       <span class="ve-section-label"><span class="ve-dot"></span> Cursor</span>
-      <p>任意の <code>SKILL.md</code> を <code>.cursor/rules/</code> にコピーするか、<code>skills/</code> ディレクトリ全体を参照する。</p>
+      <p>任意の <code>SKILL.md</code> を <code>.cursor/rules/</code> にコピーするか、リポジトリの <code>skills/</code> を参照する。詳細は上流の <a href="https://github.com/addyosmani/agent-skills/blob/main/docs/cursor-setup.md" target="_blank" rel="noopener">docs/cursor-setup.md</a>。</p>
       <div class="ve-code-block">
         <pre><code># 特定スキルだけ使う場合
 cp skills/spec-driven-development/SKILL.md .cursor/rules/spec.md
@@ -724,7 +770,7 @@ cp skills/spec-driven-development/SKILL.md .cursor/rules/spec.md
     </div>
 
     <div class="ve-card" style="--i:3">
-      <span class="ve-section-label"><span class="ve-dot"></span> Gemini CLI / Windsurf / Copilot</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> Gemini / Windsurf / Copilot / OpenCode / Kiro</span>
       <div class="ve-table-wrap">
         <table>
           <thead>
@@ -733,19 +779,27 @@ cp skills/spec-driven-development/SKILL.md .cursor/rules/spec.md
           <tbody>
             <tr>
               <td>Gemini CLI</td>
-              <td><code>gemini skills install https://github.com/addyosmani/agent-skills.git</code><br><span style="font-size:0.75rem;color:var(--text-dim)">またはネイティブスキルとして自動検出</span></td>
+              <td><code>gemini skills install https://github.com/addyosmani/agent-skills.git --path skills</code>（リモート）またはローカル clone から <code>gemini skills install ./agent-skills/skills/</code>。<a href="https://github.com/addyosmani/agent-skills/blob/main/docs/gemini-cli-setup.md" target="_blank" rel="noopener">docs/gemini-cli-setup.md</a></td>
             </tr>
             <tr>
               <td>Windsurf</td>
-              <td>スキル内容を Windsurf のルール設定に追加。<code>docs/windsurf-setup.md</code> 参照。</td>
+              <td>ルール設定へスキル内容を取り込む。<a href="https://github.com/addyosmani/agent-skills/blob/main/docs/windsurf-setup.md" target="_blank" rel="noopener">docs/windsurf-setup.md</a></td>
             </tr>
             <tr>
               <td>GitHub Copilot</td>
-              <td><code>agents/</code> の定義を Copilot ペルソナとして、スキル内容を <code>.github/copilot-instructions.md</code> に追加。</td>
+              <td><code>agents/</code> をペルソナに、スキル本文を <code>.github/copilot-instructions.md</code> へ。<a href="https://github.com/addyosmani/agent-skills/blob/main/docs/copilot-setup.md" target="_blank" rel="noopener">docs/copilot-setup.md</a></td>
             </tr>
             <tr>
-              <td>その他エージェント</td>
-              <td>スキルはプレーン Markdown。システムプロンプトや指示ファイルとして渡す。<code>docs/getting-started.md</code> 参照。</td>
+              <td>OpenCode</td>
+              <td><code>AGENTS.md</code> と <code>skill</code> ツールによるエージェント駆動のスキル実行。<a href="https://github.com/addyosmani/agent-skills/blob/main/docs/opencode-setup.md" target="_blank" rel="noopener">docs/opencode-setup.md</a></td>
+            </tr>
+            <tr>
+              <td>Kiro IDE / CLI</td>
+              <td><code>.kiro/skills/</code>（プロジェクトまたはグローバル）と Agents.md。公式: <a href="https://kiro.dev/docs/skills/" target="_blank" rel="noopener">kiro.dev/docs/skills/</a></td>
+            </tr>
+            <tr>
+              <td>Codex / その他</td>
+              <td>プレーン Markdown のため、システムプロンプトや指示ファイルとして読み込ませる。<a href="https://github.com/addyosmani/agent-skills/blob/main/docs/getting-started.md" target="_blank" rel="noopener">docs/getting-started.md</a></td>
             </tr>
           </tbody>
         </table>
@@ -753,11 +807,28 @@ cp skills/spec-driven-development/SKILL.md .cursor/rules/spec.md
     </div>
 
     <div class="ve-card ve-card--recessed" style="--i:4">
-      <span class="ve-section-label"><span class="ve-dot"></span> Session Hooks</span>
-      <p><code>hooks/session-start.sh</code> によるセッション開始フック。セッション開始時に自動的にスキルのコンテキストを設定し、エージェントがどのスキルを適用すべきかを認識できるようにする。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> Hooks</span>
+      <p>セッション開始用の <code>hooks/session-start.sh</code> に加え、<code>sdd-cache-pre.sh</code> / <code>sdd-cache-post.sh</code>（SDD キャッシュ）、<code>simplify-ignore.sh</code>（簡素化時の無視リスト）などが <code>hooks/</code> にある。設定は <code>hooks/hooks.json</code>。</p>
+      <p><code>session-start.sh</code> は開始時にスキル一覧とコンテキストを渡し、どの <code>SKILL.md</code> を当てるかエージェントが選びやすくする。</p>
       <div class="ve-callout">
-        <strong>Contributing:</strong> スキルは <strong>具体的</strong>（実行可能な手順・曖昧なアドバイスではない）・<strong>検証可能</strong>（明確な終了基準）・<strong>実戦検証済み</strong>・<strong>最小限</strong>であることが求められる。<code>docs/skill-anatomy.md</code> と <code>CONTRIBUTING.md</code> を参照。
+        <strong>Contributing:</strong> スキルは <strong>具体的</strong>（実行可能な手順・曖昧なアドバイスではない）・<strong>検証可能</strong>（明確な終了基準）・<strong>実戦検証済み</strong>・<strong>最小限</strong>であることが求められる。<a href="https://github.com/addyosmani/agent-skills/blob/main/docs/skill-anatomy.md" target="_blank" rel="noopener">docs/skill-anatomy.md</a> と <a href="https://github.com/addyosmani/agent-skills/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a> を参照。
       </div>
+    </div>
+
+    <div class="ve-card" style="--i:5">
+      <span class="ve-section-label"><span class="ve-dot"></span> リポジトリ構成（要約）</span>
+      <div class="ve-code-block">
+        <pre><code>agent-skills/
+├── skills/                 # SKILL.md ごとのスキル（22 ディレクトリ）
+├── agents/                 # ペルソナ用 Markdown
+├── references/             # チェックリスト 4 種
+├── hooks/                  # セッション・SDD・simplify 等
+├── .claude/commands/       # 7 スラッシュコマンド（Claude Code）
+├── .gemini/commands/       # Gemini CLI 用コマンド
+├── .opencode/skills/       # OpenCode 連携用
+└── docs/                   # ツール別セットアップガイド</code></pre>
+      </div>
+      <p class="subtitle" style="margin-top:0.75rem;margin-bottom:0;">上流: <a href="https://github.com/addyosmani/agent-skills" target="_blank" rel="noopener">github.com/addyosmani/agent-skills</a>（MIT）</p>
     </div>
 
   </div>
