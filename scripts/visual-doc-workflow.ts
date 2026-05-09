@@ -192,6 +192,10 @@ const REVIEW_SCOPE_RULES: ReviewScopeRule[] = [
     matches: (file, docPath) => file === "docs/pi-mono.html" && docPath === "docs/pi.html",
   },
   {
+    pattern: "docs/llmfit.html (removed when superseded by docs/alexs-jones-llmfit.html)",
+    matches: (file, docPath) => file === "docs/llmfit.html" && docPath === "docs/alexs-jones-llmfit.html",
+  },
+  {
     pattern: "CONTEXT.md",
     matches: (file) => file === "CONTEXT.md",
   },
