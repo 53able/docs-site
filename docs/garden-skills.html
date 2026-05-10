@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Garden Skills — 本番向け Agent Skills コレクション</title>
+  <meta name="description" content="ConardLi/garden-skills の構成解説。web-video-presentation・web-design-engineer・gpt-image-2・kb-retriever の4スキル、5つの導入経路、Claude Code / Cursor / Codex 互換表、SKILL.md ディレクトリ規約。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Garden Skills — 本番向け Agent Skills コレクション">
+  <meta property="og:description" content="4スキル・5導入経路・エージェント互換。画像生成、Webデザイン、プレゼン動画、ローカル知識検索を SKILL.md 形式で提供。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/garden-skills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Garden Skills — 本番向け Agent Skills コレクション">
+  <meta name="twitter:description" content="ConardLi/garden-skills の4スキルと導入手順の技術概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.008 145);
+      --foreground: oklch(0.22 0.04 155);
+      --card: oklch(1 0.005 145);
+      --card-foreground: oklch(0.22 0.04 155);
+      --popover: oklch(1 0.005 145);
+      --popover-foreground: oklch(0.22 0.04 155);
+      --primary: oklch(0.28 0.06 155);
+      --primary-foreground: oklch(0.98 0.01 145);
+      --secondary: oklch(0.94 0.02 150);
+      --secondary-foreground: oklch(0.28 0.06 155);
+      --muted: oklch(0.93 0.025 148);
+      --muted-foreground: oklch(0.45 0.04 155);
+      --accent: oklch(0.92 0.03 150);
+      --accent-foreground: oklch(0.28 0.06 155);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.02 150);
+      --input: oklch(0.88 0.02 150);
+      --ring: oklch(0.55 0.1 155);
+      --chart-1: oklch(0.48 0.14 155);
+      --chart-2: oklch(0.62 0.12 145);
+      --chart-3: oklch(0.38 0.08 165);
+      --chart-4: oklch(0.72 0.1 130);
+      --chart-5: oklch(0.55 0.08 175);
+      --code-bg: var(--muted);
+      --code-text: #0d4f3c;
+      --font-body: 'Kanit', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.02 155);
+        --foreground: oklch(0.95 0.02 145);
+        --card: oklch(0.2 0.03 155);
+        --card-foreground: oklch(0.95 0.02 145);
+        --popover: oklch(0.2 0.03 155);
+        --popover-foreground: oklch(0.95 0.02 145);
+        --primary: oklch(0.88 0.04 145);
+        --primary-foreground: oklch(0.18 0.04 155);
+        --secondary: oklch(0.26 0.03 155);
+        --secondary-foreground: oklch(0.95 0.02 145);
+        --muted: oklch(0.28 0.03 155);
+        --muted-foreground: oklch(0.72 0.04 145);
+        --accent: oklch(0.28 0.03 155);
+        --accent-foreground: oklch(0.95 0.02 145);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.55 0.1 155);
+        --chart-1: oklch(0.72 0.14 150);
+        --chart-2: oklch(0.62 0.12 160);
+        --chart-3: oklch(0.55 0.1 145);
+        --chart-4: oklch(0.78 0.1 140);
+        --chart-5: oklch(0.68 0.08 170);
+        --code-bg: oklch(0.16 0.02 155);
+        --code-text: #7dd3c0;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 82%, var(--chart-1) 18%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--border) 45%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 14%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.48 0.14 155 / 0.08) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-weight: 400;
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.72 0.14 150 / 0.12) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); font-weight: 400; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; font-weight: 400; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 900px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .skill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.875rem; }
+    .skill-tile {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 1rem 1.125rem; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .skill-tile:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.06); border-color: color-mix(in oklch, var(--chart-1) 35%, var(--border)); }
+    .skill-tile__name { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 600; color: var(--chart-1); margin-bottom: 0.35rem; }
+    .skill-tile__cat { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); margin-bottom: 0.5rem; }
+    .skill-tile__desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; overflow-x: auto; margin: 1rem 0; display: flex; justify-content: center; }
+    .mermaid { font-family: var(--font-mono) !important; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="ページ内目次">
+    <div class="toc-title">Contents</div>
+    <a href="#overview">概要</a>
+    <a href="#skills">4つのスキル</a>
+    <a href="#install">導入経路</a>
+    <a href="#compatibility">エージェント互換</a>
+    <a href="#skill-format">スキルフォルダ規約</a>
+    <a href="#links">出典・リンク</a>
+  </nav>
+
+  <div class="main">
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <h1 id="overview">Garden Skills</h1>
+      <p class="subtitle">ConardLi/garden-skills — Claude Code、Cursor、Codex など向けの本番利用を想定した Agent Skills 集（MIT）</p>
+      <p>リポジトリは <a href="https://github.com/ConardLi/garden-skills" target="_blank" rel="noopener">GitHub: ConardLi/garden-skills</a> で公開されている。<a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> の <code>SKILL.md</code> 形式に沿い、各スキルは <code>manifest.json</code>・検証用 npm スクリプト・リリース用 <code>.zip</code> を備える。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">4</div>
+          <div class="ve-kpi-card__label">公開スキル</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">5</div>
+          <div class="ve-kpi-card__label">導入経路</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">CLI</div>
+          <div class="ve-kpi-card__label">npx skills</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">MIT</div>
+          <div class="ve-kpi-card__label">ライセンス</div>
+        </div>
+      </div>
+    </div>
+
+    <section id="skills" class="sec-head">4つのスキル</section>
+    <p>ルートの README で紹介されているカテゴリ別スキル。用途に応じて単体インストールまたは <code>npx skills add</code> で一括取得できる。</p>
+
+    <div class="skill-grid">
+      <div class="skill-tile">
+        <div class="skill-tile__name">web-video-presentation</div>
+        <div class="skill-tile__cat">Web 動画 / プレゼン</div>
+        <div class="skill-tile__desc">Vite + React + TypeScript の 1920×1080 ステージ。章・ステップ単位のナレーション同期、録画向け UI、複数テーマ（<code>paper-press</code> 〜 <code>terminal-green</code> など）。任意で音声合成まで。</div>
+      </div>
+      <div class="skill-tile">
+        <div class="skill-tile__name">web-design-engineer</div>
+        <div class="skill-tile__cat">デザイン / フロント</div>
+        <div class="skill-tile__desc">要件→デザインシステム→v0→本実装→検証の 6 段ワークフロー。AI UI の陳腐化を避ける指針と、React / インライン Babel・<code>oklch()</code>・コンテナクエリ等の実装ルール。</div>
+      </div>
+      <div class="skill-tile">
+        <div class="skill-tile__name">gpt-image-2</div>
+        <div class="skill-tile__cat">画像生成 / プロンプト</div>
+        <div class="skill-tile__desc">Garden ローカル・ホスト委譲・アドバイザのみの 3 モード。18 カテゴリ・80 件超の参照テンプレート、編集ワークフローとスクリプト。公開サイト <code>website/gpt-image2-website</code> でケース閲覧可能。</div>
+      </div>
+      <div class="skill-tile">
+        <div class="skill-tile__name">kb-retriever</div>
+        <div class="skill-tile__cat">ローカル検索 / KB</div>
+        <div class="skill-tile__desc"><code>knowledge/</code> 階層を <code>data_structure.md</code> で辿り、PDF・Excel は参照ドキュメントを先に読むルール。最大 5 ラウンドで探索を打ち切る。</div>
+      </div>
+    </div>
+
+    <div class="ve-callout" style="margin-top: 1rem;">
+      <strong>リリース物:</strong> 各スキルの README に <strong>Download v&lt;version&gt; .zip</strong> リンクがあり、<code>scripts/release/update-readme.mjs</code> によりタグ URL と同期される。CI では <code>npm run validate</code>（一覧・パック・README 整合）が走る。
+    </div>
+
+    <section id="install" class="sec-head">導入経路</section>
+    <p>README に定義された 5 方式。用途とピン留め要件で選ぶ。</p>
+
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>記号</th>
+            <th>方法</th>
+            <th>向いている場面</th>
+            <th>バージョン固定</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A</td>
+            <td><code>npx skills add ConardLi/garden-skills</code>（<a href="https://www.npmjs.com/package/skills" target="_blank" rel="noopener">skills CLI</a>）</td>
+            <td>エージェント横断の一行導入。単体スキルは <code>-s &lt;name&gt;</code>、グローバルは <code>--global</code></td>
+            <td>タグ付き <code>tree/</code> URL でピン留め可</td>
+          </tr>
+          <tr>
+            <td>B</td>
+            <td>Claude Code プラグイン（<code>/plugin marketplace add</code> 等）</td>
+            <td>公式マーケット経由でパック単位（presentation / web-design / knowledge-base / image-generation）</td>
+            <td>マーケットのバージョンに従う</td>
+          </tr>
+          <tr>
+            <td>C</td>
+            <td>GitHub Releases の <code>.zip</code> + SHA-256</td>
+            <td>CI・オフライン・バイト完全一致が必要なとき</td>
+            <td>immutable</td>
+          </tr>
+          <tr>
+            <td>D</td>
+            <td><code>git clone</code> 後に <code>skills/</code> 以下を手コピー</td>
+            <td>スキル本体をフォーク・改変するとき</td>
+            <td>なし（<code>main</code> 追従）</td>
+          </tr>
+          <tr>
+            <td>E</td>
+            <td>Git submodule + シンボリックリンク</td>
+            <td>大きなプロジェクトにベンダリングし upstream を追うとき</td>
+            <td>サブモジュールのコミット SHA / タグで固定</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>CLI の代表例</h3>
+    <div class="ve-code-block"><pre><code># 4 スキルすべて（最新 main）
+npx skills add ConardLi/garden-skills
+
+# 1 スキルのみ
+npx skills add ConardLi/garden-skills -s web-design-engineer
+
+# エージェント指定
+npx skills add ConardLi/garden-skills -s kb-retriever -a claude-code
+
+# タグでピン留め（例: web-design-engineer のリリースタグ）
+npx skills add ConardLi/garden-skills/tree/web-design-engineer-v1.0.0/skills/web-design-engineer</code></pre></div>
+
+    <div class="mermaid-wrap">
+      <pre class="mermaid">flowchart TD
+  Q[Version pin required?]
+  Q -->|Yes| R[Releases zip or tag tree URL]
+  Q -->|No| S["npx skills add default main"]
+  S --> T[Claude Code optional marketplace]</pre>
+    </div>
+
+    <section id="compatibility" class="sec-head">エージェント互換</section>
+    <p>README の互換表を要約。実際の配置パスはエージェントのスキャン規約に従う。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ランタイム</th>
+            <th>スキル配置の目安</th>
+            <th>README 上の状態</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Claude Code</td><td><code>.claude/skills/&lt;name&gt;/</code> またはプラグイン</td><td>検証済み</td></tr>
+          <tr><td>Claude.ai（Web）</td><td>設定 → Capabilities → Skills</td><td>検証済み</td></tr>
+          <tr><td>Cursor</td><td><code>.agents/skills/&lt;name&gt;/</code></td><td>検証済み</td></tr>
+          <tr><td>Codex CLI</td><td><code>.codex/skills/&lt;name&gt;/</code></td><td>検証済み</td></tr>
+          <tr><td>Gemini CLI</td><td>拡張マニフェスト</td><td>検証済み</td></tr>
+          <tr><td>OpenCode</td><td><code>.opencode/skills/&lt;name&gt;/</code></td><td>検証済み</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section id="skill-format" class="sec-head">スキルフォルダ規約</section>
+    <p>各スキルは自己完結ディレクトリ。エージェントは YAML フロントマターの <code>description</code> をトリガ条件として読み込む。</p>
+    <div class="ve-code-block"><pre><code>&lt;skill-name&gt;/
+├── SKILL.md       # 必須: いつ使うか + 手順
+├── README.md      # 人間向け説明
+├── manifest.json  # バージョン等（garden-skills では各スキルに付与）
+├── references/    # 任意: JiT で読む参照
+├── scripts/       # 任意: Node / shell 等
+└── assets/        # 任意: テンプレ・フォント等</code></pre></div>
+    <p>メンテナ向けのリリース手順・検証はリポジトリ内の <code>CONTRIBUTING.md</code>（日本語は <code>CONTRIBUTING.zh-CN.md</code>）を参照。</p>
+
+    <section id="links" class="sec-head">出典・リンク</section>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span>外部</span>
+      <ul>
+        <li><a href="https://github.com/ConardLi/garden-skills" target="_blank" rel="noopener">GitHub: ConardLi/garden-skills</a> — 本体・Issues・Releases</li>
+        <li><a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> — スキル仕様</li>
+        <li><a href="https://github.com/anthropics/skills" target="_blank" rel="noopener">anthropics/skills</a> — 参照実装</li>
+        <li><a href="https://www.npmjs.com/package/skills" target="_blank" rel="noopener">npm: skills</a> — <code>npx skills</code> CLI</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    securityLevel: 'strict',
+    themeVariables: {
+      primaryColor: '#d1fae5',
+      primaryTextColor: '#064e3b',
+      lineColor: '#059669',
+      secondaryColor: '#ecfdf5',
+      tertiaryColor: '#f0fdf4'
+    }
+  });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
