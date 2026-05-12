@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claw Code — Claude Code の公開 Rust 実装・自律型コーディングハーネス</title>
-  <meta name="description" content="Claw Code の哲学・3層システム（OmX / clawhip / OmO）・9クレート Rust ワークスペース・CLI/REPL・ロードマップをビジュアルで解説。人間が方向を示し、claws が実行する自律型 AI 開発のデモリポジトリ。">
+  <title>Claw Code — 公開 Rust claw CLI（ultraworkers/claw-code）</title>
+  <meta name="description" content="ultraworkers/claw-code の公開 Rust 実装 claw CLI。ソースビルド手順、crates.io の誤インストール回避、Rust ワークスペースとドキュメントマップ、エコシステム上の位置づけとロードマップを整理。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Claw Code — Claude Code の公開 Rust 実装・自律型コーディングハーネス">
-  <meta property="og:description" content="Claw Code の哲学・3層システム（OmX / clawhip / OmO）・9クレート Rust ワークスペース・CLI/REPL・ロードマップをビジュアルで解説。人間が方向を示し、claws が実行する自律型 AI 開発のデモリポジトリ。">
+  <meta property="og:title" content="Claw Code — 公開 Rust claw CLI（ultraworkers/claw-code）">
+  <meta property="og:description" content="ultraworkers/claw-code の公開 Rust 実装 claw CLI。ソースビルド手順、crates.io の誤インストール回避、Rust ワークスペースとドキュメントマップ、エコシステム上の位置づけとロードマップを整理。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/claw-code.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Claw Code — Claude Code の公開 Rust 実装・自律型コーディングハーネス">
-  <meta name="twitter:description" content="Claw Code の哲学・3層システム・9クレート Rust ワークスペース・CLI/REPL をビジュアルで解説。">
+  <meta name="twitter:title" content="Claw Code — 公開 Rust claw CLI（ultraworkers/claw-code）">
+  <meta name="twitter:description" content="ソースビルド手順、crates.io 注意、Rust ワークスペース、ドキュメントマップ、ロードマップ。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
@@ -115,6 +115,14 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
@@ -124,6 +132,9 @@
     .ve-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; line-height: 1; padding: 0.25rem 0.5rem; border-radius: 999px; }
     .ve-badge--active { background: color-mix(in oklch, var(--chart-1) 15%, transparent); color: var(--chart-1); }
     .ve-badge--done { background: oklch(0.72 0.16 145 / 15%); color: oklch(0.50 0.16 145); }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--text-dim); margin: 0.75rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
 
     /* ============ Wrap + TOC layout ============ */
     *, *::before, *::after { box-sizing: border-box; }
@@ -218,6 +229,7 @@
     <div class="toc-title">目次</div>
     <ul>
       <li><a href="#overview">概要</a></li>
+      <li><a href="#install-traps">インストールの注意</a></li>
       <li><a href="#philosophy">哲学</a></li>
       <li><a href="#system">3層システム</a></li>
       <li><a href="#workspace">Rust ワークスペース</a></li>
@@ -230,8 +242,8 @@
   <div class="main">
     <header class="page-header">
       <p class="breadcrumb"><a href="../index.html">資料一覧</a> / claw-code</p>
-      <h1 class="page-title">🦞 Claw Code</h1>
-      <p class="page-subtitle">Claude Code の公開 Rust 実装。人間が方向を示し、claws（コーディングエージェント）が実行する自律型 AI 開発のデモリポジトリ。</p>
+      <h1 class="page-title">Claw Code</h1>
+      <p class="page-subtitle"><a href="https://github.com/ultraworkers/claw-code" target="_blank" rel="noopener" style="color:var(--chart-1);">ultraworkers/claw-code</a> で公開されている <code>claw</code> CLI の Rust 実装。正規のソースは <code>rust/</code> ワークスペース。Python の <code>src/</code> は参照・監査用のコンパニオン。</p>
     </header>
 
     <!-- 1. 概要 -->
@@ -241,14 +253,14 @@
       <div class="grid-2" style="gap:1.25rem; margin-top:0.25rem;">
         <div>
           <h3 style="margin:0 0 0.5rem;">公開 Rust CLI エージェントハーネス</h3>
-          <p><strong>Claw Code</strong> は <a href="https://github.com/ultraworkers/claw-code" style="color:var(--chart-1);">ultraworkers/claw-code</a> で公開されている、<code>claw</code> CLI エージェントハーネスの Rust 実装です。</p>
-          <p>コードそのものより、それを<strong>生み出したシステム</strong>（claw ループ）の公開デモが目的です。</p>
+          <p><strong>Claw Code</strong> は <code>claw</code> CLI エージェントハーネスの公開 Rust 実装です。最初の手順は公式 <code>USAGE.md</code>。ビルド後は <code>claw doctor</code> を健診の起点にします。</p>
+          <p>設計思想や運用の枠組みは <code>PHILOSOPHY.md</code>、移植状況は <code>PARITY.md</code>、コンテナ運用は <code>docs/container.md</code> を参照してください。</p>
         </div>
         <div>
           <div style="display:flex; flex-direction:column; gap:0.5rem;">
             <div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem 0.75rem; border-radius:var(--radius-md); background:var(--muted); font-size:0.8125rem;">
               <span style="font-size:1.1rem;">🦀</span>
-              <div><strong>~20,000 行</strong>の Rust<br><span style="color:var(--text-dim);">9 クレート ワークスペース</span></div>
+              <div><strong>Rust ワークスペース</strong><br><span style="color:var(--text-dim);"><code>rust/</code> 配下に CLI と複数クレート</span></div>
             </div>
             <div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem 0.75rem; border-radius:var(--radius-md); background:var(--muted); font-size:0.8125rem;">
               <span style="font-size:1.1rem;">🔧</span>
@@ -283,8 +295,20 @@
       </div>
     </div>
 
-    <!-- 2. 哲学 -->
-    <section id="philosophy" class="sec-head">2 — 哲学</section>
+    <section id="install-traps" class="sec-head">2 — インストールの注意</section>
+    <div class="ve-card" style="--i:0; margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> crates.io とビルド方針</span>
+      <div class="ve-callout">
+        <strong>避ける:</strong> <code>cargo install claw-code</code> は使わない。crates.io の <code>claw-code</code> クレートは非推奨のスタブで、<code>claw-code-deprecated</code> 相当のバイナリしか置かず、本リポジトリの <code>claw</code> ではありません。
+      </div>
+      <p style="color:var(--text-dim); font-size:0.875rem; margin:0.5rem 0 0.75rem;">代わりに、<strong>このリポジトリからソースビルド</strong>するか、上流の <code>cargo install agent-code</code>（インストール名は <code>agent</code> / Windows は <code>agent.exe</code>）を公式 README の案内に従ってください。</p>
+      <div class="ve-callout" style="border-left-color: var(--chart-2);">
+        <strong>ACP / Zed:</strong> 現時点で ACP/Zed デーモン用のエントリポイントは同梱されていません。状態確認は <code>claw acp</code>（または <code>claw --acp</code>）。<code>claw acp serve</code> は発見用エイリアスに留まる点は <code>ROADMAP.md</code> 側の記述に従ってください。
+      </div>
+    </div>
+
+    <!-- 3. 哲学 -->
+    <section id="philosophy" class="sec-head">3 — 哲学</section>
     <div class="ve-card ve-card--elevated" style="--i:0; margin-bottom:1rem;">
       <span class="ve-section-label"><span class="ve-dot"></span> 人間が方向を示し、claws が実行する</span>
       <blockquote style="border-left:3px solid var(--chart-1); margin:0 0 1rem; padding:0.5rem 0 0.5rem 1rem; color:var(--text-dim); font-size:0.9375rem; font-style:italic;">
@@ -309,10 +333,11 @@
       </div>
     </div>
 
-    <!-- 3. 3層システム -->
-    <section id="system" class="sec-head">3 — 3層システム</section>
+    <!-- 4. 3層システム -->
+    <section id="system" class="sec-head">4 — 3層システム</section>
     <div class="ve-card" style="--i:0; margin-bottom:1rem;">
       <span class="ve-section-label"><span class="ve-dot"></span> アーキテクチャ概要</span>
+      <p style="color:var(--text-dim); font-size:0.8125rem; margin:0 0 0.75rem;">エコシステム上の位置づけの概略図。詳細は公式の <code>PHILOSOPHY.md</code> および各リポジトリの README を参照。</p>
       <div class="mermaid">
 graph LR
   Human["👤 Human\n(Discord / chat)"] -->|directive| OmX
@@ -360,21 +385,28 @@ graph LR
       </div>
     </div>
 
-    <!-- 4. Rust ワークスペース -->
-    <section id="workspace" class="sec-head">4 — Rust ワークスペース</section>
+    <!-- 5. Rust ワークスペース -->
+    <section id="workspace" class="sec-head">5 — Rust ワークスペース</section>
     <div class="ve-card" style="--i:0; margin-bottom:1rem;">
-      <span class="ve-section-label"><span class="ve-dot"></span> クイックスタート</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> クイックスタート（README 準拠）</span>
       <div class="ve-code-block">
-        <pre><code>cd rust
+        <pre><code># 1. クローンしてビルド
+git clone https://github.com/ultraworkers/claw-code
+cd claw-code/rust
 cargo build --workspace
-./target/debug/claw            # REPL 起動
-/doctor                        # 最初に実行すべき健全性チェック
 
-# ワンショットプロンプト
-./target/debug/claw prompt "summarize this repository"
+# 2. API キー（Anthropic の API キー。Claude サブスクのログインではない）
+export ANTHROPIC_API_KEY="sk-ant-..."
 
-# JSON 出力 (スクリプティング用)
-./target/debug/claw --output-format json prompt "status"</code></pre>
+# 3. 健診
+./target/debug/claw doctor
+
+# 4. ワンショットプロンプト
+./target/debug/claw prompt "say hello"</code></pre>
+      </div>
+      <p style="color:var(--text-dim); font-size:0.8125rem; margin-top:0.75rem;">Windows PowerShell では <code>.\target\debug\claw.exe</code> を使う。詳細は公式 <code>USAGE.md</code> の Windows 節を参照。</p>
+      <div class="ve-callout" style="margin-top:1rem;">
+        <strong>認証:</strong> claw は <strong>API キー</strong>（<code>ANTHROPIC_API_KEY</code> や <code>OPENAI_API_KEY</code> など）を想定。Claude のサブスクリプションログインだけでは動かない旨は公式 README に記載があります。
       </div>
     </div>
 
@@ -425,8 +457,8 @@ cargo build --workspace
       </div>
     </div>
 
-    <!-- 5. CLI / REPL -->
-    <section id="cli" class="sec-head">5 — CLI / REPL</section>
+    <!-- 6. CLI / REPL -->
+    <section id="cli" class="sec-head">6 — CLI / REPL</section>
     <div class="ve-card" style="--i:0; margin-bottom:1rem;">
       <span class="ve-section-label"><span class="ve-dot"></span> モデルエイリアスと権限モード</span>
       <div class="grid-2">
@@ -549,8 +581,8 @@ cargo build --workspace
       </div>
     </div>
 
-    <!-- 6. ロードマップ -->
-    <section id="roadmap" class="sec-head">6 — ロードマップ</section>
+    <!-- 7. ロードマップ -->
+    <section id="roadmap" class="sec-head">7 — ロードマップ</section>
     <div class="ve-card" style="--i:0; margin-bottom:1rem;">
       <span class="ve-section-label"><span class="ve-dot"></span> "Clawable" な実行ランタイムへ</span>
       <p style="color:var(--text-dim); font-size:0.875rem; margin-bottom:1.25rem;">主要ユーザーは<strong>フック・プラグイン・セッション・チャンネルイベント経由で接続されたclaws</strong>。人間ファーストの端末の仮定を排除し、機械可読性を向上させる。</p>
@@ -603,10 +635,11 @@ cargo build --workspace
       </ul>
     </div>
 
-    <div style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border); display:flex; gap:1rem; flex-wrap:wrap;">
+    <div style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border); display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
       <a href="https://github.com/ultraworkers/claw-code" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:0.4rem; font-size:0.8125rem; color:var(--chart-1); text-decoration:none; font-weight:600;">GitHub: ultraworkers/claw-code →</a>
       <a href="https://discord.gg/5TUQKqFWd" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:0.4rem; font-size:0.8125rem; color:var(--text-dim); text-decoration:none;">UltraWorkers Discord</a>
     </div>
+    <p style="margin-top:1rem; font-size:0.75rem; color:var(--text-dim); max-width:42rem;">本リポジトリは Claude Code の元ソースの所有を主張せず、<strong>Anthropic との非提携・非推奨</strong>である旨は公式 README に明記されています。</p>
   </div><!-- /.main -->
 </div><!-- /.wrap -->
 
