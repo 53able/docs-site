@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>agentmemory — コーディングエージェント向け永続メモリ</title>
-  <meta name="description" content="Claude Code・Cursor・MCP クライアント向けの永続メモリ。iii エンジン上にハイブリッド検索・知識グラフ・フックを載せ、セッション横断で文脈を注入する。rohitg00/agentmemory の技術概要。">
+  <meta name="description" content="Claude Code・Cursor・MCP クライアント向けの永続メモリ。iii エンジン上にハイブリッド検索・知識グラフ・フックを載せ、セッション横断で文脈を注入する。上流リポジトリの読み取り順と大きなファイルの扱いも整理。rohitg00/agentmemory の技術概要。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="agentmemory — コーディングエージェント向け永続メモリ">
-  <meta property="og:description" content="MCP・フック・REST で接続するエージェント記憶層。ハイブリッド検索・圧縮・監査・ビューアまでをひとつの npm パッケージから起動できる。">
+  <meta property="og:description" content="MCP・フック・REST で接続するエージェント記憶層。ハイブリッド検索・圧縮・監査・ビューアまでをひとつの npm パッケージから起動。上流ソースの読み取り順と大規模ファイルの扱いも整理。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/agentmemory.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="agentmemory — コーディングエージェント向け永続メモリ">
-  <meta name="twitter:description" content="iii ベースの永続メモリ。MCP 51 ツール・12 本の自動フック・ローカル埋め込み対応の概要。">
+  <meta name="twitter:description" content="iii ベースの永続メモリ。MCP 51 ツール・12 本の自動フック・827 テスト規模の品質面と、上流ソースの JiT 調査順を整理。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -214,6 +214,7 @@
     <a href="#iii">iii エンジン</a>
     <a href="#surface">機能面</a>
     <a href="#integration">接続方式</a>
+    <a href="#jit-reading">調査順</a>
     <a href="#security">セキュリティ</a>
     <a href="#links">参考</a>
   </nav>
@@ -236,9 +237,9 @@
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">95.2%</span><span class="ve-kpi-card__label">LongMemEval-S R@5（README 掲載）</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">51</span><span class="ve-kpi-card__label">MCP ツール（バッジ表記）</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">12</span><span class="ve-kpi-card__label">自動フック本数</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">REST</span><span class="ve-kpi-card__label">104 エンドポイント級の API 面</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">827</span><span class="ve-kpi-card__label">テスト（README バッジ表記）</span></div>
       </div>
-      <p style="margin-bottom:0">正典は上流 <a href="https://github.com/rohitg00/agentmemory" target="_blank" rel="noopener">github.com/rohitg00/agentmemory</a> の <code>README.md</code> と <code>DESIGN.md</code>。npm は <a href="https://www.npmjs.com/package/@agentmemory/agentmemory" target="_blank" rel="noopener"><code>@agentmemory/agentmemory</code></a>。</p>
+      <p style="margin-bottom:0">正典は上流 <a href="https://github.com/rohitg00/agentmemory" target="_blank" rel="noopener">github.com/rohitg00/agentmemory</a> の <code>README.md</code> と <code>DESIGN.md</code>。REST は README の表記どおり 104 エンドポイント規模。npm は <a href="https://www.npmjs.com/package/@agentmemory/agentmemory" target="_blank" rel="noopener"><code>@agentmemory/agentmemory</code></a>。</p>
     </div>
 
     <section id="iii" class="sec-head">2 — iii エンジンとの関係</section>
@@ -307,7 +308,47 @@ flowchart TD
       <p style="margin-bottom:0">製品サイト <a href="https://agent-memory.dev" target="_blank" rel="noopener">agent-memory.dev</a> や、ファイルシステム連携パッケージ <code>@agentmemory/fs-watcher</code> は CHANGELOG / README で案内されている。詳細は上流の該当セクションを参照。</p>
     </div>
 
-    <section id="security" class="sec-head">5 — セキュリティと運用</section>
+    <section id="jit-reading" class="sec-head">5 — 上流リポジトリでの調査順</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> JiT で読む順（走査の目安）</span>
+      <p>リポジトリ全体を一度に追わず、目的に応じて深さを足す。下表は上流のディレクトリ走査で整理した優先度だ。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>優先度</th><th>参照先</th><th>目的</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>ディレクトリ構成</td><td>パッケージ境界（<code>src/</code>・<code>plugin/</code>・<code>integrations/</code>・<code>benchmark/</code> など）の把握</td></tr>
+            <tr><td>2</td><td><code>README.md</code></td><td>対応エージェント・クイックスタート・ベンチ指標</td></tr>
+            <tr><td>3</td><td>エントリ（<code>src/index.ts</code>・<code>src/cli.ts</code>・<code>src/mcp/server.ts</code> など）</td><td>起動経路と MCP 面の実装位置</td></tr>
+            <tr><td>4–6</td><td><code>integrations/*</code>・<code>plugin/</code>・<code>benchmark/*.md</code>・<code>website/</code> など</td><td>特定連携・スキル梱包・ベンチレポート・マーケサイトのどれを深掘りするか決まったときだけ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 行数が大きいファイル（目安）</span>
+      <p>エディタで一気に開くとノイズになりやすい。ベンチ結果 JSON やビューアの静的 HTML は、通常の「挙動理解」よりレポート生成・UI 確認の文脈で触るとよい。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>パス（上流リポジトリのルートから）</th><th>行数目安</th><th>メモ</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>benchmark/data/longmemeval_results_hybrid.json</code></td><td>約 12,490</td><td>LongMemEval 系の結果データ</td></tr>
+            <tr><td><code>benchmark/data/longmemeval_results_bm25.json</code></td><td>約 12,490</td><td>BM25 フォールバック比較用データ</td></tr>
+            <tr><td><code>src/viewer/index.html</code></td><td>約 3,759</td><td>ローカルビューアの静的 UI</td></tr>
+            <tr><td><code>src/triggers/api.ts</code></td><td>約 2,625</td><td>トリガ API 面</td></tr>
+            <tr><td><code>src/mcp/server.ts</code></td><td>約 1,693</td><td>MCP サーバの中心実装</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top:1rem;">
+        <strong>数値の出所。</strong> 行数は上流リポジトリのディレクトリ走査時点の集計であり、ブランチによって前後する。確定値が必要なら GitHub 上の該当ファイルを開いて確認する。
+      </div>
+    </div>
+
+    <section id="security" class="sec-head">6 — セキュリティと運用</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 上流の注意喚起</span>
       <p><code>.github/security-advisories/</code> に個別の脆弱性・ハードニング記事が置かれている（ビューア XSS、デフォルトバインド、メッシュ未認証、エクスポートのパストラバーサル等）。運用前に該当番号を読み、バインドアドレス・認証・エクスポートパスを制限すること。</p>
@@ -316,7 +357,7 @@ flowchart TD
       </div>
     </div>
 
-    <section id="links" class="sec-head">6 — 参考リンク</section>
+    <section id="links" class="sec-head">7 — 参考リンク</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
       <ul>
