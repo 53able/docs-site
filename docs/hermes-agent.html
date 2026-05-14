@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hermes Agent — 自己改善型 AI エージェント</title>
-  <meta name="description" content="Nous Research の Hermes Agent。自己改善ループ、スキル、メモリ、マルチチャネル Gateway、React + Ink TUI、Atropos RL 環境、モデルプロバイダ切替の視覚解説。">
+  <meta name="description" content="Nous Research の Hermes Agent。自己改善ループ、cron 配信、サブエージェント、スキル・メモリ、マルチチャネル Gateway、7 種ターミナルバックエンド、React + Ink TUI、Atropos RL、モデル切替の視覚解説。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Hermes Agent — 自己改善型 AI エージェント">
-  <meta property="og:description" content="Nous Research の Hermes Agent。学習ループ、スキル、メモリ、Gateway、TUI、RL 環境の概要。">
+  <meta property="og:description" content="Nous Research の Hermes Agent。学習ループ、cron、Gateway（メール含む）、7 バックエンド、TUI、RL 環境の概要。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/hermes-agent.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Hermes Agent — 自己改善型 AI エージェント">
-  <meta name="twitter:description" content="学習ループ・スキル・Gateway・TUI・RL 環境の技術概要。">
+  <meta name="twitter:description" content="学習ループ、cron、Gateway、7 バックエンド、TUI、RL 環境の技術概要。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
@@ -222,11 +222,11 @@
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
-    <p><strong>Hermes Agent</strong> は <a href="https://nousresearch.com" target="_blank" rel="noopener">Nous Research</a> が公開する Python 製の AI エージェント。単発のチャットではなく、<strong>スキルの自動生成・改善</strong>、<strong>永続メモリと会話検索</strong>、<strong>マルチチャネル Gateway</strong>、<strong>実行環境の切替</strong>を一体で持つ。モデルプロバイダは固定されず、<code>hermes model</code> で切り替え可能。</p>
+    <p><strong>Hermes Agent</strong> は <a href="https://nousresearch.com" target="_blank" rel="noopener">Nous Research</a> が公開する Python 製の AI エージェント。単発のチャットではなく、<strong>スキルの自動生成・改善</strong>、<strong>永続メモリと会話検索</strong>、<strong>組み込み cron とプラットフォームへの配信</strong>、<strong>隔離サブエージェントの並列起動</strong>、<strong>マルチチャネル Gateway</strong>、<strong>ターミナル実行バックエンドの切替</strong>を一体で持つ。モデルプロバイダは固定されず、<code>hermes model</code> で切り替え可能。</p>
     <div class="kpi-row">
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">学習ループ</span><span class="ve-kpi-card__label">スキル生成・改善</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">200+</span><span class="ve-kpi-card__label">OpenRouter モデル等</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">6 バックエンド</span><span class="ve-kpi-card__label">local〜Modal</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">7 バックエンド</span><span class="ve-kpi-card__label">local〜Vercel Sandbox</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">agentskills.io</span><span class="ve-kpi-card__label">スキル互換</span></div>
     </div>
     <p>このページは <a href="https://github.com/NousResearch/hermes-agent" target="_blank" rel="noopener">NousResearch/hermes-agent</a> の README、<code>pyproject.toml</code>、TUI と RL 環境のドキュメントをもとに、理解に必要な構造へ圧縮している。詳細仕様は公式ドキュメントを参照。</p>
@@ -239,6 +239,7 @@
     <ul>
       <li><strong>セッション検索:</strong> FTS5 ベースの検索に LLM 要約を組み合わせ、過去会話を引き戻す。</li>
       <li><strong>ユーザモデル:</strong> <a href="https://github.com/plastic-labs/honcho" target="_blank" rel="noopener">Honcho</a> による弁証法的ユーザモデリング（README 記載）。</li>
+      <li><strong>定時オートメーション:</strong> 組み込みスケジューラで任意プラットフォームへジョブ結果を配信（日次レポートやバックアップ等を自然言語で記述）。</li>
       <li><strong>標準:</strong> <a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> オープン標準との互換。</li>
     </ul>
     <div class="pipeline" aria-hidden="true">
@@ -250,6 +251,7 @@
       <span class="arrow">→</span>
       <span class="step">次セッションで検索・再利用</span>
     </div>
+    <p>README の機能表では、隔離された<strong>サブエージェント</strong>を並列に走らせたり、Python からツールを RPC 経由で呼び出して多段パイプラインを短いターンに畳む、といった委譲・並列化の説明もある。</p>
   </div>
   <div class="ve-card ve-card--recessed" style="--i:1">
     <span class="ve-section-label"><span class="ve-dot"></span> 研究向け</span>
@@ -259,7 +261,7 @@
   <section id="models" class="sec-head">3 — モデルと拡張</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> ロックインしない構成</span>
-    <p>README は「好きなモデルを使える」ことを前面に出している。Nous Portal、OpenRouter、NVIDIA NIM、Xiaomi MiMo、z.ai/GLM、Kimi/Moonshot、MiniMax、Hugging Face、OpenAI、独自エンドポイントを切り替えられる。</p>
+    <p>README は「好きなモデルを使える」ことを前面に出している。Nous Portal、OpenRouter（200+ モデル）、<a href="https://novita.ai" target="_blank" rel="noopener">NovitaAI</a>（Model API / Agent Sandbox / GPU Cloud）、NVIDIA NIM、Xiaomi MiMo、z.ai/GLM、Kimi/Moonshot、MiniMax、Hugging Face、OpenAI、独自エンドポイントを切り替えられる。</p>
     <div class="feature-grid">
       <div class="feature-card"><strong>Providers</strong><small><code>hermes model</code> でプロバイダとモデルを変更。OpenAI 互換 API だけに閉じない。</small></div>
       <div class="feature-card"><strong>Extras</strong><small><code>pyproject.toml</code> は messaging、honcho、mcp、acp、bedrock、mistral、web などを optional dependency として分離。</small></div>
@@ -284,13 +286,14 @@
           <tr><td>新規スレッド</td><td><code>/new</code> / <code>/reset</code></td><td>同左</td></tr>
           <tr><td>モデル変更</td><td><code>/model [provider:model]</code></td><td>同左</td></tr>
           <tr><td>スキル</td><td><code>/skills</code> / <code>/&lt;skill&gt;</code></td><td>同左</td></tr>
+          <tr><td>コンテキスト圧縮 / 利用状況</td><td><code>/compress</code>、<code>/usage</code>、<code>/insights [--days N]</code></td><td><code>/compress</code>、<code>/usage</code>、<code>/insights [days]</code></td></tr>
           <tr><td>中断</td><td>Ctrl+C または新規メッセージ</td><td><code>/stop</code> または新規メッセージ</td></tr>
         </tbody>
       </table>
     </div>
   </div>
   <div class="ve-callout">
-    <strong>プラットフォーム:</strong> Telegram、Discord、Slack、WhatsApp、Signal、メールなど。音声メモの文字起こしや、チャネル間の会話連続性も README の機能表に含まれる。
+    <strong>プラットフォーム:</strong> CLI 説明では Telegram、Discord、Slack、WhatsApp、Signal、メールから Gateway 越しに操作できる旨が README にある。音声メモの文字起こしやチャネル間の会話連続性も記載。公式ドキュメントの Gateway 章では Home Assistant も扱う。
   </div>
 
   <section id="tui" class="sec-head">5 — React + Ink TUI</section>
@@ -317,7 +320,7 @@
   <section id="deploy" class="sec-head">6 — 実行環境（ターミナルバックエンド）</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> どこで動かすか</span>
-    <p>エージェントの実行環境はローカルからクラウドまで選択できる。Daytona / Modal はアイドル時コストが低いサーバレス系として README で言及されている。</p>
+    <p>エージェントの実行環境はローカルからクラウドまで選択できる。README は <strong>7 種のターミナルバックエンド</strong>（local、Docker、SSH、Singularity、Modal、Daytona、Vercel Sandbox）を列挙する。Daytona と Modal はアイドル時に環境を休止でき、セッション間のコストを抑えられる旨が強調されている。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
@@ -327,9 +330,10 @@
           <tr><td>local</td><td>開発機・ワークステーション上のシェル</td></tr>
           <tr><td>Docker</td><td>コンテナ隔離</td></tr>
           <tr><td>SSH</td><td>リモート VM</td></tr>
-          <tr><td>Daytona</td><td>クラウド開発環境連携</td></tr>
           <tr><td>Singularity</td><td>HPC / コンテナ環境</td></tr>
-          <tr><td>Modal</td><td>サーバレス Python 実行</td></tr>
+          <tr><td>Modal</td><td>サーバレス Python 実行（休止で低コスト）</td></tr>
+          <tr><td>Daytona</td><td>クラウド開発環境・休止可能な実行</td></tr>
+          <tr><td>Vercel Sandbox</td><td>サーバレス実行（README の第 7 バックエンド）</td></tr>
         </tbody>
       </table>
     </div>
@@ -360,11 +364,15 @@
   <section id="quickstart" class="sec-head">8 — クイックスタート</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> インストール</span>
-    <p>公式インストーラは Linux / macOS / WSL2 向け。ネイティブ Windows は非対応（WSL2 推奨）。</p>
+    <p>公式ワンライナーは Linux / macOS / WSL2 / Termux 向け（<code>install.sh</code>）。<strong>ネイティブ Windows</strong> は README 上 <strong>早期ベータ</strong>として PowerShell 用 <code>install.ps1</code> が用意されている（最も検証が厚いのは WSL2 上の Linux 手順）。ブラウザのダッシュボード内チャットは POSIX PTY 前提のため README では WSL2 が必要と明記されている。Termux では <code>.[all]</code> ではなく <code>.[termux]</code> 系の手動手順が案内されている。</p>
     <div class="ve-code-block">
       <pre><code>curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
 source ~/.bashrc   # または source ~/.zshrc
 hermes</code></pre>
+    </div>
+    <p>Windows（PowerShell）の例:</p>
+    <div class="ve-code-block">
+      <pre><code>irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1 | iex</code></pre>
     </div>
     <h3>よく使うコマンド</h3>
     <div class="ve-code-block">
@@ -373,6 +381,8 @@ hermes model        # プロバイダ・モデル選択
 hermes tools        # ツール有効化
 hermes gateway      # メッセージング Gateway
 hermes setup        # セットアップウィザード
+hermes claw migrate # OpenClaw からの移行（--dry-run 等）
+hermes update       # 最新版へ更新
 hermes doctor       # 診断</code></pre>
     </div>
   </div>
@@ -385,7 +395,7 @@ hermes doctor       # 診断</code></pre>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
     <ul>
-      <li><a href="https://hermes-agent.nousresearch.com/docs/" target="_blank" rel="noopener">公式ドキュメント</a></li>
+      <li><a href="https://hermes-agent.nousresearch.com/docs/" target="_blank" rel="noopener">公式ドキュメント</a>（Quickstart、CLI、設定、Gateway、セキュリティ、ツール、スキル、メモリ、MCP、cron、Context Files、Architecture など）</li>
       <li><a href="https://github.com/NousResearch/hermes-agent" target="_blank" rel="noopener">GitHub: NousResearch/hermes-agent</a></li>
       <li><a href="https://discord.gg/NousResearch" target="_blank" rel="noopener">Discord（Nous Research）</a></li>
     </ul>
