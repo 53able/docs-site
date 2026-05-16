@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>oh-my-claudecode — Claude Code マルチエージェント・オーケストレーション</title>
-  <meta name="description" content="Claude Code 向けマルチエージェント・オーケストレーションシステム。Team・Autopilot・Ultrawork・Ralph など 8 つの実行モード、19 専門エージェント、38 スキルを図解。ゼロ設定・30-50% コスト削減。">
+  <meta name="description" content="Claude Code 向けマルチエージェント・オーケストレーションシステム。Team・Autopilot・Ultrawork・Ralph・Ultragoal など 9 つの実行面、19 専門エージェント、39 スキルを図解。ゼロ設定・30-50% コスト削減。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="oh-my-claudecode — Claude Code マルチエージェント・オーケストレーション">
-  <meta property="og:description" content="Claude Code 向けマルチエージェント・オーケストレーション。19 専門エージェント・38 スキル・スマートモデルルーティングを図解。">
+  <meta property="og:description" content="Claude Code 向けマルチエージェント・オーケストレーション。19 専門エージェント・39 スキル・スマートモデルルーティングを図解。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/oh-my-claudecode.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="oh-my-claudecode — Claude Code マルチエージェント・オーケストレーション">
-  <meta name="twitter:description" content="19 専門エージェント・38 スキル・8 実行モードを備えた Claude Code オーケストレーション。">
+  <meta name="twitter:description" content="19 専門エージェント・39 スキル・9 実行面を備えた Claude Code オーケストレーション。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -495,7 +495,7 @@
         Marketplace 名は <code>oh-my-claudecode</code>（<a href="https://github.com/Yeachan-Heo/oh-my-claudecode" target="_blank" rel="noopener">プラグインリポジトリ</a>）。
       </p>
       <div class="badge-row">
-        <span class="hero-badge">v4.13.5</span>
+        <span class="hero-badge">v4.14.0</span>
         <span class="hero-badge hero-badge--gold">⭐ 11k stars</span>
         <span class="hero-badge">MIT</span>
         <span class="hero-badge">Node ≥ 20</span>
@@ -506,7 +506,7 @@
           <div class="kpi-label">専門エージェント</div>
         </div>
         <div class="ve-kpi-card">
-          <div class="kpi-value">38</div>
+          <div class="kpi-value">39</div>
           <div class="kpi-label">スキル (動作注入)</div>
         </div>
         <div class="ve-kpi-card">
@@ -514,8 +514,8 @@
           <div class="kpi-label">トークンコスト削減</div>
         </div>
         <div class="ve-kpi-card">
-          <div class="kpi-value">8</div>
-          <div class="kpi-label">実行モード</div>
+          <div class="kpi-value">9</div>
+          <div class="kpi-label">実行面</div>
         </div>
       </div>
       <p class="hero-link-row">
@@ -579,6 +579,15 @@
       macOS → <code>brew install tmux</code>、Windows → <code>winget install psmux</code>（WSL 不要のネイティブ実装）。
     </div>
 
+    <div class="ve-card ve-card--recessed" style="margin-top:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 更新</span>
+      <p style="font-size:0.875rem; line-height:1.65; margin:0;">
+        Marketplace 利用時は <code>/plugin marketplace update omc</code> のあと <code>/setup</code> を再実行。
+        npm 経路は <code>npm i -g oh-my-claude-sisyphus@latest</code>。問題時は <code>/omc-doctor</code>。
+        v4.14.0 では <strong>ultragoal</strong>（<code>omc ultragoal</code>）とプラグイン skill レジストリのコンパクト化が追加。
+      </p>
+    </div>
+
     <!-- 3. Orchestration Modes -->
     <section id="modes" class="sec-head">オーケストレーションモード</section>
 
@@ -631,6 +640,12 @@
               <td><code>ralplan ...</code></td>
               <td>Planner・Architect・Critic の合意ループ</td>
               <td>計画の反復的コンセンサス形成</td>
+            </tr>
+            <tr>
+              <td><span class="mode-badge">ultragoal</span></td>
+              <td><code>omc ultragoal …</code><br><small>/goal 連携</small></td>
+              <td>マルチゴール計画＋台帳<br><small>.omc/ultragoal に永続化。Claude <code>/goal</code> とハンドオフ</small></td>
+              <td>セッションをまたぐ大規模イニシアチブ。最終ゴールは品質ゲート付き</td>
             </tr>
             <tr>
               <td><span class="mode-badge">pipeline</span></td>
@@ -715,6 +730,11 @@ flowchart LR
     F -. "issues remain" .-> EX</pre>
         </div>
       </div>
+      <p style="font-size:0.82rem; margin-top:0.75rem; color:var(--muted-foreground); line-height:1.55;">
+        ネイティブ Team の worktree 分離はオプトイン。契約・状態ルート・dirty worktree 保全は
+        <a href="https://github.com/Yeachan-Heo/oh-my-claudecode/blob/main/docs/TEAM-WORKTREE-MODE.md" target="_blank" rel="noopener">TEAM-WORKTREE-MODE.md</a>
+        を参照。
+      </p>
       <p style="font-size:0.82rem; margin-top:0.75rem; color:var(--muted-foreground); line-height:1.55;">
         Claude Code native teams を有効化するには <code>~/.claude/settings.json</code> に
         <code>"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"</code> を設定。
@@ -830,7 +850,8 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pr
       </div>
       <div style="margin-top:0.875rem; font-size:0.855rem; line-height:1.55;">
         <strong>管理コマンド:</strong> <code>/skill list | add | remove | edit | search</code><br>
-        <strong>自動学習:</strong> <code>/learner</code> で厳格な品質ゲート付きパターン抽出
+        <strong>自動学習:</strong> <code>/learner</code> で厳格な品質ゲート付きパターン抽出<br>
+        <strong>Skillify:</strong> <code>/skillify</code> で再利用パターンを品質ゲート付き抽出
       </div>
     </div>
 
@@ -851,6 +872,7 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pr
             <tr><td><span class="mode-badge">ralph</span></td><td>永続モード（完了まで停止しない）</td><td><code>ralph: refactor auth</code></td></tr>
             <tr><td><span class="mode-badge">ulw</span></td><td>最大並列実行（ultrawork）</td><td><code>ulw fix all errors</code></td></tr>
             <tr><td><span class="mode-badge">ralplan</span></td><td>反復的計画コンセンサス</td><td><code>ralplan this feature</code></td></tr>
+            <tr><td><span class="mode-badge">deepsearch</span></td><td>コードベース探索ルーティング</td><td><code>deepsearch for auth middleware</code></td></tr>
             <tr><td><span class="mode-badge">deep-interview</span></td><td>Socratic 式要件明確化</td><td><code>/deep-interview "vague idea"</code></td></tr>
             <tr><td><span class="mode-badge">ultrathink</span></td><td>深い推論モード</td><td><code>ultrathink about this architecture</code></td></tr>
             <tr><td><span class="mode-badge">tdd</span></td><td>テスト駆動開発ワークフロー</td><td><code>tdd: implement payment flow</code></td></tr>
@@ -873,6 +895,7 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pr
 │   └── sessions/{sessionId}/  # セッション別ステート
 ├── notepad.md                 # コンパクション耐性メモパッド
 ├── project-memory.json        # プロジェクト知識ストア (セッション横断)
+├── ultragoal/                 # Ultragoal 計画・台帳 (v4.14+)
 ├── plans/                     # 実行計画ファイル
 ├── notepads/{plan-name}/
 │   ├── learnings.md           # 成功パターン・規約
@@ -900,6 +923,9 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pr
         <table>
           <thead><tr><th>コマンド</th><th>説明</th></tr></thead>
           <tbody>
+            <tr><td><code>omc ultragoal create-goals …</code></td><td>ブリーフからマルチゴール計画を生成し <code>.omc/ultragoal/</code> に保存</td></tr>
+            <tr><td><code>omc ultragoal complete-goals</code></td><td>次ストーリー用ハンドオフを出力（セッション内 <code>/goal</code> 連携）</td></tr>
+            <tr><td><code>/ask codex|gemini "…"</code></td><td>セッション内アドバイザー（CLI 版は <code>omc ask</code> と同系）</td></tr>
             <tr><td><code>omc ask claude "..."</code></td><td>ローカル Claude CLI を呼び出し結果を <code>.omc/artifacts/ask/</code> に Markdown 保存</td></tr>
             <tr><td><code>omc ask codex|gemini "..."</code></td><td>Codex / Gemini CLI へのプロキシ + 結果保存（v4.4.0 以降は MCP の x/g ではなく CLI 経路が主）</td></tr>
             <tr><td><code>omc autoresearch</code></td><td><strong>非推奨 shim。</strong>自動調査は <code>/deep-interview --autoresearch …</code> と状態保持スキル側へ移行</td></tr>
