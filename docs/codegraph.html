@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeGraph — Claude Code 向けローカルコード知識グラフ</title>
+  <meta name="description" content="tree-sitter と SQLite でコードベースを索引化。MCP 経由で探索エージェントのツール呼び出しを削減し、シンボル検索・呼び出しグラフ・影響分析をローカル完結で提供する。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="CodeGraph — Claude Code 向けローカルコード知識グラフ">
+  <meta property="og:description" content="tree-sitter と SQLite でコードベースを索引化。MCP 経由で探索エージェントのツール呼び出しを削減し、シンボル検索・呼び出しグラフ・影響分析をローカル完結で提供する。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/codegraph.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CodeGraph — Claude Code 向けローカルコード知識グラフ">
+  <meta name="twitter:description" content="tree-sitter と SQLite でコードベースを索引化。MCP 経由で探索エージェントのツール呼び出しを削減。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: #faf7f5;
+      --foreground: oklch(0.22 0.02 50);
+      --card: oklch(0.99 0.005 80);
+      --card-foreground: var(--foreground);
+      --popover: var(--card);
+      --popover-foreground: var(--foreground);
+      --primary: oklch(0.28 0.04 45);
+      --primary-foreground: oklch(0.98 0.01 80);
+      --secondary: oklch(0.94 0.02 85);
+      --secondary-foreground: var(--foreground);
+      --muted: oklch(0.93 0.015 75);
+      --muted-foreground: oklch(0.48 0.03 55);
+      --accent: oklch(0.95 0.025 70);
+      --accent-foreground: var(--foreground);
+      --destructive: oklch(0.55 0.18 25);
+      --border: oklch(0.88 0.02 70);
+      --input: var(--border);
+      --ring: oklch(0.55 0.12 35);
+      --chart-1: oklch(0.52 0.14 35);
+      --chart-2: oklch(0.48 0.08 155);
+      --chart-3: oklch(0.38 0.10 40);
+      --chart-4: oklch(0.62 0.10 150);
+      --chart-5: oklch(0.42 0.06 250);
+      --code-bg: oklch(0.96 0.01 75);
+      --code-text: oklch(0.32 0.06 40);
+      --font-body: 'Figtree', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.015 50);
+        --foreground: oklch(0.94 0.01 80);
+        --card: oklch(0.19 0.02 48);
+        --card-foreground: var(--foreground);
+        --popover: var(--card);
+        --popover-foreground: var(--foreground);
+        --primary: oklch(0.88 0.03 75);
+        --primary-foreground: oklch(0.18 0.02 48);
+        --secondary: oklch(0.22 0.02 50);
+        --secondary-foreground: var(--foreground);
+        --muted: oklch(0.24 0.02 52);
+        --muted-foreground: oklch(0.68 0.03 70);
+        --accent: oklch(0.22 0.025 55);
+        --accent-foreground: var(--foreground);
+        --destructive: oklch(0.65 0.16 25);
+        --border: oklch(1 0 0 / 12%);
+        --input: var(--border);
+        --ring: oklch(0.62 0.12 35);
+        --chart-1: oklch(0.68 0.14 35);
+        --chart-2: oklch(0.62 0.10 155);
+        --chart-3: oklch(0.55 0.12 40);
+        --chart-4: oklch(0.72 0.09 150);
+        --chart-5: oklch(0.58 0.06 250);
+        --code-bg: oklch(0.12 0.02 48);
+        --code-text: oklch(0.78 0.06 75);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      border-color: color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.52 0.14 35 / 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 20%, oklch(0.48 0.08 155 / 0.06) 0%, transparent 45%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 0.75rem 0; }
+    .pipeline .step { background: color-mix(in oklch, var(--muted) 75%, var(--chart-2) 25%); border: 1px solid color-mix(in oklch, var(--border) 55%, var(--chart-2) 45%); padding: 0.4rem 0.7rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.75rem; }
+    .pipeline .arrow { color: var(--chart-1); font-weight: 700; }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 0.75rem; }
+    @media (max-width: 640px) { .feature-grid { grid-template-columns: 1fr; } }
+    .feature-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+    .feature-card h4 { font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--chart-1); }
+    .feature-card p { font-size: 0.8125rem; color: var(--text-dim); margin: 0; line-height: 1.55; }
+
+    .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; padding: 0.5rem; }
+    .mermaid-wrap svg { max-width: 100%; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.06s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#benchmark">ベンチマーク</a>
+    <a href="#setup">セットアップ</a>
+    <a href="#how-it-works">動作</a>
+    <a href="#tools">MCP・CLI</a>
+    <a href="#config">設定</a>
+    <a href="#links">リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>CodeGraph</h1>
+    <p class="subtitle">@colbymchenry/codegraph · semantic code intelligence for Claude Code</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 目的</span>
+      <p>
+        <strong>CodeGraph</strong> は、Claude Code の Explore エージェントが行う grep / glob / Read によるファイル走査を、<strong>事前に構築したコード知識グラフ</strong>へのクエリに置き換えるツール。シンボル関係・呼び出しグラフ・構造情報をローカルの SQLite に保持し、MCP サーバー経由でエージェントに公開する。
+      </p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">94%</span>
+          <span class="ve-kpi-card__label">ツール呼び出し削減（README 公称）</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">77%</span>
+          <span class="ve-kpi-card__label">探索時間短縮（README 公称）</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">19+</span>
+          <span class="ve-kpi-card__label">対応言語</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">100%</span>
+          <span class="ve-kpi-card__label">ローカル（SQLite のみ）</span>
+        </div>
+      </div>
+      <div class="ve-callout">
+        <strong>データは外部に出ない。</strong> API キー不要。インデックスはプロジェクト直下の <code>.codegraph/codegraph.db</code> に保存される。tree-sitter（WASM）で AST を解析し、FTS5 で全文検索を提供する。
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 主な機能</span>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>Smart Context</h4>
+          <p>1 回のツール呼び出しでエントリポイント・関連シンボル・コード断片をまとめて返す。</p>
+        </div>
+        <div class="feature-card">
+          <h4>Full-Text Search</h4>
+          <p>FTS5 によりシンボル名をコードベース全体から即時検索。</p>
+        </div>
+        <div class="feature-card">
+          <h4>Impact Analysis</h4>
+          <p>変更前に callers / callees と影響半径をグラフ走査で把握。</p>
+        </div>
+        <div class="feature-card">
+          <h4>Auto-Sync</h4>
+          <p>OS ネイティブのファイルイベント（FSEvents / inotify 等）で保存後に増分同期。デバウンス 2 秒。</p>
+        </div>
+        <div class="feature-card">
+          <h4>Framework Routes</h4>
+          <p>Django / FastAPI / Express / Spring など 13 フレームワークのルート定義を <code>route</code> ノードとしてリンク。</p>
+        </div>
+        <div class="feature-card">
+          <h4><code>codegraph affected</code></h4>
+          <p>変更ファイルから import 依存を辿り、影響を受けるテストファイルを CI 向けに列挙。</p>
+        </div>
+      </div>
+    </div>
+
+    <section id="benchmark" class="sec-head">2 — ベンチマーク（README 記載）</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 6 コードベース比較</span>
+      <p>Claude Opus 4.6（1M context）+ Claude Code v2.1.91。同一質問で Explore エージェントを 1 体起動し、CodeGraph あり / なしを比較した結果（README より）。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>コードベース</th>
+              <th>CodeGraph あり</th>
+              <th>なし</th>
+              <th>改善（README）</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>VS Code（TypeScript）</td>
+              <td>3 calls, 17s</td>
+              <td>52 calls, 1m 37s</td>
+              <td>94% fewer · 82% faster</td>
+            </tr>
+            <tr>
+              <td>Excalidraw（TypeScript）</td>
+              <td>3 calls, 29s</td>
+              <td>47 calls, 1m 45s</td>
+              <td>94% fewer · 72% faster</td>
+            </tr>
+            <tr>
+              <td>Claude Code（Python+Rust）</td>
+              <td>3 calls, 39s</td>
+              <td>40 calls, 1m 8s</td>
+              <td>93% fewer · 43% faster</td>
+            </tr>
+            <tr>
+              <td>Claude Code（Java）</td>
+              <td>1 call, 19s</td>
+              <td>26 calls, 1m 22s</td>
+              <td>96% fewer · 77% faster</td>
+            </tr>
+            <tr>
+              <td>Alamofire（Swift）</td>
+              <td>3 calls, 22s</td>
+              <td>32 calls, 1m 39s</td>
+              <td>91% fewer · 78% faster</td>
+            </tr>
+            <tr>
+              <td>Swift Compiler（Swift/C++）</td>
+              <td>6 calls, 35s</td>
+              <td>37 calls, 2m 8s</td>
+              <td>84% fewer · 73% faster</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>観察（README）:</strong> CodeGraph 利用時は <code>codegraph_explore</code> の結果を信頼しファイル Read にフォールバックしなかった。最大規模（Swift Compiler: 25,874 files / 272,898 nodes）でも 6 explore calls・ファイル Read 0 で 35 秒と記載。
+      </div>
+    </div>
+
+    <section id="setup" class="sec-head">3 — セットアップ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> インストール</span>
+      <div class="ve-code-block">
+        <pre><code>npx @colbymchenry/codegraph</code></pre>
+      </div>
+      <p>対話型インストーラが <code>codegraph</code> のグローバル導入、<code>~/.claude.json</code> への MCP 登録、ツール auto-allow、<code>~/.claude/CLAUDE.md</code> への指示追記を行う。</p>
+      <ol>
+        <li>上記を実行</li>
+        <li>Claude Code を再起動（MCP 読み込み）</li>
+        <li>プロジェクトで <code>codegraph init -i</code>（<code>.codegraph/</code> 作成 + 索引）</li>
+      </ol>
+    </div>
+    <div class="ve-card ve-card--elevated" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> Explore エージェント向けルール（要約）</span>
+      <p><code>.codegraph/</code> があるプロジェクトでは、メインセッションから <code>codegraph_explore</code> / <code>codegraph_context</code> を直接呼ばない（大量ソースでコンテキストを消費するため）。探索質問は Explore エージェントに委譲し、プロンプトに CodeGraph 利用指示を含める。</p>
+      <p>メインセッションで直接使える軽量ツール: <code>codegraph_search</code>、<code>codegraph_callers</code> / <code>codegraph_callees</code>、<code>codegraph_impact</code>、<code>codegraph_node</code>。</p>
+    </div>
+
+    <section id="how-it-works" class="sec-head">4 — 動作の仕組み</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> アーキテクチャ</span>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+  CC[Claude Code / Explore Agent]
+  MCP[CodeGraph MCP Server]
+  DB[(SQLite + FTS5<br/>.codegraph/codegraph.db)]
+  TS[tree-sitter extraction]
+  RES[Resolution + frameworks]
+  WATCH[File watcher auto-sync]
+
+  CC -->|MCP tools| MCP
+  MCP --> DB
+  TS --> DB
+  RES --> DB
+  WATCH -->|debounced incremental| TS
+        </pre>
+      </div>
+      <div class="pipeline">
+        <span class="step">Extraction</span>
+        <span class="arrow">→</span>
+        <span class="step">Storage</span>
+        <span class="arrow">→</span>
+        <span class="step">Resolution</span>
+        <span class="arrow">→</span>
+        <span class="step">Auto-Sync</span>
+      </div>
+      <ul>
+        <li><strong>Extraction:</strong> tree-sitter で AST を解析。言語別クエリで関数・クラス・呼び出し・import などをノード/エッジ化。</li>
+        <li><strong>Storage:</strong> SQLite + FTS5。プロジェクト内 <code>.codegraph/</code> に保存。</li>
+        <li><strong>Resolution:</strong> 呼び出し先定義・import 先・継承・フレームワーク固有パターンを解決。</li>
+        <li><strong>Auto-Sync:</strong> MCP 起動中はソース変更を検知し、約 2 秒の quiet window 後に増分同期。</li>
+      </ul>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> ソース構成（主要モジュール）</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>パス</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>src/extraction/</code></td><td>tree-sitter 解析・言語別 extractors（Vue / Svelte / Liquid 等）</td></tr>
+            <tr><td><code>src/db/</code></td><td>SQLite スキーマ・クエリ・native / WASM バックエンド</td></tr>
+            <tr><td><code>src/resolution/</code></td><td>参照解決・フレームワークルート（Django, Express, Spring 等）</td></tr>
+            <tr><td><code>src/graph/</code></td><td>グラフ走査（callers / callees / impact）</td></tr>
+            <tr><td><code>src/search/</code></td><td>クエリパーサ・FTS 検索</td></tr>
+            <tr><td><code>src/context/</code></td><td>タスク向けコンテキスト組み立て</td></tr>
+            <tr><td><code>src/mcp/</code></td><td>MCP ツール定義・stdio トランスポート</td></tr>
+            <tr><td><code>src/sync/watcher.ts</code></td><td>ファイル監視・増分 sync</td></tr>
+            <tr><td><code>src/bin/codegraph.ts</code></td><td>CLI エントリ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="tools" class="sec-head">5 — MCP ツールと CLI</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> MCP ツール</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>ツール</th><th>用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>codegraph_search</code></td><td>シンボル名で検索</td></tr>
+            <tr><td><code>codegraph_context</code></td><td>タスク向けコードコンテキスト生成</td></tr>
+            <tr><td><code>codegraph_callers</code></td><td>呼び出し元の列挙</td></tr>
+            <tr><td><code>codegraph_callees</code></td><td>呼び出し先の列挙</td></tr>
+            <tr><td><code>codegraph_impact</code></td><td>シンボル変更の影響範囲</td></tr>
+            <tr><td><code>codegraph_node</code></td><td>単一シンボルの詳細（ソース付き可）</td></tr>
+            <tr><td><code>codegraph_files</code></td><td>索引済みファイル構造（fs 走査より高速）</td></tr>
+            <tr><td><code>codegraph_status</code></td><td>インデックス統計・健全性</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> CLI（抜粋）</span>
+      <div class="ve-code-block">
+        <pre><code>codegraph init [path]              # 初期化（--index で同時索引）
+codegraph index [path]             # フルインデックス（--force / --quiet）
+codegraph sync [path]              # 増分更新
+codegraph status [path]            # 統計表示
+codegraph query &lt;search&gt;           # シンボル検索
+codegraph context &lt;task&gt;           # AI 向けコンテキスト
+codegraph affected [files...]      # 影響テスト列挙（--stdin 対応）
+codegraph serve --mcp              # MCP サーバー起動</code></pre>
+      </div>
+      <h3>ライブラリ API（抜粋）</h3>
+      <div class="ve-code-block">
+        <pre><code>import CodeGraph from '@colbymchenry/codegraph';
+
+const cg = await CodeGraph.init('/path/to/project');
+await cg.indexAll({ onProgress: (p) => console.log(p.phase) });
+const results = cg.searchNodes('UserService');
+const context = await cg.buildContext('fix login bug', { maxNodes: 20, includeCode: true });
+cg.watch();
+cg.close();</code></pre>
+      </div>
+    </div>
+
+    <section id="config" class="sec-head">6 — 設定・言語・トラブルシュート</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> .codegraph/config.json</span>
+      <div class="ve-code-block">
+        <pre><code>{
+  "version": 1,
+  "languages": ["typescript", "javascript"],
+  "exclude": ["node_modules/**", "dist/**", "build/**", "*.min.js"],
+  "frameworks": [],
+  "maxFileSize": 1048576,
+  "extractDocstrings": true,
+  "trackCallSites": true
+}</code></pre>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 対応言語（README 一覧）</span>
+      <p>TypeScript / JavaScript / Python / Go / Rust / Java / C# / PHP / Ruby / C / C++ / Swift / Kotlin / Scala / Dart / Svelte / Vue / Liquid / Pascal・Delphi（<code>.pas</code>, DFM/FMX）など。</p>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> よくある問題</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>症状</th><th>対処（README）</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>CodeGraph not initialized</td><td><code>codegraph init</code> を実行</td></tr>
+            <tr><td>索引が遅い / database is locked</td><td><code>codegraph status</code> の Backend が <code>wasm</code> なら <code>npm rebuild better-sqlite3</code> で native 化</td></tr>
+            <tr><td>MCP 接続失敗</td><td>索引済みか、MCP 設定パス、<code>codegraph serve --mcp</code> の手動確認</td></tr>
+            <tr><td>シンボル欠落</td><td>保存後数秒待つか <code>codegraph sync</code>。言語対応・exclude 設定を確認</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+      <ul>
+        <li><a href="https://github.com/colbymchenry/codegraph" target="_blank" rel="noopener">GitHub: colbymchenry/codegraph</a></li>
+        <li><a href="https://www.npmjs.com/package/@colbymchenry/codegraph" target="_blank" rel="noopener">npm: @colbymchenry/codegraph</a>（v0.7.6 時点の package.json）</li>
+        <li><a href="https://tree-sitter.github.io/" target="_blank" rel="noopener">tree-sitter</a> — 構文解析エンジン</li>
+      </ul>
+      <p style="font-size:0.8125rem; color: var(--text-dim); margin-top:0.75rem; margin-bottom:0;">License: MIT</p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    fontFamily: 'Figtree, system-ui, sans-serif',
+    fontSize: '14px',
+    primaryColor: '#f5ebe6',
+    primaryTextColor: '#3d2f28',
+    primaryBorderColor: '#c45c3e',
+    lineColor: '#6b8f71',
+    secondaryColor: '#e8f0e9',
+    tertiaryColor: '#faf7f5'
+  },
+  flowchart: { curve: 'basis', padding: 16 }
+});
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
