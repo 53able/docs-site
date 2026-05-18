@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>qiaomu-anything-to-notebooklm — 多源コンテンツから NotebookLM へ</title>
+  <meta name="description" content="Claude Code スキル qiaomu-anything-to-notebooklm の要点。15 種以上の入力源、付费墙绕过、NotebookLM への取り込みと播客・PPT・思维导图などの生成。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="qiaomu-anything-to-notebooklm — 多源コンテンツから NotebookLM へ">
+  <meta property="og:description" content="自然言語で URL・ファイル・検索語を渡し、NotebookLM にソースを載せて播客・スライド・マインドマップ等を生成する Claude Code スキル。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/qiaomu-anything-to-notebooklm.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="qiaomu-anything-to-notebooklm — 多源コンテンツから NotebookLM へ">
+  <meta name="twitter:description" content="微信・YouTube・播客・付费墙サイト・Office/PDF などを NotebookLM に載せ、CLI で成果物を生成するスキル。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.008 85);
+      --foreground: oklch(0.2 0.02 250);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.2 0.02 250);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.2 0.02 250);
+      --primary: oklch(0.22 0.04 35);
+      --primary-foreground: oklch(0.98 0 0);
+      --secondary: oklch(0.96 0.015 85);
+      --secondary-foreground: oklch(0.22 0.03 250);
+      --muted: oklch(0.94 0.02 85);
+      --muted-foreground: oklch(0.45 0.02 250);
+      --accent: oklch(0.94 0.03 165);
+      --accent-foreground: oklch(0.22 0.04 200);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.02 85);
+      --input: oklch(0.88 0.02 85);
+      --ring: oklch(0.52 0.1 35);
+      --chart-1: oklch(0.5 0.14 35);
+      --chart-2: oklch(0.55 0.12 165);
+      --chart-3: oklch(0.48 0.08 250);
+      --chart-4: oklch(0.72 0.1 145);
+      --chart-5: oklch(0.58 0.1 55);
+      --code-bg: var(--muted);
+      --code-text: #7c2d12;
+      --font-body: 'Public Sans', system-ui, sans-serif;
+      --font-mono: 'Inconsolata', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.02 250);
+        --foreground: oklch(0.96 0.01 85);
+        --card: oklch(0.2 0.03 250);
+        --card-foreground: oklch(0.96 0.01 85);
+        --popover: oklch(0.2 0.03 250);
+        --popover-foreground: oklch(0.96 0.01 85);
+        --primary: oklch(0.92 0.02 85);
+        --primary-foreground: oklch(0.18 0.03 250);
+        --secondary: oklch(0.24 0.03 250);
+        --secondary-foreground: oklch(0.96 0.01 85);
+        --muted: oklch(0.26 0.03 250);
+        --muted-foreground: oklch(0.72 0.04 85);
+        --accent: oklch(0.24 0.04 165);
+        --accent-foreground: oklch(0.96 0.01 165);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.62 0.12 35);
+        --chart-1: oklch(0.72 0.14 45);
+        --chart-2: oklch(0.68 0.12 165);
+        --chart-3: oklch(0.7 0.08 250);
+        --chart-4: oklch(0.65 0.1 145);
+        --chart-5: oklch(0.6 0.1 55);
+        --code-bg: oklch(0.16 0.02 250);
+        --code-text: #fdba74;
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout--warn { border-left-color: var(--chart-2); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .badge { display: inline-block; font-size: 0.6875rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; font-family: var(--font-mono); }
+    .badge--good { background: color-mix(in oklch, var(--chart-4) 25%, transparent); color: var(--chart-4); }
+    .badge--bad { background: color-mix(in oklch, var(--destructive) 20%, transparent); color: var(--destructive); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 80% 50% at 15% -10%, oklch(0.5 0.14 35 / 0.07) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 100% 100%, oklch(0.55 0.12 165 / 0.06) 0%, transparent 45%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse 80% 50% at 15% -10%, oklch(0.72 0.14 45 / 0.1) 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 100%, oklch(0.68 0.12 165 / 0.08) 0%, transparent 45%);
+      }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    .back { font-size: 0.8125rem; margin-bottom: 1rem; }
+    .back a { color: var(--chart-1); text-decoration: none; font-family: var(--font-mono); }
+    .back a:hover { text-decoration: underline; }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 0.75rem 0; }
+    .pipeline .step { background: color-mix(in oklch, var(--muted) 75%, var(--chart-1) 25%); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); border: 1px solid color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+    .mermaid-wrap .mermaid { display: flex; justify-content: center; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#pipeline">処理パイプライン</a>
+    <a href="#sources">入力ソース</a>
+    <a href="#paywall">付费墙绕过</a>
+    <a href="#outputs">出力と深度分析</a>
+    <a href="#setup">セットアップ</a>
+    <a href="#links">出典</a>
+  </nav>
+
+  <div class="main">
+    <p class="back"><a href="../index.html">← 資料一覧</a></p>
+    <h1>qiaomu-anything-to-notebooklm</h1>
+    <p class="subtitle">Claude Code スキル · 多源コンテンツ → Google NotebookLM · MIT</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
+      <p><strong>Anything → NotebookLM</strong>（<a href="https://github.com/joeseesun/qiaomu-anything-to-notebooklm" target="_blank" rel="noopener">joeseesun/qiaomu-anything-to-notebooklm</a>）は、自然言語で指示したソースを <a href="https://notebooklm.google.com/" target="_blank" rel="noopener">Google NotebookLM</a> に載せ、播客・スライド・思维导图・Quiz などへ変換する <strong>Claude Code スキル</strong>。URL・ローカルファイル・検索キーワードを <code>main.py</code> とエージェント手順が型ごとに正規化し、<code>notebooklm</code> CLI でノートブック操作する。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">15+</span><span class="ve-kpi-card__label">入力ソース種別</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">300+</span><span class="ve-kpi-card__label">付费墙対応サイト</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">6段</span><span class="ve-kpi-card__label">绕过カスケード</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">CLI</span><span class="ve-kpi-card__label">notebooklm 連携</span></div>
+      </div>
+      <p>典型フローは「微信記事を播客に」「付费記事を思维导图 に」「小宇宙の番組を PPT に」など、ユーザー発話 → ソース取得 → NotebookLM アップロード → （任意）成果物生成、という一本線（README・SKILL.md）。</p>
+    </div>
+
+    <section id="pipeline" class="sec-head">2 — 処理パイプライン</section>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> エンドツーエンド</span>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">flowchart LR
+  IN[入力 URL / ファイル / 検索語]
+  DET[detect_input_type]
+  GET[取得・変換]
+  UP[notebooklm source add]
+  GEN[generate 任意]
+  OUT[MP3 / PDF / JSON 等]
+  IN --> DET --> GET --> UP --> GEN --> OUT</pre>
+      </div>
+      <div class="pipeline">
+        <span class="step">識別</span>
+        <span class="arrow">→</span>
+        <span class="step">取得</span>
+        <span class="arrow">→</span>
+        <span class="step">アップロード</span>
+        <span class="arrow">→</span>
+        <span class="step">生成（任意）</span>
+      </div>
+      <p><code>main.py</code> の <code>detect_input_type()</code> は HTTP URL・拡張子・存在しないパス（検索語扱い）で分岐する。微信は MCP、YouTube は <strong>URL を NotebookLM に直接渡す</strong>（yt-dlp 等は SKILL で禁止）、播客系は Get笔记 API 経由の TXT、一般 URL は <code>fetch_url.sh</code> または NotebookLM 直取り。</p>
+      <div class="ve-callout">
+        <strong>デフォルト:</strong> 生成意図が無いときはアップロードのみ。明示された自然言語（「播客に」「PPT」など）が <code>SKILL.md</code> の意図表にマップされる。
+      </div>
+    </div>
+
+    <section id="sources" class="sec-head">3 — 入力ソース</section>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> 型と処理</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>入力</th><th>識別</th><th>処理の要点</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>微信公众号</td><td><code>mp.weixin.qq.com</code></td><td>MCP <code>read_weixin_article</code> → TXT</td></tr>
+            <tr><td>YouTube</td><td><code>youtube.com</code> / <code>youtu.be</code></td><td><span class="badge badge--good">直接 URL</span> NotebookLM が字幕取得</td></tr>
+            <tr><td>播客・B站</td><td>小宇宙 / 喜马拉雅 / bilibili</td><td><code>get_podcast_transcript.py</code>（Get笔记 API）</td></tr>
+            <tr><td>X / Twitter</td><td><code>x.com</code> / <code>twitter.com</code></td><td><code>fetch_url.sh</code> 代理级联 → TXT</td></tr>
+            <tr><td>付费墙付き Web</td><td>一般 <code>https://</code></td><td>6 段绕过 → TXT または NotebookLM</td></tr>
+            <tr><td>Office / PDF / EPUB</td><td>拡張子</td><td>EPUB は ebooklib、他は markitdown → TXT</td></tr>
+            <tr><td>画像・音声</td><td><code>.jpg</code> / <code>.mp3</code> 等</td><td>markitdown（OCR / 转录）</td></tr>
+            <tr><td>ZIP</td><td><code>.zip</code></td><td>解凍後に対応形式を一括変換</td></tr>
+            <tr><td>検索語</td><td>URL でもパスでもない文字列</td><td>WebSearch → 要約 TXT</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>同梱サブモジュール</h3>
+      <p><code>feishu-read-mcp/</code> は飞书ドキュメント連携用 MCP（深度分析 + 「飞书に書く」フローで参照）。微信用 MCP は SKILL 上 <code>wexin-read-mcp</code>（表記は README と SKILL でディレクトリ名が揺れる）として別途設定する。</p>
+    </div>
+
+    <section id="paywall" class="sec-head">4 — 付费墙绕过</section>
+    <div class="ve-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> 6 层级联</span>
+      <p>README の绕过策略を要約。失敗時に次段へフォールバックする。</p>
+      <ol style="margin:0 0 1rem 1.25rem; font-size:0.9375rem; line-height:1.65;">
+        <li>代理サービス（r.jina.ai / defuddle.md）</li>
+        <li>サイト別 Bot UA（Googlebot / Bingbot）</li>
+        <li>UA 伪装 + X-Forwarded-For + Referer + AMP + EU IP</li>
+        <li>archive.today（CAPTCHA 検知あり）</li>
+        <li>Google Cache</li>
+        <li>agent-fetch ローカルツール</li>
+      </ol>
+      <p>対象例: NYT, WSJ, FT, Economist, Bloomberg, Medium, SCMP など（README の表）。実装の多くは <code>scripts/fetch_url.sh</code> に集約されている。</p>
+      <div class="ve-callout ve-callout--warn">
+        <strong>利用上の注意:</strong> 各サイトの利用規約・著作権・地域法に従う。本スキルは技術的绕过の説明であり、利用者の責任で適法に使うこと。
+      </div>
+    </div>
+
+    <section id="outputs" class="sec-head">5 — 出力形式と深度分析</section>
+    <div class="ve-card" style="--i:4">
+      <span class="ve-section-label"><span class="ve-dot"></span> NotebookLM 生成物</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>ユーザー意図（例）</th><th>コマンド</th><th>成果物</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>播客 / 音声</td><td><code>generate audio</code></td><td>MP3 等</td></tr>
+            <tr><td>PPT / スライド</td><td><code>generate slide-deck</code></td><td>PDF 等</td></tr>
+            <tr><td>思维导图</td><td><code>generate mind-map</code></td><td>JSON 等</td></tr>
+            <tr><td>Quiz / 报告 / 信息图</td><td><code>quiz</code> / <code>report</code> / <code>infographic</code></td><td>各形式</td></tr>
+            <tr><td>深度分析 / 递归提问</td><td><code>main.py --deep-analysis</code></td><td>10 問の Q&amp;A JSON</td></tr>
+            <tr><td>飞书文档</td><td><code>--to-feishu</code></td><td>飞书上にドキュメント作成</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>生成時は <code>artifact wait</code> で完了待ちし、<code>download</code> でローカルへ保存する流れ（SKILL.md）。深度分析は内容型に応じた質問セットを自動生成し、NotebookLM へ逐次質問する。</p>
+      <h3>YouTube の特例</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th></th><th>推奨</th><th>禁止（SKILL）</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>YouTube</td><td><span class="badge badge--good">notebooklm source add &lt;URL&gt;</span></td><td><span class="badge badge--bad">yt-dlp / whisper / ブラウザ字幕抽出</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="setup" class="sec-head">6 — セットアップ</section>
+    <div class="ve-card ve-card--recessed" style="--i:5">
+      <span class="ve-section-label"><span class="ve-dot"></span> 前提</span>
+      <ul>
+        <li><strong>Python 3.9+</strong>（README バッジ）</li>
+        <li><strong>notebooklm CLI</strong> — 初回 <code>notebooklm login</code>、<code>notebooklm list</code> で認証確認</li>
+        <li><strong>微信 MCP</strong> — Claude の <code>config.json</code> に <code>weixin-reader</code> サーバを登録（SKILL.md の JSON 例。パスは各マシンのスキル配置に合わせる）</li>
+        <li><strong>播客转写</strong> — <code>GETNOTE_API_KEY</code> / <code>GETNOTE_CLIENT_ID</code> と Get笔记トークン（SKILL.md）</li>
+        <li><strong>markitdown</strong> — Office / PDF / 画像・音声の変換</li>
+      </ul>
+      <p>リポジトリ付属の <code>install.sh</code> / <code>check_env.py</code> で依存チェックができる（ファイル一覧より）。</p>
+      <div class="ve-code-block"><pre><code>notebooklm login
+notebooklm create "my-notebook"
+notebooklm source add https://example.com/article</code></pre></div>
+      <div class="ve-code-block"><pre><code>python main.py /path/to/book.epub --deep-analysis
+python main.py /path/to/book.epub --deep-analysis --to-feishu</code></pre></div>
+    </div>
+
+    <section id="links" class="sec-head">7 — 出典</section>
+    <div class="ve-card" style="--i:6">
+      <span class="ve-section-label"><span class="ve-dot"></span> 一次情報</span>
+      <ul>
+        <li><a href="https://github.com/joeseesun/qiaomu-anything-to-notebooklm" target="_blank" rel="noopener">GitHub: joeseesun/qiaomu-anything-to-notebooklm</a></li>
+        <li>リポジトリ内 <code>README.md</code> — 対応ソース一覧・付费墙表・クイックスタート</li>
+        <li>リポジトリ内 <code>SKILL.md</code> — エージェント手順・意図マッピング・ワークフロー</li>
+        <li>リポジトリ内 <code>main.py</code> — 入力検出・アップロード・深度分析エントリ</li>
+        <li>リポジトリ内 <code>scripts/fetch_url.sh</code> / <code>scripts/get_podcast_transcript.py</code></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
+</script>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
