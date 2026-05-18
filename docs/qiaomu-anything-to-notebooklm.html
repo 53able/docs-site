@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>qiaomu-anything-to-notebooklm — 多源コンテンツから NotebookLM へ</title>
-  <meta name="description" content="Claude Code スキル qiaomu-anything-to-notebooklm の要点。15 種以上の入力源、付费墙绕过、NotebookLM への取り込みと播客・PPT・思维导图などの生成。">
+  <title>qiaomu-anything-to-notebooklm — 多様なソースから NotebookLM へ</title>
+  <meta name="description" content="Claude Code スキル qiaomu-anything-to-notebooklm の要点。15 種以上の入力源、ペイウォール回避、NotebookLM への取り込みとポッドキャスト・スライド・マインドマップなどの生成。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="qiaomu-anything-to-notebooklm — 多源コンテンツから NotebookLM へ">
-  <meta property="og:description" content="自然言語で URL・ファイル・検索語を渡し、NotebookLM にソースを載せて播客・スライド・マインドマップ等を生成する Claude Code スキル。">
+  <meta property="og:title" content="qiaomu-anything-to-notebooklm — 多様なソースから NotebookLM へ">
+  <meta property="og:description" content="自然言語で URL・ファイル・検索語を渡し、NotebookLM にソースを載せてポッドキャスト・スライド・マインドマップ等を生成する Claude Code スキル。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/qiaomu-anything-to-notebooklm.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="qiaomu-anything-to-notebooklm — 多源コンテンツから NotebookLM へ">
-  <meta name="twitter:description" content="微信・YouTube・播客・付费墙サイト・Office/PDF などを NotebookLM に載せ、CLI で成果物を生成するスキル。">
+  <meta name="twitter:title" content="qiaomu-anything-to-notebooklm — 多様なソースから NotebookLM へ">
+  <meta name="twitter:description" content="WeChat・YouTube・ポッドキャスト・ペイウォール付きサイト・Office/PDF などを NotebookLM に載せ、CLI で成果物を生成するスキル。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -215,7 +215,7 @@
     <a href="#overview">概要</a>
     <a href="#pipeline">処理パイプライン</a>
     <a href="#sources">入力ソース</a>
-    <a href="#paywall">付费墙绕过</a>
+    <a href="#paywall">ペイウォール回避</a>
     <a href="#outputs">出力と深度分析</a>
     <a href="#setup">セットアップ</a>
     <a href="#links">出典</a>
@@ -224,19 +224,19 @@
   <div class="main">
     <p class="back"><a href="../index.html">← 資料一覧</a></p>
     <h1>qiaomu-anything-to-notebooklm</h1>
-    <p class="subtitle">Claude Code スキル · 多源コンテンツ → Google NotebookLM · MIT</p>
+    <p class="subtitle">Claude Code スキル · 多様なソース → Google NotebookLM · MIT</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
-      <p><strong>Anything → NotebookLM</strong>（<a href="https://github.com/joeseesun/qiaomu-anything-to-notebooklm" target="_blank" rel="noopener">joeseesun/qiaomu-anything-to-notebooklm</a>）は、自然言語で指示したソースを <a href="https://notebooklm.google.com/" target="_blank" rel="noopener">Google NotebookLM</a> に載せ、播客・スライド・思维导图・Quiz などへ変換する <strong>Claude Code スキル</strong>。URL・ローカルファイル・検索キーワードを <code>main.py</code> とエージェント手順が型ごとに正規化し、<code>notebooklm</code> CLI でノートブック操作する。</p>
+      <p><strong>Anything → NotebookLM</strong>（<a href="https://github.com/joeseesun/qiaomu-anything-to-notebooklm" target="_blank" rel="noopener">joeseesun/qiaomu-anything-to-notebooklm</a>）は、自然言語で指示したソースを <a href="https://notebooklm.google.com/" target="_blank" rel="noopener">Google NotebookLM</a> に載せ、ポッドキャスト・スライド・マインドマップ・クイズなどへ変換する <strong>Claude Code スキル</strong>。URL・ローカルファイル・検索キーワードを <code>main.py</code> とエージェント手順が型ごとに正規化し、<code>notebooklm</code> CLI でノートブック操作する。</p>
       <div class="kpi-row">
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">15+</span><span class="ve-kpi-card__label">入力ソース種別</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">300+</span><span class="ve-kpi-card__label">付费墙対応サイト</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">6段</span><span class="ve-kpi-card__label">绕过カスケード</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">300+</span><span class="ve-kpi-card__label">ペイウォール対応サイト</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">6段</span><span class="ve-kpi-card__label">回避カスケード</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">CLI</span><span class="ve-kpi-card__label">notebooklm 連携</span></div>
       </div>
-      <p>典型フローは「微信記事を播客に」「付费記事を思维导图 に」「小宇宙の番組を PPT に」など、ユーザー発話 → ソース取得 → NotebookLM アップロード → （任意）成果物生成、という一本線（README・SKILL.md）。</p>
+      <p>典型フローは「WeChat 記事をポッドキャストに」「有料記事をマインドマップに」「小宇宙（中国のポッドキャストアプリ）の番組をスライドに」など、ユーザー発話 → ソース取得 → NotebookLM アップロード → （任意）成果物生成、という一本線（README・SKILL.md）。</p>
     </div>
 
     <section id="pipeline" class="sec-head">2 — 処理パイプライン</section>
@@ -248,7 +248,7 @@
   DET[detect_input_type]
   GET[取得・変換]
   UP[notebooklm source add]
-  GEN[generate 任意]
+  GEN[generate（任意）]
   OUT[MP3 / PDF / JSON 等]
   IN --> DET --> GET --> UP --> GEN --> OUT</pre>
       </div>
@@ -261,9 +261,9 @@
         <span class="arrow">→</span>
         <span class="step">生成（任意）</span>
       </div>
-      <p><code>main.py</code> の <code>detect_input_type()</code> は HTTP URL・拡張子・存在しないパス（検索語扱い）で分岐する。微信は MCP、YouTube は <strong>URL を NotebookLM に直接渡す</strong>（yt-dlp 等は SKILL で禁止）、播客系は Get笔记 API 経由の TXT、一般 URL は <code>fetch_url.sh</code> または NotebookLM 直取り。</p>
+      <p><code>main.py</code> の <code>detect_input_type()</code> は HTTP URL・拡張子・存在しないパス（検索語扱い）で分岐する。WeChat は MCP、YouTube は <strong>URL を NotebookLM に直接渡す</strong>（yt-dlp 等は SKILL で禁止）、ポッドキャスト系は Get笔记 API 経由の TXT、一般 URL は <code>fetch_url.sh</code> または NotebookLM 直取り。</p>
       <div class="ve-callout">
-        <strong>デフォルト:</strong> 生成意図が無いときはアップロードのみ。明示された自然言語（「播客に」「PPT」など）が <code>SKILL.md</code> の意図表にマップされる。
+        <strong>デフォルト:</strong> 生成意図が無いときはアップロードのみ。明示された自然言語（「ポッドキャストに」「スライドに」など）が <code>SKILL.md</code> の意図表にマップされる。
       </div>
     </div>
 
@@ -276,37 +276,37 @@
             <tr><th>入力</th><th>識別</th><th>処理の要点</th></tr>
           </thead>
           <tbody>
-            <tr><td>微信公众号</td><td><code>mp.weixin.qq.com</code></td><td>MCP <code>read_weixin_article</code> → TXT</td></tr>
+            <tr><td>WeChat 公式アカウント</td><td><code>mp.weixin.qq.com</code></td><td>MCP <code>read_weixin_article</code> → TXT</td></tr>
             <tr><td>YouTube</td><td><code>youtube.com</code> / <code>youtu.be</code></td><td><span class="badge badge--good">直接 URL</span> NotebookLM が字幕取得</td></tr>
-            <tr><td>播客・B站</td><td>小宇宙 / 喜马拉雅 / bilibili</td><td><code>get_podcast_transcript.py</code>（Get笔记 API）</td></tr>
-            <tr><td>X / Twitter</td><td><code>x.com</code> / <code>twitter.com</code></td><td><code>fetch_url.sh</code> 代理级联 → TXT</td></tr>
-            <tr><td>付费墙付き Web</td><td>一般 <code>https://</code></td><td>6 段绕过 → TXT または NotebookLM</td></tr>
+            <tr><td>ポッドキャスト・動画</td><td>小宇宙 / 喜馬拉雅（Ximalaya）/ bilibili</td><td><code>get_podcast_transcript.py</code>（Get笔记 API）</td></tr>
+            <tr><td>X / Twitter</td><td><code>x.com</code> / <code>twitter.com</code></td><td><code>fetch_url.sh</code> プロキシ段階取得 → TXT</td></tr>
+            <tr><td>ペイウォール付き Web</td><td>一般 <code>https://</code></td><td>6 段階の回避 → TXT または NotebookLM</td></tr>
             <tr><td>Office / PDF / EPUB</td><td>拡張子</td><td>EPUB は ebooklib、他は markitdown → TXT</td></tr>
-            <tr><td>画像・音声</td><td><code>.jpg</code> / <code>.mp3</code> 等</td><td>markitdown（OCR / 转录）</td></tr>
+            <tr><td>画像・音声</td><td><code>.jpg</code> / <code>.mp3</code> 等</td><td>markitdown（OCR / 文字起こし）</td></tr>
             <tr><td>ZIP</td><td><code>.zip</code></td><td>解凍後に対応形式を一括変換</td></tr>
             <tr><td>検索語</td><td>URL でもパスでもない文字列</td><td>WebSearch → 要約 TXT</td></tr>
           </tbody>
         </table>
       </div>
       <h3>同梱サブモジュール</h3>
-      <p><code>feishu-read-mcp/</code> は飞书ドキュメント連携用 MCP（深度分析 + 「飞书に書く」フローで参照）。微信用 MCP は SKILL 上 <code>wexin-read-mcp</code>（表記は README と SKILL でディレクトリ名が揺れる）として別途設定する。</p>
+      <p><code>feishu-read-mcp/</code> は Feishu（飞书）ドキュメント連携用 MCP（深度分析 + Feishu へ書き出すフローで参照）。WeChat 用 MCP は SKILL 上 <code>wexin-read-mcp</code>（表記は README と SKILL でディレクトリ名が揺れる）として別途設定する。</p>
     </div>
 
-    <section id="paywall" class="sec-head">4 — 付费墙绕过</section>
+    <section id="paywall" class="sec-head">4 — ペイウォール回避</section>
     <div class="ve-card" style="--i:3">
-      <span class="ve-section-label"><span class="ve-dot"></span> 6 层级联</span>
-      <p>README の绕过策略を要約。失敗時に次段へフォールバックする。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> 6 段階のカスケード</span>
+      <p>README の回避戦略を要約。失敗時に次段へフォールバックする。</p>
       <ol style="margin:0 0 1rem 1.25rem; font-size:0.9375rem; line-height:1.65;">
         <li>代理サービス（r.jina.ai / defuddle.md）</li>
         <li>サイト別 Bot UA（Googlebot / Bingbot）</li>
-        <li>UA 伪装 + X-Forwarded-For + Referer + AMP + EU IP</li>
+        <li>UA 偽装 + X-Forwarded-For + Referer + AMP + EU IP</li>
         <li>archive.today（CAPTCHA 検知あり）</li>
         <li>Google Cache</li>
         <li>agent-fetch ローカルツール</li>
       </ol>
       <p>対象例: NYT, WSJ, FT, Economist, Bloomberg, Medium, SCMP など（README の表）。実装の多くは <code>scripts/fetch_url.sh</code> に集約されている。</p>
       <div class="ve-callout ve-callout--warn">
-        <strong>利用上の注意:</strong> 各サイトの利用規約・著作権・地域法に従う。本スキルは技術的绕过の説明であり、利用者の責任で適法に使うこと。
+        <strong>利用上の注意:</strong> 各サイトの利用規約・著作権・地域法に従う。本スキルは技術的回避の説明であり、利用者の責任で適法に使うこと。
       </div>
     </div>
 
@@ -319,12 +319,12 @@
             <tr><th>ユーザー意図（例）</th><th>コマンド</th><th>成果物</th></tr>
           </thead>
           <tbody>
-            <tr><td>播客 / 音声</td><td><code>generate audio</code></td><td>MP3 等</td></tr>
-            <tr><td>PPT / スライド</td><td><code>generate slide-deck</code></td><td>PDF 等</td></tr>
-            <tr><td>思维导图</td><td><code>generate mind-map</code></td><td>JSON 等</td></tr>
-            <tr><td>Quiz / 报告 / 信息图</td><td><code>quiz</code> / <code>report</code> / <code>infographic</code></td><td>各形式</td></tr>
-            <tr><td>深度分析 / 递归提问</td><td><code>main.py --deep-analysis</code></td><td>10 問の Q&amp;A JSON</td></tr>
-            <tr><td>飞书文档</td><td><code>--to-feishu</code></td><td>飞书上にドキュメント作成</td></tr>
+            <tr><td>ポッドキャスト / 音声</td><td><code>generate audio</code></td><td>MP3 等</td></tr>
+            <tr><td>スライド</td><td><code>generate slide-deck</code></td><td>PDF 等</td></tr>
+            <tr><td>マインドマップ</td><td><code>generate mind-map</code></td><td>JSON 等</td></tr>
+            <tr><td>クイズ / レポート / インフォグラフィック</td><td><code>quiz</code> / <code>report</code> / <code>infographic</code></td><td>各形式</td></tr>
+            <tr><td>深度分析 / 再帰的質問</td><td><code>main.py --deep-analysis</code></td><td>10 問の Q&amp;A JSON</td></tr>
+            <tr><td>Feishu ドキュメント</td><td><code>--to-feishu</code></td><td>Feishu 上にドキュメント作成</td></tr>
           </tbody>
         </table>
       </div>
@@ -348,8 +348,8 @@
       <ul>
         <li><strong>Python 3.9+</strong>（README バッジ）</li>
         <li><strong>notebooklm CLI</strong> — 初回 <code>notebooklm login</code>、<code>notebooklm list</code> で認証確認</li>
-        <li><strong>微信 MCP</strong> — Claude の <code>config.json</code> に <code>weixin-reader</code> サーバを登録（SKILL.md の JSON 例。パスは各マシンのスキル配置に合わせる）</li>
-        <li><strong>播客转写</strong> — <code>GETNOTE_API_KEY</code> / <code>GETNOTE_CLIENT_ID</code> と Get笔记トークン（SKILL.md）</li>
+        <li><strong>WeChat MCP</strong> — Claude の <code>config.json</code> に <code>weixin-reader</code> サーバを登録（SKILL.md の JSON 例。パスは各マシンのスキル配置に合わせる）</li>
+        <li><strong>ポッドキャスト文字起こし</strong> — <code>GETNOTE_API_KEY</code> / <code>GETNOTE_CLIENT_ID</code> と Get笔记トークン（SKILL.md）</li>
         <li><strong>markitdown</strong> — Office / PDF / 画像・音声の変換</li>
       </ul>
       <p>リポジトリ付属の <code>install.sh</code> / <code>check_env.py</code> で依存チェックができる（ファイル一覧より）。</p>
@@ -365,7 +365,7 @@ python main.py /path/to/book.epub --deep-analysis --to-feishu</code></pre></div>
       <span class="ve-section-label"><span class="ve-dot"></span> 一次情報</span>
       <ul>
         <li><a href="https://github.com/joeseesun/qiaomu-anything-to-notebooklm" target="_blank" rel="noopener">GitHub: joeseesun/qiaomu-anything-to-notebooklm</a></li>
-        <li>リポジトリ内 <code>README.md</code> — 対応ソース一覧・付费墙表・クイックスタート</li>
+        <li>リポジトリ内 <code>README.md</code> — 対応ソース一覧・ペイウォール一覧・クイックスタート</li>
         <li>リポジトリ内 <code>SKILL.md</code> — エージェント手順・意図マッピング・ワークフロー</li>
         <li>リポジトリ内 <code>main.py</code> — 入力検出・アップロード・深度分析エントリ</li>
         <li>リポジトリ内 <code>scripts/fetch_url.sh</code> / <code>scripts/get_podcast_transcript.py</code></li>
