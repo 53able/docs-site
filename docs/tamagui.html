@@ -3,54 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tamagui — React / React Native 共有 UI と最適化コンパイラ</title>
-  <meta name="description" content="tamagui/tamagui の @tamagui/core・@tamagui/static・tamagui UI キット、コンパイラによる Web/Native 最適化、Bun モノレポ構成と開発フローの要点。">
+  <title>Tamagui — React / React Native 向け UI と最適化コンパイラ</title>
+  <meta name="description" content="tamagui/tamagui の要点。@tamagui/core・@tamagui/static・tamagui UI キット、Bun モノレポ構成、コンパイラの役割と開発用スクリプト。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Tamagui — React / React Native 共有 UI と最適化コンパイラ">
-  <meta property="og:description" content="スタイル共有・コンパイル時最適化・クロスプラットフォーム UI キット。モノレポの責務分割とエージェント向け generate-prompt まで。">
+  <meta property="og:title" content="Tamagui — React / React Native 向け UI と最適化コンパイラ">
+  <meta property="og:description" content="Web とネイティブでスタイルと UI を共有し、コンパイル時にプラットフォーム別へ最適化する Tamagui の 3 層とモノレポ構造。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/tamagui.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Tamagui — React / React Native 共有 UI と最適化コンパイラ">
-  <meta name="twitter:description" content="tamagui/tamagui の三層スタック、コンパイラ、kitchen-sink テスト、エージェントスキルの要点。">
+  <meta name="twitter:title" content="Tamagui — React / React Native 向け UI と最適化コンパイラ">
+  <meta name="twitter:description" content="@tamagui/core・static コンパイラ・UI キット。Bun + Turbo のモノレポと kitchen-sink テスト。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
       --radius: 0.625rem;
       --radius-sm: calc(var(--radius) - 4px);
       --radius-md: calc(var(--radius) - 2px);
       --radius-lg: var(--radius);
-      --background: oklch(0.99 0.01 75);
-      --foreground: oklch(0.2 0.04 42);
+      --background: oklch(0.99 0.01 55);
+      --foreground: oklch(0.2 0.03 30);
       --card: oklch(1 0 0);
-      --card-foreground: oklch(0.2 0.04 42);
+      --card-foreground: oklch(0.2 0.03 30);
       --popover: oklch(1 0 0);
-      --popover-foreground: oklch(0.2 0.04 42);
-      --primary: oklch(0.22 0.05 42);
-      --primary-foreground: oklch(0.98 0.01 75);
-      --secondary: oklch(0.96 0.02 75);
-      --secondary-foreground: oklch(0.22 0.05 42);
-      --muted: oklch(0.94 0.025 80);
-      --muted-foreground: oklch(0.48 0.04 42);
-      --accent: oklch(0.94 0.04 42);
-      --accent-foreground: oklch(0.22 0.05 42);
+      --popover-foreground: oklch(0.2 0.03 30);
+      --primary: oklch(0.24 0.05 30);
+      --primary-foreground: oklch(0.98 0 0);
+      --secondary: oklch(0.96 0.02 55);
+      --secondary-foreground: oklch(0.24 0.04 30);
+      --muted: oklch(0.94 0.025 55);
+      --muted-foreground: oklch(0.46 0.03 30);
+      --accent: oklch(0.94 0.04 155);
+      --accent-foreground: oklch(0.22 0.04 155);
       --destructive: oklch(0.577 0.245 27.325);
-      --border: oklch(0.88 0.03 75);
-      --input: oklch(0.88 0.03 75);
+      --border: oklch(0.88 0.025 55);
+      --input: oklch(0.88 0.025 55);
       --ring: oklch(0.55 0.16 42);
-      --chart-1: oklch(0.55 0.16 42);
+      --chart-1: oklch(0.55 0.19 15);
       --chart-2: oklch(0.62 0.12 155);
-      --chart-3: oklch(0.45 0.1 250);
-      --chart-4: oklch(0.58 0.14 30);
-      --chart-5: oklch(0.52 0.08 200);
+      --chart-3: oklch(0.45 0.1 248);
+      --chart-4: oklch(0.58 0.14 75);
+      --chart-5: oklch(0.5 0.08 30);
       --code-bg: var(--muted);
-      --code-text: #5c2e1a;
-      --font-body: 'Fraunces', Georgia, serif;
-      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --code-text: #7f1d1d;
+      --font-body: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
       --bg: var(--background);
       --surface: var(--card);
       --surface2: var(--muted);
@@ -59,31 +59,31 @@
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --background: oklch(0.14 0.025 42);
-        --foreground: oklch(0.96 0.02 75);
-        --card: oklch(0.19 0.03 42);
-        --card-foreground: oklch(0.96 0.02 75);
-        --popover: oklch(0.19 0.03 42);
-        --popover-foreground: oklch(0.96 0.02 75);
-        --primary: oklch(0.92 0.03 75);
-        --primary-foreground: oklch(0.16 0.03 42);
-        --secondary: oklch(0.24 0.03 42);
-        --secondary-foreground: oklch(0.96 0.02 75);
-        --muted: oklch(0.26 0.03 42);
-        --muted-foreground: oklch(0.72 0.04 75);
-        --accent: oklch(0.26 0.04 42);
-        --accent-foreground: oklch(0.96 0.02 75);
+        --background: oklch(0.14 0.02 30);
+        --foreground: oklch(0.96 0.01 55);
+        --card: oklch(0.19 0.025 30);
+        --card-foreground: oklch(0.96 0.01 55);
+        --popover: oklch(0.19 0.025 30);
+        --popover-foreground: oklch(0.96 0.01 55);
+        --primary: oklch(0.92 0.02 55);
+        --primary-foreground: oklch(0.16 0.03 30);
+        --secondary: oklch(0.24 0.03 30);
+        --secondary-foreground: oklch(0.96 0.01 55);
+        --muted: oklch(0.26 0.03 30);
+        --muted-foreground: oklch(0.72 0.04 55);
+        --accent: oklch(0.24 0.04 155);
+        --accent-foreground: oklch(0.96 0.01 155);
         --destructive: oklch(0.704 0.191 22.216);
         --border: oklch(1 0 0 / 10%);
         --input: oklch(1 0 0 / 14%);
-        --ring: oklch(0.62 0.14 42);
-        --chart-1: oklch(0.68 0.16 42);
-        --chart-2: oklch(0.72 0.12 155);
-        --chart-3: oklch(0.7 0.08 250);
-        --chart-4: oklch(0.65 0.12 30);
-        --chart-5: oklch(0.6 0.1 200);
-        --code-bg: oklch(0.16 0.025 42);
-        --code-text: #f0c9a8;
+        --ring: oklch(0.65 0.16 42);
+        --chart-1: oklch(0.72 0.17 20);
+        --chart-2: oklch(0.7 0.12 155);
+        --chart-3: oklch(0.68 0.1 248);
+        --chart-4: oklch(0.75 0.14 75);
+        --chart-5: oklch(0.65 0.08 30);
+        --code-bg: oklch(0.16 0.025 30);
+        --code-text: #fca5a5;
       }
     }
 
@@ -91,17 +91,17 @@
     .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
     .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
     .ve-card--hero {
-      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
     }
     @media (prefers-color-scheme: dark) {
       .ve-card--hero {
-        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
         border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
       }
     }
-    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; font-family: var(--font-mono); }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
     .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
@@ -116,13 +116,13 @@
     }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
-    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); font-family: var(--font-mono); }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); font-family: var(--font-mono); font-size: 0.75rem; }
     .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
     .ve-table-wrap tbody tr:hover { background: var(--border); }
     .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
-    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 700; color: var(--chart-1); }
-    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; font-family: var(--font-mono); }
-    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.35rem; line-height: 1.15; font-weight: 600; color: var(--chart-1); }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); }
     .ve-callout--warn { border-left-color: var(--chart-2); }
     .ve-callout strong { color: var(--foreground); font-weight: 600; }
 
@@ -130,7 +130,7 @@
     body {
       background: var(--bg);
       background-image:
-        radial-gradient(ellipse 80% 50% at 10% -10%, oklch(0.55 0.16 42 / 0.1) 0%, transparent 55%),
+        radial-gradient(ellipse 80% 50% at 5% -5%, oklch(0.55 0.19 15 / 0.09) 0%, transparent 55%),
         radial-gradient(ellipse 60% 40% at 100% 100%, oklch(0.62 0.12 155 / 0.08) 0%, transparent 45%);
       color: var(--text);
       font-family: var(--font-body);
@@ -140,8 +140,8 @@
     @media (prefers-color-scheme: dark) {
       body {
         background-image:
-          radial-gradient(ellipse 80% 50% at 10% -10%, oklch(0.68 0.16 42 / 0.14) 0%, transparent 55%),
-          radial-gradient(ellipse 60% 40% at 100% 100%, oklch(0.72 0.12 155 / 0.1) 0%, transparent 45%);
+          radial-gradient(ellipse 80% 50% at 5% -5%, oklch(0.72 0.17 20 / 0.12) 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 100%, oklch(0.7 0.12 155 / 0.1) 0%, transparent 45%);
       }
     }
 
@@ -154,7 +154,7 @@
     .toc::-webkit-scrollbar { width: 3px; }
     .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
     .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
-    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; font-family: var(--font-mono); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
     .toc a:hover { color: var(--text); background: var(--surface2); }
     .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
     @media (max-width: 1000px) {
@@ -177,14 +177,14 @@
     .back a { color: var(--chart-1); text-decoration: none; }
     .back a:hover { text-decoration: underline; }
 
-    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
-    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
-    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    h1 { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.8125rem; margin-bottom: 2rem; font-family: var(--font-mono); font-weight: 500; }
+    .sec-head { font-family: var(--font-mono); font-size: 0.9375rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.02em; }
     .sec-head:first-of-type { margin-top: 0; }
-    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
-    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
     ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
-    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.65; }
     a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
     a:hover { color: var(--chart-3); }
     code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
@@ -193,14 +193,14 @@
     .kpi-row .ve-kpi-card { min-width: 0; }
     @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
 
-    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 0.75rem 0; font-family: var(--font-mono); }
-    .pipeline .step { background: color-mix(in oklch, var(--muted) 75%, var(--chart-1) 25%); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%); }
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 0.75rem 0; }
+    .pipeline .step { background: color-mix(in oklch, var(--muted) 70%, var(--chart-1) 30%); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); border: 1px solid color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%); }
     .pipeline .arrow { color: var(--text-dim); }
 
     .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; margin: 1rem 0; overflow-x: auto; }
     .mermaid-wrap .mermaid { display: flex; justify-content: center; }
 
-    .dir-tree { font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.7; }
+    .dir-tree { font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.65; }
     .dir-tree .dir { color: var(--chart-1); font-weight: 600; }
     .dir-tree .file-main { color: var(--foreground); }
     .dir-tree .comment { color: var(--text-dim); }
@@ -215,206 +215,222 @@
   <nav class="toc" id="toc" aria-label="目次">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
-    <a href="#stack">三層スタック</a>
-    <a href="#monorepo">モノレポ</a>
+    <a href="#stack">3 層スタック</a>
+    <a href="#layout">リポジトリ構成</a>
     <a href="#compiler">コンパイラ</a>
-    <a href="#dev">開発フロー</a>
-    <a href="#agent">エージェント</a>
+    <a href="#dev">開発と CI</a>
+    <a href="#ui-test">UI とテスト</a>
+    <a href="#start">導入</a>
     <a href="#links">出典</a>
   </nav>
 
   <div class="main">
     <p class="back"><a href="../index.html">← 資料一覧</a></p>
     <h1>Tamagui（tamagui/tamagui）</h1>
-    <p class="subtitle">Universal style · Optimizing compiler · UI kit — Web と Native で UI コードを共有する</p>
+    <p class="subtitle">Bun モノレポ · @tamagui/core · @tamagui/static · tamagui UI — Web と React Native でコードを共有</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
-      <p><strong>Tamagui</strong> は、React と React Native の両方で動く UI を、パフォーマンスとコード品質を落とさずに共有するためのライブラリ群。スタイルライブラリ・最適化コンパイラ・UI キットが一体となり、コンパイル時とランタイムの両方で動作する（README の説明に基づく）。</p>
+      <p><strong>Tamagui</strong> は、React と React Native の両方で動くスタイルライブラリ・デザインシステム・コンポーネント群の集合体。Web とネイティブで UI コードを共有しつつ、パフォーマンスと型・DX を維持することを目的とする（README および公式ドキュメントの説明に基づく）。</p>
+      <p>ランタイムの <code>styled()</code> とテーマトークンに加え、<strong>最適化コンパイラ</strong>がビルド時に styled コンポーネントを Web では atomic CSS 付きの <code>div</code>、ネイティブではスタイルオブジェクトをホイストした <code>View</code> へ平坦化する。公式サイトの Hero セクションでは、コンパイラ有効時に Lighthouse スコアが約 15% 改善した例が示されている。</p>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">公開パッケージ軸</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Bun</span><span class="ve-kpi-card__label">モノレポ実行</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">~15%</span><span class="ve-kpi-card__label">Lighthouse 改善例</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">1 コード</span><span class="ve-kpi-card__label">Web + Native</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">core</span><span class="ve-kpi-card__label">@tamagui/core</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">static</span><span class="ve-kpi-card__label">@tamagui/static</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">tamagui</span><span class="ve-kpi-card__label">UI キット</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">bun</span><span class="ve-kpi-card__label">packageManager</span></div>
       </div>
-      <p>公式ドキュメントは <a href="https://tamagui.dev" target="_blank" rel="noopener">tamagui.dev</a>。ドキュメントソースはリポジトリ内 <code>code/tamagui.dev/data/docs/</code> に置かれる。</p>
+      <div class="ve-callout">
+        <strong>段階的導入:</strong> コンパイラなしでも <code>View</code> / <code>Text</code> と <code>styled()</code> だけから始められ、後から Vite・Metro・Next 用プラグインを足せる。
+      </div>
     </div>
 
-    <section id="stack" class="sec-head">2 — 三層スタック</section>
+    <section id="stack" class="sec-head">2 — 3 層スタック</section>
     <div class="ve-card" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> パッケージの役割</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> 公開パッケージの役割</span>
       <div class="pipeline">
         <span class="step">@tamagui/core</span>
         <span class="arrow">+</span>
-        <span class="step">@tamagui/static</span>
+        <span class="step">@tamagui/static（任意）</span>
         <span class="arrow">→</span>
         <span class="step">tamagui</span>
       </div>
       <div class="ve-table-wrap">
         <table>
           <thead>
-            <tr><th>パッケージ</th><th>役割</th><th>典型利用</th></tr>
+            <tr><th>パッケージ</th><th>役割</th><th>典型的な利用</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>@tamagui/core</code></td><td>React 向けユニバーサルスタイルライブラリ（<code>styled()</code>、トークン、テーマ）</td><td>低レベル API・カスタムデザインシステム</td></tr>
-            <tr><td><code>@tamagui/static</code></td><td><code>core</code> と <code>tamagui</code> 向け最適化コンパイラ</td><td>Vite / Webpack / Next プラグイン経由でビルド時抽出</td></tr>
-            <tr><td><code>tamagui</code></td><td>全プラットフォーム向け UI キット（Button、Sheet、テーマ等）</td><td>アプリ本体のコンポーネント import</td></tr>
+            <tr><td><code>@tamagui/core</code></td><td>プラットフォーム横断のスタイル・テーマ・<code>styled()</code>・variants</td><td>デザイントークンと低レベル View / Text</td></tr>
+            <tr><td><code>@tamagui/static</code></td><td>extract コンパイラ本体。Bundler プラグイン経由で利用</td><td>本番ビルドでのスタイル抽出・コンポーネント平坦化</td></tr>
+            <tr><td><code>tamagui</code></td><td><code>core</code> のスーパーセット。Button・Sheet・Dialog 等の UI</td><td>アプリ UI の大半。コード生成も <code>tamagui</code> 経由が一般的</td></tr>
           </tbody>
         </table>
       </div>
-      <h3>コア API の要点</h3>
-      <ul>
-        <li><code>styled(Component, { ... })</code> — バリアントは <code>as const</code> 必須。トークンは <code>$4</code> のように <code>$</code> 接頭辞。</li>
-        <li><code>XStack</code> / <code>YStack</code> / <code>ZStack</code> — 行・列・重ね配置のプリミティブ。</li>
-        <li><code>Theme</code> — ネスト可能なテーマ階層（<code>name</code> + 子テーマ）。</li>
-      </ul>
-      <div class="ve-code-block"><pre><code>import { View, styled } from '@tamagui/core'
-import { YStack, Button, Theme } from 'tamagui'
+      <h3>スタイルの書き方（2 パターン）</h3>
+      <p>インライン props と <code>styled()</code> + variants の両方をサポートする（library 内ドキュメントより）。</p>
+      <div class="ve-code-block"><pre><code>import { View, Text, styled } from 'tamagui'
+
+export default () => (
+  &lt;&gt;
+    &lt;View backgroundColor="red" /&gt;
+    &lt;Text fontSize={16} color="$color" /&gt;
+  &lt;/&gt;
+)
 
 const Card = styled(View, {
-  padding: '$4',
-  backgroundColor: '$background',
-  borderRadius: '$4',
-  variants: { elevated: { true: { shadowRadius: 10 } } } as const,
-})
-
-&lt;Theme name="dark"&gt;
-  &lt;YStack gap="$4"&gt;
-    &lt;Card elevated /&gt;
-    &lt;Button&gt;Action&lt;/Button&gt;
-  &lt;/YStack&gt;
-&lt;/Theme&gt;</code></pre></div>
+  borderRadius: 12,
+  variants: {
+    size: {
+      sm: { padding: 8 },
+      lg: { padding: 20 },
+    },
+  } as const,
+})</code></pre></div>
+      <p>variants では boolean・文字列キー・<code>'...size'</code> のようなトークン spread など、型安全な条件スタイルを 1 コンポーネントに集約できる。</p>
     </div>
 
-    <section id="monorepo" class="sec-head">3 — モノレポ構成</section>
+    <section id="layout" class="sec-head">3 — リポジトリ構成</section>
     <div class="ve-card" style="--i:2">
-      <span class="ve-section-label"><span class="ve-dot"></span> <code>code/</code> 配下</span>
-      <p>ルートの <code>package.json</code> は Bun workspaces + Turbo で <code>code/**/*</code> を束ねる。主要ディレクトリは次のとおり。</p>
-      <div class="ve-code-block dir-tree"><pre><code><span class="dir">code/</span>
-  <span class="dir">compiler/</span>     <span class="comment"># static, vite-plugin, next-plugin, loader …</span>
-  <span class="dir">core/</span>         <span class="comment"># web, themes, config, animations, cli …</span>
-  <span class="dir">ui/</span>           <span class="comment"># button, sheet, dialog, toast …</span>
-  <span class="file-main">tamagui.dev</span>  <span class="comment"># 公式サイト・Studio・Stripe 連携</span>
-  <span class="file-main">kitchen-sink</span> <span class="comment"># Playwright / Detox 統合テスト</span>
-  <span class="dir">starters/</span>     <span class="comment"># create-tamagui テンプレート</span>
-  <span class="dir">packages/</span>     <span class="comment"># build, lucide-icons, native-ci …</span>
-  <span class="file-main">sandbox</span>      <span class="comment"># SSR・ハイドレーション検証</span></code></pre></div>
+      <span class="ve-section-label"><span class="ve-dot"></span> モノレポの骨格</span>
+      <p>ルート <code>package.json</code> の workspaces が <code>code/</code> 配下を束ねる。Turbo が <code>build</code> / <code>test</code> をオーケストレーションし、Bun が install とスクリプト実行の基盤になる。</p>
       <div class="mermaid-wrap">
         <pre class="mermaid">flowchart TB
-  subgraph publish["公開 npm パッケージ"]
-    CORE["@tamagui/core"]
-    STATIC["@tamagui/static"]
-    UI["tamagui"]
+  subgraph root["tamagui/tamagui ルート"]
+    SCR[scripts/]
+    LIB[library/]
   end
-  subgraph repo["tamagui/tamagui モノレポ"]
-    COMP["code/compiler"]
-    CR["code/core"]
-    UIP["code/ui"]
-    SITE["code/tamagui.dev"]
-    KS["code/kitchen-sink"]
+  subgraph code["code/"]
+    CORE[core/ — スタイル・テーマ・RN 基盤]
+    COMP[compiler/ — static, vite, metro, next]
+    UI[ui/ — Button, Sheet, Dialog 等]
+    PKG[packages/ — build, lucide, starters 補助]
+    DEV[tamagui.dev — 公式サイト]
+    KS[kitchen-sink — 統合テスト]
+    DEM[demos/]
+    ST[starters/]
   end
-  CR --> CORE
-  COMP --> STATIC
-  CR --> UI
-  UIP --> UI
-  KS --> UI
-  SITE --> UI</pre>
+  root --> code
+  CORE --> COMP
+  CORE --> UI
+  UI --> DEV
+  KS --> UI</pre>
       </div>
-      <div class="ve-callout">
-        <strong>サイトと商品:</strong> <code>tamagui.dev</code> はドキュメントに加え Theme Studio・Bento・Takeout 等のサブスクリプション連携（Stripe API ルート）を含む。本体 UI ライブラリとは別レイヤの運用コード。
+      <div class="ve-code-block dir-tree"><pre><code><span class="dir">code/core/</span>     <span class="comment"># config, themes, web, animations, font, cli …</span>
+<span class="dir">code/compiler/</span> <span class="comment"># static, vite-plugin, metro-plugin, next-plugin</span>
+<span class="dir">code/ui/</span>       <span class="comment"># コンポーネントキット（accordion, dialog, sheet …）</span>
+<span class="dir">code/packages/</span> <span class="comment"># build, lucide-icons, native-ci, starters 補助</span>
+<span class="dir">code/tamagui.dev/</span> <span class="comment"># tamagui.dev サイトと docs データ</span>
+<span class="dir">code/kitchen-sink/</span> <span class="comment"># Playwright 統合・usecases</span>
+<span class="dir">code/demos/</span>    <span class="comment"># コンポーネントデモ</span>
+<span class="dir">code/starters/</span> <span class="comment"># create-tamagui 系テンプレート</span></code></pre></div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>領域</th><th>主な責務</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>code/core</code></td><td>テーマ生成（v3–v5）、config、shorthands、アニメーション driver、Floating 等</td></tr>
+            <tr><td><code>code/compiler</code></td><td>AST 抽出、クラス名生成、Vite / Metro / Next / loader 連携</td></tr>
+            <tr><td><code>code/ui</code></td><td>ヘッドレス寄り〜高レベル UI。kitchen-sink と demos で検証</td></tr>
+            <tr><td><code>code/tamagui.dev</code></td><td>ドキュメントサイト。docs データは <code>code/tamagui.dev/data/docs/</code></td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
     <section id="compiler" class="sec-head">4 — 最適化コンパイラ</section>
     <div class="ve-card" style="--i:3">
-      <span class="ve-section-label"><span class="ve-dot"></span> ビルド時の変換</span>
-      <p>コンパイラは <code>styled</code> コンポーネント（複雑なロジックやクロスモジュール import を含む）を、プラットフォーム向けに平坦化する（README）。</p>
-      <div class="ve-table-wrap">
-        <table>
-          <thead>
-            <tr><th>出力先</th><th>ランタイム上の形</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Web</td><td>単純な <code>div</code> + アトミック CSS</td></tr>
-            <tr><td>Native</td><td><code>View</code> とスタイルオブジェクトのホイスト</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <span class="ve-section-label"><span class="ve-dot"></span> ビルド時 extract</span>
+      <p><code>@tamagui/static</code> は単体では使わず、<code>@tamagui/vite-plugin</code>・<code>@tamagui/babel-plugin</code>（Metro）・<code>@tamagui/next-plugin</code> などのバンドラ統合経由で有効化する（library/tamagui.mdx）。</p>
       <div class="mermaid-wrap">
         <pre class="mermaid">flowchart LR
-  SRC["styled コンポーネント TSX"]
-  EX["@tamagui/static 抽出"]
-  WEB["Web: div + atomic CSS"]
-  NAT["Native: View + hoisted styles"]
-  SRC --> EX
-  EX --> WEB
-  EX --> NAT</pre>
+  SRC[styled コンポーネント TSX]
+  EXT[static extractor]
+  WEB[Web: div + atomic CSS]
+  NAT[Native: View + hoisted styles]
+  SRC --> EXT
+  EXT --> WEB
+  EXT --> NAT</pre>
       </div>
-      <p>README の計測例: 公式サイトのレスポンシブ領域で約 55 個のインライン styled のうち 49 が <code>div</code> に平坦化され、コンパイラ ON で Lighthouse が約 15% 改善。</p>
-      <div class="ve-callout ve-callout--warn">
-        <strong>段階的導入:</strong> 最初は import してベース View と <code>styled</code> だけ使う程度から始められ、コンパイラと UI キットは後から足せる。
-      </div>
-    </div>
-
-    <section id="dev" class="sec-head">5 — 開発フロー</section>
-    <div class="ve-card" style="--i:4">
-      <span class="ve-section-label"><span class="ve-dot"></span> 新規プロジェクトと CI</span>
-      <div class="ve-code-block"><pre><code># スターター（学習用〜本番モノレポ）
-npm create tamagui@latest
-
-# リポジトリ開発（ルート）
-bun install
-bun run build          # turbo run build
-bun run check          # deps / unused / tamagui check / references
-bun run test           # テストスイート
-
-# 公式サイト
-bun run dev            # code/tamagui.dev
-
-# kitchen-sink（統合テスト）
-cd code/kitchen-sink
-bun run start:web      # http://localhost:7979
-bun run test:web       # Playwright（複数 animation driver）</code></pre></div>
-      <h3>kitchen-sink での検証</h3>
       <ul>
-        <li>ユースケース: <code>code/kitchen-sink/src/usecases/</code> — URL <code>?test=CaseName</code> で単体表示。</li>
-        <li>デモ: <code>code/demos/src/</code> — <code>?demo=Select</code>（<code>SelectDemo.tsx</code> なら <code>Select</code>）。</li>
-        <li>アニメーションドライバ: <code>css</code> · <code>native</code> · <code>reanimated</code> · <code>motion</code> を並列プロジェクトで回す。</li>
+        <li>複雑なロジックやクロスモジュール import を含む styled でも、多くが単純な DOM / View に平坦化される</li>
+        <li>コンパイル時とランタイムの両方で動作。段階的に extract 範囲を広げられる</li>
+        <li>開発時は <code>TAMAGUI_EXTRACT=1</code> 付きの <code>dev:extract</code> で extract 挙動を確認可能（ルート scripts）</li>
       </ul>
-      <p>パッケージを編集したら、ルートで <code>bun run watch</code> を回すか、対象パッケージで <code>bun run build</code> する（CONTRIBUTING / claude.md）。</p>
+      <div class="ve-callout ve-callout--warn">
+        <strong>パッケージ変更時:</strong> ルートで <code>bun run watch</code> を回すか、変更したパッケージディレクトリで <code>bun run build</code> しないと downstream が古いビルドを参照する（CONTRIBUTING / claude.md）。
+      </div>
     </div>
 
-    <section id="agent" class="sec-head">6 — エージェント向け</section>
-    <div class="ve-card ve-card--recessed" style="--i:5">
-      <span class="ve-section-label"><span class="ve-dot"></span> Tamagui Skill</span>
-      <p>リポジトリ内 <code>plans/tamagui-skill/skills/tamagui/SKILL.md</code> は、クロスプラットフォーム UI 実装時のトリガー（<code>styled()</code>、<code>$token</code>、<code>@tamagui/*</code> 等）を定義する。</p>
-      <p>プロジェクト固有のトークン・テーマ名を推測せず、次で設定をダンプする:</p>
-      <div class="ve-code-block"><pre><code>npx tamagui generate-prompt
-# → tamagui-prompt.md（tokens, themes, media, shorthands）</code></pre></div>
+    <section id="dev" class="sec-head">5 — 開発と CI</section>
+    <div class="ve-card" style="--i:4">
+      <span class="ve-section-label"><span class="ve-dot"></span> ルート scripts（抜粋）</span>
       <div class="ve-table-wrap">
         <table>
           <thead>
-            <tr><th>ルール</th><th>内容</th></tr>
+            <tr><th>コマンド</th><th>用途</th></tr>
           </thead>
           <tbody>
-            <tr><td>トークン</td><td><code>$</code> 付きで参照（<code>$background</code>, <code>$4</code>）</td></tr>
-            <tr><td>variants</td><td>オブジェクトに <code>as const</code> を付けて型推論を固定</td></tr>
-            <tr><td>設定の正</td><td><code>tamagui-prompt.md</code> を優先（デフォルト値の憶測を避ける）</td></tr>
+            <tr><td><code>bun install</code></td><td>postinstall で monorepo セットアップ</td></tr>
+            <tr><td><code>bun run build</code></td><td>turbo run build（全 workspace）</td></tr>
+            <tr><td><code>bun run watch</code></td><td>TS + パッケージの並列 watch（長時間デバッグ向け）</td></tr>
+            <tr><td><code>bun run dev</code></td><td>tamagui.dev 開発サーバ</td></tr>
+            <tr><td><code>bun run check</code></td><td>deps / unused / tamagui check / references</td></tr>
+            <tr><td><code>bun run ci</code></td><td>install → check → lint → typecheck → build → test</td></tr>
+            <tr><td><code>bun run test:web</code> / <code>test:native</code></td><td>プラットフォーム別テスト（turbo）</td></tr>
+            <tr><td><code>npm create tamagui@latest</code></td><td>スターター生成（README 推奨）</td></tr>
           </tbody>
         </table>
       </div>
+      <p>品質ゲートは manypkg・knip・oxfmt / oxlint・独自 <code>check:references</code> などが組み合わさる。React 19.1 / RN 0.83 系にピン留めされた overrides がルートにある。</p>
     </div>
 
-    <section id="links" class="sec-head">7 — 出典</section>
-    <div class="ve-card" style="--i:6">
+    <section id="ui-test" class="sec-head">6 — UI キットとテスト</section>
+    <div class="ve-card" style="--i:5">
+      <span class="ve-section-label"><span class="ve-dot"></span> kitchen-sink</span>
+      <p><code>code/kitchen-sink</code> がコンポーネント統合テストの中心。Web は <code>bun run start:web</code>（既定ポート 7979）で起動し、Playwright が複数アニメーション driver（css / native / reanimated / motion）に対して走る（claude.md）。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>テスト種別</th><th>ファイル命名</th><th>実行回数</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>通常</td><td><code>ComponentName.test.tsx</code></td><td>既定 driver で 1 回</td></tr>
+            <tr><td>アニメーション依存</td><td><code>ComponentName.animated.test.tsx</code></td><td>全 driver で繰り返し</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>ブラウザ確認: <code>?test=SelectFocusScopeCase</code>（usecases 名）や <code>?demo=Select</code>（demos の Demo 名から <code>Demo</code> を除いたもの）。</p>
+      <h3>周辺プロダクト（ルート scripts より）</h3>
+      <ul>
+        <li><code>kitchen-sink</code> — クロスプラットフォーム検証アプリ</li>
+        <li><code>starter</code> / <code>create</code> — 学習用〜本番向け monorepo テンプレート</li>
+        <li><code>takeout</code> / <code>studio</code> — 商用テンプレ・スタジオ系（@tamagui スコープ）</li>
+        <li><code>sandbox</code> — 実験用サンドボックス</li>
+      </ul>
+    </div>
+
+    <section id="start" class="sec-head">7 — 導入</section>
+    <div class="ve-card ve-card--recessed" style="--i:6">
+      <span class="ve-section-label"><span class="ve-dot"></span> 新規プロジェクト</span>
+      <div class="ve-code-block"><pre><code>npm create tamagui@latest
+# または
+bun create tamagui</code></pre></div>
+      <p>最小構成では <code>tamagui</code> を import し <code>View</code> / <code>Text</code> / <code>styled</code> から開始。本番最適化では Vite または Metro の Tamagui プラグインを設定し、テーマ config（<code>tamagui.config.ts</code>）をプロジェクトに置く。</p>
+      <p>このリポジトリを clone して開発する場合は Bun 1.3 系を使い、初回 <code>bun install</code> 後に <code>bun run build</code> または <code>bun run watch</code> を推奨する。</p>
+    </div>
+
+    <section id="links" class="sec-head">8 — 出典</section>
+    <div class="ve-card" style="--i:7">
       <span class="ve-section-label"><span class="ve-dot"></span> 一次情報</span>
       <ul>
-        <li><a href="https://github.com/tamagui/tamagui" target="_blank" rel="noopener">GitHub: tamagui/tamagui</a> — 本体モノレポ</li>
+        <li><a href="https://github.com/tamagui/tamagui" target="_blank" rel="noopener">GitHub: tamagui/tamagui</a> — 本体（MIT）</li>
         <li><a href="https://tamagui.dev" target="_blank" rel="noopener">tamagui.dev</a> — 公式ドキュメント・デモ</li>
-        <li>リポジトリ内 <code>README.md</code> — 三パッケージ概要・コンパイラ効果・貢献リンク</li>
-        <li>リポジトリ内 <code>CONTRIBUTING.md</code> — ビルド・テスト・コミット規約</li>
-        <li><a href="https://tamagui.dev/docs/intro/introduction" target="_blank" rel="noopener">Introduction</a> — 概念の詳細</li>
+        <li><a href="https://tamagui.dev/docs/intro/introduction" target="_blank" rel="noopener">Introduction</a> — コンセプトとコンパイラの説明</li>
+        <li>リポジトリ内 <code>README.md</code> — 3 パッケージの概要とスターター</li>
+        <li>リポジトリ内 <code>CONTRIBUTING.md</code> · <code>claude.md</code> — ビルド・テスト・コミット規約</li>
+        <li>リポジトリ内 <code>library/tamagui.mdx</code> — core / styled / コンパイラのクイックリファレンス</li>
       </ul>
     </div>
   </div>
