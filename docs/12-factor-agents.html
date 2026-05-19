@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>12-Factor Agents — 本番向け LLM アプリケーションの設計原則</title>
+  <meta name="description" content="humanlayer/12-factor-agents の概要。エージェントループ、12 の設計原則、フレームワーク依存を避ける実装パターン、workshop と create-12-factor-agent の構成。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="12-Factor Agents — 本番向け LLM アプリケーションの設計原則">
+  <meta property="og:description" content="humanlayer/12-factor-agents の概要。エージェントループ、12 の設計原則、実装パターンとリポジトリ構成。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/12-factor-agents.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="12-Factor Agents — 本番向け LLM アプリケーションの設計原則">
+  <meta name="twitter:description" content="humanlayer/12-factor-agents の概要。エージェントループ、12 の設計原則、実装パターンとリポジトリ構成。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI + Libre Baskerville / blueprint) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.004 250);
+      --foreground: oklch(0.2 0.04 250);
+      --card: oklch(1 0.002 250);
+      --card-foreground: oklch(0.2 0.04 250);
+      --popover: oklch(1 0.002 250);
+      --popover-foreground: oklch(0.2 0.04 250);
+      --primary: oklch(0.24 0.06 250);
+      --primary-foreground: oklch(0.99 0.004 250);
+      --secondary: oklch(0.95 0.015 250);
+      --secondary-foreground: oklch(0.24 0.06 250);
+      --muted: oklch(0.94 0.012 250);
+      --muted-foreground: oklch(0.45 0.04 250);
+      --accent: oklch(0.93 0.02 250);
+      --accent-foreground: oklch(0.22 0.05 250);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.87 0.02 250);
+      --input: oklch(0.87 0.02 250);
+      --ring: oklch(0.38 0.12 248);
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.48 0.09 248);
+      --chart-4: oklch(0.78 0.08 250);
+      --chart-5: oklch(0.55 0.14 42);
+      --code-bg: var(--muted);
+      --code-text: oklch(0.28 0.08 248);
+      --font-body: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.03 260);
+        --foreground: oklch(0.96 0.01 250);
+        --card: oklch(0.18 0.03 260);
+        --card-foreground: oklch(0.96 0.01 250);
+        --popover: oklch(0.18 0.03 260);
+        --popover-foreground: oklch(0.96 0.01 250);
+        --primary: oklch(0.92 0.02 250);
+        --primary-foreground: oklch(0.14 0.03 260);
+        --secondary: oklch(0.22 0.03 260);
+        --secondary-foreground: oklch(0.96 0.01 250);
+        --muted: oklch(0.24 0.03 260);
+        --muted-foreground: oklch(0.7 0.03 250);
+        --accent: oklch(0.22 0.04 260);
+        --accent-foreground: oklch(0.96 0.01 250);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.62 0.12 248);
+        --chart-1: oklch(0.68 0.14 248);
+        --chart-2: oklch(0.78 0.16 76);
+        --chart-3: oklch(0.58 0.1 248);
+        --chart-4: oklch(0.72 0.06 250);
+        --chart-5: oklch(0.65 0.12 42);
+        --code-bg: oklch(0.15 0.03 260);
+        --code-text: oklch(0.82 0.06 248);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); font-family: var(--font-mono); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.65; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 65%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.35rem; line-height: 1.15; font-weight: 700; color: var(--chart-1); font-family: var(--font-mono); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: color-mix(in oklch, var(--muted) 75%, var(--chart-1) 8%); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 20% 0%, oklch(0.38 0.12 248 / 0.08) 0%, transparent 55%),
+        linear-gradient(oklch(0.38 0.12 248 / 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, oklch(0.38 0.12 248 / 0.03) 1px, transparent 1px);
+      background-size: auto, 24px 24px, 24px 24px;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 20% 0%, oklch(0.68 0.14 248 / 0.12) 0%, transparent 55%),
+          linear-gradient(oklch(0.68 0.14 248 / 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, oklch(0.68 0.14 248 / 0.05) 1px, transparent 1px);
+        background-size: auto, 24px 24px, 24px 24px;
+      }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 700; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .badge-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .badge { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); }
+    .badge--accent { background: color-mix(in oklch, var(--chart-1) 12%, transparent); border-color: color-mix(in oklch, var(--chart-1) 45%, transparent); color: var(--chart-1); }
+
+    .figure { margin: 1rem 0; border-radius: var(--radius-lg); border: 1px solid var(--border); overflow: hidden; background: var(--card); }
+    .figure img { display: block; width: 100%; height: auto; }
+    .figure figcaption { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); padding: 0.5rem 0.75rem; border-top: 1px solid var(--border); }
+
+    .mermaid-wrap { position: relative; overflow: hidden; border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--card); margin: 1rem 0; }
+    .mermaid-controls { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 10; }
+    .mermaid-controls button { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--card); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 14px; color: var(--text-dim); }
+    .mermaid-controls button:hover { background: var(--muted); color: var(--text); }
+    .mermaid-inner { overflow: auto; display: flex; justify-content: center; padding: 1.25rem; min-height: 120px; }
+    .mermaid { display: flex; justify-content: center; }
+
+    .factor-num { font-family: var(--font-mono); font-weight: 700; color: var(--chart-1); white-space: nowrap; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="toc" id="toc">
+      <div class="toc-title">目次</div>
+      <a href="#overview">概要</a>
+      <a href="#background">背景</a>
+      <a href="#agent-loop">エージェントループ</a>
+      <a href="#why-factors">なぜ 12 原則か</a>
+      <a href="#twelve-factors">12 の原則</a>
+      <a href="#structure">リポジトリ構成</a>
+      <a href="#tooling">ツールと学習</a>
+      <a href="#links">参照</a>
+    </nav>
+
+    <div class="main">
+      <h1>12-Factor Agents</h1>
+      <p class="subtitle">本番向け LLM アプリケーションの設計原則 — <a href="https://github.com/humanlayer/12-factor-agents" target="_blank" rel="noopener">humanlayer/12-factor-agents</a></p>
+
+      <section id="overview" class="sec-head">1 — 概要</section>
+      <div class="ve-card ve-card--hero" style="--i:0">
+        <div class="badge-row">
+          <span class="badge badge--accent">CC BY-SA 4.0（本文）</span>
+          <span class="badge">Apache 2.0（コード）</span>
+          <span class="badge">12factor.net 系譜</span>
+        </div>
+        <p><strong>12-Factor Agents</strong> は、Dex Horthy（HumanLayer）が公開しているガイドです。<a href="https://12factor.net/" target="_blank" rel="noopener">12 Factor Apps</a> の精神を踏まえ、<strong>本番の顧客に届けられる LLM ソフトウェア</strong>を作るための原則を 12 項目に整理しています。</p>
+        <p>主張の中心は次のとおりです。多くの「AI エージェント」製品は、プロンプトとツールの袋をループするだけの薄いラッパーではなく、<strong>大部分は決定的なソフトウェア</strong>であり、LLM 呼び出しは必要な箇所にだけ差し込む、という設計が実際に強い、というものです。</p>
+        <div class="kpi-row">
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">12</div>
+            <div class="ve-kpi-card__label">設計原則</div>
+          </div>
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">loop</div>
+            <div class="ve-kpi-card__label">LLM → ツール → コンテキスト</div>
+          </div>
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">own</div>
+            <div class="ve-kpi-card__label">プロンプト・文脈・制御フロー</div>
+          </div>
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">modular</div>
+            <div class="ve-kpi-card__label">フレームワーク全面依存を避ける</div>
+          </div>
+        </div>
+      </div>
+
+      <section id="background" class="sec-head">2 — 背景（ソフトウェアからエージェントへ）</section>
+      <div class="ve-card" style="--i:0">
+        <p>ガイドは、ソフトウェアを有向グラフ（DAG）として捉える流れから始まります。従来のプログラムはフローチャートのように分岐と順序が決まっており、Airflow や Prefect などの DAG オーケストレータは観測性・リトライ・モジュール性を足してきました。</p>
+        <figure class="figure">
+          <img src="https://raw.githubusercontent.com/humanlayer/12-factor-agents/main/img/015-dag-orchestrators.png" alt="DAG オーケストレータの概念図" width="907" loading="lazy">
+          <figcaption>出典: humanlayer/12-factor-agents — DAG オーケストレータ（img/015-dag-orchestrators.png）</figcaption>
+        </figure>
+        <p>エージェントの約束は「DAG を捨て、目標と遷移だけ渡せば LLM が経路を選ぶ」ことでした。しかし実運用では、<strong>80% 品質で止まり、残り 20% でフレームワークを逆解析して作り直す</strong>、というパターンが繰り返される、と著者は述べています。</p>
+        <figure class="figure">
+          <img src="https://raw.githubusercontent.com/humanlayer/12-factor-agents/main/img/025-agent-dag.png" alt="エージェントが DAG のエッジを動的に選ぶイメージ" width="907" loading="lazy">
+          <figcaption>出典: humanlayer/12-factor-agents — エージェントと DAG（img/025-agent-dag.png）</figcaption>
+        </figure>
+      </div>
+
+      <section id="agent-loop" class="sec-head">3 — エージェントループ</section>
+      <div class="ve-card ve-card--elevated" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 基本パターン</span>
+        <p>エージェントは次のループで動きます。</p>
+        <ol>
+          <li>LLM が次のステップ（構造化 JSON / ツール呼び出し）を決める</li>
+          <li>決定的なコードがツールを実行する</li>
+          <li>結果をコンテキストウィンドウに追記する</li>
+          <li>完了 intent になるまで繰り返す</li>
+        </ol>
+        <div class="ve-code-block">
+          <pre><code>initial_event = {"message": "..."}
+context = [initial_event]
+while True:
+  next_step = await llm.determine_next_step(context)
+  context.append(next_step)
+  if next_step.intent == "done":
+    return next_step.final_answer
+  result = await execute_step(next_step)
+  context.append(result)</code></pre>
+        </div>
+        <p>README の擬似コードに基づく。TypeScript 実装例は <code>packages/create-12-factor-agent/template/</code> を参照。</p>
+        <div class="mermaid-wrap" data-mermaid-id="loop">
+          <div class="mermaid-controls">
+            <button type="button" data-zoom="out" aria-label="縮小">−</button>
+            <button type="button" data-zoom="reset" aria-label="リセット">⟲</button>
+            <button type="button" data-zoom="in" aria-label="拡大">+</button>
+          </div>
+          <div class="mermaid-inner">
+            <pre class="mermaid">%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#e8eef8", "primaryTextColor": "#1a2540", "primaryBorderColor": "#4a6fa8", "lineColor": "#4a6fa8", "secondaryColor": "#f5f0e0", "tertiaryColor": "#faf8f5", "fontFamily": "JetBrains Mono, monospace", "fontSize": "14px"}}}%%
+flowchart TD
+  A[初期イベント] --> B[コンテキスト構築]
+  B --> C{LLM: 次ステップ}
+  C -->|intent: done| D[最終応答を返す]
+  C -->|ツール呼び出し| E[決定的コードで実行]
+  E --> F[結果を context に append]
+  F --> B</pre>
+          </div>
+        </div>
+        <figure class="figure">
+          <img src="https://raw.githubusercontent.com/humanlayer/12-factor-agents/main/img/027-agent-loop-dag.png" alt="エージェントループの DAG 表現" width="907" loading="lazy">
+          <figcaption>出典: humanlayer/12-factor-agents — エージェントループ（img/027-agent-loop-dag.png）</figcaption>
+        </figure>
+      </div>
+
+      <section id="why-factors" class="sec-head">4 — なぜ 12 原則か</section>
+      <div class="ve-card" style="--i:0">
+        <p>著者が HumanLayer で見てきた典型的な旅路は次のとおりです。</p>
+        <ol>
+          <li>エージェントを作ると決める</li>
+          <li>プロダクト設計・UX を固める</li>
+          <li>フレームワークで素早く 70〜80% まで到達する</li>
+          <li>顧客向けには 80% では足りないと気づく</li>
+          <li>プロンプト・フローを逆解析し、結局ゼロから作り直す</li>
+        </ol>
+        <div class="ve-callout">
+          <strong>推奨アプローチ:</strong> フレームワーク丸ごとではなく、エージェント構築の<strong>小さなモジュール概念</strong>（構造化ツール呼び出し、コンテキスト設計、人間承認など）を既存プロダクトに組み込む。熟練のソフトウェアエンジニアでも AI 専門でなくてよい、とガイドは述べています。
+        </div>
+        <p>LLM がさらに賢くなっても、<strong>信頼性・スケール・保守性</strong>のためのコア技法は残る、という前提で 12 項目が書かれています。</p>
+      </div>
+
+      <section id="twelve-factors" class="sec-head">5 — 12 の原則</section>
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 一覧（原文へのリンク）</span>
+        <div class="ve-table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>原則</th><th>要点（要約）</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="factor-num">—</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/brief-history-of-software.md" target="_blank" rel="noopener">Brief History of Software</a></td>
+                <td>DAG・オーケストレータからエージェントループへの文脈</td>
+              </tr>
+              <tr>
+                <td class="factor-num">1</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-01-natural-language-to-tool-calls.md" target="_blank" rel="noopener">Natural Language to Tool Calls</a></td>
+                <td>自然言語を構造化ツール呼び出しに変換し、決定的コードで実行する</td>
+              </tr>
+              <tr>
+                <td class="factor-num">2</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-02-own-your-prompts.md" target="_blank" rel="noopener">Own your prompts</a></td>
+                <td>プロンプトをアプリのコードとして所有・版管理する</td>
+              </tr>
+              <tr>
+                <td class="factor-num">3</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-03-own-your-context-window.md" target="_blank" rel="noopener">Own your context window</a></td>
+                <td>メッセージ形式に縛られず、最良の入力を設計する（コンテキストエンジニアリング）</td>
+              </tr>
+              <tr>
+                <td class="factor-num">4</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-04-tools-are-structured-outputs.md" target="_blank" rel="noopener">Tools are structured outputs</a></td>
+                <td>ツールは構造化出力の一形態として扱う</td>
+              </tr>
+              <tr>
+                <td class="factor-num">5</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-05-unify-execution-state.md" target="_blank" rel="noopener">Unify execution state</a></td>
+                <td>実行状態とビジネス状態をコンテキスト上で統一する</td>
+              </tr>
+              <tr>
+                <td class="factor-num">6</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-06-launch-pause-resume.md" target="_blank" rel="noopener">Launch / Pause / Resume</a></td>
+                <td>単純な API で起動・一時停止・再開できるようにする</td>
+              </tr>
+              <tr>
+                <td class="factor-num">7</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-07-contact-humans-with-tools.md" target="_blank" rel="noopener">Contact humans with tools</a></td>
+                <td>人間への確認もツール呼び出しとしてモデル化する</td>
+              </tr>
+              <tr>
+                <td class="factor-num">8</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-08-own-your-control-flow.md" target="_blank" rel="noopener">Own your control flow</a></td>
+                <td>ループ・分岐・エラー処理を自前で持つ</td>
+              </tr>
+              <tr>
+                <td class="factor-num">9</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-09-compact-errors.md" target="_blank" rel="noopener">Compact errors</a></td>
+                <td>エラーをコンテキストに収まる形で圧縮して渡す</td>
+              </tr>
+              <tr>
+                <td class="factor-num">10</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-10-small-focused-agents.md" target="_blank" rel="noopener">Small, focused agents</a></td>
+                <td>スコープを小さく保ち、万能エージェントを避ける</td>
+              </tr>
+              <tr>
+                <td class="factor-num">11</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-11-trigger-from-anywhere.md" target="_blank" rel="noopener">Trigger from anywhere</a></td>
+                <td>CLI・Webhook・Cron など入口を増やし、ユーザーの居場所で動かす</td>
+              </tr>
+              <tr>
+                <td class="factor-num">12</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-12-stateless-reducer.md" target="_blank" rel="noopener">Stateless reducer</a></td>
+                <td>エージェントを状態なしリデューサーとして設計する（fold 的な更新）</td>
+              </tr>
+              <tr>
+                <td class="factor-num">13*</td>
+                <td><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/appendix-13-pre-fetch.md" target="_blank" rel="noopener">Pre-fetch context</a>（付録）</td>
+                <td>必要になりそうなコンテキストを先に取りに行く</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-dim);">各原則には <code>img/</code> 配下の図解（PNG/GIF）が対応しています。README の Visual Nav グリッドからも参照できます。</p>
+      </div>
+
+      <section id="structure" class="sec-head">6 — リポジトリ構成</section>
+      <div class="ve-card ve-card--recessed" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 主要ディレクトリ</span>
+        <div class="ve-code-block">
+          <pre><code>12-factor-agents/
+├── README.md              # ガイドの入口・12 原則リンク
+├── content/               # 各 factor の Markdown 本文
+│   ├── brief-history-of-software.md
+│   ├── factor-01-…md … factor-12-…md
+│   └── appendix-13-pre-fetch.md
+├── img/                   # 図解・アニメーション
+├── packages/
+│   ├── create-12-factor-agent/   # テンプレート生成（npx）
+│   └── walkthroughgen/            # ワークショップ用ジェネレータ
+├── workshops/             # 段階的ハンズオン（2025-05 など）
+└── drafts/                # a2h 仕様など草案</code></pre>
+        </div>
+        <p><code>content/</code> がガイドの正本です。番号付き <code>factor-0N-*.md</code> が各原則の詳細で、重複していた旧ファイル名（<code>factor-N-</code> 単数形）はスタブ程度の行数のみ、とスキャン結果から判断できます。</p>
+      </div>
+
+      <section id="tooling" class="sec-head">7 — ツールと学習</section>
+      <div class="ve-card" style="--i:0">
+        <h3>create-12-factor-agent</h3>
+        <p><code>packages/create-12-factor-agent</code> は TypeScript 向けのスターターです。テンプレートには <code>src/agent.ts</code>、<code>cli.ts</code>、<code>server.ts</code>、<code>state.ts</code> などがあり、ワークショップの最終形に近い構成です。README では <code>npx/uvx create-12-factor-agent</code> の議論スレッドも案内されています。</p>
+        <h3>workshops</h3>
+        <p><code>workshops/2025-05/</code> などはセクションごとに段階を分けた教材です。CLI とエージェント、計算機ツール、BAML テスト、コンテキストウィンドウ、人間承認、HumanLayer Webhook まで、factor に沿って積み上げます。</p>
+        <h3>walkthroughgen</h3>
+        <p><code>packages/walkthroughgen</code> は walkthrough YAML から教材コードを生成する CLI です。workshop ディレクトリの <code>walkthrough.yaml</code> と連携します。</p>
+        <div class="ve-callout">
+          <strong>技術スタックの例:</strong> ガイド本文は TypeScript を多く引用しますが、原則は Python など他言語にも適用可能、と README は明記しています。構造化出力には BAML などの言及もあります。
+        </div>
+      </div>
+
+      <section id="links" class="sec-head">8 — 参照</section>
+      <div class="ve-card" style="--i:0">
+        <ul>
+          <li><a href="https://github.com/humanlayer/12-factor-agents" target="_blank" rel="noopener">GitHub: humanlayer/12-factor-agents</a></li>
+          <li><a href="https://www.youtube.com/watch?v=8kMaTybvDUw" target="_blank" rel="noopener">AI Engineer World's Fair トーク（YouTube）</a></li>
+          <li><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Anthropic — Building Effective Agents</a></li>
+          <li><a href="https://12factor.net/" target="_blank" rel="noopener">The Twelve-Factor App</a></li>
+          <li><a href="https://github.com/got-agents/agents" target="_blank" rel="noopener">got-agents/agents</a> — 同手法の OSS エージェント例</li>
+          <li><a href="https://humanlayer.dev/discord" target="_blank" rel="noopener">HumanLayer Discord</a></li>
+        </ul>
+        <p style="margin-top:1rem;font-size:0.85rem;color:var(--text-dim);">本文・図のライセンス: コンテンツ CC BY-SA 4.0、コード Apache 2.0（README 記載）。</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
+    document.querySelectorAll('.mermaid').forEach(async (el) => {
+      const id = 'mmd-' + Math.random().toString(36).slice(2);
+      const { svg } = await mermaid.render(id, el.textContent);
+      el.innerHTML = svg;
+    });
+    document.querySelectorAll('.mermaid-wrap').forEach((wrap) => {
+      const inner = wrap.querySelector('.mermaid-inner');
+      let zoom = 1;
+      const INITIAL = 1;
+      wrap.querySelectorAll('[data-zoom]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const mode = btn.getAttribute('data-zoom');
+          if (mode === 'in') zoom = Math.min(zoom + 0.15, 2.5);
+          else if (mode === 'out') zoom = Math.max(zoom - 0.15, 0.5);
+          else zoom = INITIAL;
+          inner.style.transform = 'scale(' + zoom + ')';
+          inner.style.transformOrigin = 'center top';
+        });
+      });
+    });
+  </script>
+  <script>
+  (function() {
+    var toc = document.getElementById('toc');
+    if (!toc) return;
+    var links = toc.querySelectorAll('a[href^="#"]');
+    var sections = [];
+    links.forEach(function(a) {
+      var id = a.getAttribute('href').slice(1);
+      var el = document.getElementById(id);
+      if (el) sections.push({ link: a, head: el });
+    });
+    function updateActive() {
+      var top = window.scrollY + 24;
+      var current = sections[0] || null;
+      sections.forEach(function(s) {
+        var rect = s.head.getBoundingClientRect();
+        var docTop = rect.top + window.scrollY;
+        if (docTop <= top) current = s;
+      });
+      sections.forEach(function(s) {
+        s.link.classList.toggle('active', s === current);
+      });
+    }
+    window.addEventListener('scroll', updateActive, { passive: true });
+    updateActive();
+  })();
+  </script>
+</body>
+</html>
