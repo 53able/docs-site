@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sheets — ターミナルスプレッドシート（maaslalani/sheets）</title>
+  <meta name="description" content="maaslalani/sheets。CSV を Vim 風キーバインドで編集する Go 製 TUI。Bubble Tea 上の NORMAL / INSERT / SELECT / コマンドモード、CLI からのセル参照・一括更新、数式評価の概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Sheets — ターミナルスプレッドシート（maaslalani/sheets）">
+  <meta property="og:description" content="ターミナル上で CSV を開き、Vim 風操作と CLI クエリで扱う Go 製スプレッドシート。実行モード、キーバインド、内部構成、数式、インストール。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/sheets.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Sheets — ターミナルスプレッドシート（maaslalani/sheets）">
+  <meta name="twitter:description" content="Bubble Tea TUI と非対話 CLI の二面性。README と internal/sheets から要約した技術概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.012 200);
+      --foreground: oklch(0.2 0.04 200);
+      --card: oklch(1 0.008 200);
+      --card-foreground: oklch(0.2 0.04 200);
+      --muted: oklch(0.94 0.025 200);
+      --muted-foreground: oklch(0.48 0.04 200);
+      --accent: oklch(0.93 0.03 200);
+      --accent-foreground: oklch(0.22 0.06 200);
+      --border: oklch(0.88 0.03 200);
+      --ring: oklch(0.55 0.1 200);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.38 0.08 240);
+      --chart-4: oklch(0.62 0.12 145);
+      --chart-5: oklch(0.5 0.1 25);
+      --code-bg: var(--muted);
+      --code-text: oklch(0.28 0.08 200);
+      --font-body: 'Montserrat', system-ui, sans-serif;
+      --font-mono: 'Fira Code', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.025 200);
+        --foreground: oklch(0.96 0.02 200);
+        --card: oklch(0.19 0.03 200);
+        --card-foreground: oklch(0.96 0.02 200);
+        --muted: oklch(0.24 0.035 200);
+        --muted-foreground: oklch(0.72 0.04 200);
+        --accent: oklch(0.24 0.04 200);
+        --accent-foreground: oklch(0.96 0.02 200);
+        --border: oklch(1 0 0 / 12%);
+        --ring: oklch(0.58 0.1 200);
+        --chart-1: oklch(0.62 0.14 200);
+        --chart-2: oklch(0.72 0.12 80);
+        --chart-3: oklch(0.55 0.1 240);
+        --code-bg: oklch(0.14 0.03 200);
+        --code-text: oklch(0.82 0.08 200);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+      box-shadow: 0 4px 20px rgba(0, 40, 60, 0.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 600; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin-top: 1rem; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.45 0.12 200 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.62 0.14 200 / 0.1) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.5; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.65rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    kbd { font-family: var(--font-mono); font-size: 0.75rem; background: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; box-shadow: 0 1px 0 var(--border); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .mermaid-wrap { margin: 1.25rem 0; padding: 1rem; background: var(--muted); border-radius: var(--radius-lg); border: 1px solid var(--border); overflow-x: auto; }
+    .mode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .mode-grid { grid-template-columns: 1fr; } }
+    .mode-item { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.75rem 1rem; font-size: 0.8125rem; }
+    .mode-item strong { display: block; font-size: 0.875rem; margin-bottom: 0.35rem; color: var(--chart-1); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">Contents</div>
+    <a href="#overview">1 — 概要</a>
+    <a href="#cli">2 — CLI</a>
+    <a href="#tui">3 — TUI 操作</a>
+    <a href="#architecture">4 — 内部構成</a>
+    <a href="#formulas">5 — 数式</a>
+    <a href="#install">6 — インストール</a>
+    <a href="#links">7 — 参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>Sheets</h1>
+    <p class="subtitle">Spreadsheets in your terminal — CSV を Vim 風に編集する Go 製 TUI（<a href="https://github.com/maaslalani/sheets" target="_blank" rel="noopener">maaslalani/sheets</a>）</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
+      <p><strong>Sheets</strong> は、ターミナル上で CSV を表計算のように開き、Vim 風キーバインドでセルを移動・編集・検索できる TUI アプリ。同じバイナリから、シェルスクリプト向けの<strong>非対話 CLI</strong>（セル参照・範囲出力・一括代入）も呼び出せる。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Go</span><span class="ve-kpi-card__label">実装言語</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Bubble Tea</span><span class="ve-kpi-card__label">TUI フレームワーク</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">52列</span><span class="ve-kpi-card__label">A–AZ 相当</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+      </div>
+      <p>データはメモリ上の <code>map[cellKey]string</code> に保持し、保存時に CSV へ書き戻す。存在しないファイルパスを指定した場合は空シートとして起動し、<kbd>:w</kbd> で新規作成できる。</p>
+    </div>
+
+    <section id="cli" class="sec-head">2 — コマンドライン</section>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 実行モードの分岐</span>
+      <p>引数が 2 個以上（ファイル + 操作）のときは TUI を起動せず <code>runCLI</code> が走る。1 個以下なら Bubble Tea の対話セッションになる。stdin から CSV を渡す場合は TTY が別途必要。</p>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+  Args["sheets 引数"] --> Opt{"-h / -v ?"}
+  Opt -->|yes| Help["ヘルプ / バージョン出力"]
+  Opt -->|no| Count{"len(args) > 1 ?"}
+  Count -->|yes| CLI["runCLI: 参照・代入・保存"]
+  Count -->|no| TUI["Bubble Tea TUI"]
+  TUI --> File["ファイル / stdin から CSV 読込"]
+  CLI --> Query["セル・範囲を stdout へ"]
+  CLI --> Write["cell=value で更新後 :w 相当保存"]
+        </pre>
+      </div>
+      <h3>対話起動</h3>
+      <div class="ve-code-block">
+        <pre><code>sheets budget.csv
+sheets &lt;&lt;&lt; $'ID,Name,Age\n1,Alice,24'
+cat budget.csv | sheets</code></pre>
+      </div>
+      <h3>非対話クエリ・更新</h3>
+      <div class="ve-code-block">
+        <pre><code>sheets budget.csv B9          # 単一セル
+sheets budget.csv B1:B3       # 範囲（行ごとに出力）
+sheets budget.csv B7=10 B8=20 # 代入してファイル保存</code></pre>
+      </div>
+      <div class="ve-callout"><strong>クエリ出力:</strong> 複数操作を渡すとブロックごとに CSV レコードが stdout へ連続出力される。カンマ区切りで横に並べる結合クエリもサポート。</div>
+    </div>
+
+    <section id="tui" class="sec-head">3 — TUI 操作</section>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> モードとキーバインド</span>
+      <p>状態は <code>normalMode</code> / <code>insertMode</code> / <code>selectMode</code> / コマンドライン（<code>:</code>）の 4 系統。検索は <kbd>/</kbd>・<kbd>?</kbd> で別プロンプト種別として扱う。</p>
+      <div class="mode-grid">
+        <div class="mode-item"><strong>NORMAL</strong>移動・ヤンク・削除・モード切替。hjkl、gg/G、マーク、ジャンプリスト。</div>
+        <div class="mode-item"><strong>INSERT</strong><kbd>i</kbd> / <kbd>I</kbd> / <kbd>c</kbd> で編集。<kbd>Enter</kbd>・<kbd>Tab</kbd> で確定して隣セルへ。</div>
+        <div class="mode-item"><strong>SELECT</strong><kbd>v</kbd> / <kbd>V</kbd> で矩形・行選択。<kbd>y</kbd> / <kbd>x</kbd> / <kbd>p</kbd> でコピー・切り取り・貼り付け。</div>
+        <div class="mode-item"><strong>:</strong><kbd>:w</kbd> 保存、<kbd>:e</kbd> 別ファイル、<kbd>:goto B9</kbd> ジャンプ、<kbd>:q</kbd> 終了。</div>
+      </div>
+      <h3>移動（抜粋）</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>キー</th><th>動作</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><kbd>h</kbd> <kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd></td><td>セル移動</td></tr>
+            <tr><td><kbd>gg</kbd> / <kbd>G</kbd> / <kbd>5G</kbd></td><td>先頭行・末尾行・指定行</td></tr>
+            <tr><td><kbd>gB9</kbd></td><td>セル参照へ直接ジャンプ</td></tr>
+            <tr><td><kbd>0</kbd> / <kbd>^</kbd> / <kbd>$</kbd></td><td>行の先頭列・最初の非空列・最終非空列</td></tr>
+            <tr><td><kbd>/</kbd> <kbd>?</kbd> <kbd>n</kbd> <kbd>N</kbd></td><td>前方・後方検索と繰り返し</td></tr>
+            <tr><td><kbd>ma</kbd> / <kbd>'a</kbd></td><td>マーク設定・ジャンプ</td></tr>
+            <tr><td><kbd>ctrl+o</kbd> / <kbd>ctrl+i</kbd></td><td>ジャンプ履歴の戻る・進む</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>編集・Undo</h3>
+      <ul>
+        <li><kbd>dd</kbd> で行削除、<kbd>o</kbd> / <kbd>O</kbd> で行挿入して INSERT へ。</li>
+        <li><kbd>u</kbd> / <kbd>ctrl+r</kbd> / <kbd>U</kbd> で undo・redo・行単位 undo。</li>
+        <li>レジスタ（<kbd>"a</kbd> 等）と <kbd>.</kbd> による変更の繰り返しをサポート。</li>
+        <li>ビジュアルモードで <kbd>=</kbd> を押すと、選択範囲を参照する数式を挿入（例: <code>=SUM(B1:B8)</code>）。</li>
+      </ul>
+    </div>
+
+    <section id="architecture" class="sec-head">4 — 内部構成</section>
+    <div class="ve-card ve-card--recessed" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> パッケージ構成</span>
+      <p>エントリは薄い <code>main.go</code> で、実装の大半は <code>internal/sheets</code> に集約。Charm の <a href="https://github.com/charmbracelet/bubbletea" target="_blank" rel="noopener">Bubble Tea</a>・<a href="https://github.com/charmbracelet/lipgloss" target="_blank" rel="noopener">Lip Gloss</a> で描画し、<code>model</code> が状態を一元管理する。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>ファイル</th><th>責務</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>main.go</code></td><td>CLI/TUI 分岐、CSV 読込、クエリ出力、<code>Main</code> エントリ</td></tr>
+            <tr><td><code>model.go</code></td><td>セルマップ、選択・オフセット、undo スタック、スタイル定義</td></tr>
+            <tr><td><code>normal_mode.go</code> / <code>edit_mode.go</code> / <code>select_mode.go</code></td><td>各モードのキー処理</td></tr>
+            <tr><td><code>commands.go</code></td><td><kbd>:</kbd> コマンドプロンプト（保存・読込・goto）</td></tr>
+            <tr><td><code>navigate.go</code> / <code>search.go</code></td><td>移動・検索</td></tr>
+            <tr><td><code>render.go</code></td><td>グリッド・ステータスバー・コマンドライン描画</td></tr>
+            <tr><td><code>formula.go</code></td><td><code>=</code> 始まりの式評価・集計関数</td></tr>
+            <tr><td><code>clipboard.go</code></td><td>ヤンク・レジスタ・ペースト</td></tr>
+            <tr><td><code>dsv.go</code> / <code>markdown.go</code></td><td>区切り文字付き入出力・Markdown 連携</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>デフォルト行数は 999、最大 50,000 行。列は A–AZ（52 列）。セル参照はスプレッドシート慣習の <code>B9</code> 形式。</p>
+    </div>
+
+    <section id="formulas" class="sec-head">5 — 数式</section>
+    <div class="ve-card" style="--i:4">
+      <span class="ve-section-label"><span class="ve-dot"></span> 評価モデル</span>
+      <p>セル値が <code>=</code> で始まる場合、表示時に <code>formula.go</code> のパーサが評価する。循環参照は <code>#CYCLE</code>、その他のエラーは <code>#ERR</code> として表示。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>関数</th><th>説明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>SUM</code></td><td>範囲の合計</td></tr>
+            <tr><td><code>AVG</code></td><td>平均</td></tr>
+            <tr><td><code>MIN</code> / <code>MAX</code></td><td>最小・最大</td></tr>
+            <tr><td><code>COUNT</code></td><td>数値セルの個数</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>CLI でセルをクエリするとき、式セルは計算結果の文字列が返る（生の <code>=...</code> ではない）。代入時に単一値を範囲へ貼ると、数式内の相対参照がオフセット付きで複製される。</p>
+    </div>
+
+    <section id="install" class="sec-head">6 — インストール</section>
+    <div class="ve-card" style="--i:5">
+      <span class="ve-section-label"><span class="ve-dot"></span> 入手方法</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>方法</th><th>コマンド / リンク</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Homebrew</td><td><code>brew install sheets</code></td></tr>
+            <tr><td>Go install</td><td><code>go install github.com/maaslalani/sheets@main</code></td></tr>
+            <tr><td>バイナリ</td><td><a href="https://github.com/maaslalani/sheets/releases" target="_blank" rel="noopener">GitHub Releases</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>リポジトリには Nix flake（<code>flake.nix</code>）と GoReleaser 設定も含まれる。サンプル CSV は <code>examples/budget.csv</code>。</p>
+    </div>
+
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card" style="--i:6">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/maaslalani/sheets" target="_blank" rel="noopener">GitHub: maaslalani/sheets</a> — ソース・Issues</li>
+        <li><a href="https://github.com/maaslalani/sheets/blob/master/README.md" target="_blank" rel="noopener">README.md</a> — CLI 例とキーバインド一覧</li>
+        <li><a href="https://github.com/maaslalani/sheets/releases" target="_blank" rel="noopener">Releases</a> — 配布バイナリ</li>
+        <li><a href="https://charm.sh/" target="_blank" rel="noopener">Charm</a> — Bubble Tea / Lip Gloss エコシステム</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { primaryColor: '#d4e8f0', primaryTextColor: '#1a3a4a', primaryBorderColor: '#5a9ab0', lineColor: '#5a9ab0', fontSize: '14px' } });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
