@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeGraph — Claude Code 向けローカルコード知識グラフ</title>
-  <meta name="description" content="tree-sitter と SQLite でコードベースを索引化。MCP 経由で探索エージェントのツール呼び出しを削減し、シンボル検索・呼び出しグラフ・影響分析をローカル完結で提供する。">
+  <title>CodeGraph — AI コーディングエージェント向けローカルコード知識グラフ</title>
+  <meta name="description" content="tree-sitter と SQLite でコードベースを索引化。Claude Code / Cursor / Codex / OpenCode 向け MCP で探索コストを削減し、シンボル検索・呼び出しグラフ・影響分析をローカル完結で提供する。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="CodeGraph — Claude Code 向けローカルコード知識グラフ">
-  <meta property="og:description" content="tree-sitter と SQLite でコードベースを索引化。MCP 経由で探索エージェントのツール呼び出しを削減し、シンボル検索・呼び出しグラフ・影響分析をローカル完結で提供する。">
+  <meta property="og:title" content="CodeGraph — AI コーディングエージェント向けローカルコード知識グラフ">
+  <meta property="og:description" content="tree-sitter と SQLite でコードベースを索引化。Claude Code / Cursor / Codex / OpenCode 向け MCP で探索コストを削減し、シンボル検索・呼び出しグラフ・影響分析をローカル完結で提供する。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/codegraph.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="CodeGraph — Claude Code 向けローカルコード知識グラフ">
+  <meta name="twitter:title" content="CodeGraph — AI コーディングエージェント向けローカルコード知識グラフ">
   <meta name="twitter:description" content="tree-sitter と SQLite でコードベースを索引化。MCP 経由で探索エージェントのツール呼び出しを削減。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -200,26 +200,26 @@
 
   <div class="main">
     <h1>CodeGraph</h1>
-    <p class="subtitle">@colbymchenry/codegraph · semantic code intelligence for Claude Code</p>
+    <p class="subtitle">@colbymchenry/codegraph v0.8.0 · semantic code intelligence for Claude Code, Cursor, Codex, OpenCode</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 目的</span>
       <p>
-        <strong>CodeGraph</strong> は、Claude Code の Explore エージェントが行う grep / glob / Read によるファイル走査を、<strong>事前に構築したコード知識グラフ</strong>へのクエリに置き換えるツール。シンボル関係・呼び出しグラフ・構造情報をローカルの SQLite に保持し、MCP サーバー経由でエージェントに公開する。
+        <strong>CodeGraph</strong> は、AI コーディングエージェントが行う grep / glob / Read によるファイル走査を、<strong>事前に構築したコード知識グラフ</strong>へのクエリに置き換えるツール。シンボル関係・呼び出しグラフ・構造情報をローカルの SQLite に保持し、MCP サーバー経由で Claude Code / Cursor / Codex CLI / OpenCode に公開する。
       </p>
       <div class="kpi-row">
         <div class="ve-kpi-card">
-          <span class="ve-kpi-card__value">94%</span>
-          <span class="ve-kpi-card__label">ツール呼び出し削減（README 公称）</span>
+          <span class="ve-kpi-card__value">~35%</span>
+          <span class="ve-kpi-card__label">コスト削減（7 OSS 中央値平均）</span>
         </div>
         <div class="ve-kpi-card">
-          <span class="ve-kpi-card__value">77%</span>
-          <span class="ve-kpi-card__label">探索時間短縮（README 公称）</span>
+          <span class="ve-kpi-card__value">~70%</span>
+          <span class="ve-kpi-card__label">ツール呼び出し削減</span>
         </div>
         <div class="ve-kpi-card">
-          <span class="ve-kpi-card__value">19+</span>
-          <span class="ve-kpi-card__label">対応言語</span>
+          <span class="ve-kpi-card__value">21</span>
+          <span class="ve-kpi-card__label">対応言語（Lua / Luau 含む）</span>
         </div>
         <div class="ve-kpi-card">
           <span class="ve-kpi-card__value">100%</span>
@@ -263,60 +263,82 @@
 
     <section id="benchmark" class="sec-head">2 — ベンチマーク（README 記載）</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 6 コードベース比較</span>
-      <p>Claude Opus 4.6（1M context）+ Claude Code v2.1.91。同一質問で Explore エージェントを 1 体起動し、CodeGraph あり / なしを比較した結果（README より）。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> 7 コードベース比較</span>
+      <p>Claude Opus 4.7 + Claude Code v2.1.145。各 OSS リポジトリでアーキテクチャ質問 1 件を、CodeGraph MCP あり / 空 MCP 設定なしで headless 実行。各条件 4 回の<strong>中央値</strong>を README が報告している。</p>
       <div class="ve-table-wrap">
         <table>
           <thead>
             <tr>
               <th>コードベース</th>
-              <th>CodeGraph あり</th>
-              <th>なし</th>
-              <th>改善（README）</th>
+              <th>言語・規模</th>
+              <th>コスト</th>
+              <th>トークン</th>
+              <th>時間</th>
+              <th>ツール呼び出し</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>VS Code（TypeScript）</td>
-              <td>3 calls, 17s</td>
-              <td>52 calls, 1m 37s</td>
-              <td>94% fewer · 82% faster</td>
+              <td>VS Code</td>
+              <td>TypeScript · ~10k files</td>
+              <td>35% 安</td>
+              <td>73% 少</td>
+              <td>41% 速</td>
+              <td>72% 少</td>
             </tr>
             <tr>
-              <td>Excalidraw（TypeScript）</td>
-              <td>3 calls, 29s</td>
-              <td>47 calls, 1m 45s</td>
-              <td>94% fewer · 72% faster</td>
+              <td>Excalidraw</td>
+              <td>TypeScript · ~600</td>
+              <td>47% 安</td>
+              <td>73% 少</td>
+              <td>60% 速</td>
+              <td>86% 少</td>
             </tr>
             <tr>
-              <td>Claude Code（Python+Rust）</td>
-              <td>3 calls, 39s</td>
-              <td>40 calls, 1m 8s</td>
-              <td>93% fewer · 43% faster</td>
+              <td>Django</td>
+              <td>Python · ~2.7k</td>
+              <td>34% 安</td>
+              <td>64% 少</td>
+              <td>59% 速</td>
+              <td>81% 少</td>
             </tr>
             <tr>
-              <td>Claude Code（Java）</td>
-              <td>1 call, 19s</td>
-              <td>26 calls, 1m 22s</td>
-              <td>96% fewer · 77% faster</td>
+              <td>Tokio</td>
+              <td>Rust · ~700</td>
+              <td>52% 安</td>
+              <td>81% 少</td>
+              <td>63% 速</td>
+              <td>89% 少</td>
             </tr>
             <tr>
-              <td>Alamofire（Swift）</td>
-              <td>3 calls, 22s</td>
-              <td>32 calls, 1m 39s</td>
-              <td>91% fewer · 78% faster</td>
+              <td>OkHttp</td>
+              <td>Java · ~640</td>
+              <td>17% 安</td>
+              <td>41% 少</td>
+              <td>36% 速</td>
+              <td>64% 少</td>
             </tr>
             <tr>
-              <td>Swift Compiler（Swift/C++）</td>
-              <td>6 calls, 35s</td>
-              <td>37 calls, 2m 8s</td>
-              <td>84% fewer · 73% faster</td>
+              <td>Gin</td>
+              <td>Go · ~150</td>
+              <td>22% 安</td>
+              <td>23% 少</td>
+              <td>34% 速</td>
+              <td>19% 少</td>
+            </tr>
+            <tr>
+              <td>Alamofire</td>
+              <td>Swift · ~100</td>
+              <td>38% 安</td>
+              <td>59% 少</td>
+              <td>51% 速</td>
+              <td>77% 少</td>
             </tr>
           </tbody>
         </table>
       </div>
       <div class="ve-callout" style="margin-top: 1rem;">
-        <strong>観察（README）:</strong> CodeGraph 利用時は <code>codegraph_explore</code> の結果を信頼しファイル Read にフォールバックしなかった。最大規模（Swift Compiler: 25,874 files / 272,898 nodes）でも 6 explore calls・ファイル Read 0 で 35 秒と記載。
+        <strong>README の解釈:</strong> 大規模リポジトリほど効果が大きい。インデックス利用時は <code>codegraph_context</code> で領域を把握し <code>codegraph_explore</code> で関連ソースを一括取得するパターンが多く、ファイル Read がほぼ不要になる。小規模（Gin など）ではネイティブ検索との差が小さい。
       </div>
     </div>
 
@@ -326,10 +348,19 @@
       <div class="ve-code-block">
         <pre><code>npx @colbymchenry/codegraph</code></pre>
       </div>
-      <p>対話型インストーラが <code>codegraph</code> のグローバル導入、<code>~/.claude.json</code> への MCP 登録、ツール auto-allow、<code>~/.claude/CLAUDE.md</code> への指示追記を行う。</p>
+      <p>対話型インストーラが利用中のエージェント（Claude Code / Cursor / Codex CLI / OpenCode）を検出し、MCP 設定・指示ファイル・PATH への <code>codegraph</code> 登録を行う。</p>
+      <div class="ve-code-block">
+        <pre><code>npx @colbymchenry/codegraph
+
+# 非対話（CI / スクリプト）
+codegraph install --yes
+codegraph install --target=cursor,claude --yes
+codegraph install --target=auto --location=local
+codegraph install --print-config codex   # 設定スニペットのみ出力</code></pre>
+      </div>
       <ol>
-        <li>上記を実行</li>
-        <li>Claude Code を再起動（MCP 読み込み）</li>
+        <li>上記を実行（または <code>codegraph install</code>）</li>
+        <li>エージェントを再起動（MCP 読み込み）</li>
         <li>プロジェクトで <code>codegraph init -i</code>（<code>.codegraph/</code> 作成 + 索引）</li>
       </ol>
     </div>
@@ -345,14 +376,14 @@
       <div class="mermaid-wrap">
         <pre class="mermaid">
 flowchart TD
-  CC[Claude Code / Explore Agent]
+  AG[Claude Code / Cursor / Codex / OpenCode]
   MCP[CodeGraph MCP Server]
   DB[(SQLite + FTS5<br/>.codegraph/codegraph.db)]
   TS[tree-sitter extraction]
   RES[Resolution + frameworks]
   WATCH[File watcher auto-sync]
 
-  CC -->|MCP tools| MCP
+  AG -->|MCP tools| MCP
   MCP --> DB
   TS --> DB
   RES --> DB
@@ -408,6 +439,7 @@ flowchart TD
           <tbody>
             <tr><td><code>codegraph_search</code></td><td>シンボル名で検索</td></tr>
             <tr><td><code>codegraph_context</code></td><td>タスク向けコードコンテキスト生成</td></tr>
+            <tr><td><code>codegraph_explore</code></td><td>関連ファイルのソース断片を一括取得（Explore エージェント向け）</td></tr>
             <tr><td><code>codegraph_callers</code></td><td>呼び出し元の列挙</td></tr>
             <tr><td><code>codegraph_callees</code></td><td>呼び出し先の列挙</td></tr>
             <tr><td><code>codegraph_impact</code></td><td>シンボル変更の影響範囲</td></tr>
@@ -460,7 +492,7 @@ cg.close();</code></pre>
     </div>
     <div class="ve-card" style="--i:1">
       <span class="ve-section-label"><span class="ve-dot"></span> 対応言語（README 一覧）</span>
-      <p>TypeScript / JavaScript / Python / Go / Rust / Java / C# / PHP / Ruby / C / C++ / Swift / Kotlin / Scala / Dart / Svelte / Vue / Liquid / Pascal・Delphi（<code>.pas</code>, DFM/FMX）など。</p>
+      <p>TypeScript / JavaScript / Python / Go / Rust / Java / C# / PHP / Ruby / C / C++ / Swift / Kotlin / Scala / Dart / Svelte / Vue / Liquid / Pascal・Delphi / <strong>Lua</strong> / <strong>Luau</strong>（Roblox 向け型・export type 対応）など。</p>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:2">
       <span class="ve-section-label"><span class="ve-dot"></span> よくある問題</span>
@@ -484,7 +516,7 @@ cg.close();</code></pre>
       <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
       <ul>
         <li><a href="https://github.com/colbymchenry/codegraph" target="_blank" rel="noopener">GitHub: colbymchenry/codegraph</a></li>
-        <li><a href="https://www.npmjs.com/package/@colbymchenry/codegraph" target="_blank" rel="noopener">npm: @colbymchenry/codegraph</a>（v0.7.6 時点の package.json）</li>
+        <li><a href="https://www.npmjs.com/package/@colbymchenry/codegraph" target="_blank" rel="noopener">npm: @colbymchenry/codegraph</a>（v0.8.0）</li>
         <li><a href="https://tree-sitter.github.io/" target="_blank" rel="noopener">tree-sitter</a> — 構文解析エンジン</li>
       </ul>
       <p style="font-size:0.8125rem; color: var(--text-dim); margin-top:0.75rem; margin-bottom:0;">License: MIT</p>
