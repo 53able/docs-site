@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project N.O.M.A.D. — オフライン知識サーバー</title>
+  <meta name="description" content="Crosstalk-Solutions/project-nomad。Docker で Wikipedia・地図・教育・AI チャットを束ねる Command Center（AdonisJS + React）。インストール手順、構成、要件、セキュリティの概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Project N.O.M.A.D. — オフライン知識サーバー">
+  <meta property="og:description" content="オフライン優先の知識・教育サーバー。Command Center が Docker コンテナ群を管理し、ブラウザから Wikipedia・地図・AI・教材にアクセス。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/project-nomad.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Project N.O.M.A.D. — オフライン知識サーバー">
+  <meta name="twitter:description" content="Command Center + Docker によるオフライン知識基盤。機能一覧、インストール、ハード要件、技術スタック。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.008 55);
+      --foreground: oklch(0.2 0.04 55);
+      --card: oklch(1 0.006 55);
+      --card-foreground: oklch(0.2 0.04 55);
+      --muted: oklch(0.95 0.02 55);
+      --muted-foreground: oklch(0.48 0.04 55);
+      --accent: oklch(0.94 0.03 55);
+      --accent-foreground: oklch(0.22 0.06 55);
+      --border: oklch(0.88 0.03 55);
+      --ring: oklch(0.55 0.12 55);
+      --chart-1: oklch(0.52 0.16 45);
+      --chart-2: oklch(0.58 0.14 145);
+      --chart-3: oklch(0.45 0.08 200);
+      --chart-4: oklch(0.62 0.12 85);
+      --chart-5: oklch(0.5 0.1 25);
+      --code-bg: var(--muted);
+      --code-text: oklch(0.28 0.08 45);
+      --font-body: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.025 55);
+        --foreground: oklch(0.96 0.02 75);
+        --card: oklch(0.19 0.03 55);
+        --card-foreground: oklch(0.96 0.02 75);
+        --muted: oklch(0.24 0.035 55);
+        --muted-foreground: oklch(0.72 0.04 75);
+        --accent: oklch(0.24 0.04 55);
+        --accent-foreground: oklch(0.96 0.02 75);
+        --border: oklch(1 0 0 / 12%);
+        --ring: oklch(0.58 0.1 55);
+        --chart-1: oklch(0.68 0.14 45);
+        --chart-2: oklch(0.72 0.12 145);
+        --chart-3: oklch(0.62 0.1 200);
+        --code-bg: oklch(0.14 0.03 55);
+        --code-text: oklch(0.82 0.08 75);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+      box-shadow: 0 4px 20px rgba(40, 28, 12, 0.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 82%, var(--chart-1) 18%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.65; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(40, 28, 12, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.05rem; line-height: 1.2; font-weight: 600; }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.52 0.16 45 / 0.07) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+      font-size: 1.05rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.68 0.14 45 / 0.1) 0%, transparent 50%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2.25rem; font-weight: 400; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.8125rem; margin-bottom: 2rem; line-height: 1.55; max-width: 52rem; }
+    .sec-head { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.04em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .mermaid-wrap {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin: 1rem 0;
+      display: flex;
+      justify-content: center;
+      overflow-x: auto;
+    }
+
+    .stack-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+    .stack-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      background: color-mix(in oklch, var(--muted) 70%, var(--card) 30%);
+    }
+    .stack-item strong { display: block; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 0.35rem; }
+    .stack-item span { font-size: 0.8125rem; color: var(--muted-foreground); line-height: 1.5; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">構成</a>
+    <a href="#capabilities">機能</a>
+    <a href="#install">インストール</a>
+    <a href="#hardware">要件</a>
+    <a href="#stack">技術</a>
+    <a href="#security">セキュリティ</a>
+    <a href="#maintenance">運用</a>
+    <a href="#links">リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>Project N.O.M.A.D.</h1>
+    <p class="subtitle">Node for Offline Media, Archives, and Data — ブラウザから Wikipedia・地図・教材・ローカル AI に触れる、自己完結型のオフライン知識サーバー（<a href="https://github.com/Crosstalk-Solutions/project-nomad" target="_blank" rel="noopener">Crosstalk-Solutions/project-nomad</a>）</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
+      <p><strong>Project N.O.M.A.D.</strong> は、インターネットが使えない環境でも知識・教育・AI ツールにアクセスできるよう、複数のコンテナ化サービスを 1 つの管理 UI（Command Center）で束ねるオフライン優先サーバー。Debian 系 Linux（Ubuntu 推奨）上に Docker で展開し、通常は <code>http://localhost:8080</code> から操作する。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">8080</span><span class="ve-kpi-card__label">Command Center</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Docker</span><span class="ve-kpi-card__label">コンテナ管理</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">RAG</span><span class="ve-kpi-card__label">Ollama + Qdrant</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Apache 2.0</span><span class="ve-kpi-card__label">ライセンス</span></div>
+      </div>
+      <p>初回インストール時のみインターネット接続が必要。以降はユーザーが追加ダウンロードを選ばない限りオフライン運用が前提。組み込みテレメトリはない。</p>
+    </div>
+
+    <section id="architecture" class="sec-head">2 — 構成</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Command Center と DooD</span>
+      <p>Command Center（<code>admin</code> サービス）は AdonisJS バックエンドと React / Inertia フロントで、ホスト上の Docker デーモンを直接操作する <strong>Docker-outside-of-Docker（DooD）</strong> パターンを採用。コンテナ内に Docker を入れず、<code>/var/run/docker.sock</code> 経由で Wikipedia（Kiwix）・Ollama・地図などの「インストール可能アプリ」を起動・更新する。</p>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+  Browser["ブラウザ :8080"] --> Admin["Command Center<br/>AdonisJS + React"]
+  Admin --> MySQL["MySQL 8"]
+  Admin --> Redis["Redis 7"]
+  Admin --> Sock["Docker socket"]
+  Sock --> Apps["インストール可能アプリ<br/>Ollama / Kiwix / Kolibri / …"]
+  Admin --> Side["Sidecar<br/>updater / disk-collector"]
+        </pre>
+      </div>
+      <h3>管理スタック（コアサービス）</h3>
+      <div class="stack-grid">
+        <div class="stack-item"><strong>admin</strong><span>Command Center 本体。ストレージ・Docker ソケット・更新用共有ボリュームをマウント。</span></div>
+        <div class="stack-item"><strong>mysql / redis</strong><span>アプリ状態・ジョブキュー・キャッシュ。ホスト上 <code>/opt/project-nomad/</code> に永続化。</span></div>
+        <div class="stack-item"><strong>updater</strong><span>UI から Command Center イメージを更新する sidecar。</span></div>
+        <div class="stack-item"><strong>disk-collector</strong><span>ホストのディスク使用量を UI に表示（読み取り専用マウント）。</span></div>
+        <div class="stack-item"><strong>dozzle</strong><span>任意。コンテナログ閲覧（:9999）。アクション・シェルは無効化推奨。</span></div>
+      </div>
+      <div class="ve-callout"><strong>リポジトリ構成:</strong> ルートに <code>install/</code>（シェル・Compose）、<code>collections/</code>（ZIM・地図マニフェスト）、<code>admin/</code>（Command Center ソース）が置かれる。</div>
+    </div>
+
+    <section id="capabilities" class="sec-head">3 — 組み込み機能</section>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> インストール可能な能力</span>
+      <p>UI から個別に追加・更新する。AI 系はすべて任意。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>能力</th><th>基盤</th><th>内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>情報ライブラリ</td><td>Kiwix</td><td>オフライン Wikipedia、医学参考、電子書籍など</td></tr>
+            <tr><td>AI アシスタント</td><td>Ollama + Qdrant</td><td>ローカル LLM チャット、ドキュメント RAG</td></tr>
+            <tr><td>教育</td><td>Kolibri</td><td>Khan Academy コース、進捗・複数ユーザー</td></tr>
+            <tr><td>オフライン地図</td><td>ProtoMaps</td><td>地域別タイル、検索・ナビ</td></tr>
+            <tr><td>データツール</td><td>CyberChef</td><td>暗号・エンコード・ハッシュ</td></tr>
+            <tr><td>メモ</td><td>FlatNotes</td><td>Markdown ノート（ローカル）</td></tr>
+            <tr><td>ベンチマーク</td><td>組み込み</td><td>ハードウェアスコア、<a href="https://benchmark.projectnomad.us" target="_blank" rel="noopener">コミュニティリーダーボード</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>初回は Easy Setup Wizard でキュレーション済みコレクションを選べる。Wikipedia セレクタ、ZIM ライブラリ管理、コンテンツエクスプローラなどの管理ツールも Command Center に含まれる。</p>
+      <p>AI モデルはデフォルトでコンテナ内 Ollama。設定から別ホストの Ollama または OpenAI 互換 API（LM Studio 等）を指定可能。Ollama をリモートにする場合は <code>OLLAMA_HOST=0.0.0.0</code> が必要。</p>
+    </div>
+
+    <section id="install" class="sec-head">4 — インストール</section>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> クイックインストール</span>
+      <p>Debian 系 OS（Ubuntu 推奨）。<code>sudo</code> 権限が必要。デスクトップ環境は不要（ヘッドレスサーバー可）。</p>
+      <div class="ve-code-block">
+        <pre><code>sudo apt-get update &amp;&amp; \
+sudo apt-get install -y curl &amp;&amp; \
+curl -fsSL https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/install_nomad.sh \
+  -o install_nomad.sh &amp;&amp; \
+sudo bash install_nomad.sh</code></pre>
+      </div>
+      <p>完了後、ブラウザで <code>http://localhost:8080</code>（または <code>http://&lt;DEVICE_IP&gt;:8080</code>）を開く。</p>
+      <h3>上級者向け</h3>
+      <p><a href="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/management_compose.yaml" target="_blank" rel="noopener">management_compose.yaml</a> を <code>docker-compose.yml</code> として取得し、<code>replaceme</code> の環境変数（<code>APP_KEY</code>・DB パスワード・<code>URL</code> 等）を置換してから <code>docker compose up -d</code>。</p>
+      <div class="ve-callout"><strong>プラットフォーム:</strong> 公式は Debian 系 x86-64。Windows は <a href="https://www.projectnomad.us/install/wsl2" target="_blank" rel="noopener">WSL2 ガイド</a>（コミュニティサポート）。ARM（Raspberry Pi 等）は公式未対応（コミュニティ fork あり）。</div>
+    </div>
+
+    <section id="hardware" class="sec-head">5 — ハードウェア要件</section>
+    <div class="ve-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> Command Center 単体 vs AI 込み</span>
+      <p>管理アプリ自体は軽量。必要スペックはインストールするツール（特に LLM）で決まる。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>区分</th><th>CPU</th><th>RAM</th><th>ストレージ</th><th>備考</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>最小（コアのみ）</td><td>2 GHz デュアルコア+</td><td>4 GB</td><td>5 GB+</td><td>インストール時のみネット必要</td></tr>
+            <tr><td>推奨（AI 込み）</td><td>Ryzen 7 / Core i7+</td><td>32 GB</td><td>250 GB+ SSD</td><td>GPU: RTX 3060 級+（VRAM がモデルサイズに直結）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>価格帯別ビルド例は <a href="https://www.projectnomad.us/hardware" target="_blank" rel="noopener">Hardware Guide</a> を参照。</p>
+    </div>
+
+    <section id="stack" class="sec-head">6 — 技術スタック</section>
+    <div class="ve-card ve-card--recessed" style="--i:4">
+      <span class="ve-section-label"><span class="ve-dot"></span> Command Center の実装</span>
+      <ul>
+        <li><strong>バックエンド:</strong> Node.js / TypeScript、<a href="https://adonisjs.com/" target="_blank" rel="noopener">AdonisJS</a>（<code>admin/</code>）</li>
+        <li><strong>フロント:</strong> React、<a href="https://vitejs.dev/" target="_blank" rel="noopener">Vite</a>、<a href="https://inertiajs.com/" target="_blank" rel="noopener">Inertia.js</a></li>
+        <li><strong>データ:</strong> MySQL 8、Redis 7（ジョブ・キャッシュ）</li>
+        <li><strong>オーケストレーション:</strong> Docker Compose、ホスト Docker ソケット</li>
+        <li><strong>主要サービス層:</strong> <code>docker_service</code>、<code>rag_service</code>、<code>ollama_service</code>、<code>zim_service</code>、<code>map_service</code> など（<code>admin/app/services/</code>）</li>
+      </ul>
+      <p>既存の Docker コンテナと共存可能。NOMAD コンテナ名は <code>nomad_</code> プレフィックスで識別する。</p>
+    </div>
+
+    <section id="security" class="sec-head">7 — セキュリティとプライバシー</section>
+    <div class="ve-card" style="--i:5">
+      <span class="ve-section-label"><span class="ve-dot"></span> 設計上の前提</span>
+      <ul>
+        <li><strong>認証なし:</strong> ローカル利用を想定し、組み込みユーザー認証はない。LAN 公開時はファイアウォールでポート制御を推奨。</li>
+        <li><strong>インターネット直公開非推奨:</strong> 直接 WAN に晒す設計ではない。</li>
+        <li><strong>テレメトリなし:</strong> 組み込みの送信機能はない。</li>
+        <li><strong>接続確認:</strong> オンライン判定に Cloudflare <code>https://1.1.1.1/cdn-cgi/trace</code> へのリクエストを使用。</li>
+        <li><strong>Docker ソケット:</strong> コンテナ管理のため admin がホスト Docker にアクセス。sidecar も同様にソケットを使用。</li>
+      </ul>
+    </div>
+
+    <section id="maintenance" class="sec-head">8 — 運用スクリプト</section>
+    <div class="ve-card" style="--i:6">
+      <span class="ve-section-label"><span class="ve-dot"></span> /opt/project-nomad</span>
+      <p>インストール後、ホスト上 <code>/opt/project-nomad</code> に保守用スクリプトが置かれる（UI で代替できない作業向け）。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>スクリプト</th><th>作用</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>start_nomad.sh</code></td><td>インストール済みコンテナを起動</td></tr>
+            <tr><td><code>stop_nomad.sh</code></td><td>すべて停止</td></tr>
+            <tr><td><code>update_nomad.sh</code></td><td>Command Center と依存（MySQL 等）のイメージ更新。アプリコンテナは UI から更新</td></tr>
+            <tr><td><code>uninstall_nomad.sh</code></td><td>アンインストール（不可逆）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">9 — 参考リンク</section>
+    <div class="ve-card" style="--i:7">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・コミュニティ</span>
+      <ul>
+        <li><a href="https://github.com/Crosstalk-Solutions/project-nomad" target="_blank" rel="noopener">GitHub: Crosstalk-Solutions/project-nomad</a></li>
+        <li><a href="https://www.projectnomad.us" target="_blank" rel="noopener">projectnomad.us</a> — プロジェクトサイト</li>
+        <li><a href="https://www.projectnomad.us/install" target="_blank" rel="noopener">Installation Guide</a></li>
+        <li><a href="https://discord.com/invite/crosstalksolutions" target="_blank" rel="noopener">Discord コミュニティ</a></li>
+        <li><a href="https://benchmark.projectnomad.us" target="_blank" rel="noopener">Benchmark Leaderboard</a></li>
+        <li>リポジトリ内: <code>README.md</code>、<code>FAQ.md</code>、<code>CONTRIBUTING.md</code></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#f5ebe0',
+    primaryTextColor: '#3d2c1e',
+    primaryBorderColor: '#c2410c',
+    lineColor: '#65a30d',
+    fontSize: '14px'
+  }
+});
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
