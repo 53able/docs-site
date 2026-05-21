@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern Web Guidance — コーディングエージェント向けモダン Web API ガイド</title>
+  <meta name="description" content="GoogleChrome/modern-web-guidance は SKILL.md と CLI で、HTML/CSS/クライアント JS 実装時にモダン Web プラットフォームのベストプラクティスを検索・取得するエージェントスキル。search/retrieve、128 ユースケース、eval ハーネスを README から要約。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Modern Web Guidance — コーディングエージェント向けモダン Web API ガイド">
+  <meta property="og:description" content="レガシー回避とネイティブ API パターンをエージェントのコンテキストへ注入。search → retrieve の CLI、スキルパック、Playwright eval の技術概要。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/modern-web-guidance.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Modern Web Guidance — コーディングエージェント向けモダン Web API ガイド">
+  <meta name="twitter:description" content="Google Chrome / Microsoft Edge チーム支援のエージェントスキル。README と SKILL.md から要約したビジュアル解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.98 0.008 240);
+      --foreground: oklch(0.22 0.04 250);
+      --card: oklch(0.995 0.006 240);
+      --card-foreground: oklch(0.22 0.04 250);
+      --popover: oklch(0.995 0.006 240);
+      --popover-foreground: oklch(0.22 0.04 250);
+      --primary: oklch(0.32 0.09 250);
+      --primary-foreground: oklch(0.98 0.01 240);
+      --secondary: oklch(0.94 0.02 240);
+      --secondary-foreground: oklch(0.24 0.05 250);
+      --muted: oklch(0.93 0.018 240);
+      --muted-foreground: oklch(0.46 0.04 250);
+      --accent: oklch(0.91 0.03 235);
+      --accent-foreground: oklch(0.22 0.06 250);
+      --destructive: oklch(0.52 0.18 25);
+      --border: oklch(0.84 0.03 240);
+      --input: oklch(0.84 0.03 240);
+      --ring: oklch(0.48 0.12 250);
+      --chart-1: oklch(0.48 0.14 250);
+      --chart-2: oklch(0.55 0.12 165);
+      --chart-3: oklch(0.5 0.1 35);
+      --chart-4: oklch(0.58 0.11 200);
+      --chart-5: oklch(0.44 0.08 280);
+      --code-bg: oklch(0.16 0.04 250);
+      --code-text: oklch(0.9 0.04 240);
+      --font-body: 'Atkinson Hyperlegible', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.035 250);
+        --foreground: oklch(0.94 0.02 240);
+        --card: oklch(0.18 0.04 250);
+        --card-foreground: oklch(0.94 0.02 240);
+        --popover: oklch(0.18 0.04 250);
+        --popover-foreground: oklch(0.94 0.02 240);
+        --primary: oklch(0.78 0.12 235);
+        --primary-foreground: oklch(0.13 0.035 250);
+        --secondary: oklch(0.24 0.04 250);
+        --secondary-foreground: oklch(0.94 0.02 240);
+        --muted: oklch(0.26 0.04 250);
+        --muted-foreground: oklch(0.72 0.03 240);
+        --accent: oklch(0.24 0.045 250);
+        --accent-foreground: oklch(0.94 0.02 240);
+        --destructive: oklch(0.65 0.16 25);
+        --border: oklch(0.42 0.05 250 / 55%);
+        --input: oklch(0.42 0.05 250 / 55%);
+        --ring: oklch(0.72 0.12 235);
+        --chart-1: oklch(0.72 0.13 235);
+        --chart-2: oklch(0.72 0.12 165);
+        --chart-3: oklch(0.68 0.1 35);
+        --chart-4: oklch(0.65 0.1 200);
+        --chart-5: oklch(0.62 0.08 280);
+        --code-bg: oklch(0.11 0.035 250);
+        --code-text: oklch(0.88 0.04 240);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 12px 28px rgba(20, 30, 60, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(20, 30, 60, 0.06); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+      box-shadow: 0 20px 44px rgba(20, 30, 60, 0.1);
+      border-color: color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero { box-shadow: 0 20px 44px rgba(0, 0, 0, 0.28); }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.95rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.72; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.875rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 68%, var(--card) 32%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(20, 30, 60, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.05rem; line-height: 1.2; color: var(--foreground); }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.65; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 700; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.75rem; background: color-mix(in oklch, var(--chart-2) 14%, transparent); color: var(--foreground); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(90deg, color-mix(in oklch, var(--border) 40%, transparent) 1px, transparent 1px),
+        linear-gradient(180deg, color-mix(in oklch, var(--border) 32%, transparent) 1px, transparent 1px),
+        radial-gradient(ellipse at 12% 0%, color-mix(in oklch, var(--chart-1) 12%, transparent) 0%, transparent 48%);
+      background-size: 24px 24px, 24px 24px, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: clamp(1.85rem, 4.5vw, 2.85rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; margin-bottom: 0.85rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.875rem; margin-bottom: 2rem; line-height: 1.55; max-width: 52rem; }
+    .sec-head { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.04em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.1rem; font-weight: 700; margin: 1.5rem 0 0.75rem; letter-spacing: -0.01em; }
+    p { font-size: 1.02rem; line-height: 1.72; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.35rem; }
+    li { margin-bottom: 0.4rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; font-weight: 600; }
+    a:hover { color: var(--chart-4); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    small { color: var(--muted-foreground); font-size: 0.8rem; line-height: 1.5; display: block; margin-top: 0.5rem; }
+
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr); gap: 1rem; align-items: stretch; margin-bottom: 1.25rem; }
+    .hero-copy { padding: 2rem; }
+    .flow-sheet {
+      min-height: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(165deg, color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%), var(--card));
+      padding: 1.35rem;
+      display: grid;
+      gap: 0.55rem;
+      align-content: start;
+    }
+    .flow-step { border-radius: var(--radius-md); border: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 70%, var(--card) 30%); padding: 0.6rem 0.75rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted-foreground); }
+    .flow-step strong { color: var(--foreground); font-weight: 700; }
+    .flow-arrow { text-align: center; font-family: var(--font-mono); font-size: 0.7rem; color: var(--chart-1); }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .disc-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    .disc-card { border-top: 3px solid var(--chart-1); min-width: 0; }
+    .disc-card:nth-child(2) { border-top-color: var(--chart-2); }
+    .disc-card:nth-child(3) { border-top-color: var(--chart-3); }
+    .disc-card:nth-child(4) { border-top-color: var(--chart-4); }
+    .disc-card:nth-child(5) { border-top-color: var(--chart-5); }
+    .disc-card:nth-child(6) { border-top-color: var(--chart-1); }
+    .disc-title { font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; margin-bottom: 0.45rem; }
+    .disc-body { color: var(--muted-foreground); font-size: 0.92rem; line-height: 1.58; margin: 0; }
+    .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; padding: 1rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+    .mermaid-wrap svg { max-width: 100%; }
+    .code-label { border-bottom: 1px solid color-mix(in oklch, var(--border) 70%, transparent); color: var(--muted-foreground); font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; padding: 0.7rem 1rem 0.5rem; text-transform: uppercase; }
+    @media (max-width: 900px) {
+      .hero-grid, .disc-grid { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .kpi-row { grid-template-columns: 1fr; }
+      .hero-copy { padding: 1.35rem; }
+    }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#workflow">CLI の流れ</a>
+    <a href="#disciplines">分野</a>
+    <a href="#packs">スキルパック</a>
+    <a href="#install">インストール</a>
+    <a href="#evals">評価</a>
+    <a href="#refs">参照</a>
+  </nav>
+
+  <div class="main">
+    <h1>Modern Web Guidance</h1>
+    <p class="subtitle"><a href="https://github.com/GoogleChrome/modern-web-guidance" target="_blank" rel="noopener">GoogleChrome/modern-web-guidance</a> — コーディングエージェントに <strong>モダン Web プラットフォームの専門知識</strong>を注入する SKILL.md + CLI。Google Chrome / Microsoft Edge チームとコミュニティが支援。README と SKILL.md から要約。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="kpi-row">
+      <div class="ve-kpi-card" style="--i:0"><div class="ve-kpi-card__value">102</div><div class="ve-kpi-card__label">Web 機能（機能一覧）</div></div>
+      <div class="ve-kpi-card" style="--i:1"><div class="ve-kpi-card__value">128</div><div class="ve-kpi-card__label">ユースケースガイド</div></div>
+      <div class="ve-kpi-card" style="--i:2"><div class="ve-kpi-card__value">2</div><div class="ve-kpi-card__label">スキルパック</div></div>
+      <div class="ve-kpi-card" style="--i:3"><div class="ve-kpi-card__value">+33pp</div><div class="ve-kpi-card__label">eval 代表 uplift（guided）</div></div>
+    </div>
+
+    <div class="hero-grid">
+      <div class="ve-card ve-card--hero hero-copy" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 解決する問題</span>
+        <p>LLM の学習データにはレガシー実装が多く、エージェントは <strong>肥大化した JavaScript</strong> で、すでにネイティブ API がある課題を実装しがちです。Modern Web Guidance は、トークン効率を意識した <strong>実運用向けガイド</strong>をコンテキストへ返し、パフォーマンス・アクセシビリティ・適切なフォールバックを揃えます。</p>
+        <p>HTML/CSS とクライアント JS のタスクでは、SKILL.md が <strong>最初に実行</strong>することを要求します（View Transitions、Popover、INP、Passkeys、Built-in AI など）。</p>
+      </div>
+      <div class="flow-sheet" aria-label="エージェントへの注入">
+        <div class="flow-step"><strong>開発者プロンプト</strong> — 「ダイアログのバックドロップをアニメーション」</div>
+        <div class="flow-arrow">↓ search</div>
+        <div class="flow-step"><strong>CLI</strong> — 類似ユースケース ID を JSON で返す</div>
+        <div class="flow-arrow">↓ retrieve</div>
+        <div class="flow-step"><strong>ガイド Markdown</strong> — エージェントのコンテキストへ</div>
+      </div>
+    </div>
+
+    <section id="workflow" class="sec-head">2 — CLI の流れ（search → retrieve）</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> SKILL.md の手順</span>
+      <p>エントリは npm パッケージ <code>modern-web-guidance</code>（<code>bin</code> → <code>modern-web.mjs</code>）。実装の詳細は <a href="https://github.com/GoogleChrome/modern-web-guidance-src" target="_blank" rel="noopener">modern-web-guidance-src</a>、公開用リポジトリはスキル配布専用です。</p>
+
+      <h3>Step 1 — search</h3>
+      <div class="ve-code-block">
+        <div class="code-label">ユースケース検索</div>
+        <pre><code>npx -y modern-web-guidance@latest search "animate a dialog modal backdrop"</code></pre>
+      </div>
+      <p>返却は JSON 配列（<code>id</code>、<code>description</code>、<code>category</code>、<code>featuresUsed</code>、<code>tokenCount</code>、<code>similarity</code>）。曖昧なときは <code>list</code> で全ガイドを一覧できます。</p>
+
+      <h3>Step 2 — retrieve</h3>
+      <div class="ve-code-block">
+        <div class="code-label">ガイド本文の取得</div>
+        <pre><code>npx -y modern-web-guidance@latest retrieve "animate-to-from-top-layer"</code></pre>
+      </div>
+      <p>複数 ID はカンマ区切り。出力は Markdown の実装手順。フレームワーク非依存なので、React / Vue / Angular へはプロジェクトに合わせて適用します。</p>
+
+      <div class="ve-callout">
+        <strong>ブラウザサポート:</strong> Baseline Widely available はフォールバック不要が既定。それ以外はガイドの推奨に従い、ユーザーがブラウザ方針（例: Safari 17.4+、ポリフィル禁止）を定義していればそれを優先します。
+      </div>
+    </div>
+
+    <div class="mermaid-wrap">
+      <pre class="mermaid">
+flowchart TD
+  A[エージェント: Web 実装タスク] --> B{SKILL トリガー?}
+  B -->|HTML/CSS/クライアント JS| C[npx modern-web-guidance search]
+  B -->|バックエンド/CI のみ| Z[スキップ]
+  C --> D[関連 id を選択]
+  D --> E[npx retrieve id]
+  E --> F[ガイドをコンテキストに載せる]
+  F --> G[ネイティブ API で実装]
+      </pre>
+    </div>
+
+    <section id="disciplines" class="sec-head">3 — カバーする分野</section>
+    <div class="disc-grid">
+      <div class="ve-card disc-card" style="--i:0">
+        <div class="disc-title">User Experience</div>
+        <p class="disc-body">View Transitions、スクロール駆動アニメ、<code>:has()</code>、ダークモード、パララックス、3D シーン内 UI など。</p>
+      </div>
+      <div class="ve-card disc-card" style="--i:1">
+        <div class="disc-title">CSS Layout</div>
+        <p class="disc-body">コンテナクエリ、<code>subgrid</code>、<code>oklch</code>、<code>text-wrap</code>、行高トリミング。</p>
+      </div>
+      <div class="ve-card disc-card" style="--i:2">
+        <div class="disc-title">Performance</div>
+        <p class="disc-body">LCP / INP、<code>content-visibility</code>、Fetch Priority、<code>scheduler.yield</code>、長タスク分割。</p>
+      </div>
+      <div class="ve-card disc-card" style="--i:3">
+        <div class="disc-title">Forms &amp; UI</div>
+        <p class="disc-body">Anchor Positioning、Popover API、<code>:user-invalid</code>、オートフィル、カスタム <code>&lt;select&gt;</code>。</p>
+      </div>
+      <div class="ve-card disc-card" style="--i:4">
+        <div class="disc-title">Accessibility</div>
+        <p class="disc-body">エラー告知と <code>aria-invalid</code> の同期、キーボードフォーカス管理。</p>
+      </div>
+      <div class="ve-card disc-card" style="--i:5">
+        <div class="disc-title">Built-in AI / WebMCP</div>
+        <p class="disc-body">オンデバイス翻訳・要約・言語検出、宣言的 WebMCP（エージェント向けフォーム）。</p>
+      </div>
+    </div>
+    <p>ガイド例: <a href="https://github.com/GoogleChrome/modern-web-guidance/blob/main/skills/modern-web-guidance/guides/user-experience/navigation-drawer.md" target="_blank" rel="noopener">navigation-drawer</a>（README 参照）。</p>
+
+    <section id="packs" class="sec-head">4 — リポジトリ構成とスキルパック</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 配布物</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>パス / パック</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>skills/modern-web-guidance/SKILL.md</code></td><td>メインスキル（search / retrieve 手順、トリガー条件）</td></tr>
+            <tr><td><code>skills/modern-web-guidance/guides/</code></td><td>カテゴリ別 Markdown ガイド（accessibility, css, forms, performance 等）</td></tr>
+            <tr><td><code>skills/chrome-extensions/</code></td><td>Manifest V3・拡張 API・Web Store 向け別パック（~181 tokens 見出し）</td></tr>
+            <tr><td><code>policies/modern-web-guidance.toml</code></td><td>ポリシー定義</td></tr>
+            <tr><td><code>.cursor-plugin/</code> / <code>.claude-plugin/</code></td><td>Cursor / Claude Code マーケットプレイス用メタデータ</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>npx modern-web-guidance@latest install --choose</code> でインストールするパックを選択できます。</p>
+    </div>
+
+    <section id="install" class="sec-head">5 — インストール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 代表的な方法</span>
+      <div class="ve-code-block">
+        <div class="code-label">対話式ウィザード（推奨）</div>
+        <pre><code>npx modern-web-guidance@latest install</code></pre>
+      </div>
+      <p>インストールせず試す場合:</p>
+      <div class="ve-code-block">
+        <div class="code-label">検索・取得のみ</div>
+        <pre><code>npx modern-web-guidance@latest search "…"
+npx modern-web-guidance@latest retrieve "guide-id"</code></pre>
+      </div>
+      <h3>その他</h3>
+      <ul>
+        <li>更新: <code>npx modern-web-guidance@latest update</code>（install 経由の場合）</li>
+        <li>Claude Code: <code>/plugin marketplace add GoogleChrome/modern-web-guidance</code> など（README 参照）</li>
+        <li>テレメトリ無効: シェルに <code>DISABLE_TELEMETRY=1</code>（収集内容は serving 実装を参照）</li>
+      </ul>
+      <div class="ve-callout">
+        <strong>Windows:</strong> <code>npx</code> が失敗する場合は <code>npx.cmd</code>。オフライン時は <code>npx --offline</code> を試します。
+      </div>
+    </div>
+
+    <section id="evals" class="sec-head">6 — 評価ハーネス</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 校正ループ</span>
+      <p>ガイドは Playwright グレーダーと E2E エージェント eval で検証されます。開発者プロンプトは API 名を避け、エージェントがガイドを自然に発見できるかを測ります。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>日付</th><th>エージェント</th><th>タスク / アサーション</th><th>Unguided → Guided</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>2026-05-18</td><td>claude_code (opus-4-7)</td><td>75 / 603</td><td>52% → 85%（+33pp）</td></tr>
+            <tr><td>2026-05-16</td><td>codex_cli (gpt-5.5)</td><td>75 / 603</td><td>49% → 82%（+33pp）</td></tr>
+            <tr><td>2026-05-15</td><td>antigravity</td><td>74 / 600</td><td>47% → 91%（+44pp）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <small>出典: README「Recent eval results snapshot」（抜粋）。</small>
+    </div>
+
+    <section id="refs" class="sec-head">7 — 参照</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式リンク</span>
+      <ul>
+        <li><a href="https://github.com/GoogleChrome/modern-web-guidance" target="_blank" rel="noopener">GitHub: GoogleChrome/modern-web-guidance</a> — スキル配布リポジトリ</li>
+        <li><a href="https://github.com/GoogleChrome/modern-web-guidance-src" target="_blank" rel="noopener">modern-web-guidance-src</a> — 実装・CONTRIBUTING</li>
+        <li><a href="https://www.npmjs.com/package/modern-web-guidance" target="_blank" rel="noopener">npm: modern-web-guidance</a></li>
+        <li>ドキュメント由来: <a href="https://developer.mozilla.org/" target="_blank" rel="noopener">MDN Web Docs</a>、W3C / WHATWG / IETF 仕様（README Attribution）</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    fontSize: '14px',
+    primaryColor: 'oklch(0.91 0.03 235)',
+    primaryTextColor: 'oklch(0.22 0.04 250)',
+    primaryBorderColor: 'oklch(0.48 0.14 250)',
+    lineColor: 'oklch(0.48 0.12 250)',
+    secondaryColor: 'oklch(0.94 0.02 240)',
+    tertiaryColor: 'oklch(0.93 0.018 240)'
+  }
+});
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
