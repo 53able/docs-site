@@ -192,6 +192,14 @@
     a:hover { color: var(--chart-5); }
     .ve-section-label .ve-dot { background: var(--chart-1); }
     .ve-code-block { margin: 1rem 0; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
     code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
 
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
@@ -247,6 +255,7 @@
     <a href="#types">コア型</a>
     <a href="#platforms">対応プラットフォーム</a>
     <a href="#setup">セットアップ</a>
+    <a href="#team">チーム共有</a>
     <a href="#links">参考リンク</a>
   </nav>
 
@@ -304,12 +313,12 @@
       <div class="arch-card">
         <div class="arch-card__layer">Dashboard UI</div>
         <div class="arch-card__title">packages/dashboard/</div>
-        <div class="arch-card__desc">React 18 + Vite + TailwindCSS v4。React Flow でグラフ描画。Zustand で状態管理。構造ビュー / ドメインビュー / テーマ切替に対応。</div>
+        <div class="arch-card__desc">React 18 + Vite + TailwindCSS v4。React Flow + ELK レイアウトで大規模グラフを描画。Zustand で状態管理。構造ビュー / ドメインビュー / テーマ切替 / 多言語 UI に対応。</div>
       </div>
       <div class="arch-card">
         <div class="arch-card__layer">Static Analysis</div>
         <div class="arch-card__title">web-tree-sitter (WASM)</div>
-        <div class="arch-card__desc">ネイティブ tree-sitter が使えない環境でも動くよう WASM 版を採用（例: 一部の darwin/arm64 + 新しめの Node）。</div>
+        <div class="arch-card__desc">web-tree-sitter（WASM）で 15 言語のコード抽出 + 23 種の設定・ドキュメント形式を解析。ネイティブ tree-sitter が使えない環境でも動作。</div>
       </div>
     </div>
   </div>
@@ -328,6 +337,7 @@
           <tr><td><code>architecture-analyzer</code></td><td>アーキテクチャレイヤー識別</td></tr>
           <tr><td><code>tour-builder</code></td><td>依存順ガイドツアー生成</td></tr>
           <tr><td><code>graph-reviewer</code></td><td>グラフの完全性・参照整合性（既定はインライン検証。<code>--review</code> でフル LLM レビュー）</td></tr>
+          <tr><td><code>assemble-reviewer</code></td><td>バッチマージ後のセマンティック修復 — 落ちたノード・型エイリアス・クロスバッチギャップを LLM で補完</td></tr>
           <tr><td><code>domain-analyzer</code></td><td>ドメイン・フロー・ステップ抽出（<code>/understand-domain</code>）</td></tr>
           <tr><td><code>article-analyzer</code></td><td>wiki 記事からエンティティ・主張・暗黙関係を抽出（<code>/understand-knowledge</code>）</td></tr>
         </tbody>
@@ -355,6 +365,7 @@
           <tr><td><code>analyzer/language-lesson.ts</code></td><td>言語コンセプト検出・レッスンプロンプト（12 パターン）</td></tr>
           <tr><td><code>analyzer/normalize-graph.ts</code></td><td>バッチ出力の正規化・エッジ検証</td></tr>
           <tr><td><code>plugins/tree-sitter-plugin.ts</code></td><td>tree-sitter（WASM版）を使った静的構文解析</td></tr>
+          <tr><td><code>ignore-filter.ts</code> / <code>ignore-generator.ts</code></td><td><code>.understandignore</code> による解析対象の除外（.gitignore 互換）</td></tr>
         </tbody>
       </table>
     </div>
@@ -367,9 +378,11 @@
     <div class="mermaid-wrap">
       <div class="mermaid">
 flowchart TD
-  A["/understand コマンド実行"] --> B
+  A["/understand コマンド実行"] --> B0
+  B0["Phase 0.5\n.understandignore 生成・確認\n（.gitignore 互換の除外パターン）"] --> B
   B["project-scanner\n(Claude Sonnet)\nファイル探索・言語検出"] --> C
-  C["file-analyzer × 最大5並列\n(Claude Opus)\ntree-sitter で静的抽出\n→ LLM でサマリー生成\n→ 中間ファイル書き出し"] --> D
+  C["file-analyzer × 最大5並列\n(Claude Opus)\ntree-sitter で静的抽出\n→ LLM でサマリー生成\n→ batch-*.json 書き出し"] --> C2
+  C2["merge-batch-graphs.py\n+ assemble-reviewer\nバッチ統合・ID正規化・修復"] --> D
   D["architecture-analyzer\n(Claude Opus)\nAPI / Service / Data / UI / Utility\nレイヤー分類"] --> E
   E["tour-builder\n(Claude Opus)\n依存順ガイドツアー生成"] --> F
   F["graph-reviewer\n(既定: インライン検証)\n--review でフル LLM"] --> G
@@ -382,7 +395,8 @@ flowchart TD
       </div>
     </div>
     <div class="ve-callout" style="margin-top:1rem">
-      <strong>インクリメンタル更新:</strong> <code>git diff &lt;last-commit&gt;..HEAD</code> で変更ファイルを検出 → 該当ノード・エッジのみ削除・再解析 → <code>mergeGraphUpdate()</code> でグラフをマージ。file-analyzer はバッチごとに最大 5 並列（バッチあたり約 20〜30 ファイル）で走る。
+      <strong>インクリメンタル更新:</strong> <code>git diff &lt;last-commit&gt;..HEAD</code> で変更ファイルを検出 → 該当ノード・エッジのみ削除・再解析 → <code>mergeGraphUpdate()</code> でグラフをマージ。file-analyzer はバッチごとに最大 5 並列（バッチあたり約 20〜30 ファイル）で走る。<br><br>
+      <strong>自動更新:</strong> <code>/understand --auto-update</code> で post-commit フックが有効化され、コミットごとにグラフを差分パッチ。<code>--language ja</code> などでノード説明・ダッシュボード UI・ツアーを指定言語で生成（設定は <code>.understand-anything/config.json</code> に保存）。
     </div>
   </div>
 
@@ -398,7 +412,7 @@ flowchart TD
         <tbody>
           <tr>
             <td><code>/understand</code></td>
-            <td>コードベース全体を解析してナレッジグラフを生成</td>
+            <td>コードベース全体を解析してナレッジグラフを生成。フラグ: <code>--full</code> <code>--review</code> <code>--auto-update</code> <code>--no-auto-update</code> <code>--language &lt;lang&gt;</code>（ISO 639-1 または friendly name）</td>
             <td><span class="badge badge--blue">Sonnet + Opus</span></td>
           </tr>
           <tr>
@@ -517,20 +531,32 @@ flowchart TD
   <!-- 6 — 対応プラットフォーム -->
   <section id="platforms" class="sec-head">6 — 対応プラットフォーム</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 公式 README の互換表に基づく</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式 README の互換表（2026-05 時点）</span>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>プラットフォーム</th><th>備考</th></tr>
+          <tr><th>プラットフォーム</th><th>状態</th><th>インストール方法</th></tr>
         </thead>
         <tbody>
-          <tr><td>Claude Code</td><td>マーケットから <code>/plugin install</code>（ネイティブ）</td></tr>
-          <tr><td>Cursor</td><td>リポジトリをクローンして開くと <code>.cursor-plugin/plugin.json</code> を自動検出</td></tr>
-          <tr><td>VS Code + GitHub Copilot</td><td>v1.108+。クローンしたリポジトリで <code>.copilot-plugin/plugin.json</code> を自動検出</td></tr>
-          <tr><td>Copilot CLI</td><td><code>copilot plugin install Lum1104/Understand-Anything:understand-anything-plugin</code></td></tr>
-          <tr><td>Codex / OpenCode / OpenClaw / Gemini CLI / Antigravity / Pi</td><td>各ディレクトリの <code>INSTALL.md</code> をエージェントにフェッチさせて手順に従う（README 参照）</td></tr>
+          <tr><td>Claude Code</td><td>ネイティブ</td><td><code>/plugin marketplace add Lum1104/Understand-Anything</code></td></tr>
+          <tr><td>Cursor</td><td>対応</td><td>リポジトリをクローンして開くと <code>.cursor-plugin/plugin.json</code> を自動検出</td></tr>
+          <tr><td>VS Code + GitHub Copilot</td><td>対応</td><td>v1.108+。クローンで <code>.copilot-plugin/plugin.json</code> を自動検出。全プロジェクト向けは <code>install.sh vscode</code></td></tr>
+          <tr><td>Copilot CLI</td><td>対応</td><td><code>copilot plugin install Lum1104/Understand-Anything:understand-anything-plugin</code></td></tr>
+          <tr><td>Codex</td><td>対応</td><td><code>install.sh codex</code></td></tr>
+          <tr><td>OpenCode</td><td>対応</td><td><code>install.sh opencode</code></td></tr>
+          <tr><td>OpenClaw</td><td>対応</td><td><code>install.sh openclaw</code></td></tr>
+          <tr><td>Antigravity</td><td>対応</td><td><code>install.sh antigravity</code></td></tr>
+          <tr><td>Gemini CLI</td><td>対応</td><td><code>install.sh gemini</code></td></tr>
+          <tr><td>Pi Agent</td><td>対応</td><td><code>install.sh pi</code></td></tr>
+          <tr><td>Vibe CLI</td><td>対応</td><td><code>install.sh vibe</code></td></tr>
+          <tr><td>Hermes</td><td>対応</td><td><code>install.sh hermes</code></td></tr>
+          <tr><td>Cline</td><td>対応</td><td><code>install.sh cline</code></td></tr>
+          <tr><td>KIMI CLI</td><td>対応</td><td><code>install.sh kimi</code></td></tr>
         </tbody>
       </table>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>ワンラインインストール（Codex / OpenCode など）:</strong> リポジトリを <code>~/.understand-anything/repo</code> にクローンし、選択したプラットフォーム向けにスキル symlink を作成する。<code>install.sh --update</code> で更新、<code>install.sh --uninstall &lt;platform&gt;</code> で削除。Windows は <code>install.ps1</code>。
     </div>
   </div>
 
@@ -558,6 +584,20 @@ flowchart TD
   </div>
 
   <div class="ve-card ve-card--recessed" style="--i:2; margin-top:0.875rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> ワンラインインストール（Codex / Gemini CLI など）</span>
+    <div class="ve-code-block">
+      <pre><code># macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/Lum1104/Understand-Anything/main/install.sh | bash
+# プラットフォーム指定（例: codex）
+curl -fsSL https://raw.githubusercontent.com/Lum1104/Understand-Anything/main/install.sh | bash -s codex
+
+# Windows (PowerShell)
+# iwr -useb https://raw.githubusercontent.com/Lum1104/Understand-Anything/main/install.ps1 | iex</code></pre>
+    </div>
+    <p style="font-size:0.875rem;color:var(--text-dim);margin-top:0.75rem">インストール後は CLI / IDE を再起動してから <code>/understand</code> を実行する。</p>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:3; margin-top:0.875rem">
     <span class="ve-section-label"><span class="ve-dot"></span> ローカル開発</span>
     <p>前提: Node.js &ge; 22（開発は v24 系で確認）、pnpm &ge; 10（ルート <code>package.json</code> の <code>packageManager</code> に準拠）</p>
     <div class="ve-code-block">
@@ -582,15 +622,38 @@ pnpm lint</code></pre>
     </div>
   </div>
 
-  <!-- 8 — 参考リンク -->
-  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <!-- 8 — チーム共有 -->
+  <section id="team" class="sec-head">8 — チームでグラフを共有</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> グラフは JSON — 一度コミットすれば全員がパイプラインをスキップできる</span>
+    <p>オンボーディング・PR レビュー・docs-as-code に向く。例: <a href="https://github.com/Lum1104/microservices-demo" target="_blank" rel="noopener">Lum1104/microservices-demo</a>（Go / Java / Python / Node の参照グラフ付き fork）。</p>
+    <h3 style="font-size:0.875rem;margin-top:1rem">コミット対象</h3>
+    <p><code>.understand-anything/</code> 配下のうち、<strong><code>intermediate/</code> と <code>diff-overlay.json</code> は除外</strong>（ローカル作業用）。</p>
+    <div class="ve-code-block">
+      <pre><code># .gitignore に追加する例
+.understand-anything/intermediate/
+.understand-anything/diff-overlay.json</code></pre>
+    </div>
+    <h3 style="font-size:0.875rem;margin-top:1rem">鮮度を保つ</h3>
+    <ul>
+      <li><code>/understand --auto-update</code> — post-commit フックでグラフを差分更新</li>
+      <li>リリース前に <code>/understand</code> を手動再実行</li>
+      <li>10 MB 超の JSON は <strong>git-lfs</strong> で追跡</li>
+    </ul>
+  </div>
+
+  <!-- 9 — 参考リンク -->
+  <section id="links" class="sec-head">9 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
     <ul>
       <li><a href="https://github.com/Lum1104/Understand-Anything" target="_blank" rel="noopener">GitHub: Lum1104/Understand-Anything</a> — 本体リポジトリ</li>
-      <li><a href="https://lum1104.github.io/Understand-Anything" target="_blank" rel="noopener">プロジェクトホームページ</a> / <a href="https://lum1104.github.io/Understand-Anything/demo/" target="_blank" rel="noopener">Live Demo</a></li>
+      <li><a href="https://understand-anything.com/" target="_blank" rel="noopener">プロジェクトホームページ</a> / <a href="https://understand-anything.com/demo/" target="_blank" rel="noopener">Live Demo</a></li>
+      <li><a href="https://discord.gg/pydat66RY" target="_blank" rel="noopener">Discord コミュニティ</a></li>
       <li><a href="https://github.com/Lum1104/Understand-Anything/blob/main/README.md" target="_blank" rel="noopener">README.md</a> — インストール・マルチプラットフォーム手順</li>
+      <li><a href="https://github.com/Lum1104/Understand-Anything/blob/main/READMEs/README.ja-JP.md" target="_blank" rel="noopener">README.ja-JP.md</a> — 日本語 README</li>
       <li><a href="https://github.com/Lum1104/Understand-Anything/blob/main/understand-anything-plugin/packages/core/src/types.ts" target="_blank" rel="noopener">types.ts</a> — ノード型・エッジ型の一次情報</li>
+      <li><a href="https://www.youtube.com/watch?v=VmIUXVlt7_I" target="_blank" rel="noopener">Better Stack コミュニティウォークスルー（YouTube）</a></li>
       <li><a href="https://reactflow.dev/" target="_blank" rel="noopener">React Flow</a> — ダッシュボードのグラフ描画</li>
       <li><a href="https://github.com/tree-sitter/tree-sitter" target="_blank" rel="noopener">tree-sitter</a> — 静的構文解析（WASM バインディング経由）</li>
       <li><a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f" target="_blank" rel="noopener">Karpathy LLM wiki パターン</a> — <code>/understand-knowledge</code> の想定フォーマット</li>
