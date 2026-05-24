@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liquid DOM — WebGPU リキッドグラス UI モノレポ</title>
+  <meta name="description" content="AndrewPrifer/liquid-dom の @liquid-dom/core / react / three / r3f / layout パッケージ構成、シーングラフ、WebGPU レンダリング、HTML-in-Canvas 要件を解説する。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Liquid DOM — WebGPU リキッドグラス UI モノレポ">
+  <meta property="og:description" content="AndrewPrifer/liquid-dom の @liquid-dom/core / react / three / r3f / layout パッケージ構成、シーングラフ、WebGPU レンダリング、HTML-in-Canvas 要件を解説する。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/liquid-dom.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Liquid DOM — WebGPU リキッドグラス UI モノレポ">
+  <meta name="twitter:description" content="WebGPU リキッドグラス、React 19 バインディング、Three.js / R3F 統合、レンダラー非依存レイアウト。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Fragment+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.97 0.008 220);
+      --foreground: oklch(0.22 0.03 230);
+      --card: oklch(0.995 0.004 220);
+      --card-foreground: var(--foreground);
+      --popover: var(--card);
+      --popover-foreground: var(--foreground);
+      --primary: oklch(0.28 0.06 230);
+      --primary-foreground: oklch(0.98 0.01 220);
+      --secondary: oklch(0.93 0.015 215);
+      --secondary-foreground: var(--foreground);
+      --muted: oklch(0.92 0.012 218);
+      --muted-foreground: oklch(0.48 0.03 230);
+      --accent: oklch(0.94 0.018 210);
+      --accent-foreground: var(--foreground);
+      --destructive: oklch(0.55 0.18 25);
+      --border: oklch(0.86 0.02 220);
+      --input: var(--border);
+      --ring: oklch(0.45 0.12 200);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.38 0.10 230);
+      --chart-4: oklch(0.62 0.10 170);
+      --chart-5: oklch(0.42 0.06 250);
+      --code-bg: oklch(0.95 0.01 220);
+      --code-text: oklch(0.32 0.06 230);
+      --font-body: 'Bricolage Grotesque', system-ui, sans-serif;
+      --font-mono: 'Fragment Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.02 230);
+        --foreground: oklch(0.94 0.01 220);
+        --card: oklch(0.18 0.025 232);
+        --card-foreground: var(--foreground);
+        --popover: var(--card);
+        --popover-foreground: var(--foreground);
+        --primary: oklch(0.88 0.03 210);
+        --primary-foreground: oklch(0.16 0.02 232);
+        --secondary: oklch(0.22 0.025 230);
+        --secondary-foreground: var(--foreground);
+        --muted: oklch(0.24 0.02 232);
+        --muted-foreground: oklch(0.68 0.03 220);
+        --accent: oklch(0.22 0.03 228);
+        --accent-foreground: var(--foreground);
+        --destructive: oklch(0.65 0.16 25);
+        --border: oklch(1 0 0 / 12%);
+        --input: var(--border);
+        --ring: oklch(0.62 0.12 200);
+        --chart-1: oklch(0.68 0.14 200);
+        --chart-2: oklch(0.72 0.14 85);
+        --chart-3: oklch(0.55 0.12 230);
+        --chart-4: oklch(0.72 0.09 170);
+        --chart-5: oklch(0.58 0.06 250);
+        --code-bg: oklch(0.12 0.02 232);
+        --code-text: oklch(0.78 0.06 210);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      border-color: color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(oklch(0.45 0.12 200 / 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, oklch(0.45 0.12 200 / 0.04) 1px, transparent 1px),
+        radial-gradient(ellipse at 15% 0%, oklch(0.45 0.12 200 / 0.10) 0%, transparent 55%),
+        radial-gradient(ellipse at 95% 30%, oklch(0.65 0.15 80 / 0.06) 0%, transparent 45%);
+      background-size: 24px 24px, 24px 24px, auto, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 0.75rem 0; }
+    .pipeline .step { background: color-mix(in oklch, var(--muted) 75%, var(--chart-2) 25%); border: 1px solid color-mix(in oklch, var(--border) 55%, var(--chart-2) 45%); padding: 0.4rem 0.7rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.75rem; }
+    .pipeline .arrow { color: var(--chart-1); font-weight: 700; }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 0.75rem; }
+    @media (max-width: 640px) { .feature-grid { grid-template-columns: 1fr; } }
+    .feature-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+    .feature-card h4 { font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--chart-1); }
+    .feature-card p { font-size: 0.8125rem; color: var(--text-dim); margin: 0; line-height: 1.55; }
+
+    .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; padding: 0.5rem; }
+    .mermaid-wrap svg { max-width: 100%; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.06s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#packages">パッケージ</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#integration">統合レイヤ</a>
+    <a href="#setup">セットアップ</a>
+    <a href="#requirements">実行要件</a>
+    <a href="#links">リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>Liquid DOM</h1>
+    <p class="subtitle">AndrewPrifer/liquid-dom · WebGPU liquid-glass · pnpm monorepo</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 目的</span>
+      <p>
+        <strong>Liquid DOM</strong> は、WebGPU で iOS 風リキッドグラス UI を描画するモノレポ。命令型シーングラフ、React 19 バインディング、Three.js / React Three Fiber 統合、レンダラー非依存の SwiftUI 風レイアウトを、統合レイヤごとに分割した npm パッケージとして提供する。
+      </p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">5</span>
+          <span class="ve-kpi-card__label">公開パッケージ</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">WebGPU</span>
+          <span class="ve-kpi-card__label">グラス描画 API</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">SDF</span>
+          <span class="ve-kpi-card__label">同一 Container 内 Glass 融合</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">DOM</span>
+          <span class="ve-kpi-card__label">Html ノードを GPU テクスチャへ</span>
+        </div>
+      </div>
+      <div class="ve-callout">
+        <strong>パッケージ選び:</strong> 所有するレンダラーに合わせて最下位レイヤを選ぶ。React で宣言的に書きたい場合は <code>@liquid-dom/react</code>、Three WebGPU 上に合成する場合は <code>@liquid-dom/three</code> / <code>@liquid-dom/r3f</code>。レイアウトだけ必要なら <code>@liquid-dom/layout</code> は他パッケージに依存しない。
+      </div>
+    </div>
+
+    <section id="packages" class="sec-head">2 — パッケージ一覧</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 役割と選び方</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>パッケージ</th>
+              <th>役割</th>
+              <th>使う場面</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>@liquid-dom/core</code></td>
+              <td>命令型シーングラフ、WebGPU <code>Renderer</code>、再利用可能な WebGPU コア、<code>@liquid-dom/core/layout</code> サブパス</td>
+              <td>シーングラフを直接制御する、または別レンダラー向けアダプタを自作する</td>
+            </tr>
+            <tr>
+              <td><code>@liquid-dom/react</code></td>
+              <td>React 19 バインディング（<code>LiquidCanvas</code> / <code>LiquidScene</code>）</td>
+              <td>React でグラス UI を宣言し、canvas とフレームループを <code>LiquidCanvas</code> に任せる</td>
+            </tr>
+            <tr>
+              <td><code>@liquid-dom/three</code></td>
+              <td>Three の WebGPU レンダラー内で liquid-glass コアをホスト</td>
+              <td>Three シーンを backdrop として描画し、その上にグラスをポスト合成する</td>
+            </tr>
+            <tr>
+              <td><code>@liquid-dom/r3f</code></td>
+              <td><code>@liquid-dom/three</code> と <code>@liquid-dom/react</code> の R3F ブリッジ</td>
+              <td>React Three Fiber + Three WebGPU で React グラス UI を重ねる</td>
+            </tr>
+            <tr>
+              <td><code>@liquid-dom/layout</code></td>
+              <td>レンダラー非依存の SwiftUI 風レイアウトエンジン</td>
+              <td>測定・配置だけ必要で、WebGPU や React に依存したくない</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 依存関係</span>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '14px', 'primaryColor': '#d4e8f4', 'primaryTextColor': '#1a2a35', 'primaryBorderColor': '#3a7a9a', 'lineColor': '#3a7a9a', 'secondaryColor': '#eef6fa', 'tertiaryColor': '#f5f0e0' }}}%%
+flowchart TD
+  layout["@liquid-dom/layout"]
+  core["@liquid-dom/core"]
+  react["@liquid-dom/react"]
+  three["@liquid-dom/three"]
+  r3f["@liquid-dom/r3f"]
+
+  layout --> core
+  core --> react
+  core --> three
+  react --> r3f
+  three --> r3f
+        </pre>
+      </div>
+      <p><code>@liquid-dom/layout</code> は独立。<code>@liquid-dom/core</code> が layout サブパスで利用。<code>@liquid-dom/react</code> は core の layout クラスを React コンポーネント化。<code>@liquid-dom/three</code> は Three WebGPU 内にコアをホスト。<code>@liquid-dom/r3f</code> が React と Three を結合する。</p>
+    </div>
+
+    <section id="architecture" class="sec-head">3 — アーキテクチャ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> シーングラフ</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ノード</th>
+              <th>子として受け付ける型</th>
+              <th>要点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Scene</code></td>
+              <td><code>Container</code>, <code>Html</code>, <code>Group</code></td>
+              <td>ルート。兄弟は <code>zIndex</code> → 追加順で描画</td>
+            </tr>
+            <tr>
+              <td><code>Container</code></td>
+              <td><code>Glass</code>, <code>Group</code></td>
+              <td>同一 Container 内の Glass は 1 つの SDF フィールドに融合し光学設定を共有</td>
+            </tr>
+            <tr>
+              <td><code>Glass</code></td>
+              <td><code>Html</code>, <code>Group</code></td>
+              <td><code>cornerRadius</code> + <code>cornerSmoothing</code> で squircle 近似。子 <code>Html</code> をグラス越しにサンプリング</td>
+            </tr>
+            <tr>
+              <td><code>Html</code></td>
+              <td>—</td>
+              <td>ライブ DOM を GPU テクスチャへコピー。<code>blur</code> はレンダラー側の適応ブラー</td>
+            </tr>
+            <tr>
+              <td><code>Group</code> / <code>StackingContext</code></td>
+              <td>親に応じた子</td>
+              <td>Group は変換の合成。StackingContext は <code>zIndex</code> で子をグループ化</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>シーン直下の <code>Html</code> は、下位の Container の backdrop になる。より手前の Container より上にある <code>Html</code> は覆い、後続 Container の backdrop になる。</p>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> レンダリングパイプライン</span>
+      <div class="pipeline">
+        <span class="step">DOM / Html ホスト</span>
+        <span class="arrow">→</span>
+        <span class="step">HTML-in-Canvas コピー</span>
+        <span class="arrow">→</span>
+        <span class="step">GPU テクスチャ</span>
+        <span class="arrow">→</span>
+        <span class="step">適応ブラー（任意）</span>
+        <span class="arrow">→</span>
+        <span class="step">SDF グラス合成</span>
+        <span class="arrow">→</span>
+        <span class="step">WebGPU canvas</span>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>Adaptive blur</h4>
+          <p><code>Html.blur &gt; 0</code> のとき適応ブラーパイプライン。CSS filter ではなく DOM コピー後の GPU 処理。</p>
+        </div>
+        <div class="feature-card">
+          <h4>Adaptive tint</h4>
+          <p>Container の <code>tint</code> / <code>blur</code> / <code>thickness</code> で光学パラメータを一括制御。</p>
+        </div>
+        <div class="feature-card">
+          <h4>Pointer events</h4>
+          <p><code>Glass.pointerEvents</code> でヒットテスト。命令型 API では typed リスナー、React では通常の DOM イベント。</p>
+        </div>
+        <div class="feature-card">
+          <h4>Three 合成</h4>
+          <p>Three シーンを <code>RenderTarget</code> に描画し、backdrop テクスチャとして <code>ThreeGlassRenderer</code> に渡す。</p>
+        </div>
+      </div>
+    </div>
+
+    <section id="integration" class="sec-head">4 — 統合レイヤ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> @liquid-dom/core（命令型）</span>
+      <div class="ve-code-block">
+        <pre><code>import { Container, Glass, Html, Renderer, Scene } from '@liquid-dom/core'
+
+const scene = new Scene()
+const container = new Container({ blur: 12, spacing: 28, thickness: 90 })
+const glass = new Glass({ width: 280, height: 180, cornerRadius: 48, pointerEvents: true })
+glass.add(new Html({ width: 180, height: 56, element: contentButton }))
+container.add(glass)
+scene.add(container)
+
+const renderer = new Renderer({ scene })
+document.body.append(renderer.canvas)
+requestAnimationFrame(function frame() { renderer.render(); requestAnimationFrame(frame) })</code></pre>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> @liquid-dom/react</span>
+      <div class="ve-code-block">
+        <pre><code>import { Frame, Glass, GlassContainer, Html, LiquidCanvas } from '@liquid-dom/react'
+
+export function App() {
+  return (
+    &lt;LiquidCanvas style={{ width: '100vw', height: '100vh' }}&gt;
+      &lt;GlassContainer blur={12} spacing={28}&gt;
+        &lt;Frame width={280} height={160}&gt;
+          &lt;Glass cornerRadius={44} pointerEvents&gt;
+            &lt;Html sizing="fill"&gt;&lt;button&gt;Native content&lt;/button&gt;&lt;/Html&gt;
+          &lt;/Glass&gt;
+        &lt;/Frame&gt;
+      &lt;/GlassContainer&gt;
+    &lt;/LiquidCanvas&gt;
+  )
+}</code></pre>
+      </div>
+      <p><code>LiquidScene</code> は canvas を作らない headless モード。Three アダプタなど別レンダラーが出力を所有するときに ref 経由で <code>update(proposal, delta)</code> を呼ぶ。</p>
+    </div>
+
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> @liquid-dom/three</span>
+      <div class="ve-code-block">
+        <pre><code>import * as THREE from 'three/webgpu'
+import { Container, Glass, Scene } from '@liquid-dom/core'
+import { ThreeGlassRenderer } from '@liquid-dom/three'
+
+const renderer = new THREE.WebGPURenderer({ canvas })
+await renderer.init()
+const backdrop = new THREE.RenderTarget(1, 1, { colorSpace: THREE.SRGBColorSpace })
+const glassRenderer = new ThreeGlassRenderer({ renderer, scene: glassScene })
+
+function frame() {
+  renderer.setRenderTarget(backdrop)
+  renderer.render(threeScene, camera)
+  renderer.setRenderTarget(null)
+  glassRenderer.render({ backdrop, width, height })
+  requestAnimationFrame(frame)
+}</code></pre>
+      </div>
+      <div class="ve-callout">
+        <strong>WebGLRenderer は不可。</strong> Three 統合は <code>three/webgpu</code> の <code>WebGPURenderer</code> が前提。
+      </div>
+    </div>
+
+    <section id="setup" class="sec-head">5 — セットアップ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> インストール（用途別）</span>
+      <div class="ve-code-block">
+        <pre><code>pnpm add @liquid-dom/core
+pnpm add @liquid-dom/react react react-dom
+pnpm add @liquid-dom/three @liquid-dom/core three
+pnpm add @liquid-dom/r3f @liquid-dom/react @react-three/fiber react react-dom three
+pnpm add @liquid-dom/layout</code></pre>
+      </div>
+      <p>各パッケージ README に peer dependency の完全な一覧がある。React バインディングは React 19 を想定。</p>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> リポジトリ開発</span>
+      <div class="ve-code-block">
+        <pre><code>pnpm install
+pnpm -r build
+pnpm --filter @liquid-dom/layout test
+pnpm --filter @liquid-dom/core test
+pnpm --filter @liquid-dom/react test
+
+# デモ（ルート package.json scripts）
+pnpm dev              # core + editor
+pnpm dev:minimal      # core + react + minimal demo
+pnpm dev:three        # core + three + three-integration
+pnpm dev:three-react  # + three-react-integration
+pnpm dev:three-r3f    # + three-r3f-integration</code></pre>
+      </div>
+    </div>
+
+    <section id="requirements" class="sec-head">6 — 実行要件</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ブラウザと API</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>要件</th>
+              <th>対象</th>
+              <th>詳細</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>navigator.gpu</code></td>
+              <td>グラス描画全体</td>
+              <td>WebGPU 対応ブラウザが必須。シーングラフ構築だけならブラウザ風環境でも可</td>
+            </tr>
+            <tr>
+              <td>HTML-in-Canvas</td>
+              <td><code>Html</code> ノード</td>
+              <td>実験 API。<code>&lt;canvas layoutsubtree&gt;</code> と canvas paint イベントで DOM をテクスチャ化</td>
+            </tr>
+            <tr>
+              <td>Chrome フラグ</td>
+              <td>DOM バックド Html</td>
+              <td><code>chrome://flags/#canvas-draw-element</code> を有効化（2026-05 時点）</td>
+            </tr>
+            <tr>
+              <td>Three WebGPU</td>
+              <td><code>@liquid-dom/three</code> / <code>r3f</code></td>
+              <td><code>WebGLRenderer</code> ではなく <code>WebGPURenderer</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout">
+        <strong>仕様参照:</strong> DOM を canvas に描画する API は <a href="https://wicg.github.io/html-in-canvas/" target="_blank" rel="noopener">WICG HTML-in-Canvas</a> を参照。
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/AndrewPrifer/liquid-dom" target="_blank" rel="noopener">GitHub: AndrewPrifer/liquid-dom</a> — モノレポ本体</li>
+        <li><a href="https://github.com/AndrewPrifer/liquid-dom/blob/main/README.md" target="_blank" rel="noopener">README.md</a> — パッケージ一覧とインストール</li>
+        <li><a href="https://github.com/AndrewPrifer/liquid-dom/tree/main/packages/core" target="_blank" rel="noopener">packages/core</a> — シーングラフ・Renderer API</li>
+        <li><a href="https://github.com/AndrewPrifer/liquid-dom/tree/main/packages/react" target="_blank" rel="noopener">packages/react</a> — LiquidCanvas / レイアウトコンポーネント</li>
+        <li><a href="https://wicg.github.io/html-in-canvas/" target="_blank" rel="noopener">WICG HTML-in-Canvas</a> — Html ノードの前提 API</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
