@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Harness — Agent Team &amp; Skill Architect（Claude Code Plugin）</title>
-  <meta name="description" content="ドメイン特化エージェントチームを設計し、専門エージェントを定義し、スキルを生成するメタスキル。6フェーズワークフローと 6 アーキテクチャパターンで Claude Code の AI エージェント協調を実現。">
+  <title>Harness — Claude Code のチームアーキテクチャファクトリー</title>
+  <meta name="description" content="ドメイン記述からエージェントチームとスキルを生成する Claude Code 向け team-architecture factory。L3 Meta-Factory の位置づけ、3 つの実行モード、Quickstart、運用更新、実験結果を整理。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Harness — Agent Team &amp; Skill Architect（Claude Code Plugin）">
-  <meta property="og:description" content="ドメイン特化エージェントチームを設計し、専門エージェントを定義し、スキルを生成するメタスキル。6フェーズワークフローと 6 アーキテクチャパターンで Claude Code の AI エージェント協調を実現。">
+  <meta property="og:title" content="Harness — Claude Code のチームアーキテクチャファクトリー">
+  <meta property="og:description" content="ドメイン記述からエージェントチームとスキルを生成する Claude Code 向け team-architecture factory。L3 Meta-Factory の位置づけ、3 つの実行モード、Quickstart、運用更新、実験結果を整理。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/harness.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Harness — Agent Team &amp; Skill Architect（Claude Code Plugin）">
-  <meta name="twitter:description" content="ドメイン特化エージェントチームを設計し、スキルを生成するメタスキル。Claude Code Plugin。">
+  <meta name="twitter:title" content="Harness — Claude Code のチームアーキテクチャファクトリー">
+  <meta name="twitter:description" content="ドメイン記述からエージェントチームとスキルを生成する Claude Code 向け team-architecture factory。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Fragment+Mono:ital@0;1&display=swap" rel="stylesheet">
@@ -119,6 +119,14 @@
       line-height: 1.7;
       color: var(--code-text);
       white-space: pre;
+    }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
     }
     .ve-table-wrap {
       background: var(--card);
@@ -452,7 +460,7 @@
     /* ============ Phase cards ============ */
     .phase-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 0.75rem;
       margin-top: 1.25rem;
     }
@@ -576,7 +584,7 @@
     /* ============ Execution modes ============ */
     .exec-cols {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 1rem;
       margin-top: 1rem;
     }
@@ -787,13 +795,13 @@
   <nav class="toc" id="toc">
     <div class="toc-title">Contents</div>
     <a href="#s1">概要</a>
-    <a href="#s2">ワークフロー</a>
+    <a href="#s2">位置づけとライフサイクル</a>
     <a href="#s3">パターン</a>
     <a href="#s4">スキル設計</a>
     <a href="#s5">実行モード</a>
     <a href="#s6">インストール</a>
     <a href="#s7">ユースケース</a>
-    <a href="#s8">研究結果</a>
+    <a href="#s8">実験結果と開示</a>
     <div class="toc-gh">
       <a href="https://github.com/revfactory/harness" target="_blank" rel="noopener">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -806,17 +814,18 @@
 
     <!-- ═══ [01] HERO ═══ -->
     <div class="hero" id="s1">
-      <div class="hero-meta">Claude Code Plugin &nbsp;·&nbsp; v1.0.1 &nbsp;·&nbsp; revfactory/harness</div>
+      <div class="hero-meta">Claude Code Plugin &nbsp;·&nbsp; v1.2.0 &nbsp;·&nbsp; revfactory/harness</div>
       <h1>Harness</h1>
-      <div class="hero-tagline">Agent Team &amp; Skill Architect — メタスキル</div>
+      <div class="hero-tagline">Team-Architecture Factory</div>
       <p class="hero-sub">
-        ドメイン特化のエージェントチームを自動設計し、専門エージェントを定義し、各エージェントが使うスキルを生成するメタスキル。
-        <code>「ハーネス構築して」</code> の一言で 6 フェーズが自動実行される。
+        ドメイン記述を入力すると、Harness が 6 種のチームアーキテクチャパターンから 1 つを選び、
+        <code>.claude/agents/</code> と <code>.claude/skills/</code> を生成する。初回生成だけでなく、
+        既存ハーネスの監査・拡張・同期・部分再実行まで扱う。
       </p>
       <div class="hero-badges">
-        <span class="ve-badge" style="color:var(--teal);border-color:color-mix(in oklch,var(--teal) 35%,transparent);background:var(--teal-dim);">6 Architecture Patterns</span>
-        <span class="ve-badge" style="color:var(--amber);border-color:color-mix(in oklch,var(--amber) 35%,transparent);background:var(--amber-dim);">Progressive Disclosure</span>
-        <span class="ve-badge" style="color:var(--green);border-color:color-mix(in oklch,var(--green) 35%,transparent);background:var(--green-dim);">Agent Teams · Default</span>
+        <span class="ve-badge" style="color:var(--teal);border-color:color-mix(in oklch,var(--teal) 35%,transparent);background:var(--teal-dim);">L3 Meta-Factory</span>
+        <span class="ve-badge" style="color:var(--amber);border-color:color-mix(in oklch,var(--amber) 35%,transparent);background:var(--amber-dim);">6 Team Patterns</span>
+        <span class="ve-badge" style="color:var(--green);border-color:color-mix(in oklch,var(--green) 35%,transparent);background:var(--green-dim);">3 Execution Modes</span>
         <span class="ve-badge" style="color:var(--text-dim);border-color:var(--border);background:var(--muted);">Apache 2.0</span>
       </div>
       <div class="hero-links">
@@ -827,25 +836,25 @@
         <a class="hero-link secondary" href="https://github.com/revfactory/harness-100" target="_blank" rel="noopener">
           harness-100 — 100 チームハーネス集
         </a>
-        <a class="hero-link secondary" href="https://code.claude.com/docs/en/agent-teams" target="_blank" rel="noopener">
-          Agent Teams ドキュメント
+        <a class="hero-link secondary" href="https://github.com/revfactory/harness/blob/main/docs/quickstart.md" target="_blank" rel="noopener">
+          Quickstart
         </a>
       </div>
       <div class="kpi-row">
         <div class="kpi-card primary">
-          <div class="kpi-label">品質スコア向上</div>
-          <div class="kpi-value">+60%</div>
-          <div class="kpi-sub">49.5 → 79.3（15 タスク平均）</div>
+          <div class="kpi-label">チームパターン</div>
+          <div class="kpi-value">6</div>
+          <div class="kpi-sub">Pipeline / Fan-out / Expert Pool / Producer-Reviewer / Supervisor / Hierarchical Delegation</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">勝率</div>
-          <div class="kpi-value" style="color:var(--amber)">15/15</div>
-          <div class="kpi-sub">Harness あり vs なし — 全勝</div>
+          <div class="kpi-label">実行モード</div>
+          <div class="kpi-value" style="color:var(--amber)">3</div>
+          <div class="kpi-sub">Agent Teams を基本に、サブエージェントとハイブリッドを切り替える</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">出力ばらつき削減</div>
-          <div class="kpi-value" style="color:var(--green)">−32%</div>
-          <div class="kpi-sub">課題難度が高いほど効果大</div>
+          <div class="kpi-label">対応範囲</div>
+          <div class="kpi-value" style="color:var(--green)">0→7</div>
+          <div class="kpi-sub">現況監査から進化・運用保守までをライフサイクルとして扱う</div>
         </div>
       </div>
     </div>
@@ -854,7 +863,49 @@
     <!-- ═══ [02] WORKFLOW ═══ -->
     <div id="s2" class="sec-head">
       <span class="sec-num">02</span>
-      <h2>6-Phase ワークフロー</h2>
+      <h2>位置づけとライフサイクル</h2>
+    </div>
+
+    <div class="ve-card ve-card--elevated">
+      <span class="ve-section-label"><span class="ve-dot"></span> L3 Meta-Factory の中での位置</span>
+      <p style="font-size:0.875rem;color:var(--text-dim);margin-bottom:1rem;line-height:1.6">
+        Harness は Claude Code エコシステムの <strong>L3 Meta-Factory</strong> 層で、
+        ランタイムそのものではなく <strong>チームアーキテクチャ</strong> を生成する側に立つ。
+        Archon とは同じ L3 でも役割が違い、Harness は <em>誰がどう協調するか</em> を設計する。
+      </p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>層 / サブ層</th>
+              <th>役割</th>
+              <th>隣接プロジェクト</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>L3 / Team-Architecture Factory</strong></td>
+              <td>ドメイン記述からエージェントチーム + スキルを生成</td>
+              <td>Harness</td>
+            </tr>
+            <tr>
+              <td>L3 / Runtime-Configuration Factory</td>
+              <td>決定的で再現可能なランタイム構成を生成</td>
+              <td><a href="https://github.com/coleam00/Archon" target="_blank" rel="noopener">coleam00/Archon</a></td>
+            </tr>
+            <tr>
+              <td>L3 / Codex Runtime Port</td>
+              <td>同じ発想を Codex ランタイムへ移植</td>
+              <td><a href="https://github.com/SaehwanPark/meta-harness" target="_blank" rel="noopener">SaehwanPark/meta-harness</a></td>
+            </tr>
+            <tr>
+              <td>L2 / Cross-Harness Workflow</td>
+              <td>複数ハーネス横断でスキル・ルール・フックを標準化</td>
+              <td><a href="https://github.com/affaan-m/everything-claude-code" target="_blank" rel="noopener">affaan-m/ECC</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div class="mermaid-wrap">
@@ -868,28 +919,36 @@
           <div class="mermaid">
 %%{init: {"theme": "base", "themeVariables": {"primaryColor": "#f0faff", "primaryBorderColor": "#0891b2", "primaryTextColor": "#193a5c", "lineColor": "#0891b2", "fontSize": "14px"}, "flowchart": {"curve": "monotoneX"}}}%%
 flowchart TD
-  P1["Phase 1\nドメイン分析"] --> P2["Phase 2\nチームアーキテクチャ設計"]
-  P2 --> P3["Phase 3\nエージェント定義生成\n.claude/agents/"]
-  P3 --> P4["Phase 4\nスキル生成\n.claude/skills/"]
-  P4 --> P5["Phase 5\n統合 &amp; オーケストレーション"]
-  P5 --> P6["Phase 6\n検証 &amp; テスト"]
+  P0["Phase 0\n現況監査"] --> P1["Phase 1\nドメイン分析"]
+  P1 --> P2["Phase 2\nチームアーキテクチャ設計"]
   P2 --> MODE{"実行モード選択"}
   MODE -->|"エージェント2名以上\n通信が必要"| AT["Agent Teams\n（デフォルト）"]
   MODE -->|"単発・通信不要"| SA["サブエージェント\n（軽量モード）"]
+  MODE -->|"Phase ごとに\n切り替える"| HY["ハイブリッド\n（混在モード）"]
   AT --> P3
   SA --> P3
+  HY --> P3
+  P3["Phase 3\nエージェント定義生成\n.claude/agents/"] --> P4["Phase 4\nスキル生成\n.claude/skills/"]
+  P4 --> P5["Phase 5\n統合 &amp; オーケストレーション"]
+  P5 --> P6["Phase 6\n検証 &amp; テスト"]
+  P6 --> P7["Phase 7\n進化 / 運用保守"]
   classDef phase fill:#e0f2fe,stroke:#0891b2,color:#0c4a6e
   classDef mode fill:#fef9c3,stroke:#d97706,color:#78350f
   classDef exec fill:#d1fae5,stroke:#059669,color:#064e3b
-  class P1,P2,P3,P4,P5,P6 phase
+  class P0,P1,P2,P3,P4,P5,P6,P7 phase
   class MODE mode
-  class AT,SA exec
+  class AT,SA,HY exec
           </div>
         </div>
       </div>
     </div>
 
     <div class="phase-grid">
+      <div class="phase-card highlight">
+        <div class="phase-num">Phase 00</div>
+        <h4>現況監査</h4>
+        <p>既存の <code>.claude/agents/</code> / <code>.claude/skills/</code> / <code>CLAUDE.md</code> を読み、初回生成・拡張・運用保守のどれかを判定する。</p>
+      </div>
       <div class="phase-card">
         <div class="phase-num">Phase 01</div>
         <h4>ドメイン分析</h4>
@@ -898,7 +957,7 @@ flowchart TD
       <div class="phase-card">
         <div class="phase-num">Phase 02</div>
         <h4>チームアーキテクチャ設計</h4>
-        <p>Agent Teams vs サブエージェントを選択。6 種のアーキテクチャパターンから最適構成を決定。</p>
+        <p>Agent Teams / サブエージェント / ハイブリッドから選択し、6 種のアーキテクチャパターンと接続する。</p>
       </div>
       <div class="phase-card highlight">
         <div class="phase-num">Phase 03</div>
@@ -913,13 +972,23 @@ flowchart TD
       <div class="phase-card">
         <div class="phase-num">Phase 05</div>
         <h4>統合 &amp; オーケストレーション</h4>
-        <p>エージェント間データ受け渡し、エラーハンドリング、チーム連携プロトコルを設定。</p>
+        <p>メッセージ・タスク・ファイル・戻り値の受け渡し規約を定義し、必要なら Phase ごとにチームを再構成する。</p>
       </div>
       <div class="phase-card">
         <div class="phase-num">Phase 06</div>
         <h4>検証 &amp; テスト</h4>
         <p>トリガー検証・ドライランテスト・With-skill vs Without-skill 比較テストで品質を担保。</p>
       </div>
+      <div class="phase-card highlight">
+        <div class="phase-num">Phase 07</div>
+        <h4>進化 &amp; 運用保守</h4>
+        <p>フィードバックを変更履歴へ反映し、既存ハーネスの監査・同期・部分再実行・ドリフト修正を続ける。</p>
+      </div>
+    </div>
+
+    <div class="ve-callout info" style="margin-top:1rem">
+      <strong>Harness Evolution Mechanism:</strong> 生成直後のハーネスと、実運用を経たリリース版ハーネスとの差分をファクトリーへ戻し、
+      次回の同系統ドメイン生成をよりリリース状態に近いドラフトから始める、という考え方が README に追加されている。
     </div>
 
 
@@ -978,7 +1047,9 @@ flowchart TD
     <div class="skill-cols">
       <div>
         <p style="font-size:0.875rem;color:var(--text-dim);margin-bottom:1rem;line-height:1.6">
-          Harness が生成するスキルは <strong>Progressive Disclosure</strong> パターンを採用。必要な情報だけを JiT（Just-in-Time）でロードし、コンテキスト消費を最小化する。
+          Harness が生成するスキルは <strong>Progressive Disclosure</strong> を前提にする。
+          さらに現在の設計では、<code>CLAUDE.md</code> にハーネスの全情報を複写せず、
+          <strong>トリガーポインタ + 変更履歴</strong> だけを残す。
         </p>
         <ul class="principle-list">
           <li>
@@ -994,30 +1065,41 @@ flowchart TD
             <span>各エージェント定義ファイル。役割・原則・通信プロトコルを明記</span>
           </li>
           <li>
+            <code>CLAUDE.md</code>
+            <span>新規セッション用のポインタと変更履歴だけを登録し、詳細はオーケストレーターへ集約する</span>
+          </li>
+          <li>
+            <code>_workspace/</code>
+            <span>ハイブリッド実行や後続修正で再利用する中間成果物を残す</span>
+          </li>
+          <li>
             <code>model: opus</code>
-            <span>全エージェントは opus 必須。品質は推論能力に直結する</span>
+            <span>全エージェントは <code>opus</code> を前提に設計し、難度の高いタスクでの推論品質を優先する</span>
           </li>
         </ul>
       </div>
       <div>
         <div class="ve-code-block">
           <pre><code>your-project/
-├── .claude/
-│   ├── agents/
-│   │   ├── analyst.md    # 役割・原則・通信プロトコル
-│   │   ├── builder.md
-│   │   └── qa.md
-│   └── skills/
-│       ├── analyze/
-│       │   └── SKILL.md
-│       └── build/
-│           ├── SKILL.md
-│           └── references/
-│               ├── patterns.md    # JiT 読み込み
-│               └── templates.md  # JiT 読み込み</code></pre>
+├── CLAUDE.md              # ポインタ + 変更履歴
+├── _workspace/            # 中間成果物 / 部分再実行
+└── .claude/
+    ├── agents/
+    │   ├── analyst.md     # 役割・原則・通信プロトコル
+    │   ├── builder.md
+    │   └── qa.md
+    └── skills/
+        ├── analyze/
+        │   └── SKILL.md
+        └── build/
+            ├── SKILL.md
+            └── references/
+                ├── patterns.md     # JiT 読み込み
+                └── templates.md</code></pre>
         </div>
         <div class="ve-callout info" style="margin-top:0.75rem">
-          <strong>QA エージェント統合:</strong> QA はモジュール完成直後に都度実行（incremental QA）。全体完成後 1 回ではなく、段階的に品質を積み上げる。
+          <strong>QA エージェント統合:</strong> QA はモジュール完成直後に都度実行する。さらに description には
+          「再実行」「更新」「同期」などの後続キーワードを含め、運用フェーズでも再びトリガーできるようにする。
         </div>
       </div>
     </div>
@@ -1092,10 +1174,21 @@ flowchart TD
           <li>単発タスク・通信不要な構成向け</li>
         </ul>
       </div>
+      <div class="exec-card">
+        <div class="exec-tag">混在モード</div>
+        <h3>ハイブリッド</h3>
+        <p>Phase ごとに Team と Subagent を切り替える。並列収集は軽く、合意形成や相互レビューだけ Team に寄せられる。</p>
+        <ul class="exec-items">
+          <li>Phase 単位で実行モードを明示できる</li>
+          <li>収集・統合・検証で異なるコスト特性を使い分ける</li>
+          <li><code>_workspace/</code> を中継地点にして再構成しやすい</li>
+          <li>既存ハーネス更新や部分再実行と相性がいい</li>
+        </ul>
+      </div>
     </div>
 
     <div class="ve-callout warn" style="margin-top:1rem">
-      <strong>選択指針:</strong> エージェントが 2 名以上で通信が必要なら Agent Teams を選択。1 名または通信不要（結果を渡すだけ）なら サブエージェントも選択肢に入る。Agent Teams が基本。
+      <strong>選択指針:</strong> まず Agent Teams を検討し、通信が構造的に不要なときだけサブエージェントを使う。収集と統合で性質が違うなら、Phase ごとに切り替えるハイブリッドを選ぶ。
     </div>
 
     <div style="margin-top:1.25rem">
@@ -1106,6 +1199,7 @@ flowchart TD
               <th>比較軸</th>
               <th>Agent Teams</th>
               <th>サブエージェント</th>
+              <th>ハイブリッド</th>
             </tr>
           </thead>
           <tbody>
@@ -1113,26 +1207,31 @@ flowchart TD
               <td>エージェント間通信</td>
               <td>SendMessage で直接通信</td>
               <td>なし（メイン経由のみ）</td>
+              <td>Phase 内だけ必要な側に持たせる</td>
             </tr>
             <tr>
-              <td>並列協調</td>
-              <td>自律的な共有タスク管理</td>
-              <td>並列実行は可能だが調整は手動</td>
+              <td>データ受け渡し</td>
+              <td>メッセージ / タスク / ファイル</td>
+              <td>戻り値 / ファイル</td>
+              <td>Phase ごとに切り替え</td>
             </tr>
             <tr>
               <td>トークンコスト</td>
               <td>高め</td>
               <td>低め</td>
+              <td>中間。重い区間だけ Team に寄せる</td>
+            </tr>
+            <tr>
+              <td>得意な仕事</td>
+              <td>合意形成・相互レビュー・長い協調</td>
+              <td>単発解析・軽量並列・結果収集</td>
+              <td>既存ハーネス更新・部分再実行・段階的検証</td>
             </tr>
             <tr>
               <td>制約</td>
               <td>セッション内 1 チームのみ活性</td>
-              <td>Agent ツール呼び出し数の上限</td>
-            </tr>
-            <tr>
-              <td>使用ツール</td>
-              <td>TeamCreate, SendMessage, TaskCreate</td>
-              <td>Agent(prompt, subagent_type)</td>
+              <td>Agent 呼び出しの調整をメインが背負う</td>
+              <td>切り替え境界のファイル規約が必要</td>
             </tr>
           </tbody>
         </table>
@@ -1147,39 +1246,41 @@ flowchart TD
     </div>
 
     <div class="ve-callout info" style="margin-bottom:1rem">
-      <strong>前提条件:</strong> Agent Teams 機能を有効化するために環境変数を設定してください。<br>
-      <code>export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1</code> — 詳細は <a href="https://code.claude.com/docs/en/agent-teams" target="_blank" rel="noopener">Agent Teams ドキュメント</a> を参照。
+      <strong>Quickstart 前提:</strong> Claude Code <code>v2.x</code> 以上、現在のシェルで
+      <code>CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1</code> を有効化する。Harness は
+      <code>TeamCreate</code> / <code>SendMessage</code> / <code>TaskCreate</code> を使うため、
+      このフラグが無いとチーム実行へ進めない。
     </div>
 
     <div class="install-cols">
       <div class="install-method recommended">
-        <div class="install-tag">推奨 — マーケットプレイス経由</div>
-        <h3>Plugin Marketplace</h3>
-        <p>Claude Code のプラグインマーケットプレイスを通じてワンコマンドでインストール。</p>
+        <div class="install-tag">推奨 — Quickstart 5 分</div>
+        <h3>Marketplace + Experimental flag</h3>
+        <p>現行 Quickstart は <code>claude plugin</code> コマンドを使う。追加・インストール・flag 有効化までを同じシェルで続けて実行する。</p>
         <div class="ve-code-block">
-          <pre><code># マーケットプレイスを追加
-/plugin marketplace add revfactory/harness
-
-# プラグインをインストール
-/plugin install harness@harness</code></pre>
+          <pre><code>claude plugin marketplace add revfactory/harness
+claude plugin install harness@harness
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1</code></pre>
         </div>
       </div>
       <div class="install-method">
-        <div class="install-tag">代替 — 直接インストール</div>
-        <h3>グローバルスキルとして配置</h3>
-        <p>リポジトリをクローンして <code>skills/harness</code> を直接 <code>~/.claude/skills/</code> にコピー。</p>
+        <div class="install-tag">確認 — 失敗時に見る項目</div>
+        <h3>Version / enable / active plugin</h3>
+        <p>何も生成されない時は、バージョン不足か、プラグインが現在のプロジェクトで有効になっていないことが多い。</p>
         <div class="ve-code-block">
-          <pre><code># リポジトリをクローン
-git clone https://github.com/revfactory/harness.git
-
-# スキルディレクトリをコピー
-cp -r harness/skills/harness \
-  ~/.claude/skills/harness</code></pre>
+          <pre><code>claude --version
+claude plugin list
+claude plugin enable harness@harness</code></pre>
         </div>
       </div>
     </div>
 
     <div style="margin-top:1.25rem">
+      <div class="ve-callout warn" style="margin-bottom:1rem">
+        <strong>直接配置する場合:</strong> marketplace を使わない時はリポジトリを clone し、
+        <code>skills/harness</code> を <code>~/.claude/skills/harness</code> へコピーする。
+        ただし現行 onboarding の主経路は marketplace + <code>claude plugin</code> コマンド。
+      </div>
       <p style="font-size:0.875rem;color:var(--text-dim);margin-bottom:0.75rem">インストール後、Claude Code で以下のトリガーフレーズで起動：</p>
       <div class="ve-code-block">
         <pre><code>Build a harness for this project
@@ -1196,9 +1297,12 @@ Set up a harness
         <pre><code>harness/
 ├── .claude-plugin/
 │   └── plugin.json                # プラグインマニフェスト
+├── docs/
+│   ├── quickstart.md              # 5分導入ガイド
+│   └── experimental-dependency.md # flag依存の説明
 ├── skills/
 │   └── harness/
-│       ├── SKILL.md               # メインスキル定義（6フェーズワークフロー）
+│       ├── SKILL.md               # 監査 + 6フェーズ本体 + 進化を束ねるメインスキル
 │       └── references/
 │           ├── agent-design-patterns.md
 │           ├── orchestrator-template.md
@@ -1214,11 +1318,11 @@ Set up a harness
     <!-- ═══ [07] USE CASES ═══ -->
     <div id="s7" class="sec-head">
       <span class="sec-num">07</span>
-      <h2>ユースケース — そのまま使えるプロンプト</h2>
+      <h2>ユースケース — プロンプト例</h2>
     </div>
 
     <p style="font-size:0.875rem;color:var(--text-dim);margin-bottom:1rem;line-height:1.6">
-      Harness インストール後、以下のプロンプトをそのまま Claude Code へコピーして使用できます。
+      Harness は初回生成だけでなく、既存ハーネスの点検・同期・部分再実行にも使える。以下は Claude Code に渡すときの書き方の例。
     </p>
 
     <div class="usecase-grid">
@@ -1262,13 +1366,23 @@ Set up a harness
         <h4>エピソード制作チーム</h4>
         <div class="usecase-prompt">Build a harness for webtoon episode production. I need agents for story writing, character design prompts, panel layout planning, and dialogue editing. They should review each other's work for style consistency.</div>
       </div>
+      <div class="usecase-card">
+        <div class="usecase-icon">運用保守</div>
+        <h4>既存ハーネス監査</h4>
+        <div class="usecase-prompt">ハーネスを点検して。今ある .claude/agents / .claude/skills / CLAUDE.md を監査して、ドリフトと不足しているポインタを洗い出して。</div>
+      </div>
+      <div class="usecase-card">
+        <div class="usecase-icon">更新</div>
+        <h4>部分再実行と同期</h4>
+        <div class="usecase-prompt">既存ハーネスを拡張して。レビュー用 QA エージェントを追加し、オーケストレーターと CLAUDE.md の変更履歴も同期して。</div>
+      </div>
     </div>
 
 
     <!-- ═══ [08] RESEARCH ═══ -->
     <div id="s8" class="sec-head">
       <span class="sec-num">08</span>
-      <h2>研究結果</h2>
+      <h2>実験結果と開示</h2>
     </div>
 
     <div class="research-hero">
@@ -1277,7 +1391,8 @@ Set up a harness
         <h3 style="font-size:1.25rem;font-weight:700;margin-bottom:0.4rem;letter-spacing:-0.02em;">Harness あり vs なし 統制実験</h3>
         <p style="font-size:0.875rem;color:var(--text-dim);line-height:1.55;max-width:560px;">
           構造化された事前設定が LLM コードエージェントの出力品質に与える影響を測定した統制実験。<br>
-          論文: <em>Hwang, M. (2026). Harness: Structured Pre-Configuration for Enhancing LLM Code Agent Output Quality.</em>
+          論文: <em>Hwang, M. (2026). Harness: Structured Pre-Configuration for Enhancing LLM Code Agent Output Quality.</em><br>
+          <strong>n=15 / author-measured A/B / third-party replications pending</strong> を前提に読む。
         </p>
         <div class="res-nums">
           <div class="res-stat">
@@ -1306,6 +1421,13 @@ Set up a harness
       </div>
     </div>
 
+    <div class="ve-callout warn" style="margin-bottom:1rem">
+      <strong>数字の扱い:</strong> source 側 README は、
+      <code>+60% avg quality (49.5 → 79.3), 15/15 win-rate, −32% variance</code> を
+      <code>n=15, author-measured A/B, third-party replications pending</code> とセットで使うよう求めている。
+      導入判断では自社の短期パイロットで再計測する前提が安全。
+    </div>
+
     <p style="font-size:0.8125rem;color:var(--text-dim);margin-bottom:0.75rem">課題難度別スコア改善（Harness なし → あり）</p>
     <div class="scale-row">
       <span class="scale-label">Basic</span>
@@ -1328,9 +1450,10 @@ Set up a harness
       <div>
         <h3>Harness 100</h3>
         <p>
-          10 ドメイン・100 のプロダクションレディなエージェントチームハーネス（英韓 200 パッケージ）。
-          コンテンツ制作、ソフトウェア開発、データ/AI、ビジネス戦略、教育、法律、ヘルスケアなど
-          1,808 の Markdown ファイル。本プラグインで生成されたハーネスのライブラリ。
+          10 ドメイン・100 のプロダクションレディなエージェントチームハーネスを収録し、
+          英語と韓国語を合わせて 200 パッケージを提供する。
+          コンテンツ制作、ソフトウェア開発、データ/AI、ビジネス戦略、教育、法律、ヘルスケアなどを含み、
+          本プラグインで生成された 1,808 の Markdown 資産が並ぶ。
         </p>
       </div>
       <div style="display:flex;flex-direction:column;gap:0.5rem;flex-shrink:0">
