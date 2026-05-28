@@ -113,6 +113,14 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
@@ -232,6 +240,7 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
+    <a href="#start-here">エントリーポイント</a>
     <a href="#how-it-works">仕組み</a>
     <a href="#plugins">プラグイン</a>
     <a href="#install">インストール</a>
@@ -241,7 +250,7 @@
 
   <div class="main">
     <h1>PM Skills Marketplace</h1>
-    <p class="subtitle">phuryn/pm-skills — プロダクト意思決定のための AI オペレーティングシステム</p>
+    <p class="subtitle">phuryn/pm-skills v1.0.1 — プロダクト意思決定のための AI オペレーティングシステム</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
@@ -256,7 +265,30 @@
       <p>ディスカバリーから戦略、実行、ローンチ、グロースまでをカバーする 8 プラグイン構成。Claude Code と <a href="https://cowork.anthropic.com" target="_blank" rel="noopener">Cowork</a> 向けに設計されているが、スキル単体は Gemini CLI / OpenCode / Cursor / Codex CLI / Kiro など任意のエージェントで使える。</p>
     </div>
 
-    <section id="how-it-works" class="sec-head">2 — 仕組み</section>
+    <section id="start-here" class="sec-head">2 — エントリーポイント</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> よく使うスラッシュコマンド</span>
+      <p>状況に応じて次のコマンドから始める。各コマンド完了後、関連する次のコマンドが提案される。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>状況</th><th>コマンド</th><th>主なプラグイン</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>新しいアイデアを検証したい</td><td><code>/discover</code></td><td>pm-product-discovery</td></tr>
+            <tr><td>戦略の骨格が欲しい</td><td><code>/strategy</code></td><td>pm-product-strategy</td></tr>
+            <tr><td>PRD を書きたい</td><td><code>/write-prd</code></td><td>pm-execution</td></tr>
+            <tr><td>ローンチ計画を立てたい</td><td><code>/plan-launch</code></td><td>pm-go-to-market</td></tr>
+            <tr><td>North Star を決めたい</td><td><code>/north-star</code></td><td>pm-marketing-growth</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top: 1rem">
+        <strong>スキルの明示呼び出し</strong> — 会話に関連するスキルは自動ロードされる。優先したい場合は <code>/plugin-name:skill-name</code> または <code>/skill-name</code>（Claude がプレフィックスを補完）で指定する。
+      </div>
+    </div>
+
+    <section id="how-it-works" class="sec-head">3 — 仕組み</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 3 つの構成要素</span>
       <p>「スキル」「コマンド」「プラグイン」が階層的に組み合わさって動く。コマンドは完了時に次の推奨コマンドを提案するため、PM ワークフロー全体が自然につながる。</p>
@@ -282,7 +314,7 @@
       <strong>リファレンススキルについて</strong> — <code>prioritization-frameworks</code> や <code>opportunity-solution-tree</code> のようなスキルはコマンドを介さず、会話に関連すれば自動で参照される。スラッシュコマンドは Claude 専用だが、スキルはどの AI ツールでも動く。
     </div>
 
-    <section id="plugins" class="sec-head">3 — プラグイン一覧</section>
+    <section id="plugins" class="sec-head">4 — プラグイン一覧</section>
     <div class="plugin-grid">
       <div class="plugin-card" style="--i:0">
         <div class="plugin-card__header">
@@ -580,7 +612,7 @@
       </div>
     </div>
 
-    <section id="install" class="sec-head">4 — インストール</section>
+    <section id="install" class="sec-head">5 — インストール</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> Claude Cowork（推奨）</span>
       <p>非開発者向けの最速経路。<strong>Customize → Browse plugins → Personal → + → Add marketplace from GitHub</strong> の順に進み、<code>phuryn/pm-skills</code> を入力すると全 8 プラグインが自動インストールされる。</p>
@@ -628,7 +660,7 @@ done</code></pre>
       </div>
     </div>
 
-    <section id="frameworks" class="sec-head">5 — 参照フレームワーク</section>
+    <section id="frameworks" class="sec-head">6 — 参照フレームワーク</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 思想的バックグラウンド</span>
       <p>スキルが参照する PM 実践者・書籍の一覧。汎用 AI の回答に代わり、これらの体系的なフレームワークを通じた構造化された思考を提供する。</p>
@@ -655,11 +687,12 @@ done</code></pre>
       </div>
     </div>
 
-    <section id="links" class="sec-head">6 — リンク</section>
+    <section id="links" class="sec-head">7 — リンク</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
       <ul>
         <li><a href="https://github.com/phuryn/pm-skills" target="_blank" rel="noopener">GitHub: phuryn/pm-skills</a> — 本体リポジトリ（MIT ライセンス）</li>
+        <li><a href="https://github.com/phuryn/pm-brain" target="_blank" rel="noopener">PM Brain</a> — PM 向けセカンドブレイン。ローカルの Markdown を Claude が読み書きし、PM Skills と組み合わせて使う</li>
         <li><a href="https://www.productcompass.pm" target="_blank" rel="noopener">The Product Compass Newsletter</a> — 作者 Paweł Huryn のニュースレター</li>
         <li><a href="https://github.com/phuryn/pm-skills/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a> — 貢献ガイド</li>
       </ul>
