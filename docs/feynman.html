@@ -227,7 +227,7 @@
     .skill-tag__desc { color: var(--text-dim); }
 
     /* ============ Compute cards ============ */
-    .compute-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.875rem; margin: 1rem 0; }
+    .compute-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; margin: 1rem 0; }
     @media (max-width: 640px) { .compute-row { grid-template-columns: 1fr; } }
     .compute-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; }
     .compute-card__title { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.375rem; }
@@ -289,9 +289,9 @@
         すべての出力はソースに根ざしており、論文・ドキュメント・リポジトリへの直接 URL を含む。
       </p>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">19</span><span class="ve-kpi-card__label">スキル</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">20</span><span class="ve-kpi-card__label">スキル</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">エージェント</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">9</span><span class="ve-kpi-card__label">研究ワークフロー</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">10</span><span class="ve-kpi-card__label">研究ワークフロー</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
       </div>
     </div>
@@ -316,6 +316,9 @@ $ feynman audit 2401.12345
 
 $ feynman replicate "chain-of-thought improves math"
 → ローカルまたはクラウド GPU で実験を再現
+
+$ feynman recipe "fine-tune a small model for math reasoning"
+→ 論文・データセット・ドキュメント・コードから実装可能な ML 学習レシピをランキング
 
 $ feynman summarize https://example.com/paper.pdf
 → 長い URL / PDF / ローカルファイルを窓読みし、要約を生成</code></pre>
@@ -356,20 +359,32 @@ $ feynman summarize https://example.com/paper.pdf
       <span class="ve-section-label"><span class="ve-dot"></span> スキルのみインストール</span>
       <p>フル CLI が不要でリサーチスキルだけ欲しい場合。<code>skills/</code> と <code>prompts/</code>、スキルが参照するガイド類を落とすが、<strong>ターミナル本体・同梱 Node・認証ストレージ・ Pi パッケージは入らない</strong>。</p>
       <div class="ve-code-block gap-sm">
-        <div class="cb-label">グローバル（~/.codex/skills/feynman）— macOS / Linux</div>
+        <div class="cb-label">Codex グローバル（~/.codex/skills/feynman）— macOS / Linux（既定）</div>
         <pre><code>curl -fsSL https://feynman.is/install-skills | bash</code></pre>
       </div>
       <div class="ve-code-block gap-sm">
-        <div class="cb-label">グローバル — Windows PowerShell</div>
+        <div class="cb-label">Codex グローバル — Windows PowerShell（既定）</div>
         <pre><code>irm https://feynman.is/install-skills.ps1 | iex</code></pre>
       </div>
       <div class="ve-code-block gap-sm">
-        <div class="cb-label">リポジトリローカル（.agents/skills/feynman）— macOS / Linux</div>
+        <div class="cb-label">Codex 明示 — macOS / Linux</div>
+        <pre><code>curl -fsSL https://feynman.is/install-skills | bash -s -- --codex</code></pre>
+      </div>
+      <div class="ve-code-block gap-sm">
+        <div class="cb-label">Claude / エージェント リポジトリローカル（.agents/skills/feynman）— macOS / Linux</div>
         <pre><code>curl -fsSL https://feynman.is/install-skills | bash -s -- --repo</code></pre>
       </div>
       <div class="ve-code-block gap-sm">
-        <div class="cb-label">リポジトリローカル — Windows PowerShell</div>
+        <div class="cb-label">Claude / エージェント リポジトリローカル — Windows PowerShell</div>
         <pre><code>&amp; ([scriptblock]::Create((irm https://feynman.is/install-skills.ps1))) -Scope Repo</code></pre>
+      </div>
+      <div class="ve-code-block gap-sm">
+        <div class="cb-label">OpenCode プロジェクトローカル（.opencode/skills/feynman）— macOS / Linux</div>
+        <pre><code>curl -fsSL https://feynman.is/install-skills | bash -s -- --opencode</code></pre>
+      </div>
+      <div class="ve-code-block gap-sm">
+        <div class="cb-label">OpenCode プロジェクトローカル — Windows PowerShell</div>
+        <pre><code>&amp; ([scriptblock]::Create((irm https://feynman.is/install-skills.ps1))) -Scope OpenCode</code></pre>
       </div>
     </div>
     <div class="ve-callout gap">
@@ -410,6 +425,11 @@ $ feynman summarize https://example.com/paper.pdf
               <td><code>/replicate &lt;paper&gt;</code></td>
               <td>ローカルまたはクラウド GPU で実験を再現。</td>
               <td><code>experiments/</code></td>
+            </tr>
+            <tr>
+              <td><code>/recipe &lt;task-or-paper&gt;</code></td>
+              <td>論文・データセット・ドキュメント・コードから実装可能な ML 学習レシピをランキング。Hugging Face Hub でデータセット schema を検証。</td>
+              <td><code>outputs/</code></td>
             </tr>
             <tr>
               <td><code>/compare &lt;topic&gt;</code></td>
@@ -592,6 +612,14 @@ flowchart TD
         </div>
         <div class="compute-card">
           <div class="compute-card__title">
+            <span class="badge badge--teal">Hub</span>
+          </div>
+          <div class="compute-card__body">
+            <a href="https://huggingface.co/docs/hub/api" target="_blank" rel="noopener">Hugging Face Hub</a> — データセット metadata・split/schema・リポジトリ内ファイルの読み取り専用検査（<code>hf_dataset_info</code> / <code>hf_repo_files</code> / <code>hf_repo_read_file</code>）。<code>/recipe</code> と <code>/replicate</code> で利用。
+          </div>
+        </div>
+        <div class="compute-card">
+          <div class="compute-card__title">
             <span class="badge badge--gold">Compute</span>
           </div>
           <div class="compute-card__body">
@@ -599,11 +627,12 @@ flowchart TD
           </div>
         </div>
       </div>
+      <p class="gap-sm">Hugging Face の private / gated リソースには <code>HF_TOKEN</code> または <code>HUGGINGFACE_HUB_TOKEN</code> を設定する。ツールは read-only で、重い weight や dataset shard のダウンロードは行わない。</p>
     </div>
 
     <section id="skills" class="sec-head">5 — スキル一覧</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 19 リサーチスキル</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> 20 リサーチスキル</span>
       <p>Pi スキル（Markdown 命令ファイル）として提供。起動時に <code>~/.feynman/agent/skills/</code> へ同期される。</p>
       <div class="skill-grid gap-sm">
         <div class="skill-tag"><span class="skill-tag__name">alpha-research</span><span class="skill-tag__desc">alphaXiv による論文検索・解析</span></div>
@@ -614,6 +643,7 @@ flowchart TD
         <div class="skill-tag"><span class="skill-tag__name">paper-code-audit</span><span class="skill-tag__desc">論文 vs コードの整合性監査</span></div>
         <div class="skill-tag"><span class="skill-tag__name">paper-writing</span><span class="skill-tag__desc">論文スタイル草稿の生成</span></div>
         <div class="skill-tag"><span class="skill-tag__name">replication</span><span class="skill-tag__desc">実験再現（ローカル / GPU）</span></div>
+        <div class="skill-tag"><span class="skill-tag__name">ml-training-recipe</span><span class="skill-tag__desc">論文・データセット・コードから ML 学習レシピを抽出</span></div>
         <div class="skill-tag"><span class="skill-tag__name">source-comparison</span><span class="skill-tag__desc">ソース比較マトリクス</span></div>
         <div class="skill-tag"><span class="skill-tag__name">docker</span><span class="skill-tag__desc">コンテナ隔離実行環境</span></div>
         <div class="skill-tag"><span class="skill-tag__name">modal-compute</span><span class="skill-tag__desc">サーバーレス GPU バースト</span></div>
@@ -700,6 +730,23 @@ flowchart TD
         </div>
       </div>
     </div>
+    <div class="ve-card gap" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> /recipe の出力</span>
+      <p><code>/recipe</code> は「どの論文があるか」ではなく「どのデータセット・手法・ハイパーパラメータ・コードパスを最初に試すべきか」を答える。各候補は result-to-recipe リンク（ベンチマーク結果 → 再現レシピ）で整理し、検証状態は <code>verified</code> / <code>unverified</code> / <code>blocked</code> / <code>inferred</code> で明示する。</p>
+      <div class="ve-table-wrap gap-sm">
+        <table>
+          <thead>
+            <tr><th>成果物</th><th>内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>outputs/.plans/&lt;slug&gt;-recipe.md</code></td><td>ターゲットタスク、候補ソース種別、検証制約、タスク台帳</td></tr>
+            <tr><td><code>outputs/.drafts/&lt;slug&gt;-recipe-research.md</code></td><td>調査中間ファイル（論文・Hub・コードの根拠）</td></tr>
+            <tr><td><code>outputs/&lt;slug&gt;-recipe.md</code></td><td>推奨レシピ、ランキング表、データセット注記、実装手順、既知ギャップ</td></tr>
+            <tr><td><code>outputs/&lt;slug&gt;-recipe.provenance.md</code></td><td>参照ソース、採用/却下、検証状態、成果物パス</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
     <div class="ve-callout gap">
       <strong>バックグラウンド実行:</strong> 長時間ワークフローは <code>clarify: false, async: true</code> でサブエージェントを非同期起動できる。非同期 ID と <code>subagent_status</code> で進捗確認が可能。
     </div>
@@ -707,7 +754,7 @@ flowchart TD
     <div class="ve-card ve-card--recessed gap" style="--i:1">
       <span class="ve-section-label"><span class="ve-dot"></span> 参考リンク</span>
       <ul>
-        <li><a href="https://github.com/getcompanion-ai/feynman" target="_blank" rel="noopener">GitHub: getcompanion-ai/feynman</a> — ソースリポジトリ</li>
+        <li><a href="https://github.com/companion-inc/feynman" target="_blank" rel="noopener">GitHub: companion-inc/feynman</a> — ソースリポジトリ</li>
         <li><a href="https://feynman.is/docs" target="_blank" rel="noopener">Feynman ドキュメント</a> — 公式ドキュメント</li>
         <li><a href="https://feynman.is" target="_blank" rel="noopener">feynman.is</a> — 公式サイト</li>
         <li><a href="https://github.com/badlogic/pi-mono" target="_blank" rel="noopener">Pi（エージェントランタイム）</a> — 基盤ランタイム</li>
