@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PM Skills Marketplace — プロダクト意思決定のための AI オペレーティングシステム</title>
-  <meta name="description" content="65 の PM スキルと 36 のチェーン済みワークフローを 8 プラグインに分類。ディスカバリーから戦略、実行、ローンチ、グロースまで。Claude Code と Cowork 向けマーケットプレイス。">
+  <meta name="description" content="phuryn/pm-skills のスキル・コマンド・プラグインを MECE で整理。65 スキル、36 コマンド、8 プラグインの役割分担と包含関係。Claude Code / Cowork 向け PM マーケットプレイス。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="PM Skills Marketplace — プロダクト意思決定のための AI オペレーティングシステム">
-  <meta property="og:description" content="65 の PM スキルと 36 のチェーン済みワークフローを 8 プラグインに分類。Claude Code と Cowork 向けマーケットプレイス。">
+  <meta property="og:description" content="スキル・コマンド・プラグインを MECE で整理した phuryn/pm-skills 解説。65 スキル、36 コマンド、8 プラグイン。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/pm-skills.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
@@ -233,7 +233,23 @@
     .plugin-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.04s); transition: border-color 0.2s ease; }
     .step-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.06s); }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+
+    /* ============ Mermaid ============ */
+    .mermaid-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin: 1rem 0 1.25rem;
+      overflow-x: auto;
+    }
+    .mermaid-wrap .mermaid { display: flex; justify-content: center; min-width: min(100%, 640px); }
+    .mece-pill { display: inline-flex; align-items: center; font-size: 0.6875rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; font-family: var(--font-mono); margin-right: 0.35rem; vertical-align: middle; }
+    .mece-pill--skill { background: oklch(0.55 0.16 42 / 0.14); color: var(--chart-1); }
+    .mece-pill--cmd { background: oklch(0.52 0.12 155 / 0.14); color: var(--chart-2); }
+    .mece-pill--plugin { background: oklch(0.398 0.07 227.392 / 0.14); color: var(--chart-3); }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -241,7 +257,7 @@
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
     <a href="#start-here">エントリーポイント</a>
-    <a href="#how-it-works">仕組み</a>
+    <a href="#how-it-works">3 要素（MECE）</a>
     <a href="#plugins">プラグイン</a>
     <a href="#install">インストール</a>
     <a href="#frameworks">参照フレームワーク</a>
@@ -288,30 +304,141 @@
       </div>
     </div>
 
-    <section id="how-it-works" class="sec-head">3 — 仕組み</section>
+    <section id="how-it-works" class="sec-head">3 — スキル・コマンド・プラグイン（MECE）</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 3 つの構成要素</span>
-      <p>「スキル」「コマンド」「プラグイン」が階層的に組み合わさって動く。コマンドは完了時に次の推奨コマンドを提案するため、PM ワークフロー全体が自然につながる。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> 分解の軸</span>
+      <p>PM Skills Marketplace に含まれる実行資産は、<strong>役割レイヤー</strong>で MECE（Mutually Exclusive, Collectively Exhaustive）に 3 分類できる。同じ名前の概念が混ざると「スラッシュコマンドなのか、自動で読まれる SKILL.md なのか、インストール単位なのか」が判別しづらくなるため、レイヤーごとに切り分ける。</p>
+      <ul>
+        <li><span class="mece-pill mece-pill--skill">Skill</span>知識・手順の<strong>最小単位</strong> — 1 つの PM フレームワークや 1 タスクの進め方</li>
+        <li><span class="mece-pill mece-pill--cmd">Command</span>ユーザーが <code>/</code> で起動する<strong>オーケストレーション</strong> — 複数スキルを順序付きで実行</li>
+        <li><span class="mece-pill mece-pill--plugin">Plugin</span>PM 領域ごとの<strong>配布パッケージ</strong> — 関連スキルとコマンドをまとめてインストール</li>
+      </ul>
     </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 相互排他 — 何が違うか</span>
+      <p>3 要素は<strong>重ならない</strong>。1 ファイルは必ずどれか一つのレイヤーに属し、役割も起動方法も異なる。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>分類軸</th>
+              <th><span class="mece-pill mece-pill--skill">スキル</span></th>
+              <th><span class="mece-pill mece-pill--cmd">コマンド</span></th>
+              <th><span class="mece-pill mece-pill--plugin">プラグイン</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>定義</td>
+              <td>エージェントに渡す<strong>ドメイン知識と手順</strong></td>
+              <td>ユーザーが明示起動する<strong>エンドツーエンドワークフロー</strong></td>
+              <td>スキルとコマンドを<strong>領域単位で束ねた配布物</strong></td>
+            </tr>
+            <tr>
+              <td>実体（ファイル）</td>
+              <td><code>skills/&lt;name&gt;/SKILL.md</code></td>
+              <td><code>commands/&lt;name&gt;.md</code></td>
+              <td><code>.claude-plugin/plugin.json</code> + プラグイン直下の <code>skills/</code> / <code>commands/</code></td>
+            </tr>
+            <tr>
+              <td>起動方法</td>
+              <td>会話に関連すれば<strong>自動ロード</strong>。<br><code>/plugin-name:skill-name</code> または <code>/skill-name</code> で<strong>明示</strong>も可</td>
+              <td><code>/command-name</code> のみ（例: <code>/discover</code>）</td>
+              <td><code>claude plugin install pm-execution@pm-skills</code> など。<br>Cowork では GitHub マーケットプレイスから一括</td>
+            </tr>
+            <tr>
+              <td>粒度</td>
+              <td>1 フレームワーク / 1 分析タスク</td>
+              <td>複数スキルを連鎖した 1 プロセス</td>
+              <td>1 PM 領域（discovery, strategy, execution 等）</td>
+            </tr>
+            <tr>
+              <td>他ツールでの利用</td>
+              <td><strong>可</strong> — <code>SKILL.md</code> を Cursor / OpenCode 等へコピー</td>
+              <td><strong>不可</strong> — スラッシュコマンドは Claude 専用</td>
+              <td><strong>Claude 系</strong> — Code / Cowork のプラグイン機構向け</td>
+            </tr>
+            <tr>
+              <td>他レイヤーとの関係</td>
+              <td>コマンドに<strong>使われる</strong>。単体でも会話から参照される</td>
+              <td>スキルを<strong>順序づけて呼ぶ</strong>。完了後に次コマンドを提案</td>
+              <td>スキル群 + コマンド群を<strong>包含する</strong>。Marketplace が 8 個を列挙</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> 全体性 — マーケットプレイスを漏れなく説明する</span>
+      <p>実行可能な中身はこの 3 層で<strong>全部</strong>説明できる。レジストリの <code>marketplace.json</code> は「8 プラグインの目次」であり、第 4 の実行単位ではない。</p>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TB
+  subgraph registry["Marketplace（レジストリ）"]
+    M["marketplace.json"]
+  end
+  subgraph plugin["Plugin 層 — 配布・領域分割"]
+    P1["pm-product-discovery"]
+    P2["pm-execution"]
+    P8["… 計 8 プラグイン"]
+  end
+  subgraph cmd["Command 層 — ユーザー起動"]
+    C1["/discover"]
+    C2["/write-prd"]
+    C3["/sprint"]
+  end
+  subgraph skill["Skill 層 — 知識・手順"]
+    S1["brainstorm-ideas-new"]
+    S2["create-prd"]
+    S3["sprint-plan"]
+  end
+  M --> P1 & P2 & P8
+  P1 --> C1
+  P2 --> C2 & C3
+  C1 --> S1
+  C2 --> S2
+  C3 --> S3
+        </pre>
+      </div>
+      <div class="ve-callout">
+        <strong>包含関係の向き</strong> — プラグイン ⊃ { スキル, コマンド }。コマンド → スキル（参照・チェーン）。逆方向はない（スキルがコマンドを内包しない、コマンドがプラグインを内包しない）。
+      </div>
+    </div>
+
     <div class="step-flow">
       <div class="step-card" style="--i:0">
-        <span class="step-card__num">Skills</span>
-        <span class="step-card__title">スキル — 知識の最小単位</span>
-        <p class="step-card__body">各スキルは PM ドメインの知識・分析フレームワーク・ガイドワークフローをエンコードする。会話に関連するスキルは自動ロードされるが、<code>/plugin-name:skill-name</code> で明示的に呼び出すことも可能。</p>
+        <span class="step-card__num">01</span>
+        <span class="step-card__title"><span class="mece-pill mece-pill--skill">Skill</span> スキル</span>
+        <p class="step-card__body">例: <code>create-prd</code> は 8 セクション PRD テンプレと執筆手順を <code>SKILL.md</code> に持つ。Teresa Torres の OST や RICE など<strong>参照型スキル</strong>はコマンドなしで会話から引かれる。</p>
       </div>
       <div class="step-card" style="--i:1">
-        <span class="step-card__num">Commands</span>
-        <span class="step-card__title">コマンド — スラッシュ起動のフロー</span>
-        <p class="step-card__body"><code>/discover</code> などのコマンドはスキルをチェーンして、エンドツーエンドのプロセスを走らせる。例: <code>/discover</code> は「アイデア出し → 仮定洗い出し → 優先順位付け → 実験設計」の 4 スキルを連続実行する。</p>
+        <span class="step-card__num">02</span>
+        <span class="step-card__title"><span class="mece-pill mece-pill--cmd">Command</span> コマンド</span>
+        <p class="step-card__body">例: <code>/discover</code> は <code>brainstorm-ideas-new</code> → <code>identify-assumptions-new</code> → <code>prioritize-assumptions</code> → <code>brainstorm-experiments-new</code> を順に適用。<code>/sprint</code> は <code>plan|retro|release</code> モードで別スキルを切り替える。</p>
       </div>
       <div class="step-card" style="--i:2">
-        <span class="step-card__num">Plugins</span>
-        <span class="step-card__title">プラグイン — 領域ごとの束</span>
-        <p class="step-card__body">8 プラグインが PM ドメインを分割して担当する。マーケットプレイスをインストールすると全 8 プラグインが一括導入される。複数コマンドが同一スキルを共有することもある。</p>
+        <span class="step-card__num">03</span>
+        <span class="step-card__title"><span class="mece-pill mece-pill--plugin">Plugin</span> プラグイン</span>
+        <p class="step-card__body">例: <code>pm-execution</code> は 15 スキル + 10 コマンド（PRD, OKR, スプリント等）を 1 パッケージにまとめる。Cowork で <code>phuryn/pm-skills</code> を追加すると 8 プラグインが一括インストールされる。</p>
       </div>
     </div>
-    <div class="ve-callout">
-      <strong>リファレンススキルについて</strong> — <code>prioritization-frameworks</code> や <code>opportunity-solution-tree</code> のようなスキルはコマンドを介さず、会話に関連すれば自動で参照される。スラッシュコマンドは Claude 専用だが、スキルはどの AI ツールでも動く。
+
+    <div class="ve-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> 判定 — 今触っているのはどれか</span>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+  Q{"操作の種類は？"}
+  Q -->|"claude plugin install / Cowork で追加"| PL["プラグイン — 配布単位"]
+  Q -->|"/ で始める"| CM["コマンド — ワークフロー起動"]
+  Q -->|"自然言語でフレームワークを聞く"| SK["スキル — 自動 or /skill-name"]
+  CM --> CH["内部で 1 つ以上のスキルを順に適用"]
+  SK --> RF["コマンド不要の参照スキルもあり"]
+        </pre>
+      </div>
+      <p>コマンド完了後に「次は <code>/strategy</code> を試す」と提案されるのは、<strong>コマンド間のチェーン</strong>であり、スキルやプラグインの境界をまたぐ誘導である（PM ワークフロー全体の接続）。</p>
     </div>
 
     <section id="plugins" class="sec-head">4 — プラグイン一覧</section>
@@ -700,6 +827,19 @@ done</code></pre>
   </div>
 </div>
 
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: 'oklch(0.97 0 0)',
+    primaryTextColor: 'oklch(0.205 0 0)',
+    primaryBorderColor: 'oklch(0.708 0 0)',
+    lineColor: 'oklch(0.556 0 0)',
+    fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif'
+  }
+});
+</script>
 <script>
 (function() {
   var toc = document.getElementById('toc');
