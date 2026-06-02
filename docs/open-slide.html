@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>open-slide — エージェント向けスライドフレームワーク</title>
-  <meta name="description" content="React で 1920×1080 キャンバスを描画するスライド用 OSS。CLI 初期化、コメント駆動の修正ループ、プレゼン／静的 HTML・PDF 出力、pnpm + Turbo のモノレポ構成の要約。">
+  <meta name="description" content="React で 1920×1080 キャンバスを描画するスライド用 OSS。CLI 初期化、エージェントスキル、コメント駆動の修正ループ、プレゼン／静的 HTML・PDF 出力、pnpm + Turbo のモノレポ構成の技術概要。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
@@ -123,10 +123,10 @@
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
-    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
     .ve-table-wrap tbody tr:hover { background: var(--border); }
     .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
-    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; color: var(--chart-1); }
     .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
     .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
     .ve-callout strong { color: var(--foreground); font-weight: 600; }
@@ -189,7 +189,39 @@
     .kpi-row .ve-kpi-card { min-width: 0; }
     @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
 
-    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+    .skill-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .skill-grid { grid-template-columns: 1fr; } }
+    .skill-tag {
+      background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 0.625rem 0.875rem; font-size: 0.8125rem; line-height: 1.45;
+    }
+    .skill-tag__name { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--chart-1); display: block; margin-bottom: 0.25rem; }
+    .skill-tag__desc { color: var(--text-dim); }
+
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.875rem 1rem; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; color: var(--chart-2); margin-bottom: 0.35rem; }
+    .step-card__title { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .step-card__body { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.5; }
+
+    .mermaid-wrap { position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--card); margin: 1rem 0; }
+    .mermaid-wrap--simple { padding: 1rem; overflow-x: auto; display: flex; justify-content: center; }
+    .mermaid-ctrl { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 10; }
+    .mermaid-ctrl button {
+      width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 5px;
+      background: var(--card); color: var(--text-dim); font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: background 0.1s;
+    }
+    .mermaid-ctrl button:hover { background: var(--muted); color: var(--text); }
+    .mermaid-viewport { overflow: hidden; cursor: grab; min-height: 280px; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+    .mermaid-viewport:active { cursor: grabbing; }
+    .mermaid-inner { transform-origin: 50% 50%; transition: transform 0.2s ease; }
+    .mermaid { display: flex; justify-content: center; }
+    .mermaid .nodeLabel { color: var(--text) !important; }
+    .mermaid .edgeLabel { color: var(--text-dim) !important; background-color: var(--bg) !important; }
+
+    .gap-sm { margin-top: 0.75rem; }
 
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
@@ -202,7 +234,9 @@
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
     <a href="#authoring">エージェント連携</a>
+    <a href="#contract">スライド契約</a>
     <a href="#capabilities">ランタイム機能</a>
+    <a href="#cli">CLI</a>
     <a href="#workflow">編集ループ</a>
     <a href="#layout">モノレポ</a>
     <a href="#setup">セットアップ</a>
@@ -216,37 +250,101 @@
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
-    <p>各スライドは <strong>1920 × 1080</strong> の固定キャンバス上に描画される任意の React コンポーネントである。DSL に閉じず、エージェントが普段どおり TSX を書ける。ホットリロード、ページ遷移、プレゼンモード、静的 HTML と PDF のエクスポートまでをフレームワーク側が担う。</p>
+    <p>各スライドは <strong>1920 × 1080</strong> の固定キャンバス上に描画される任意の React コンポーネントである。制約 DSL ではなく、エージェントが普段どおり TSX を書ける。キャンバス・スケーリング・ページ遷移・ホットリロード・プレゼンモード・静的 HTML と PDF のエクスポートまでをフレームワーク側が担う。</p>
     <div class="kpi-row">
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">1920×1080</span><span class="ve-kpi-card__label">キャンバス</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">React</span><span class="ve-kpi-card__label">ページ表現</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">Vite</span><span class="ve-kpi-card__label">開発・ビルド</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
     </div>
-    <p>公開ソースは GitHub の <a href="https://github.com/1weiho/open-slide" target="_blank" rel="noopener">1weiho/open-slide</a>。npm では <code>@open-slide/cli</code> などがスキャフォールドとテンプレート配布に使われる。</p>
+    <p>公開ソースは GitHub の <a href="https://github.com/1weiho/open-slide" target="_blank" rel="noopener">1weiho/open-slide</a>。npm では <code>@open-slide/cli</code> がスキャフォールド、<code>@open-slide/core</code> がランタイムと Vite プラグインを提供する。</p>
   </div>
 
   <section id="authoring" class="sec-head">2 — エージェント連携</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 同梱スキルとコマンド</span>
-    <p>初期化されたワークスペースには、スライド作成と実装ルールを読ませるためのエージェントスキルが含まれる。</p>
-    <ul>
-      <li><strong><code>/create-slide</code></strong> — トピック・トーン、枚数、テキスト量、モーションの有無を質問し、デッキ ID と構成を決めてから各ページの TSX を生成する。</li>
-      <li><strong><code>/slide-authoring</code></strong> — キャンバス寸法、タイポの段階、配色、レイアウト規約など、実装前にエージェントが参照する技術メモ。</li>
-      <li><strong><code>/apply-comments</code></strong> — インスペクタで付けた <code>@slide-comment</code> をソースに反映し、マーカーを消す。</li>
-    </ul>
+    <span class="ve-section-label"><span class="ve-dot"></span> 同梱スキル</span>
+    <p>初期化されたワークスペースには、スライド作成と実装ルールを読ませるためのエージェントスキルが含まれる。Claude Code 向けに揃えられているが、Codex や Cursor など他のエージェントでも同じリポジトリを編集する使い方が想定されている。</p>
+    <div class="skill-grid">
+      <div class="skill-tag">
+        <span class="skill-tag__name">/create-slide</span>
+        <span class="skill-tag__desc">トピック・ aesthetic、枚数、テキスト量、モーションの有無を質問し、デッキ ID と構成を決めてから各ページの TSX を生成する。</span>
+      </div>
+      <div class="skill-tag">
+        <span class="skill-tag__name">/slide-authoring</span>
+        <span class="skill-tag__desc">1920×1080 キャンバス、タイポ段階、配色、レイアウト規約など、実装前にエージェントが参照する技術リファレンス。</span>
+      </div>
+      <div class="skill-tag">
+        <span class="skill-tag__name">/apply-comments</span>
+        <span class="skill-tag__desc">インスペクタで付けた <code>@slide-comment</code> をソースに反映し、マーカーを消す。</span>
+      </div>
+      <div class="skill-tag">
+        <span class="skill-tag__name">/create-theme</span>
+        <span class="skill-tag__desc">再利用可能なテーマ（パレット・タイポ・レイアウト）を Markdown で定義し、複数デッキから参照できるようにする。</span>
+      </div>
+      <div class="skill-tag">
+        <span class="skill-tag__name">/current-slide</span>
+        <span class="skill-tag__desc">「このページ」「今見ているスライド」など指示語を、具体的な <code>slideId</code> と <code>pageIndex</code> に解決する。</span>
+      </div>
+    </div>
   </div>
-  <div class="ve-callout">
-    <strong>運用上の前提:</strong> Claude Code 向けにスキルが揃えられているが、README の記述どおり Codex や Cursor など他のエージェントでも同じリポジトリを編集する使い方が想定されている。
+  <div class="ve-card ve-card--recessed gap-sm" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> /create-slide の流れ</span>
+    <div class="step-flow">
+      <div class="step-card">
+        <div class="step-card__num">STEP 1–2</div>
+        <div class="step-card__title">テーマと要件</div>
+        <div class="step-card__body"><code>themes/</code> からテーマを選ぶか、トピック・ aesthetic・枚数・テキスト密度・モーション有無を質問する。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">STEP 3–4</div>
+        <div class="step-card__title">ID と構成</div>
+        <div class="step-card__body">kebab-case の slide id を決め、Cover / Agenda / Content などページ役割のリストを先に組む。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">STEP 5–6</div>
+        <div class="step-card__title">ビジュアルと実装</div>
+        <div class="step-card__body"><code>slide-authoring</code> に従い <code>export const design</code> でパレットを宣言し、<code>slides/&lt;id&gt;/index.tsx</code> を書く。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">STEP 7</div>
+        <div class="step-card__title">セルフレビュー</div>
+        <div class="step-card__body">1 ページ 1 アイデア、キャンバス端からの余白、タイポ段階が揃っているかを確認する。</div>
+      </div>
+    </div>
   </div>
 
-  <section id="capabilities" class="sec-head">3 — ランタイム機能</section>
+  <section id="contract" class="sec-head">3 — スライド契約</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ファイル構造</span>
+    <p>スライドは <code>slides/&lt;kebab-case-id&gt;/index.tsx</code> がエントリ。画像・動画・フォントは同フォルダの <code>assets/</code> に置く。1 デッキ = 1 TSX + assets のみ（兄弟コンポーネントファイルは作らない）。</p>
+    <div class="ve-code-block"><pre><code>// slides/my-deck/index.tsx
+import type { Page, SlideMeta } from '@open-slide/core';
+
+const Cover: Page = () =&gt; (
+  &lt;div style={{ width: '100%', height: '100%' }}&gt;…&lt;/div&gt;
+);
+
+export const meta: SlideMeta = {
+  title: 'My deck',
+  createdAt: '2026-05-16T12:00:00Z',
+  theme: 'aurora', // 任意: themes/ の id
+};
+
+export default [Cover] satisfies Page[];</code></pre></div>
+    <ul>
+      <li><code>export default</code> は props なし React コンポーネントの<strong>非空配列</strong>（表示順 = 配列順）。</li>
+      <li>各ページは 1920×1080 を前提に px 指定。フォントサイズは hero 140–200px、本文 32–44px など段階表を起点にする。</li>
+      <li><code>meta.createdAt</code> は ISO 8601 文字列リテラル。ホーム画面の「新しい順」ソートに使われる。</li>
+    </ul>
+  </div>
+
+  <section id="capabilities" class="sec-head">4 — ランタイム機能</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 開発・配布</span>
     <ul>
       <li><strong>インスペクタ:</strong> 開発サーバー上で要素をクリックし、コメントを付与。コメントはソース内の <code>@slide-comment</code> として保持される。</li>
       <li><strong>アセット:</strong> 画像・動画・フォントをデッキ単位で管理。ブランド SVG は <a href="https://svgl.app/" target="_blank" rel="noopener">svgl</a> カタログから検索して取り込める。</li>
-      <li><strong>プレゼン:</strong> 全画面再生、キーボード操作、プレゼンターモード（現在／次スライド、ノート、タイマー）。</li>
+      <li><strong>プレゼン:</strong> 全画面再生、キーボード操作、プレゼンターモード（現在／次スライド、スピーカーノート、タイマー）。</li>
       <li><strong>エクスポート:</strong> 自己完結した静的 HTML サイト、または印刷向け PDF を CLI から出力。</li>
       <li><strong>スライドマネージャ:</strong> 複数デッキをフォルダと絵文字で整理し、ドラッグで並べ替え。</li>
     </ul>
@@ -256,13 +354,54 @@
     <p>成果物は静的ファイルのみ。Vercel、Cloudflare Pages、Netlify 等の静的ホスティングにそのまま載せられる（サーバ常駐ランタイムは不要）。</p>
   </div>
 
-  <section id="workflow" class="sec-head">4 — 編集ループ</section>
+  <section id="cli" class="sec-head">5 — CLI</section>
+  <div class="ve-table-wrap">
+    <table>
+      <thead>
+        <tr><th>コマンド</th><th>説明</th><th>主なフラグ</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>npx @open-slide/cli init &lt;name&gt;</code></td>
+          <td>最小ワークスペースを生成。Vite / React / tsconfig は core に隠蔽される。</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><code>open-slide dev</code></td>
+          <td>開発サーバーを起動。</td>
+          <td><code>-p, --port</code> · <code>--host</code> · <code>--open</code></td>
+        </tr>
+        <tr>
+          <td><code>open-slide build</code></td>
+          <td>静的サイトをビルド。</td>
+          <td><code>--out-dir</code>（既定 <code>dist</code>）</td>
+        </tr>
+        <tr>
+          <td><code>open-slide preview</code></td>
+          <td>本番ビルドをプレビュー。</td>
+          <td><code>-p, --port</code> · <code>--host</code> · <code>--open</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <h3>設定（任意）</h3>
+  <p>ワークスペース直下の <code>open-slide.config.ts</code> でスライドディレクトリやポートを上書きできる。</p>
+  <div class="ve-code-block"><pre><code>import type { OpenSlideConfig } from '@open-slide/core';
+
+const openSlideConfig: OpenSlideConfig = {
+  slidesDir: 'slides',
+  port: 5173,
+};
+
+export default openSlideConfig;</code></pre></div>
+
+  <section id="workflow" class="sec-head">6 — 編集ループ</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> プレビューとコメントの往復</span>
     <p>README が示すループを、処理の順序として整理した。</p>
-    <div class="mermaid-wrap">
+    <div class="mermaid-wrap mermaid-wrap--simple">
       <pre class="mermaid">
-flowchart LR
+flowchart TD
   A[プレビュー] --> B[要素クリック]
   B --> C["@slide-comment 付与"]
   C --> D["/apply-comments"]
@@ -271,24 +410,48 @@ flowchart LR
       </pre>
     </div>
   </div>
+  <div class="ve-callout">
+    <strong>運用:</strong> プレゼンしながら画面上で修正指示を残し、エージェントに一括反映させる。手動で TSX を開く往復より、視覚的フィードバックを優先するワークフロー向け。
+  </div>
 
-  <section id="layout" class="sec-head">5 — モノレポ</section>
-  <div class="ve-table-wrap">
+  <section id="layout" class="sec-head">7 — モノレポ</section>
+  <div class="mermaid-wrap">
+    <div class="mermaid-ctrl">
+      <button type="button" id="arch-zoom-in" title="拡大">+</button>
+      <button type="button" id="arch-zoom-out" title="縮小">−</button>
+      <button type="button" id="arch-zoom-reset" title="リセット">⊙</button>
+    </div>
+    <div class="mermaid-viewport" id="arch-mermaid-vp">
+      <div class="mermaid-inner" id="arch-mermaid-inner">
+        <div class="mermaid">
+flowchart TD
+  Init["npx @open-slide/cli init"] --> WS["User workspace<br/><small>slides/ · themes/</small>"]
+  WS --> Core["@open-slide/core"]
+  Core --> Vite["Vite plugin<br/><small>virtual modules</small>"]
+  Core --> UI["Viewer · Present · Inspector"]
+  Core --> CLI2["open-slide dev / build / preview"]
+  Demo["apps/demo"] -.->|"workspace:*"| Core
+  Web["apps/web"] -.->|"docs site"| Core
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ve-table-wrap gap-sm">
     <table>
       <thead>
-        <tr><th>パス</th><th>役割</th></tr>
+        <tr><th>パス</th><th>パッケージ</th><th>役割</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>packages/core</code>（<code>@open-slide/core</code>）</td><td>ホーム、スライドビューア、プレゼン、インスペクタ、Vite プラグイン、<code>open-slide</code> の dev / build / preview CLI。</td></tr>
-        <tr><td><code>packages/cli</code>（<code>@open-slide/cli</code>）</td><td><code>npx @open-slide/cli init</code> による最小ワークスペースの生成。設定や React の詳細は core に隠蔽。</td></tr>
-        <tr><td><code>apps/demo</code></td><td>ローカル開発用。workspace 参照で <code>@open-slide/core</code> を消費するサンプルデッキ。</td></tr>
-        <tr><td><code>apps/web</code></td><td>ドキュメント／マーケ用の Web アプリ（公式サイト側の構成）。</td></tr>
+        <tr><td><code>packages/core</code></td><td><code>@open-slide/core</code></td><td>ホーム、スライドビューア、プレゼン、インスペクタ、Vite プラグイン、<code>open-slide</code> CLI。</td></tr>
+        <tr><td><code>packages/cli</code></td><td><code>@open-slide/cli</code></td><td><code>init</code> スキャフォールドとプロジェクトテンプレート。</td></tr>
+        <tr><td><code>apps/demo</code></td><td>private</td><td>ローカル開発用。workspace 参照で core を dogfood するサンプルデッキ。</td></tr>
+        <tr><td><code>apps/web</code></td><td>private</td><td>公式ドキュメント／マーケ用 Next.js サイト。</td></tr>
       </tbody>
     </table>
   </div>
-  <p>ルートは <strong>pnpm</strong> ワークスペースと <strong>Turbo</strong> でオーケストレーション。品質ゲートは Biome と Vitest が担う。</p>
+  <p>ルートは <strong>pnpm</strong> ワークスペースと <strong>Turbo</strong> でオーケストレーション。品質ゲートは Biome（format + lint）と Vitest が担う。</p>
 
-  <section id="setup" class="sec-head">6 — セットアップ</section>
+  <section id="setup" class="sec-head">8 — セットアップ</section>
   <h3>新規デッキ</h3>
   <div class="ve-code-block"><pre><code>npx @open-slide/cli init my-slide
 cd my-slide
@@ -296,23 +459,108 @@ pnpm dev</code></pre></div>
   <p>エージェント運用の制約事項はリポジトリ直下の <a href="https://github.com/1weiho/open-slide/blob/main/CLAUDE.md" target="_blank" rel="noopener">CLAUDE.md</a> にまとまっている。スライド本体は <code>slides/&lt;id&gt;/index.tsx</code> から編集する。</p>
   <h3>フレームワーク本体の開発</h3>
   <div class="ve-code-block"><pre><code>pnpm install
-pnpm dev
+pnpm dev          # demo が local core を参照
 pnpm build
-pnpm check
-pnpm lint</code></pre></div>
+pnpm check        # biome
+pnpm test         # vitest</code></pre></div>
 
-  <section id="links" class="sec-head">7 — 参照</section>
+  <section id="links" class="sec-head">9 — 参照</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
     <ul>
       <li><a href="https://github.com/1weiho/open-slide" target="_blank" rel="noopener">GitHub: 1weiho/open-slide</a></li>
       <li><a href="https://www.npmjs.com/package/@open-slide/cli" target="_blank" rel="noopener">npm: @open-slide/cli</a></li>
+      <li><a href="https://www.npmjs.com/package/@open-slide/core" target="_blank" rel="noopener">npm: @open-slide/core</a></li>
       <li><a href="https://svgl.app/" target="_blank" rel="noopener">svgl</a> — ロゴ SVG 検索（製品連携）</li>
     </ul>
   </div>
   </div>
 </div>
 
+<script>
+(function() {
+  var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    look: 'classic',
+    securityLevel: 'strict',
+    themeVariables: {
+      primaryColor: isDark ? '#3d2020' : '#fce8e8',
+      primaryBorderColor: isDark ? '#c45c5c' : '#9f1239',
+      primaryTextColor: isDark ? '#fce8e8' : '#3d2020',
+      secondaryColor: isDark ? '#2a2418' : '#fef3c7',
+      secondaryBorderColor: isDark ? '#b8860b' : '#92400e',
+      secondaryTextColor: isDark ? '#fef3c7' : '#2a2418',
+      tertiaryColor: isDark ? '#1a2830' : '#e0f2fe',
+      tertiaryBorderColor: isDark ? '#0891b2' : '#0369a1',
+      lineColor: isDark ? '#64748b' : '#94a3b8',
+      fontSize: '15px',
+      fontFamily: 'var(--font-body)'
+    }
+  });
+})();
+</script>
+<script>
+(function() {
+  var vp = document.getElementById('arch-mermaid-vp');
+  var inner = document.getElementById('arch-mermaid-inner');
+  if (!vp || !inner) return;
+  var scale = 1;
+  var originX = 0;
+  var originY = 0;
+  var dragging = false;
+  var startX;
+  var startY;
+  var startOX;
+  var startOY;
+
+  var applyTransform = function() {
+    inner.style.transform = 'translate(' + originX + 'px, ' + originY + 'px) scale(' + scale + ')';
+  };
+
+  document.getElementById('arch-zoom-in').addEventListener('click', function() {
+    scale = Math.min(scale + 0.2, 3);
+    applyTransform();
+  });
+  document.getElementById('arch-zoom-out').addEventListener('click', function() {
+    scale = Math.max(scale - 0.2, 0.3);
+    applyTransform();
+  });
+  document.getElementById('arch-zoom-reset').addEventListener('click', function() {
+    scale = 1;
+    originX = 0;
+    originY = 0;
+    applyTransform();
+  });
+
+  vp.addEventListener('wheel', function(e) {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    scale = Math.max(0.3, Math.min(3, scale - e.deltaY * 0.001));
+    applyTransform();
+  }, { passive: false });
+
+  vp.addEventListener('mousedown', function(e) {
+    dragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    startOX = originX;
+    startOY = originY;
+    vp.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    originX = startOX + (e.clientX - startX);
+    originY = startOY + (e.clientY - startY);
+    applyTransform();
+  });
+  window.addEventListener('mouseup', function() {
+    dragging = false;
+    vp.style.cursor = scale > 1 ? 'grab' : 'default';
+  });
+})();
+</script>
 <script>
 (function() {
   var toc = document.getElementById('toc');
@@ -339,9 +587,6 @@ pnpm lint</code></pre></div>
   window.addEventListener('scroll', updateActive, { passive: true });
   updateActive();
 })();
-</script>
-<script>
-  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'strict' });
 </script>
 </body>
 </html>
