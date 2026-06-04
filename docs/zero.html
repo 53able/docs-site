@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Zero — エージェント向けシステムプログラミング言語</title>
-  <meta name="description" content="vercel-labs/zero の要点。明示的エフェクト・予測可能なメモリ・構造化コンパイラ出力を備えたエージェント向けシステム言語と CLI。">
+  <title>Zero — グラフファーストのエージェント向け言語</title>
+  <meta name="description" content="vercel-labs/zero（zerolang）の要点。ProgramGraph による意味構造の検査・編集、.0 ソース、バージョン一致スキル、構造化 CLI 出力。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Zero — エージェント向けシステムプログラミング言語">
-  <meta property="og:description" content="小さなネイティブツール向けの実験的システム言語。World による明示的 I/O、check/raises、バージョン一致スキル配布。">
+  <meta property="og:title" content="Zero — グラフファーストのエージェント向け言語">
+  <meta property="og:description" content="ソースは .0 テキストが正。コンパイラが導出する ProgramGraph でエージェントが意味的事実を inspect / patch する実験言語。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/zero.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Zero — エージェント向けシステムプログラミング言語">
-  <meta name="twitter:description" content="vercel-labs/zero：エージェントが扱いやすい CLI・診断・スキルと、明示的エフェクトを持つ .0 言語。">
+  <meta name="twitter:title" content="Zero — グラフファーストのエージェント向け言語">
+  <meta name="twitter:description" content="vercel-labs/zero：graph dump / patch、check --json、zero skills。エージェント向けコンパイラ CLI。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -210,8 +210,8 @@
   <nav class="toc" id="toc" aria-label="目次">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
-    <a href="#design">設計思想</a>
-    <a href="#language">言語の骨格</a>
+    <a href="#graph">ProgramGraph</a>
+    <a href="#language">.0 ソース</a>
     <a href="#repo">リポジトリ構成</a>
     <a href="#cli">CLI</a>
     <a href="#skills">スキル配布</a>
@@ -221,58 +221,81 @@
 
   <div class="main">
     <p class="back"><a href="../index.html">← 資料一覧</a></p>
-    <h1>Zero（vercel-labs/zero）</h1>
-    <p class="subtitle">エージェント向けシステム言語 · 明示的エフェクト · 構造化コンパイラ出力 · Apache-2.0</p>
+    <h1>Zero（zerolang）</h1>
+    <p class="subtitle">vercel-labs/zero · ProgramGraph · .0 ソース · Apache-2.0 · v0.2.x</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
-      <p><strong>Zero</strong> は、エージェントが扱う小さなネイティブツール向けのシステムプログラミング言語。明示的なエフェクト、予測可能なメモリ、構造化されたコンパイラ出力を重視する（README の説明に基づく）。言語・標準ライブラリ・コンパイラはまだ実験段階で、安定版ではない。</p>
+      <p><strong>zerolang</strong>（リポジトリ名 <strong>zero</strong>）は、エージェントが生テキストではなく<strong>意味的プログラム構造</strong>で作業するための実験的グラフファースト言語。人間がレビューする <code>.0</code> ソースが正であり、コンパイラが導出する <strong>ProgramGraph</strong> がエージェント向けインターフェースになる（README より）。</p>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">.0</span><span class="ve-kpi-card__label">ソース拡張子</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">CLI</span><span class="ve-kpi-card__label">check / run / build</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">JSON</span><span class="ve-kpi-card__label">機械可読な診断・グラフ</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">.0</span><span class="ve-kpi-card__label">正規ソース</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Graph</span><span class="ve-kpi-card__label">inspect / patch</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">JSON</span><span class="ve-kpi-card__label">診断・契約フィールド</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">skills</span><span class="ve-kpi-card__label">バイナリ版と一致</span></div>
       </div>
-      <p>公式サイト <a href="https://zerolang.ai" target="_blank" rel="noopener">zerolang.ai</a> からインストーラを取得し、<code>zero</code> CLI でチェック・実行・ビルドする。人間向けの長文ドキュメントは同梱の <code>docs-site/</code>（Next.js）が担う。</p>
+      <p>設計目標はトークン効率・低メモリ・高速起動・高速ビルド・低レイテンシ・ゼロ依存。公式サイト <a href="https://zerolang.ai" target="_blank" rel="noopener">zerolang.ai</a> から CLI を入れ、<code>zero graph</code> / <code>zero check</code> で開発ループを回す。</p>
+      <div class="ve-callout ve-callout--warn">
+        <strong>安全:</strong> セキュリティ上の脆弱性は想定される。本番・機密データ・信頼インフラには未対応。隔離された使い捨て環境で扱う（README の Safety status）。
+      </div>
     </div>
 
-    <section id="design" class="sec-head">2 — 設計思想（エージェントが読み取りやすくするため）</section>
+    <section id="graph" class="sec-head">2 — ProgramGraph（エージェント向け中核）</section>
     <div class="ve-card" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> 明示性</span>
-      <p>グローバルな隠れ I/O を避け、ランタイムが渡す <code>World</code> 能力オブジェクト経由で出力などを行う。失敗可能な操作は <code>check</code> で伝播し、関数は <code>raises</code> で失敗しうることを宣言する。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> なぜグラフか</span>
+      <p>ソーステキストだけでは、参照関係・所有権・エフェクト・import 境界を推測しがち。ProgramGraph はコンパイラが所有する checked 構造で、node ID・graph hash・型・エフェクト・モジュール辺などをスライス単位で返す。エージェントは行範囲ではなく <code>#expr_653eeb6e</code> のようなノードを編集対象にできる。</p>
       <div class="pipeline">
-        <span class="step">World 能力</span>
+        <span class="step">.0 ソース</span>
         <span class="arrow">→</span>
-        <span class="step">check / raises</span>
+        <span class="step">graph dump</span>
         <span class="arrow">→</span>
-        <span class="step">構造化診断</span>
+        <span class="step">inspect / patch</span>
         <span class="arrow">→</span>
-        <span class="step">zero explain / fix</span>
+        <span class="step">validate → 書き戻し</span>
       </div>
-      <div class="ve-callout">
-        <strong>実験中:</strong> 言語仕様・CLI・標準ライブラリは変わりうる。本番依存の前提にしない（README）。
+      <h3>ダンプ例</h3>
+      <div class="ve-code-block"><pre><code>zero graph dump examples/hello.0</code></pre></div>
+      <p>出力には <code>zero-graph v1</code>、モジュール名、<code>hash "graph:…"</code>、ノード（Function / Param / MethodCall / Literal 等）、辺（arg / body）が含まれる。hash は stale コンテキスト拒否、node ID は inspect したグラフ上の編集ハンドル。</p>
+      <h3>checked graph patch</h3>
+      <div class="ve-code-block"><pre><code>zero graph patch examples/hello.0 \
+  --expect-graph-hash graph:a7f7e6899a73f3b4 \
+  --op 'set node="#expr_653eeb6e" field="value" expect="hello from zero\n" value="hello graph\n"'</code></pre></div>
+      <p><code>--expect-graph-hash</code> と <code>expect</code> で、inspect 時点と異なる状態への誤パッチを拒否する。対応する canonical <code>.0</code> では、検証後に lower → format → reparse → check までコンパイラが一括処理する。</p>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">flowchart LR
+  SRC[".0 ソース（正）"]
+  DUMP["graph dump / --json"]
+  PATCH["graph patch"]
+  CHK["graph check / zero check"]
+  SRC --> DUMP
+  DUMP --> PATCH
+  PATCH --> CHK
+  CHK --> SRC</pre>
       </div>
-      <h3>ターゲットと成果物</h3>
-      <p>ネイティブ実行ファイル、オブジェクト、WASM などを <code>zero build --emit</code> で直接生成する。生成 C バックエンドにフォールバックする経路は削除済み（<code>zero-builds</code> スキル）。クロスビルド用の <code>--target</code>（例: <code>linux-musl-x64</code>、<code>wasm32-wasi</code>）を指定できる。</p>
     </div>
 
-    <section id="language" class="sec-head">3 — 言語の骨格</section>
+    <section id="language" class="sec-head">3 — .0 ソースの骨格</section>
     <div class="ve-card" style="--i:2">
       <span class="ve-section-label"><span class="ve-dot"></span> 最小プログラム</span>
-      <p>エントリは <code>pub fun main(world: World) -> Void raises</code>。トップレベルには <code>use</code>、<code>const</code>、<code>shape</code>、<code>enum</code>、<code>choice</code>、<code>fun</code>、<code>test</code> などがある（<code>zero-language</code> スキル）。</p>
-      <div class="ve-code-block"><pre><code>pub fun main(world: World) -> Void raises {
-    check world.out.write("hello from zero\n")
+      <p>エントリは <code>pub fn main(world: World) -> Void raises</code>。<code>World</code> はランタイム能力、<code>check</code> は失敗可能呼び出し、<code>raises</code> は関数の失敗可能性を宣言する（<code>language</code> スキル）。</p>
+      <div class="ve-code-block"><pre><code>fn answer() -> i32 {
+    return 40 + 2
+}
+
+pub fn main(world: World) -> Void raises {
+    if answer() == 42 {
+        check world.out.write("math works\n")
+    }
 }</code></pre></div>
-      <h3>制御と型</h3>
+      <h3>宣言と制御</h3>
       <ul>
-        <li>束縛は原則 <code>let</code>、変更が必要なときだけ <code>let mut</code></li>
-        <li>条件は <code>Bool</code> のみ（整数や文字列の真偽値は使わない）</li>
-        <li>構造体は <code>shape</code>、列挙は <code>enum</code>、結果の和型は <code>choice</code></li>
+        <li>トップレベル: <code>use</code>、<code>const</code>、<code>type</code>、<code>enum</code>、<code>choice</code>、<code>fn</code>、<code>test</code></li>
+        <li>束縛は原則 <code>let</code>、変更時のみ <code>var</code></li>
+        <li>条件は <code>Bool</code> のみ（整数・文字列の真偽値は使わない）</li>
         <li><code>match</code> は網羅的。フォールバックは <code>_</code> 臂</li>
       </ul>
       <h3>パッケージ</h3>
-      <p><code>zero.json</code> で実行可能パッケージやライブラリを定義する。<code>zero new cli|lib|package</code> で雛形を生成し、<code>use helpers</code> のようなパッケージローカル import は <code>src/</code> から解決する（<code>zero-packages</code> スキル）。</p>
+      <p><code>zero.json</code> で exe / lib パッケージを定義。<code>use helpers</code> のようなパッケージローカル import は <code>src/</code> から解決する（<code>packages</code> スキル）。</p>
       <div class="ve-code-block"><pre><code>{
   "package": { "name": "hello", "version": "0.1.0" },
   "targets": { "cli": { "kind": "exe", "main": "src/main.0" } }
@@ -284,21 +307,20 @@
       <span class="ve-section-label"><span class="ve-dot"></span> モノレポの層</span>
       <div class="mermaid-wrap">
         <pre class="mermaid">flowchart TB
-  subgraph lang["言語とツール"]
-    NC[native/zero-c ネイティブコンパイラ]
-    CZ[compiler-zero Zero 記述コンパイラ]
-    CONF[conformance フィクスチャ]
+  subgraph core["コンパイラと検証"]
+    NC[native/zero-c]
+    CONF[conformance]
+    EVAL[evals]
   end
-  subgraph surface["開発者向け表面"]
-    EX[examples 実行例]
-    DS[docs-site 公式ドキュメント]
-    VS[extensions/vscode .0 ハイライト]
-    SK[skills + skill-data エージェント用]
+  subgraph surface["開発者向け"]
+    EX[examples]
+    DOC[docs 公式サイト]
+    VS[extensions/vscode]
+    SK[skills + skill-data]
   end
-  CLI[bin/zero CLI] --> NC
-  CLI --> CZ
+  CLI[bin/zero] --> NC
   EX --> CLI
-  DS --> CLI</pre>
+  DOC --> CLI</pre>
       </div>
       <div class="ve-table-wrap">
         <table>
@@ -306,70 +328,82 @@
             <tr><th>パス</th><th>役割</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>native/zero-c/</code></td><td>ネイティブコンパイラ実装（<code>make</code> でビルド）</td></tr>
-            <tr><td><code>compiler-zero/</code></td><td>Zero で書かれたコンパイラ本体</td></tr>
-            <tr><td><code>examples/</code></td><td>概念別の実行可能サンプル（<code>hello.0</code>、パッケージ例など）</td></tr>
-            <tr><td><code>conformance/</code></td><td>言語・CLI の振る舞いフィクスチャ</td></tr>
-            <tr><td><code>docs-site/</code></td><td>公式ドキュメント（pnpm / Next.js）</td></tr>
-            <tr><td><code>skill-data/</code></td><td>CLI が配布する詳細スキル（言語・診断・ビルド等）</td></tr>
-            <tr><td><code>extensions/vscode/</code></td><td>エディタ向けシンタックス</td></tr>
-            <tr><td><code>tests/</code></td><td>CLI 契約の TypeScript テスト</td></tr>
+            <tr><td><code>native/zero-c/</code></td><td>ネイティブコンパイラ（<code>make -C native/zero-c</code>）</td></tr>
+            <tr><td><code>examples/</code></td><td>実行可能サンプル（<code>hello.0</code>、パッケージ、agent-repair-demo 等）</td></tr>
+            <tr><td><code>conformance/</code></td><td>言語・CLI・ProgramGraph のフィクスチャ</td></tr>
+            <tr><td><code>docs/</code></td><td>公式ドキュメント（Next.js / pnpm workspace）</td></tr>
+            <tr><td><code>skill-data/</code></td><td>CLI が配布する版一致スキル本文</td></tr>
+            <tr><td><code>skills/zero/</code></td><td>エージェント向け発見スタブ（<code>SKILL.md</code>）</td></tr>
+            <tr><td><code>std/</code></td><td>標準ライブラリ <code>.0</code> ソース</td></tr>
+            <tr><td><code>evals/</code></td><td>エージェント向け評価ハーネス</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <section id="cli" class="sec-head">5 — CLI（開発ループ）</section>
+    <section id="cli" class="sec-head">5 — CLI（inspect / repair / build）</section>
     <div class="ve-card" style="--i:4">
-      <span class="ve-section-label"><span class="ve-dot"></span> よく使うコマンド</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> コンパイラネイティブ契約</span>
+      <p>エージェント向け inspect / repair はコンパイラ CLI に集約される。安定フィールドは <code>--json</code> で取得する（README の Compiler-Native Contracts）。</p>
       <div class="ve-table-wrap">
         <table>
           <thead>
-            <tr><th>コマンド</th><th>用途</th></tr>
+            <tr><th>コマンド</th><th>契約</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>zero check &lt;file|package&gt;</code></td><td>型・診断の検査（<code>--json</code> 可）</td></tr>
-            <tr><td><code>zero run &lt;file|package&gt;</code></td><td>ホスト上で実行（<code>--</code> 以降はプログラム引数）</td></tr>
-            <tr><td><code>zero build --emit exe|obj|wasm</code></td><td>成果物を直接生成</td></tr>
-            <tr><td><code>zero graph --json</code></td><td>依存・モジュール構造の可視化用データ</td></tr>
-            <tr><td><code>zero size --json</code></td><td>サイズプロファイル</td></tr>
-            <tr><td><code>zero routes --json</code></td><td>Web ターゲットのルート一覧</td></tr>
-            <tr><td><code>zero explain &lt;code&gt;</code></td><td>診断コードの説明</td></tr>
-            <tr><td><code>zero fix --plan --json</code></td><td>修復プランの取得</td></tr>
-            <tr><td><code>zero doctor --json</code></td><td>環境・ツールチェーンの健全性</td></tr>
+            <tr><td><code>zero skills get language</code></td><td>バイナリ同梱の言語ルール</td></tr>
+            <tr><td><code>zero check --json</code></td><td>診断コード・span・repair メタ・ターゲット readiness</td></tr>
+            <tr><td><code>zero parse --json</code></td><td>宣言・シグネチャ・body ノード種別の安定サマリ</td></tr>
+            <tr><td><code>zero graph --json</code></td><td>モジュール・import・capabilities・effects・ownership</td></tr>
+            <tr><td><code>zero graph dump</code></td><td>決定的 ProgramGraph テキスト（hash / node ID / edge）</td></tr>
+            <tr><td><code>zero graph patch</code></td><td>graph-hash と field expect 付き checked 編集</td></tr>
+            <tr><td><code>zero fix --plan --json</code></td><td>ファイルを書き換えない修復プラン</td></tr>
+            <tr><td><code>zero size --json</code></td><td>retained helpers・サイズ理由・artifact budget</td></tr>
+            <tr><td><code>zero run</code> / <code>zero build</code></td><td>実行・<code>--emit exe|obj|wasm</code> 直接生成</td></tr>
+            <tr><td><code>zero doctor --json</code></td><td>ツールチェーン健全性</td></tr>
           </tbody>
         </table>
       </div>
+      <h3>診断 → 修復デモ</h3>
+      <div class="ve-code-block"><pre><code>zero check --json conformance/check/fail/unknown-name.0
+zero explain --json TYP009
+zero fix --plan --json examples/agent-repair-demo/broken.0
+pnpm run agent:demo</code></pre></div>
       <h3>インストールと最初の実行</h3>
       <div class="ve-code-block"><pre><code>curl -fsSL https://zerolang.ai/install.sh | bash
 export PATH="$HOME/.zero/bin:$PATH"
 zero --version
 zero check examples/hello.0
 zero run examples/add.0</code></pre></div>
-      <p><code>examples/add.0</code> を実行すると、README 記載のとおり <code>math works</code> が標準出力に出る。</p>
+      <p><code>examples/add.0</code> の期待出力は <code>math works</code>。リポジトリ checkout ではグローバルではなく <code>bin/zero</code> を優先する。</p>
+      <div class="ve-callout">
+        <strong>互換:</strong> 実験段階のため破壊的変更を許容。旧 syntax 互換レイヤは置かない（README の Compatibility Policy）。
+      </div>
     </div>
 
     <section id="skills" class="sec-head">6 — バージョン一致スキル</section>
     <div class="ve-card" style="--i:5">
-      <span class="ve-section-label"><span class="ve-dot"></span> エージェント向け配布</span>
-      <p><code>skills/zero/SKILL.md</code> は発見用の薄いスタブ。実ワークフローは、インストール済みコンパイラが返す版一致コンテンツを使う（同梱スキル）。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> 配布モデル</span>
+      <p><code>skills/zero/SKILL.md</code> は発見用スタブ。実ワークフローは、プロジェクトを走らせるのと同じ <code>zero</code> バイナリが返す版一致コンテンツを使う。</p>
       <div class="ve-code-block"><pre><code>zero skills list
 zero skills get zero
-zero skills get zero --full</code></pre></div>
-      <p>複数バイナリがある場合は、実際にプロジェクトを走らせる <code>zero</code> と同じパスで <code>skills</code> を呼ぶ。リポジトリ checkout 上の作業では <code>bin/zero</code> を優先する（<code>skills/zero/SKILL.md</code>）。</p>
+zero skills get zero --full
+zero skills get language
+zero skills get graph</code></pre></div>
       <div class="ve-table-wrap">
         <table>
           <thead>
             <tr><th>内蔵スキル（例）</th><th>用途</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>zero-language</code></td><td>構文・意味のコンパクトガイド</td></tr>
-            <tr><td><code>zero-diagnostics</code></td><td>診断コードと修復の読み方</td></tr>
-            <tr><td><code>zero-packages</code></td><td><code>zero.json</code> と import</td></tr>
-            <tr><td><code>zero-builds</code></td><td>run / build / ターゲット</td></tr>
-            <tr><td><code>zero-testing</code></td><td>テスト実行の慣習</td></tr>
-            <tr><td><code>zero-stdlib</code></td><td>標準ライブラリモジュール</td></tr>
-            <tr><td><code>zero-agent</code></td><td>エージェント修復デモ向け</td></tr>
+            <tr><td><code>graph</code></td><td>ProgramGraph inspect / patch / reconcile</td></tr>
+            <tr><td><code>language</code></td><td>.0 構文・意味のコンパクトガイド</td></tr>
+            <tr><td><code>diagnostics</code></td><td>診断コードと修復の読み方</td></tr>
+            <tr><td><code>packages</code></td><td><code>zero.json</code> と import</td></tr>
+            <tr><td><code>builds</code></td><td>run / build / ターゲット</td></tr>
+            <tr><td><code>testing</code></td><td>テスト実行の慣習</td></tr>
+            <tr><td><code>stdlib</code></td><td>標準ライブラリモジュール</td></tr>
+            <tr><td><code>agent</code></td><td>エージェント修復デモ向け</td></tr>
           </tbody>
         </table>
       </div>
@@ -377,17 +411,17 @@ zero skills get zero --full</code></pre></div>
 
     <section id="validate" class="sec-head">7 — リポジトリ内の検証</section>
     <div class="ve-card ve-card--recessed" style="--i:6">
-      <span class="ve-section-label"><span class="ve-dot"></span> npm スクリプト</span>
-      <p>ルート <code>package.json</code> から、サンドボックス付きの conformance・ネイティブテスト・ドキュメントサイトテストなどを実行できる。</p>
-      <div class="ve-code-block"><pre><code>npm run docs:dev
-npm run docs:test
-npm run conformance
-npm run native:test
-npm run command-contracts
-npm run bench</code></pre></div>
-      <p>ドキュメントサイトは <code>pnpm --prefix docs-site dev</code> でローカル起動。Playground 用 WASM は <code>docs:wasm</code> スクリプトでビルドされる。</p>
-      <div class="ve-callout ve-callout--warn">
-        <strong>学習順:</strong> <code>docs-site/articles/getting-started.md</code> → <code>learn-zero.md</code> → <code>language-reference.md</code> → <code>examples/README.md</code>（README の Learn Zero 節）。
+      <span class="ve-section-label"><span class="ve-dot"></span> pnpm スクリプト</span>
+      <p>ルート <code>package.json</code>（pnpm workspace）から conformance・ネイティブテスト・ドキュメントテストなどを実行する。</p>
+      <div class="ve-code-block"><pre><code>pnpm run docs:test
+pnpm run conformance
+pnpm run native:test
+pnpm run command-contracts
+pnpm run bench
+pnpm run agent:demo</code></pre></div>
+      <p>ローカルコンパイラは <code>make -C native/zero-c</code>。公式ドキュメントサイトは <code>pnpm run docs:dev</code> で起動（<code>docs/</code> パッケージ）。</p>
+      <div class="ve-callout">
+        <strong>学習順:</strong> 公式 <code>docs/articles/getting-started.md</code> → <code>learn-zero.md</code> → <code>language-reference.md</code> → <code>examples/README.md</code>。
       </div>
     </div>
 
@@ -397,10 +431,11 @@ npm run bench</code></pre></div>
       <ul>
         <li><a href="https://github.com/vercel-labs/zero" target="_blank" rel="noopener">GitHub: vercel-labs/zero</a> — 本体リポジトリ（Apache-2.0）</li>
         <li><a href="https://zerolang.ai" target="_blank" rel="noopener">zerolang.ai</a> — インストーラと公式ドキュメント入口</li>
-        <li>リポジトリ内 <code>README.md</code> — Quick Start、Common Commands、Repository Layout</li>
+        <li>リポジトリ内 <code>README.md</code> — Why Graph、Quick Start、Common Commands</li>
         <li>リポジトリ内 <code>skills/zero/SKILL.md</code> — スキル発見スタブ</li>
-        <li>リポジトリ内 <code>skill-data/zero-*.md</code> — CLI 配布用の詳細スキル</li>
-        <li>リポジトリ内 <code>docs-site/articles/</code> — 言語リファレンスとチュートリアル</li>
+        <li>リポジトリ内 <code>skill-data/</code> — CLI 配布用スキル（<code>graph.md</code>、<code>language.md</code> 等）</li>
+        <li>リポジトリ内 <code>docs/articles/</code> — 言語リファレンスとチュートリアル</li>
+        <li>リポジトリ内 <code>CHANGELOG.md</code> — v0.2.x の ProgramGraph / 直接 emit 変更履歴</li>
       </ul>
     </div>
   </div>
