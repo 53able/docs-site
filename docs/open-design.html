@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Open Design — BYOエージェントで動くデザイン生成シェル</title>
-  <meta name="description" content="Open Design は、既存のコーディングエージェント CLI と SKILL.md / DESIGN.md を組み合わせ、プロトタイプ・デッキ・テンプレートをローカルファーストに生成するオープンソース製品です。">
+  <title>Open Design — コーディングエージェント向けデザイン生成ワークスペース</title>
+  <meta name="description" content="Open Design 0.9.0 の技術概要。150 の DESIGN.md、261 プラグイン、21 のコーディング CLI、HyperFrames・ライブアーティファクト・MCP 連携を、ローカルファーストのデスクトップ/Web アプリとして整理する。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Open Design — BYOエージェントで動くデザイン生成シェル">
-  <meta property="og:description" content="既存のCLIエージェント、SKILL.md、DESIGN.mdを束ねて、編集可能なデザイン成果物を作るローカルファーストなWebアプリ。">
+  <meta property="og:title" content="Open Design — コーディングエージェント向けデザイン生成ワークスペース">
+  <meta property="og:description" content="SKILL.md・DESIGN.md・プラグインを束ね、既存 CLI をデザインエンジンにする Open Design の構造解説（0.9.0 時点）。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/open-design.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Open Design — BYOエージェントで動くデザイン生成シェル">
-  <meta name="twitter:description" content="SKILL.md と DESIGN.md を重ね、既存のコードエージェントをデザインエンジンにするOpen Designの構造解説。">
+  <meta name="twitter:title" content="Open Design — コーディングエージェント向けデザイン生成ワークスペース">
+  <meta name="twitter:description" content="150 Design Systems・261 Plugins・21 Coding Agents。HyperFrames、MCP、AMR を含む Open Design のアーキテクチャ解説。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,650&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -192,9 +192,12 @@
     a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
     a:hover { color: var(--chart-3); }
     code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
-    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin: 1.25rem 0; }
     .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
     .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    @media (max-width: 900px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    }
     @media (max-width: 760px) {
       .kpi-row,
       .grid-2,
@@ -224,32 +227,66 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
+    <a href="#product">画面構成</a>
     <a href="#loop">生成ループ</a>
-    <a href="#architecture">構成</a>
-    <a href="#skills">Skills と Design Systems</a>
-    <a href="#modes">4つのモード</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#catalog">カタログ</a>
+    <a href="#agents">エージェント連携</a>
+    <a href="#artifacts">成果物タイプ</a>
     <a href="#guardrails">品質ゲート</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
     <h1>Open Design</h1>
-    <p class="subtitle">Local-first design shell for the coding agent you already use. Claude Design の「成果物ファースト」な体験を、既存CLI・ファイルベースSkills・Markdown Design Systemsで開く。</p>
+    <p class="subtitle">ローカルファーストのオープンソース製品。既存のコーディングエージェント CLI と <code>SKILL.md</code> / <code>DESIGN.md</code> / プラグインを束ね、プロトタイプ・ライブアーティファクト・デッキ・画像・動画を生成する。README 0.9.0 時点の構成を整理する。</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 何が新しいか</span>
-      <p><strong>Open Design</strong> は、Claude Code、Codex CLI、Cursor Agent、Gemini CLI、OpenCode、Qwen Code、GitHub Copilot CLI など、利用者の手元にあるコーディングエージェントを「デザインエンジン」として起動するWebアプリ。プロダクト自体はモデルもエージェントループも抱え込まず、<code>SKILL.md</code> と <code>DESIGN.md</code> を合成して、HTMLプロトタイプ・スライドデッキ・ドキュメントテンプレートを作らせる。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> プロダクトの位置づけ</span>
+      <p><strong>Open Design</strong> は、Claude Design が示した「ブリーフを固める → 方向を決める → 成果物をストリーム → 批評 → 納品」というエージェントネイティブなループを、クローズド実装からファイルベースのスキル・デザインシステム・プラグインへ開いた製品。macOS / Windows 向けネイティブデスクトップアプリと Web UI を持ち、手元の CLI をデザインエンジンとして起動する。</p>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">19</span><span class="ve-kpi-card__label">built-in skills</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">71</span><span class="ve-kpi-card__label">design systems</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">7 + API</span><span class="ve-kpi-card__label">agent paths</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">BYOK</span><span class="ve-kpi-card__label">at every layer</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">100+</span><span class="ve-kpi-card__label">skills</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">150</span><span class="ve-kpi-card__label">design systems</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">261</span><span class="ve-kpi-card__label">plugins</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">21</span><span class="ve-kpi-card__label">coding agents</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">14</span><span class="ve-kpi-card__label">media providers</span></div>
       </div>
-      <p>核は「作る前に質問フォームで前提を固める」「Skillが成果物の型を決める」「Design Systemが見た目を決める」「daemonがローカルCLIを実行する」の4点。AIが自由演技でデザインするのではなく、ファイル化された制約とチェックリストで出力のブレを抑える設計になっている。</p>
+      <p>0.9.0 では公式 Model Router（AMR）がアプリ内蔵され、追加の CLI 設定や API キー準備なしで生成を開始できる。CLI が無い場合は BYOK プロキシ（<code>POST /api/proxy/{anthropic,openai,azure,google,ollama,senseaudio}/stream</code>）へフォールバックする。</p>
+      <div class="ve-callout">
+        <strong>設計判断:</strong> Open Design はモデルもエージェントループも抱え込まない。既存 CLI の tool loop と権限管理を使い、スキル合成・プレビュー・保存・エクスポートの統合シェルに徹する。
+      </div>
     </div>
 
-    <section id="loop" class="sec-head">2 — 生成ループ</section>
+    <section id="product" class="sec-head">2 — 画面構成</section>
+    <div class="grid-3">
+      <div class="ve-card structure-card" style="--i:0">
+        <h3>Home</h3>
+        <p>Skill と Design System を選び、ブリーフを入力して実行する入口。Chip Rail で Image / Video / HyperFrames / Audio などの Composer Surface を切り替える。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:1">
+        <h3>Automation</h3>
+        <p>反復するデザインワークフローを再利用可能な自動化として登録・スケジュールする画面。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:2">
+        <h3>Design System</h3>
+        <p>チームの <code>DESIGN.md</code> をブランド契約として蒸留し、以降の出力に一貫した視覚言語を適用する。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:3">
+        <h3>Plugin</h3>
+        <p>公式・コミュニティのプラグインを閲覧・インストールし、生成パイプラインを拡張する。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:4">
+        <h3>Integrations</h3>
+        <p>外部システムや MCP ツールを接続し、IDE・スクリプト・自動化から Open Design を呼び出す。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:5">
+        <h3>Studio</h3>
+        <p>プロジェクト内の制作画面。同一 Design System から Prototype・HyperFrame・Deck・Image など複数成果物を扱う。</p>
+      </div>
+    </div>
+
+    <section id="loop" class="sec-head">3 — 生成ループ</section>
     <div class="grid-2">
       <div class="ve-card" style="--i:0">
         <span class="ve-section-label"><span class="ve-dot"></span> ユーザー操作から成果物まで</span>
@@ -257,111 +294,129 @@
           <div class="loop-step">
             <span class="loop-num">01</span>
             <div class="loop-body">
-              <span class="loop-title">Brief を受ける</span>
-              <p class="loop-text">ユーザーがSkill、Design System、短い依頼文を選ぶ。新規依頼では質問フォームを先に出し、出力面・対象読者・トーン・規模を確定する。</p>
+              <span class="loop-title">Discover</span>
+              <p class="loop-text">Home で Skill / Design System / プラグインを選び、ブリーフを入力。新規依頼では質問フォームで出力面・読者・トーン・規模を先に固定する。</p>
             </div>
           </div>
           <div class="loop-step">
             <span class="loop-num">02</span>
             <div class="loop-body">
-              <span class="loop-title">Prompt stack を合成</span>
-              <p class="loop-text">基礎プロンプト、発見質問、アクティブな <code>DESIGN.md</code>、アクティブな <code>SKILL.md</code>、必要なテンプレート参照を一つの実行文脈に束ねる。</p>
+              <span class="loop-title">Lock direction</span>
+              <p class="loop-text">発見質問、アクティブな <code>DESIGN.md</code>、<code>SKILL.md</code>、プラグインの <code>open-design.json</code>、テンプレート参照をプロンプトスタックへ合成する。</p>
             </div>
           </div>
           <div class="loop-step">
             <span class="loop-num">03</span>
             <div class="loop-body">
-              <span class="loop-title">ローカルCLIを起動</span>
-              <p class="loop-text">daemonが検出済みエージェントをプロジェクト用の作業ディレクトリで起動し、標準出力をSSEとしてUIへ流す。CLIがなければBYOK API経路へ落ちる。</p>
+              <span class="loop-title">Stream artifact</span>
+              <p class="loop-text">daemon が検出済みエージェントをプロジェクト作業ディレクトリで起動し、tool call とテキストを SSE で UI へ流す。CLI が無ければ BYOK API 経路へ落ちる。</p>
             </div>
           </div>
           <div class="loop-step">
             <span class="loop-num">04</span>
             <div class="loop-body">
-              <span class="loop-title">Artifact をプレビュー</span>
-              <p class="loop-text">モデル出力から <code>&lt;artifact&gt;</code> を取り出し、サンドボックスiframeに表示する。保存・ZIP・PDF・PPTXなどの出力はSkillの型に沿って扱う。</p>
+              <span class="loop-title">Critique &amp; deliver</span>
+              <p class="loop-text">サンドボックス iframe でプレビューし、コメント・スライダー・チャットで refinement。HTML / PDF / PPTX / MP4 / ZIP など Skill 定義に沿ってエクスポートする。</p>
             </div>
           </div>
         </div>
       </div>
       <div class="ve-card ve-card--recessed" style="--i:1">
         <span class="ve-section-label"><span class="ve-dot"></span> Prompt stack</span>
-        <p>Open Designでは「プロンプトスタックがプロダクト」。コード上では、発見質問と設計哲学を最優先に置き、その後ろに公式デザイナー憲章、Design System、Skill、デッキ用フレームワークを重ねる。</p>
+        <p>プロダクトの中核は「プロンプトスタック」。発見質問と設計哲学を最優先に置き、その後ろへ Design System・Skill・プラグイン指示・デッキ用フレームワークを重ねる。</p>
         <div class="ve-code-block" aria-label="Prompt stack">
           <pre><code>DISCOVERY directives
   + identity and workflow charter
   + active DESIGN.md
   + active SKILL.md
+  + plugin scenario / open-design.json
   + project metadata
   + skill side files
   + deck framework directive</code></pre>
         </div>
-        <div class="ve-callout">
-          <strong>設計判断:</strong> Open Designはエージェント本体を所有しない。既存CLIが得意なtool loopや権限管理を使い、Open DesignはSkill、Design System、プレビュー、保存、エクスポートの「統合シェル」に徹する。
-        </div>
       </div>
     </div>
 
-    <section id="architecture" class="sec-head">3 — 構成</section>
+    <section id="architecture" class="sec-head">4 — アーキテクチャ</section>
     <div class="grid-3">
       <div class="ve-card structure-card" style="--i:0">
         <h3>Web App</h3>
-        <p>Next.js 16 + React のUI層。チャット、Skill / Design System選択、artifact tree、sandboxed iframeプレビュー、エクスポート導線を持つ。</p>
+        <p>Next.js 16 + React。チャット、Skill / Design System 選択、artifact tree、サンドボックス iframe、エクスポート導線を担う。</p>
       </div>
       <div class="ve-card structure-card" style="--i:1">
-        <h3>Local daemon</h3>
-        <p>Expressベースの特権側プロセス。エージェント検出、Skill登録、Design System解決、チャットSSE、ファイル保存、エクスポートを担当する。</p>
+        <h3>Desktop shell</h3>
+        <p>macOS / Windows 向けネイティブシェル。GUI 起動時の PATH 問題を吸収し、daemon と一体で配布される。</p>
       </div>
       <div class="ve-card structure-card" style="--i:2">
-        <h3>Agent adapters</h3>
-        <p>各CLIの検出と起動引数を吸収する薄い層。構造化ストリームを持つCLIはtyped events、その他はline-buffered出力で扱う。</p>
+        <h3>Local daemon</h3>
+        <p>デフォルト <code>localhost:7456</code>。エージェント検出、Skill / プラグイン登録、SSE チャット、ファイル保存、エクスポートを担当。</p>
       </div>
       <div class="ve-card structure-card" style="--i:3">
-        <h3>Contracts</h3>
-        <p>Webとdaemonが共有する型とAPI契約。プロジェクト、chat、files、artifacts、registryなどの境界をTypeScriptで揃える。</p>
+        <h3>packages/</h3>
+        <p><code>contracts</code>・<code>plugin-runtime</code>・<code>registry-protocol</code>・<code>sidecar</code> など、Web と daemon が共有する型とランタイム。</p>
       </div>
       <div class="ve-card structure-card" style="--i:4">
-        <h3>Skills</h3>
-        <p>成果物タイプごとの手順書。<code>SKILL.md</code>、テンプレート、参照ファイル、チェックリストを1フォルダに閉じ込める。</p>
+        <h3>Agent adapters</h3>
+        <p>各 CLI の検出と起動引数を吸収。構造化ストリーム対応 CLI は typed events、その他は line-buffered 出力で扱う。</p>
       </div>
       <div class="ve-card structure-card" style="--i:5">
-        <h3>Design Systems</h3>
-        <p>ブランドや視覚言語のMarkdown仕様。色、タイポ、余白、コンポーネント、声のトーンを9セクションで記述する。</p>
+        <h3>Artifact store</h3>
+        <p><code>./.od/artifacts/</code> にプレーンファイルで保存。<code>artifact.json</code> と <code>history.jsonl</code> でメタデータと履歴を Git レビュー可能に保つ。</p>
       </div>
     </div>
-    <div class="ve-card ve-card--recessed" style="--i:6">
+    <div class="ve-table-wrap" style="--i:6; margin-top: 1rem;">
+      <table>
+        <thead>
+          <tr><th>Topology</th><th>構成</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>A — Fully local</strong></td><td>ブラウザ → Next.js (<code>:3000</code>) → daemon (<code>:7456</code>) → ローカル CLI</td><td>デフォルト。アカウント不要。</td></tr>
+          <tr><td><strong>B — Vercel + daemon</strong></td><td>ホスト済み Web → トンネル経由で手元 daemon</td><td>秘密情報は daemon 側に留める。</td></tr>
+          <tr><td><strong>C — Direct API</strong></td><td>ホスト済み Web → BYOK API（ブラウザ保存）</td><td>CLI なしの試用。機能は制限される。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:7; margin-top: 1rem;">
       <span class="ve-section-label"><span class="ve-dot"></span> 公開向けファイルマップ</span>
       <div class="ve-code-block" aria-label="Open Design public file map">
         <pre><code>open-design/
 ├── apps/
-│   ├── daemon/          Node + Express API, local agent spawning
-│   └── web/             Next.js UI, prompt composer, artifact preview
-├── packages/contracts/  shared API and event contracts
-├── skills/              SKILL.md bundles for prototypes, decks, docs, reports
-├── design-systems/      DESIGN.md catalog and brand-inspired systems
-├── assets/frames/       shared device frames
-├── templates/           reusable deck framework
-└── docs/                product spec, architecture, modes, protocol</code></pre>
+│   ├── web/             Next.js UI, prompt composer, artifact preview
+│   ├── daemon/          Node API, agent spawning, export pipeline
+│   ├── desktop/         native shell (macOS / Windows)
+│   └── packaged/        release packaging
+├── packages/
+│   ├── contracts/       shared API and event contracts
+│   ├── plugin-runtime/  plugin loading and scenario execution
+│   └── registry-protocol/ marketplace manifests
+├── skills/              SKILL.md bundles
+├── design-systems/      DESIGN.md catalog (150 systems)
+├── design-templates/  curated template scenarios
+├── plugins/
+│   ├── _official/       bundled first-party plugins
+│   ├── community/       community plugin sources
+│   └── registry/        marketplace JSON manifests
+└── docs/                spec, architecture, modes, protocol</code></pre>
       </div>
     </div>
 
-    <section id="skills" class="sec-head">4 — Skills と Design Systems</section>
+    <section id="catalog" class="sec-head">5 — カタログ（Skills / Design Systems / Plugins）</section>
     <div class="grid-2">
       <div class="ve-card" style="--i:0">
-        <span class="ve-section-label"><span class="ve-dot"></span> Skill は成果物の型</span>
-        <p>Skillは「何を作るか」と「どの順番で作るか」を定義する。ランディングページ、ダッシュボード、価格ページ、モバイル画面、横スワイプdeck、週報、OKR、runbookなど、成果物ごとの作法をフォルダで増やせる。</p>
+        <span class="ve-section-label"><span class="ve-dot"></span> Skill — 成果物の型</span>
+        <p><code>skills/</code> は「何を作るか」「どの順番で作るか」を定義する。<code>SKILL.md</code>、テンプレート、参照ファイル、チェックリストを 1 フォルダに閉じる。ランディング、ダッシュボード、モバイル、HTML デッキ、HyperFrames、画像生成など用途別に増やせる。</p>
         <p>
           <span class="badge badge--accent">web-prototype</span>
-          <span class="badge">saas-landing</span>
-          <span class="badge">dashboard</span>
-          <span class="badge">mobile-app</span>
-          <span class="badge">guizang-ppt</span>
-          <span class="badge">pm-spec</span>
+          <span class="badge">html-ppt</span>
+          <span class="badge">live-dashboard</span>
+          <span class="badge">hyperframes</span>
+          <span class="badge">imagegen</span>
+          <span class="badge">brandkit</span>
         </p>
       </div>
       <div class="ve-card" style="--i:1">
-        <span class="ve-section-label"><span class="ve-dot"></span> Design System は見た目の言語</span>
-        <p>Design Systemは「どう見えるか」を決める。Neutral ModernとWarm Editorialのスターターに加え、Linear、Stripe、Vercel、Airbnb、Tesla、Notion、Apple、Cursor、Supabaseなどのプロダクト風システムが同梱されている。</p>
+        <span class="ve-section-label"><span class="ve-dot"></span> Design System — 見た目の言語</span>
+        <p><code>design-systems/</code> は 9 セクションの <code>DESIGN.md</code> で色・タイポ・余白・コンポーネント・声のトーンを規定。Linear、Stripe、Notion、Apple、Cursor などプロダクト風システムが同梱される。</p>
         <p>
           <span class="badge badge--accent">DESIGN.md</span>
           <span class="badge">color</span>
@@ -372,68 +427,114 @@
         </p>
       </div>
     </div>
-    <div class="ve-table-wrap" style="--i:2">
+    <div class="ve-card" style="--i:2; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> Plugin — ワークフロー拡張</span>
+      <p>プラグインは portable な Skill フォルダに、任意の <code>open-design.json</code> サイドカーを載せた単位。公式 (<code>plugins/_official/</code>) は daemon 起動時に登録され、コミュニティ版はレジストリ経由でインストールする。入力フォーム、プレビュー型、パイプライン、信頼境界のヒントをマーケットプレイスメタデータとして UI に伝える。</p>
+    </div>
+    <div class="ve-table-wrap" style="--i:3; margin-top: 1rem;">
       <table>
         <thead>
-          <tr><th>軸</th><th>役割</th><th>ユーザー体験への効き方</th></tr>
+          <tr><th>軸</th><th>役割</th><th>体験への効き</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>SKILL.md</code></td><td>生成手順、成果物種別、テンプレート、チェックリストを定義</td><td>デッキならデッキらしく、ダッシュボードなら情報密度高く、という出力の型を固定する</td></tr>
-          <tr><td><code>DESIGN.md</code></td><td>ブランド級の視覚トークンと禁止事項を定義</td><td>同じSkillでもLinear風、Warm Editorial風、Stripe風のように見た目を切り替える</td></tr>
-          <tr><td><code>od:</code> frontmatter</td><td>mode、preview、inputs、parameters、capabilitiesをUIに伝える拡張</td><td>フォーム、スライダー、プレビュー型、コメント編集可否をアプリ側が判断できる</td></tr>
+          <tr><td><code>SKILL.md</code></td><td>生成手順・成果物種別・テンプレート・チェックリスト</td><td>デッキとダッシュボードで出力の型を固定する</td></tr>
+          <tr><td><code>DESIGN.md</code></td><td>ブランド級トークンと禁止事項</td><td>同一 Skill でも Linear 風 / Editorial 風に切り替える</td></tr>
+          <tr><td><code>open-design.json</code></td><td>プラグインの marketplace メタデータ</td><td>フォーム・プレビュー型・シナリオをアプリが解釈する</td></tr>
+          <tr><td><code>od:</code> frontmatter</td><td>mode・preview・inputs・parameters・capabilities</td><td>コメント編集可否やスライダー UI の有無を決める</td></tr>
         </tbody>
       </table>
     </div>
 
-    <section id="modes" class="sec-head">5 — 4つのモード</section>
+    <section id="agents" class="sec-head">6 — エージェント連携</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 21 CLI + MCP + BYOK</span>
+      <p>Open Design は Skill・CLI・MCP サーバーを同梱する。インストール後、<code>od mcp install &lt;agent&gt;</code> で各エージェントの MCP 設定へサーバーを配線し、IDE 内から同じツール面を呼べる。</p>
+      <div class="ve-code-block" aria-label="MCP install examples">
+        <pre><code>od mcp install claude
+od mcp install codex
+od mcp install cursor
+od mcp install copilot
+od mcp install opencode
+od mcp install --help   # 全エージェント一覧</code></pre>
+      </div>
+    </div>
+    <div class="ve-table-wrap" style="--i:1; margin-top: 1rem;">
+      <table>
+        <thead>
+          <tr><th>エージェント / プラットフォーム</th><th>状態</th><th>MCP インストール</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Claude Code</td><td>対応</td><td><code>od mcp install claude</code></td></tr>
+          <tr><td>Codex CLI</td><td>対応</td><td><code>od mcp install codex</code></td></tr>
+          <tr><td>Cursor</td><td>対応</td><td><code>od mcp install cursor</code></td></tr>
+          <tr><td>GitHub Copilot / Copilot CLI</td><td>対応</td><td><code>od mcp install copilot</code></td></tr>
+          <tr><td>Gemini CLI</td><td>対応</td><td><code>od mcp install gemini</code></td></tr>
+          <tr><td>OpenCode</td><td>対応</td><td><code>od mcp install opencode</code></td></tr>
+          <tr><td>OpenClaw</td><td>対応</td><td><code>od mcp install openclaw</code></td></tr>
+          <tr><td>Pi Agent</td><td>対応</td><td><code>od mcp install pi</code></td></tr>
+          <tr><td>Hermes Agent</td><td>対応</td><td><code>od mcp install hermes</code></td></tr>
+          <tr><td>その他（Antigravity, Cline, Trae, Kimi, Vibe など）</td><td>対応</td><td><code>od mcp install --help</code> で確認</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="--i:2; margin-top: 1rem;">
+      <strong>ドメイン用語:</strong> MCP がプロジェクト未指定で呼ばれたときは <em>Active Project</em> を対象にする。エージェントが通常のファイル成果物を作る場合は <em>Normal Artifact</em>（<code>artifact.json</code> + エントリファイル）。データ更新型は <em>Live Artifact</em> として別管理する。
+    </div>
+
+    <section id="artifacts" class="sec-head">7 — 成果物タイプ</section>
     <div class="ve-table-wrap" style="--i:0">
       <table>
         <thead>
-          <tr><th>Mode</th><th>作るもの</th><th>代表的な流れ</th></tr>
+          <tr><th>カテゴリ</th><th>作るもの</th><th>代表的な流れ</th></tr>
         </thead>
         <tbody>
-          <tr><td><strong>Prototype</strong></td><td>単一画面または短いUIフロー</td><td>Skill選択 → brief → iframe preview → コメントやチャットで refinement → HTML / PDF / ZIP</td></tr>
-          <tr><td><strong>Deck</strong></td><td>横スワイプのHTMLスライドやPPTX向け中間成果物</td><td>枚数・テーマ・アウトラインを決め、Skillのdeck frameworkに内容を流し込む</td></tr>
-          <tr><td><strong>Template</strong></td><td>完成済みテンプレートの内容差し替え</td><td>構造や見た目は固定し、ユーザーのコピーやブランド要素だけを埋める高速モード</td></tr>
-          <tr><td><strong>Design System</strong></td><td>再利用可能な <code>DESIGN.md</code></td><td>スクリーンショット、ブランドガイド、URL、テキスト brief から9セクションの設計言語を生成する</td></tr>
+          <tr><td><strong>Prototype</strong></td><td>Web / デスクトップ / モバイルの単一 HTML</td><td>Skill 選択 → brief → sandbox iframe → HTML / PDF / ZIP</td></tr>
+          <tr><td><strong>Live artifact</strong></td><td>KPI 壁・意思決定ルームなど更新可能なダッシュボード</td><td>tweaks パネルでパラメータ変更 → iframe 再描画</td></tr>
+          <tr><td><strong>Deck</strong></td><td>HTML スライド / PPTX 中間成果物</td><td>枚数・アウトライン決定 → deck framework へ流し込み → PPTX / PDF</td></tr>
+          <tr><td><strong>HyperFrame</strong></td><td>HTML ベースのモーショングラフィックス</td><td>GSAP タイムラインで合成 → MP4（例: 1920×1080 · 30fps）</td></tr>
+          <tr><td><strong>Image / Video / Audio</strong></td><td>ブランド準拠のメディア生成</td><td>Home の Composer Surface から 14 media providers へルーティング</td></tr>
+          <tr><td><strong>Design System</strong></td><td>再利用可能な <code>DESIGN.md</code></td><td>スクリーンショット・URL・brief から 9 セクションを生成</td></tr>
+          <tr><td><strong>Template</strong></td><td>完成テンプレートの内容差し替え</td><td>構造固定のままコピーとブランド要素だけ更新（20–40 秒級）</td></tr>
         </tbody>
       </table>
     </div>
-    <div class="ve-callout" style="--i:1">
-      <strong>組み合わせの考え方:</strong> Design Systemを先に作ると、Prototype、Deck、Templateが同じ視覚言語を共有できる。つまりOpen Designの本質は「成果物モード × Skill × Design System」の直積にある。
+    <div class="ve-callout" style="--i:1; margin-top: 1rem;">
+      <strong>組み合わせ:</strong> Design System を先に作ると Prototype・Deck・Template が同じ視覚言語を共有する。本質は「成果物タイプ × Skill × Design System × Plugin」の直積にある。
     </div>
 
-    <section id="guardrails" class="sec-head">6 — 品質ゲート</section>
+    <section id="guardrails" class="sec-head">8 — 品質ゲート</section>
     <div class="grid-2">
       <div class="ve-card ve-card--elevated" style="--i:0">
         <span class="ve-section-label"><span class="ve-dot"></span> AI-slop を減らす仕掛け</span>
         <ul>
-          <li>Turn 1ではいきなりHTMLを書かず、質問フォームで未確定の設計判断を固定する。</li>
-          <li>ブランド未指定なら、5つの視覚方向から選ばせ、パレットとフォントを deterministic に束ねる。</li>
-          <li>Skillが持つテンプレートや参照ファイルを事前に読ませ、毎回ゼロからCSSを発明させない。</li>
-          <li>出力前にP0/P1/P2チェックリストと5次元自己批評を走らせる。</li>
+          <li>Turn 1 では質問フォームで未確定の設計判断を固定し、いきなり HTML を書かせない。</li>
+          <li>ブランド未指定なら視覚方向を選ばせ、パレットとフォントを deterministic に束ねる。</li>
+          <li>Skill / テンプレート参照を事前に読ませ、毎回ゼロから CSS を発明させない。</li>
+          <li><code>craft/anti-ai-slop.md</code> などの品質方針と P0/P1/P2 チェックリストで自己批評する。</li>
         </ul>
       </div>
       <div class="ve-card" style="--i:1">
         <span class="ve-section-label"><span class="ve-dot"></span> セキュリティ境界</span>
         <ul>
-          <li>プレビューは <code>&lt;iframe sandbox="allow-scripts"&gt;</code> でホストUIから隔離する。</li>
-          <li>secretsは利用者のdaemonまたはブラウザ側に留まり、Open Design独自のホストサーバーへ預けない前提。</li>
-          <li>Skillは強力な指示ファイルなので、インストール時に信頼境界を意識する必要がある。</li>
-          <li>daemonを外へ公開する場合は、SSEのバッファリングや認証・トンネル設定が運用上の論点になる。</li>
+          <li>プレビューは <code>&lt;iframe sandbox="allow-scripts"&gt;</code> でホスト UI から隔離する（<code>allow-same-origin</code> なし）。</li>
+          <li>秘密情報は利用者の daemon またはブラウザ側に留まり、Open Design ホストへ預けない前提。</li>
+          <li>Skill / プラグインは強力な指示ファイルなので、インストール時に信頼境界を意識する。</li>
+          <li>BYOK プロキシは SSRF 対策で内部 IP / link-local を daemon エッジで遮断する。</li>
         </ul>
       </div>
     </div>
 
-    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <section id="links" class="sec-head">9 — 参考リンク</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> Source and lineage</span>
       <ul>
-        <li><a href="https://github.com/nexu-io/open-design" target="_blank" rel="noopener">GitHub: nexu-io/open-design</a> — Open Design 本体</li>
+        <li><a href="https://github.com/nexu-io/open-design" target="_blank" rel="noopener">GitHub: nexu-io/open-design</a> — Open Design 本体（0.9.0）</li>
+        <li><a href="https://open-design.ai/" target="_blank" rel="noopener">open-design.ai</a> — 公式サイト・ダウンロード</li>
+        <li><a href="https://github.com/nexu-io/open-design/blob/main/docs/architecture.md" target="_blank" rel="noopener">docs/architecture.md</a> — トポロジとデータフロー</li>
+        <li><a href="https://github.com/nexu-io/open-design/blob/main/docs/plugins-spec.md" target="_blank" rel="noopener">docs/plugins-spec.md</a> — プラグイン仕様</li>
         <li><a href="https://github.com/VoltAgent/awesome-design-md" target="_blank" rel="noopener">VoltAgent/awesome-design-md</a> — 同梱 Design Systems の源流</li>
-        <li><a href="https://github.com/op7418/guizang-ppt-skill" target="_blank" rel="noopener">op7418/guizang-ppt-skill</a> — Deck mode の中核となるSkill</li>
-        <li><a href="https://github.com/OpenCoworkAI/open-codesign" target="_blank" rel="noopener">OpenCoworkAI/open-codesign</a> — iframe preview、artifact loop、live panelなどの近い先行実装</li>
-        <li><a href="https://github.com/multica-ai/multica" target="_blank" rel="noopener">multica-ai/multica</a> — daemon + agent runtime architecture の参照元</li>
+        <li><a href="https://github.com/op7418/guizang-ppt-skill" target="_blank" rel="noopener">op7418/guizang-ppt-skill</a> — Deck mode の中核 Skill</li>
+        <li><a href="https://github.com/OpenCoworkAI/open-codesign" target="_blank" rel="noopener">OpenCoworkAI/open-codesign</a> — iframe preview と artifact loop の参照</li>
       </ul>
     </div>
   </div>
