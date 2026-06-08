@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI Skills — Design Engineers 向けエージェントスキル集</title>
+  <meta name="description" content="ibelick/ui-skills は AI 生成 UI の品質を上げるエージェントスキル集。baseline-ui、accessibility、metadata、motion の 4 本と外部レジストリ、install.sh / ui-skills CLI、Astro サイト ui-skills.com の構成を整理する。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="UI Skills — Design Engineers 向けエージェントスキル集">
+  <meta property="og:description" content="AI 生成 UI の slop を抑えるスキル集。4 本のローカル SKILL、レジストリ、マルチエージェント installer、Astro サイトの全体像。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/ui-skills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="UI Skills — Design Engineers 向けエージェントスキル集">
+  <meta name="twitter:description" content="AI 生成 UI の slop を抑えるスキル集。4 本のローカル SKILL、レジストリ、マルチエージェント installer、Astro サイトの全体像。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.75rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.01 75);
+      --foreground: oklch(0.22 0.04 55);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.22 0.04 55);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.22 0.04 55);
+      --primary: oklch(0.42 0.12 48);
+      --primary-foreground: oklch(0.985 0.01 85);
+      --secondary: oklch(0.95 0.02 78);
+      --secondary-foreground: oklch(0.28 0.05 52);
+      --muted: oklch(0.95 0.015 78);
+      --muted-foreground: oklch(0.5 0.03 58);
+      --accent: oklch(0.93 0.035 72);
+      --accent-foreground: oklch(0.24 0.05 50);
+      --destructive: oklch(0.58 0.22 27);
+      --border: oklch(0.88 0.025 72);
+      --input: oklch(0.88 0.025 72);
+      --ring: oklch(0.58 0.1 52);
+      --chart-1: oklch(0.58 0.14 48);
+      --chart-2: oklch(0.68 0.11 145);
+      --chart-3: oklch(0.55 0.08 230);
+      --chart-4: oklch(0.78 0.12 95);
+      --chart-5: oklch(0.72 0.13 35);
+      --code-bg: oklch(0.2 0.025 55);
+      --code-text: oklch(0.95 0.02 85);
+      --font-body: 'Manrope', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.17 0.02 55);
+        --foreground: oklch(0.96 0.01 85);
+        --card: oklch(0.23 0.025 55);
+        --card-foreground: oklch(0.96 0.01 85);
+        --popover: oklch(0.23 0.025 55);
+        --popover-foreground: oklch(0.96 0.01 85);
+        --primary: oklch(0.78 0.12 58);
+        --primary-foreground: oklch(0.18 0.02 55);
+        --secondary: oklch(0.28 0.025 55);
+        --secondary-foreground: oklch(0.96 0.01 85);
+        --muted: oklch(0.28 0.025 55);
+        --muted-foreground: oklch(0.72 0.02 78);
+        --accent: oklch(0.3 0.035 58);
+        --accent-foreground: oklch(0.97 0.01 85);
+        --destructive: oklch(0.7 0.18 22);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.68 0.09 55);
+        --chart-1: oklch(0.76 0.12 58);
+        --chart-2: oklch(0.72 0.11 145);
+        --chart-3: oklch(0.7 0.09 240);
+        --chart-4: oklch(0.78 0.12 95);
+        --chart-5: oklch(0.75 0.14 35);
+        --code-bg: oklch(0.14 0.02 55);
+        --code-text: oklch(0.94 0.02 85);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 8px 32px color-mix(in oklch, var(--chart-1) 12%, transparent); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background:
+        radial-gradient(circle at top right, color-mix(in oklch, var(--chart-1) 18%, transparent), transparent 38%),
+        linear-gradient(135deg, color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%), var(--card));
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+      box-shadow: 0 12px 36px color-mix(in oklch, var(--chart-1) 14%, transparent);
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid color-mix(in oklch, var(--chart-1) 24%, var(--border)); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.84rem; line-height: 1.6; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 700; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid color-mix(in oklch, var(--chart-1) 45%, var(--border)); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--accent) 50%, transparent); }
+    .ve-kpi-card { background: color-mix(in oklch, var(--accent) 82%, var(--card) 18%); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { display: block; font-variant-numeric: tabular-nums; font-size: 1.9rem; line-height: 1.05; font-weight: 700; }
+    .ve-kpi-card__label { display: block; font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.45rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.95rem 1.1rem; font-size: 0.84rem; line-height: 1.65; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 700; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.72rem; background: color-mix(in oklch, var(--chart-1) 14%, transparent); color: var(--foreground); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background:
+        radial-gradient(circle at 8% 0%, color-mix(in oklch, var(--chart-1) 14%, transparent), transparent 32%),
+        radial-gradient(circle at 100% 0%, color-mix(in oklch, var(--chart-2) 12%, transparent), transparent 28%),
+        var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 220px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2.3rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.92rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.55; max-width: 52rem; }
+    .sec-head { font-size: 1.15rem; font-weight: 700; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.08rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.95rem; line-height: 1.7; margin-bottom: 0.8rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.4rem; }
+    a { color: color-mix(in oklch, var(--chart-1) 72%, var(--chart-3)); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.82rem; background: color-mix(in oklch, var(--muted) 75%, var(--card)); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0 1rem; }
+    .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 1rem 0; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+    @media (max-width: 760px) {
+      .kpi-row,
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#install">インストール</a>
+    <a href="#catalog">スキル一覧</a>
+    <a href="#baseline">baseline-ui</a>
+    <a href="#site">サイトとレジストリ</a>
+    <a href="#links">参照</a>
+  </nav>
+
+  <div class="main">
+  <h1>UI Skills</h1>
+  <p class="subtitle">Design Engineers 向けのエージェントスキル集 — AI が量産しがちな UI slop を、Tailwind / a11y / metadata / motion のルールで抑える。</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Positioning</span>
+    <p><strong>UI Skills</strong>（<a href="https://github.com/ibelick/ui-skills" target="_blank" rel="noopener">ibelick/ui-skills</a>）は、フロントエンド実装を AI エージェントに任せるときの<strong>品質ガードレール</strong>を SKILL.md として配布するプロジェクト。公式サイトは <a href="https://ui-skills.com" target="_blank" rel="noopener">ui-skills.com</a>。</p>
+    <p>リポジトリは 2 層になっている。<strong>ローカル 4 スキル</strong>（リポジトリ同梱の <code>skills/*/SKILL.md</code>）と、<strong>外部レジストリ</strong>（<code>registry.ts</code> に列挙された他リポジトリの SKILL）を Astro サイトが統合カタログとして公開する。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">ローカル SKILL</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">npm</span><span class="ve-kpi-card__label">ui-skills CLI</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Astro 5</span><span class="ve-kpi-card__label">カタログサイト</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+    </div>
+    <div class="ve-callout">
+      <strong>タグライン:</strong> install.sh の ASCII バナーは <em>The open taste layer for agent-generated UI.</em> と定義している。baseline-ui が中心で、レビュー系 3 スキルが周辺を補う構成。
+    </div>
+  </div>
+
+  <section id="install" class="sec-head">2 — インストール</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 3 つの導線</span>
+    <div class="ve-table-wrap">
+      <table aria-label="インストール方法">
+        <thead>
+          <tr><th>方法</th><th>コマンド / 操作</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>シェル installer</strong></td><td><code>curl -fsSL https://ui-skills.com/install.sh | sh</code></td><td>デフォルトは <code>baseline-ui</code> のみ。<code>--all</code> で 5 スキル一括。</td></tr>
+          <tr><td><strong>npm グローバル</strong></td><td><code>npx ui-skills add baseline-ui</code></td><td><code>bin/ui-skills</code> が <code>install.sh</code> をラップ。</td></tr>
+          <tr><td><strong>手動コピー</strong></td><td><code>skills/&lt;slug&gt;/SKILL.md</code> をエージェントの skills ディレクトリへ</td><td>オフライン・カスタム配置向け。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-code-block">
+      <pre><code># デフォルト（baseline-ui のみ）
+curl -fsSL https://ui-skills.com/install.sh | sh
+
+# 同梱 4 スキル + frontend-design（レジストリ経由）
+curl -fsSL https://ui-skills.com/install.sh | sh -s -- --all
+
+# npm CLI
+npx ui-skills add fixing-accessibility
+npx ui-skills add "baseline-ui fixing-metadata"</code></pre>
+    </div>
+    <h3>配置先（install.sh が検出する代表例）</h3>
+    <p>プロジェクト直下に <code>.cursor/skills</code>、<code>.claude/skills</code>、<code>.codex/skills</code> などが存在すると、各 <code>&lt;slug&gt;/SKILL.md</code> を自動配置する。Cursor / Claude Code では <code>.cursor/commands/&lt;slug&gt;.md</code>、<code>.claude/commands/&lt;slug&gt;.md</code> にコマンド版もコピーされる。</p>
+    <p>ローカルに SKILL が無いスキル（例: <code>frontend-design</code>）は、<code>https://ui-skills.com/skills/registry.txt</code> の URL か <code>skills/&lt;slug&gt;/llms.txt</code> からダウンロードする。</p>
+  </div>
+
+  <section id="catalog" class="sec-head">3 — スキル一覧</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ローカル 4 本</span>
+    <div class="ve-table-wrap">
+      <table aria-label="ローカルスキル一覧">
+        <thead>
+          <tr><th>slug</th><th>pathSlug</th><th>役割</th><th>呼び出し</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>baseline-ui</strong></td>
+            <td><code>ibelick/baseline-ui</code></td>
+            <td>Tailwind / motion / typography / layout の opinionated ベースライン。AI slop 防止の中核。</td>
+            <td><code>/baseline-ui</code> または <code>/baseline-ui &lt;file&gt;</code></td>
+          </tr>
+          <tr>
+            <td><strong>fixing-accessibility</strong></td>
+            <td><code>ibelick/fixing-accessibility</code></td>
+            <td>ARIA、キーボード、フォーカス、コントラスト、フォームエラーの監査と最小修正。</td>
+            <td><code>/fixing-accessibility</code></td>
+          </tr>
+          <tr>
+            <td><strong>fixing-metadata</strong></td>
+            <td><code>ibelick/fixing-metadata</code></td>
+            <td>title / description / canonical / OG / Twitter / JSON-LD / robots の SEO メタ監査。</td>
+            <td><code>/fixing-metadata</code></td>
+          </tr>
+          <tr>
+            <td><strong>fixing-motion-performance</strong></td>
+            <td><code>ibelick/fixing-motion-performance</code></td>
+            <td>compositor-only アニメ、scroll-linked motion、blur コストなどパフォーマンス監査。</td>
+            <td><code>/fixing-motion-performance</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>--all の 5 本目:</strong> <code>frontend-design</code> はローカル同梱ではなく、Anthropic の skills レジストリから取得する外部スキル。<code>install.sh</code> の <code>ALL_SKILLS</code> に含まれる。
+    </div>
+  </div>
+
+  <section id="baseline" class="sec-head">4 — baseline-ui の制約カテゴリ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> MUST / NEVER の軸</span>
+    <p>baseline-ui は「明示的に依頼されない限りアニメーションを足さない」「紫グラデ・glow を避ける」など、<strong>禁止パターンを先に列挙</strong>するスタイル。主要カテゴリは次のとおり。</p>
+    <div class="two-col">
+      <div class="ve-card ve-card--recessed" style="--i:1">
+        <h3>Stack &amp; Components</h3>
+        <ul>
+          <li>Tailwind デフォルト値を基本とする</li>
+          <li>JS アニメは <code>motion/react</code></li>
+          <li>キーボード UI は Base UI / React Aria / Radix</li>
+          <li>破壊的操作は <code>AlertDialog</code></li>
+        </ul>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:2">
+        <h3>Animation &amp; Layout</h3>
+        <ul>
+          <li><code>transform</code> / <code>opacity</code> のみ（200ms 以内）</li>
+          <li><code>h-dvh</code>、safe-area、固定 z-index スケール</li>
+          <li><code>prefers-reduced-motion</code> を尊重</li>
+          <li>見出し <code>text-balance</code>、本文 <code>text-pretty</code></li>
+        </ul>
+      </div>
+    </div>
+    <div class="ve-table-wrap">
+      <table aria-label="baseline-ui 禁止例">
+        <thead>
+          <tr><th>カテゴリ</th><th>代表 NEVER</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Design</td><td>グラデーション、glow を主 affordance にしない、ビューあたりアクセント 1 色</td></tr>
+          <tr><td>Animation</td><td>layout プロパティのアニメ、ループの off-screen 停止なし、カスタム easing</td></tr>
+          <tr><td>Performance</td><td>大きな blur / backdrop-filter アニメ、常時 <code>will-change</code></td></tr>
+          <tr><td>Interaction</td><td>input の paste ブロック、エラーを離れた場所だけに表示</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="site" class="sec-head">5 — サイトとレジストリ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Astro カタログ</span>
+    <p>公開サイト本体も同リポジトリ内の Astro 5 + React 19 + Tailwind 4 アプリ。<code>src/data/skills.ts</code> がローカル SKILL（glob で <code>skills/*/SKILL.md</code>）と <code>registry.ts</code> の外部エントリをマージし、トピックタグ付きカタログを生成する。</p>
+    <div class="pipeline">
+      <span class="step">skills/*/SKILL.md</span>
+      <span class="arrow">+</span>
+      <span class="step">registry.ts</span>
+      <span class="arrow">→</span>
+      <span class="step">skills.ts</span>
+      <span class="arrow">→</span>
+      <span class="step">/skills/[...slug]</span>
+      <span class="arrow">→</span>
+      <span class="step">llms.txt / registry.txt</span>
+    </div>
+    <div class="ve-table-wrap">
+      <table aria-label="技術スタック">
+        <thead>
+          <tr><th>レイヤ</th><th>技術</th><th>メモ</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>フレームワーク</td><td>Astro 5, React 19</td><td><code>@astrojs/react</code></td></tr>
+          <tr><td>スタイル</td><td>Tailwind CSS 4</td><td><code>@tailwindcss/vite</code></td></tr>
+          <tr><td>UI プリミティブ</td><td>Base UI</td><td><code>@base-ui/react</code></td></tr>
+          <tr><td>アニメ</td><td>Motion</td><td><code>motion/react</code></td></tr>
+          <tr><td>デプロイ</td><td>Cloudflare Workers</td><td><code>wrangler.toml</code></td></tr>
+          <tr><td>公開 API</td><td>llms.txt, registry.txt</td><td>installer と LLM 向けテキスト出力</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><code>registry.ts</code> には Remotion、Vue/Nuxt、Three.js、Next.js など多数の外部 SKILL が登録されている。サイト上では <code>isRegistry: true</code> としてローカル SKILL と区別される。</p>
+  </div>
+
+  <section id="links" class="sec-head">6 — 参照</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+    <ul>
+      <li><a href="https://github.com/ibelick/ui-skills" target="_blank" rel="noopener">GitHub: ibelick/ui-skills</a></li>
+      <li><a href="https://ui-skills.com" target="_blank" rel="noopener">ui-skills.com</a> — スキルカタログと install スクリプトの配布元</li>
+      <li><a href="https://ui-skills.com/skills/registry.txt" target="_blank" rel="noopener">registry.txt</a> — 外部 SKILL の raw URL 一覧</li>
+      <li><a href="https://base-ui.com/react/components" target="_blank" rel="noopener">Base UI</a> — baseline-ui が推奨するプリミティブ</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
