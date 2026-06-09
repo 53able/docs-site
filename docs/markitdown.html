@@ -113,6 +113,7 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
@@ -198,10 +199,14 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
+    <a href="#formats">対応形式</a>
+    <a href="#install">インストール</a>
     <a href="#pipeline">変換パイプライン</a>
     <a href="#cli-python">CLI・API</a>
+    <a href="#azure">Azure 連携</a>
     <a href="#packages">パッケージ構成</a>
     <a href="#options-plugins">オプション・拡張</a>
+    <a href="#security">セキュリティ</a>
     <a href="#links">参考リンク</a>
   </nav>
 
@@ -226,7 +231,42 @@
     <strong>Breaking（0.0.1 → 0.1.0 付近）:</strong> 依存は optional グループに整理（後述の <code>pip install 'markitdown[all]'</code> 推奨）。<code>convert_stream()</code> は <strong>バイナリの file-like のみ</strong>。<code>DocumentConverter</code> はパスではなく <strong>ストリームから読む</strong> インターフェイスに変更され、プラグイン実装者は要確認。
   </div>
 
-  <section id="pipeline" class="sec-head">2 — 変換パイプライン</section>
+  <section id="formats" class="sec-head">2 — 対応形式</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 入力</span>
+    <p>コアパッケージは PDF・PowerPoint・Word・Excel・画像（EXIF / OCR）・音声（EXIF / 文字起こし）・HTML・CSV/JSON/XML・ZIP（中身を列挙）・YouTube URL・EPub などを Markdown へ変換する。出力は LLM やテキスト解析パイプライン向けで、人間向けの高忠実度変換を最優先する設計ではない。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>カテゴリ</th><th>例</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ドキュメント</td><td>PDF, DOCX, PPTX, XLSX/XLS, EPub</td></tr>
+          <tr><td>ウェブ・テキスト</td><td>HTML, CSV, JSON, XML, RSS, Wikipedia</td></tr>
+          <tr><td>メディア</td><td>画像（メタデータ・OCR）, 音声（文字起こし）, YouTube</td></tr>
+          <tr><td>その他</td><td>ZIP（中身を順次変換）, Outlook MSG, Bing SERP</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="install" class="sec-head">3 — インストール</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 前提・導入</span>
+    <p>Python <strong>3.10 以上</strong>。仮想環境の利用を推奨。</p>
+    <div class="ve-code-block"><pre><code>python -m venv .venv
+source .venv/bin/activate
+pip install 'markitdown[all]'</code></pre></div>
+    <p>ソースから入れる場合:</p>
+    <div class="ve-code-block"><pre><code>git clone https://github.com/microsoft/markitdown.git
+cd markitdown
+pip install -e 'packages/markitdown[all]'</code></pre></div>
+    <h3>Docker</h3>
+    <div class="ve-code-block"><pre><code>docker build -t markitdown:latest .
+docker run --rm -i markitdown:latest &lt; ~/your-file.pdf &gt; output.md</code></pre></div>
+  </div>
+
+  <section id="pipeline" class="sec-head">4 — 変換パイプライン</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> ざっくり流れ</span>
     <p><code>MarkItDown.convert()</code> はローカルパス・URL・<code>requests.Response</code>・バイナリストリームを受け取り、内部で <strong>Magika</strong> 等による内容推定と <code>StreamInfo</code> の候補リストを作り、登録済み <code>DocumentConverter</code> を優先度順に試す。</p>
@@ -250,7 +290,7 @@
     <p>デフォルトの <code>requests.Session</code> は <code>Accept: text/markdown, text/html;q=0.9, ...</code> を付与し、サーバが Markdown を返せる場合にそれを優先する（README の Cloudflare 記事リンク参照）。</p>
   </div>
 
-  <section id="cli-python" class="sec-head">3 — CLI・Python API</section>
+  <section id="cli-python" class="sec-head">5 — CLI・Python API</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> CLI</span>
     <div class="ve-code-block"><pre><code>markitdown path-to-file.pdf &gt; document.md
@@ -275,7 +315,42 @@ result = md.convert("example.jpg")
 print(result.text_content)</code></pre></div>
   </div>
 
-  <section id="packages" class="sec-head">4 — モノレポ構成</section>
+  <section id="azure" class="sec-head">6 — Azure 連携</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Document Intelligence</span>
+    <p>スキャン PDF や複雑なレイアウト向け。CLI では <code>-d -e &lt;endpoint&gt;</code>、Python では <code>docintel_endpoint</code> を渡す。</p>
+    <div class="ve-code-block"><pre><code>from markitdown import MarkItDown
+
+md = MarkItDown(docintel_endpoint="&lt;document_intelligence_endpoint&gt;")
+result = md.convert("test.pdf")
+print(result.text_content)</code></pre></div>
+  </div>
+  <div class="ve-card ve-card--elevated" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Content Understanding</span>
+    <p>音声・動画、構造化フィールド（YAML front matter）、カスタムアナライザーなど、ビルトインや Document Intelligence では足りないケース向け。各 <code>convert()</code> は課金 API 呼び出しになり得る。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>能力</th><th>ビルトイン</th><th>Doc Intel</th><th>Content Understanding</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ドキュメント変換</td><td>オフライン・形式別</td><td>クラウドレイアウト</td><td>クラウド多モーダル</td></tr>
+          <tr><td>構造化フィールド</td><td>なし</td><td>本統合では未露出</td><td>YAML front matter</td></tr>
+          <tr><td>音声・動画</td><td>基本音声のみ</td><td>非対応</td><td>対応</td></tr>
+          <tr><td>コスト</td><td>ローカル計算</td><td>Azure 従量</td><td>Azure 従量</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-code-block"><pre><code>from markitdown import MarkItDown
+
+md = MarkItDown(cu_endpoint="&lt;content_understanding_endpoint&gt;")
+result = md.convert("report.pdf")   # documents
+result = md.convert("meeting.mp4")  # video
+print(result.markdown)</code></pre></div>
+    <p>Extra: <code>pip install 'markitdown[az-content-understanding]'</code>。CLI: <code>markitdown file.pdf --use-cu --cu-endpoint "&lt;endpoint&gt;"</code></p>
+  </div>
+
+  <section id="packages" class="sec-head">7 — モノレポ構成</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> packages/</span>
     <div class="ve-table-wrap">
@@ -293,7 +368,7 @@ print(result.text_content)</code></pre></div>
     </div>
   </div>
 
-  <section id="options-plugins" class="sec-head">5 — オプション依存・拡張</section>
+  <section id="options-plugins" class="sec-head">8 — オプション依存・拡張</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> pip extras（抜粋）</span>
     <div class="ve-table-wrap">
@@ -306,6 +381,7 @@ print(result.text_content)</code></pre></div>
           <tr><td><code>[pdf]</code> <code>[docx]</code> <code>[pptx]</code> <code>[xlsx]</code> <code>[xls]</code></td><td>各オフィス／PDF 系依存</td></tr>
           <tr><td><code>[outlook]</code></td><td>Outlook メッセージ</td></tr>
           <tr><td><code>[az-doc-intel]</code></td><td>Azure Document Intelligence</td></tr>
+          <tr><td><code>[az-content-understanding]</code></td><td>Azure Content Understanding</td></tr>
           <tr><td><code>[audio-transcription]</code></td><td>wav/mp3 の文字起こし</td></tr>
           <tr><td><code>[youtube-transcription]</code></td><td>YouTube 字幕取得</td></tr>
         </tbody>
@@ -316,15 +392,39 @@ print(result.text_content)</code></pre></div>
     </div>
     <h3>Document Intelligence（CLI）</h3>
     <div class="ve-code-block"><pre><code>markitdown path-to-file.pdf -o document.md -d -e "&lt;document_intelligence_endpoint&gt;"</code></pre></div>
+    <h3>markitdown-ocr プラグイン</h3>
+    <div class="ve-code-block"><pre><code>from markitdown import MarkItDown
+from openai import OpenAI
+
+md = MarkItDown(
+    enable_plugins=True,
+    llm_client=OpenAI(),
+    llm_model="gpt-4o",
+)
+result = md.convert("document_with_images.pdf")
+print(result.text_content)</code></pre></div>
   </div>
 
-  <section id="links" class="sec-head">6 — 参考リンク</section>
+  <section id="security" class="sec-head">9 — セキュリティ</section>
+  <div class="ve-card ve-card--recessed" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 入力の扱い</span>
+    <p>MarkItDown は <code>open()</code> や <code>requests.get()</code> と同様、<strong>プロセスがアクセスできるリソースに I/O する</strong>。信頼できない入力をそのまま渡さないこと。</p>
+    <ul>
+      <li>サーバー側利用ではパス・URI スキーム・ネットワーク先を制限し、入力を検証する。</li>
+      <li>用途に合わせて最も狭い API を選ぶ: ローカルファイルのみなら <code>convert_local()</code>、HTTP は自前で <code>requests.get()</code> して <code>convert_response()</code>、最大制御なら <code>convert_stream()</code>。</li>
+      <li><code>convert()</code> はパス・URL・ストリームを広く受け付けるため、制御が必要な環境では避ける。</li>
+    </ul>
+  </div>
+
+  <section id="links" class="sec-head">10 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
     <ul>
       <li><a href="https://github.com/microsoft/markitdown" target="_blank" rel="noopener">GitHub: microsoft/markitdown</a> — 本体・Issue・PR</li>
       <li><a href="https://pypi.org/project/markitdown/" target="_blank" rel="noopener">PyPI: markitdown</a></li>
       <li><a href="https://github.com/microsoft/markitdown/tree/main/packages/markitdown-mcp" target="_blank" rel="noopener">markitdown-mcp</a> — MCP パッケージ</li>
+      <li><a href="https://learn.microsoft.com/azure/ai-services/content-understanding/" target="_blank" rel="noopener">Azure Content Understanding</a></li>
+      <li><a href="https://learn.microsoft.com/azure/ai-services/document-intelligence/" target="_blank" rel="noopener">Azure Document Intelligence</a></li>
     </ul>
   </div>
   </div>
