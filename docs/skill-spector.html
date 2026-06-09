@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillSpector — AI エージェントスキル向けセキュリティスキャナ</title>
+  <meta name="description" content="NVIDIA SkillSpector の LangGraph 解析パイプライン、64 パターン・16 カテゴリの検出、リスクスコア、CLI と LLM 連携の技術概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="SkillSpector — AI エージェントスキル向けセキュリティスキャナ">
+  <meta property="og:description" content="スキルインストール前に脆弱性・悪意パターンを検出する LangGraph ベースのセキュリティスキャナ。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/skill-spector.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="SkillSpector — AI エージェントスキル向けセキュリティスキャナ">
+  <meta name="twitter:description" content="64 パターン・16 カテゴリでエージェントスキルを静的＋LLM 解析する NVIDIA 製スキャナ。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,400&family=Red+Hat+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Blueprint teal + gold) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.97 0.012 220);
+      --foreground: oklch(0.20 0.04 230);
+      --card: oklch(0.995 0.006 220);
+      --card-foreground: oklch(0.20 0.04 230);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.20 0.04 230);
+      --primary: oklch(0.38 0.12 248);
+      --primary-foreground: oklch(0.98 0.01 220);
+      --secondary: oklch(0.93 0.018 220);
+      --secondary-foreground: oklch(0.22 0.045 230);
+      --muted: oklch(0.92 0.016 220);
+      --muted-foreground: oklch(0.46 0.04 230);
+      --accent: oklch(0.90 0.035 248);
+      --accent-foreground: oklch(0.20 0.04 230);
+      --destructive: oklch(0.55 0.20 25);
+      --border: oklch(0.82 0.026 220);
+      --input: oklch(0.82 0.026 220);
+      --ring: oklch(0.45 0.12 200);
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.45 0.12 200);
+      --chart-4: oklch(0.55 0.16 42);
+      --chart-5: oklch(0.62 0.12 155);
+      --code-bg: oklch(0.16 0.035 230);
+      --code-text: oklch(0.92 0.025 220);
+      --font-body: 'Newsreader', Georgia, serif;
+      --font-mono: 'Red Hat Mono', 'SF Mono', Consolas, monospace;
+      --font-sans: system-ui, sans-serif;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      --grid-line: oklch(0.38 0.12 248 / 0.07);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.12 0.028 230);
+        --foreground: oklch(0.94 0.018 220);
+        --card: oklch(0.17 0.032 230);
+        --card-foreground: oklch(0.94 0.018 220);
+        --popover: oklch(0.17 0.032 230);
+        --popover-foreground: oklch(0.94 0.018 220);
+        --primary: oklch(0.72 0.12 248);
+        --primary-foreground: oklch(0.12 0.028 230);
+        --secondary: oklch(0.22 0.034 230);
+        --secondary-foreground: oklch(0.94 0.018 220);
+        --muted: oklch(0.22 0.034 230);
+        --muted-foreground: oklch(0.72 0.030 220);
+        --accent: oklch(0.24 0.045 248);
+        --accent-foreground: oklch(0.94 0.018 220);
+        --destructive: oklch(0.66 0.18 25);
+        --border: oklch(0.90 0.02 220 / 14%);
+        --input: oklch(0.90 0.02 220 / 18%);
+        --ring: oklch(0.65 0.12 200);
+        --chart-1: oklch(0.72 0.12 248);
+        --chart-2: oklch(0.78 0.15 76);
+        --chart-3: oklch(0.72 0.12 200);
+        --chart-4: oklch(0.72 0.14 42);
+        --chart-5: oklch(0.72 0.12 155);
+        --code-bg: oklch(0.09 0.026 230);
+        --code-text: oklch(0.92 0.025 220);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+        --grid-line: oklch(0.72 0.12 248 / 0.10);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 8px 26px rgba(20, 40, 60, 0.09); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(20, 40, 60, 0.05); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%);
+      box-shadow: 0 18px 44px rgba(20, 40, 60, 0.12);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block__label { color: var(--code-text); border-bottom: 1px solid oklch(1 0 0 / 12%); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; padding: 0.625rem 0.875rem; text-transform: uppercase; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; overflow-x: auto; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-family: var(--font-sans); font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 700; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 72%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(20, 40, 60, 0.06); min-width: 0; }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-size: 2rem; line-height: 1; font-weight: 700; letter-spacing: -0.04em; color: var(--chart-1); }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-family: var(--font-sans); font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 700; }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+        radial-gradient(ellipse at 10% 0%, oklch(0.38 0.12 248 / 0.10) 0%, transparent 42%),
+        radial-gradient(ellipse at 90% 12%, oklch(0.72 0.17 76 / 0.08) 0%, transparent 34%);
+      background-size: 36px 36px, 36px 36px, auto, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          linear-gradient(var(--grid-line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+          radial-gradient(ellipse at 10% 0%, oklch(0.72 0.12 248 / 0.12) 0%, transparent 42%),
+          radial-gradient(ellipse at 90% 12%, oklch(0.78 0.15 76 / 0.09) 0%, transparent 34%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 220px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-sans); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: clamp(2.2rem, 5.5vw, 4.2rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 1rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-sans); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.7; max-width: 62rem; }
+    .sec-head { font-family: var(--font-sans); font-size: 1.125rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-family: var(--font-sans); font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
+    p { font-family: var(--font-sans); font-size: 0.9375rem; line-height: 1.68; margin-bottom: 0.75rem; }
+    ul { font-family: var(--font-sans); margin: 0 0 1rem; padding-left: 1.35rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    strong { font-weight: 700; }
+
+    .hero-grid { display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 1rem; align-items: stretch; }
+    .hero-side { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+    @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    @media (max-width: 760px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .cat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+    .cat-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem 1rem; min-width: 0; }
+    .cat-card__title { font-family: var(--font-sans); font-weight: 700; font-size: 0.84rem; margin-bottom: 0.25rem; }
+    .cat-card__meta { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-dim); }
+    @media (max-width: 900px) { .cat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .cat-grid { grid-template-columns: 1fr; } }
+
+    .step-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.85rem; }
+    .step-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; min-width: 0; }
+    .step-card__num { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 999px; background: var(--primary); color: var(--primary-foreground); font-family: var(--font-mono); font-weight: 700; font-size: 0.75rem; margin-bottom: 0.75rem; }
+    .step-card__title { font-family: var(--font-sans); font-weight: 700; margin-bottom: 0.3rem; font-size: 0.9rem; }
+    .step-card__body { font-family: var(--font-sans); color: var(--text-dim); font-size: 0.84rem; line-height: 1.55; }
+    @media (max-width: 960px) { .step-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .step-flow { grid-template-columns: 1fr; } }
+
+    .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.16rem 0.5rem; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; white-space: nowrap; margin-right: 0.25rem; }
+    .badge--crit { background: color-mix(in oklch, var(--destructive) 18%, transparent); color: var(--destructive); border: 1px solid color-mix(in oklch, var(--destructive) 38%, transparent); }
+    .badge--high { background: color-mix(in oklch, var(--chart-4) 15%, transparent); color: var(--chart-4); border: 1px solid color-mix(in oklch, var(--chart-4) 38%, transparent); }
+    .badge--med { background: color-mix(in oklch, var(--chart-2) 15%, transparent); color: var(--chart-2); border: 1px solid color-mix(in oklch, var(--chart-2) 38%, transparent); }
+    .badge--low { background: var(--muted); color: var(--text-dim); border: 1px solid var(--border); }
+
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin: 1rem 0; overflow: auto; display: flex; justify-content: center; }
+    .mermaid-wrap .mermaid { min-width: 0; }
+
+    .source-note { color: var(--text-dim); font-size: 0.82rem; font-family: var(--font-mono); margin-top: 0.75rem; }
+    .link-list { list-style: none; padding: 0; margin: 0; }
+    .link-list li { border-bottom: 1px solid var(--border); padding: 0.65rem 0; margin: 0; font-family: var(--font-sans); font-size: 0.9rem; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card, .step-card, .cat-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#pipeline">解析パイプライン</a>
+    <a href="#patterns">検出カテゴリ</a>
+    <a href="#usage">CLI と入力形式</a>
+    <a href="#risk">リスクスコア</a>
+    <a href="#llm">LLM 連携</a>
+    <a href="#output">出力形式</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>SkillSpector</h1>
+  <p class="subtitle">Claude Code や Codex CLI などが読み込むエージェントスキルを、インストール前にスキャンする NVIDIA 製セキュリティツール。LangGraph 上で静的解析と LLM 意味解析を組み合わせ、「このスキルは安全か？」に答える。</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="hero-grid">
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Problem</span>
+      <p>エージェントスキルは暗黙の信頼のもと実行されるが、大規模調査（Liu et al., 2026）では <strong>42,447 スキル中 26.1% に脆弱性</strong>、<strong>5.2% に悪意の可能性</strong>が報告されている。実行可能スクリプトを含むスキルは脆弱性リスクが 2.12 倍。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">64</span><span class="ve-kpi-card__label">vulnerability patterns</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">16</span><span class="ve-kpi-card__label">categories</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">20</span><span class="ve-kpi-card__label">analyzer nodes</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">output formats</span></div>
+      </div>
+      <p class="source-note">出典: NVIDIA/skillspector の README.md</p>
+    </div>
+    <div class="hero-side">
+      <div class="ve-card ve-card--elevated" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Two-stage analysis</span>
+        <p><strong>Stage 1:</strong> 正規表現・AST・YARA・OSV.dev による高速静的解析（高リコール）。</p>
+        <p><strong>Stage 2:</strong> 任意の LLM 意味解析で偽陽性を除去し、説明付きフィードバック（精度 ~87%）。</p>
+      </div>
+      <div class="ve-callout" style="--i:2">
+        <strong>設計原則:</strong> CLI は LangGraph ワークフローの薄いラッパー。ビジネスロジックは <code>graph.py</code> と analyzer ノード群に集約される。
+      </div>
+    </div>
+  </div>
+
+  <section id="pipeline" class="sec-head">2 — 解析パイプライン</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> LangGraph workflow</span>
+    <p>入力解決からレポート生成まで、LangGraph の <code>StateGraph</code> で直列＋並列を組み合わせる。<code>build_context</code> の後、20 個の analyzer ノードが並列実行され、結果を <code>meta_analyzer</code> が集約する。</p>
+    <div class="mermaid-wrap">
+      <pre class="mermaid">
+flowchart TD
+  START([START]) --> resolve["resolve_input\nGit / URL / zip / dir"]
+  resolve --> build["build_context\nファイル収集・正規化"]
+  build --> static["Static analyzers\n11 regex + YARA + AST"]
+  build --> behavioral["Behavioral\nAST + taint tracking"]
+  build --> mcp["MCP analyzers\nleast privilege / poisoning"]
+  build --> semantic["Semantic LLM\nintent / quality / discovery"]
+  static --> meta["meta_analyzer\nフィルタ・スコア集約"]
+  behavioral --> meta
+  mcp --> meta
+  semantic --> meta
+  meta --> report["report\nterminal / JSON / MD / SARIF"]
+  report --> END([END])
+      </pre>
+    </div>
+    <h3>主要ノード</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ノード</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>resolve_input</code></td><td>Git URL・zip・ディレクトリ・単一 SKILL.md をワークスペースに展開</td></tr>
+          <tr><td><code>build_context</code></td><td>スキル内ファイル一覧・メタデータ・実行可能フラグを構築</td></tr>
+          <tr><td><code>static_patterns_*</code></td><td>11 カテゴリの正規表現ベース静的パターン（prompt injection, exfiltration 等）</td></tr>
+          <tr><td><code>behavioral_ast</code></td><td>exec / eval / subprocess 等の危険呼び出しを AST 解析</td></tr>
+          <tr><td><code>behavioral_taint_tracking</code></td><td>ソースからシンクへのデータフロー追跡</td></tr>
+          <tr><td><code>mcp_*</code></td><td>MCP ツールの権限宣言不一致・メタデータ毒化を検出</td></tr>
+          <tr><td><code>semantic_*</code></td><td>LLM による開発者意図・品質ポリシー・セキュリティ発見の意味評価</td></tr>
+          <tr><td><code>meta_analyzer</code></td><td>全 analyzer の findings を統合・重複除去・LLM フィルタ</td></tr>
+          <tr><td><code>report</code></td><td>リスクスコア計算と出力フォーマット生成</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="patterns" class="sec-head">3 — 検出カテゴリ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 16 categories · 64 patterns</span>
+    <p>パターン ID は <code>skillspector patterns</code> で一覧表示できる。代表的なカテゴリを以下にまとめる（各カテゴリ内に複数ルール）。</p>
+    <div class="cat-grid">
+      <div class="cat-card" style="--i:1"><div class="cat-card__title">Prompt Injection</div><div class="cat-card__meta">5 patterns · P1–P5</div></div>
+      <div class="cat-card" style="--i:2"><div class="cat-card__title">Data Exfiltration</div><div class="cat-card__meta">4 patterns · E1–E4</div></div>
+      <div class="cat-card" style="--i:3"><div class="cat-card__title">Privilege Escalation</div><div class="cat-card__meta">3 patterns · PE1–PE3</div></div>
+      <div class="cat-card" style="--i:4"><div class="cat-card__title">Supply Chain</div><div class="cat-card__meta">6 patterns · SC1–SC6</div></div>
+      <div class="cat-card" style="--i:5"><div class="cat-card__title">Excessive Agency</div><div class="cat-card__meta">4 patterns · EA1–EA4</div></div>
+      <div class="cat-card" style="--i:6"><div class="cat-card__title">Output Handling</div><div class="cat-card__meta">3 patterns · OH1–OH3</div></div>
+      <div class="cat-card" style="--i:7"><div class="cat-card__title">System Prompt Leakage</div><div class="cat-card__meta">3 patterns · P6–P8</div></div>
+      <div class="cat-card" style="--i:8"><div class="cat-card__title">Memory Poisoning</div><div class="cat-card__meta">3 patterns · MP1–MP3</div></div>
+      <div class="cat-card" style="--i:9"><div class="cat-card__title">Tool Misuse</div><div class="cat-card__meta">3 patterns · TM1–TM3</div></div>
+      <div class="cat-card" style="--i:10"><div class="cat-card__title">Rogue Agent</div><div class="cat-card__meta">2 patterns · RA1–RA2</div></div>
+      <div class="cat-card" style="--i:11"><div class="cat-card__title">Trigger Abuse</div><div class="cat-card__meta">3 patterns · TR1–TR3</div></div>
+      <div class="cat-card" style="--i:12"><div class="cat-card__title">Behavioral AST</div><div class="cat-card__meta">8 patterns · AST1–AST8</div></div>
+      <div class="cat-card" style="--i:13"><div class="cat-card__title">Taint Tracking</div><div class="cat-card__meta">5 patterns · TT1–TT5</div></div>
+      <div class="cat-card" style="--i:14"><div class="cat-card__title">YARA Signatures</div><div class="cat-card__meta">4 patterns · YR1–YR4</div></div>
+      <div class="cat-card" style="--i:15"><div class="cat-card__title">MCP Least Privilege</div><div class="cat-card__meta">4 patterns · LP1–LP4</div></div>
+      <div class="cat-card" style="--i:16"><div class="cat-card__title">MCP Tool Poisoning</div><div class="cat-card__meta">4 patterns · TP1–TP4</div></div>
+    </div>
+    <div class="ve-callout" style="margin-top:1.25rem">
+      <strong>SC4 — Live OSV lookup:</strong> 依存関係を <a href="https://osv.dev" target="_blank" rel="noopener">OSV.dev</a> API でリアルタイム照合。オフライン時は組み込みフォールバックリストに切り替わる。API キー不要。
+    </div>
+  </div>
+
+  <section id="usage" class="sec-head">4 — CLI と入力形式</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Quick start</span>
+    <div class="step-flow">
+      <div class="step-card" style="--i:1"><span class="step-card__num">1</span><div class="step-card__title">Install</div><div class="step-card__body"><code>uv venv .venv</code> → activate → <code>make install</code></div></div>
+      <div class="step-card" style="--i:2"><span class="step-card__num">2</span><div class="step-card__title">Scan local</div><div class="step-card__body"><code>skillspector scan ./my-skill/</code></div></div>
+      <div class="step-card" style="--i:3"><span class="step-card__num">3</span><div class="step-card__title">Scan remote</div><div class="step-card__body">Git URL や zip も直接指定可能</div></div>
+      <div class="step-card" style="--i:4"><span class="step-card__num">4</span><div class="step-card__title">Review report</div><div class="step-card__body">スコア &gt; 50 で exit code 1（CI 連携向け）</div></div>
+    </div>
+    <div class="ve-code-block">
+      <div class="ve-code-block__label">bash — 代表的なコマンド</div>
+      <pre><code># ローカルディレクトリ
+skillspector scan ./my-skill/
+
+# Git リポジトリ
+skillspector scan https://github.com/user/my-skill
+
+# 静的解析のみ（高速）
+skillspector scan ./my-skill/ --no-llm
+
+# JSON レポート出力
+skillspector scan ./my-skill/ --format json --output report.json</code></pre>
+    </div>
+    <h3>対応入力形式</h3>
+    <ul>
+      <li>ローカルディレクトリ（スキルバンドル全体）</li>
+      <li>単一 <code>SKILL.md</code> ファイル</li>
+      <li>Git リポジトリ URL</li>
+      <li>ファイル URL・zip アーカイブ</li>
+    </ul>
+    <h3>主な CLI オプション</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>オプション</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>-f, --format</code></td><td><code>terminal</code>（既定）| <code>json</code> | <code>markdown</code> | <code>sarif</code></td></tr>
+          <tr><td><code>-o, --output</code></td><td>出力ファイルパス（省略時は stdout）</td></tr>
+          <tr><td><code>--no-llm</code></td><td>LLM 意味解析をスキップ（静的解析のみ）</td></tr>
+          <tr><td><code>--yara-rules-dir</code></td><td>追加 YARA ルール（.yar / .yara）のディレクトリ</td></tr>
+          <tr><td><code>-V, --verbose</code></td><td>詳細ログ（DEBUG レベル）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="risk" class="sec-head">5 — リスクスコア</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 0–100 score</span>
+    <p>検出された issue の重大度に基づき 0–100 のスコアを算出。実行可能スクリプトがある場合は 1.3 倍の乗数が適用される。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>重大度</th><th>加点</th><th>スコア帯</th><th>推奨</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge badge--crit">CRITICAL</span></td><td>+50</td><td>81–100</td><td>DO NOT INSTALL</td></tr>
+          <tr><td><span class="badge badge--high">HIGH</span></td><td>+25</td><td>51–80</td><td>DO NOT INSTALL</td></tr>
+          <tr><td><span class="badge badge--med">MEDIUM</span></td><td>+10</td><td>21–50</td><td>CAUTION</td></tr>
+          <tr><td><span class="badge badge--low">LOW</span></td><td>+5</td><td>0–20</td><td>SAFE</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>ターミナル出力には各 finding の場所（ファイル:行）、信頼度、LLM による説明文が含まれる。</p>
+  </div>
+
+  <section id="llm" class="sec-head">6 — LLM 連携</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Provider registry</span>
+    <p><code>SKILLSPECTOR_PROVIDER</code> でプロバイダを選択。各プロバイダは <code>model_registry.yaml</code> を同梱し、デフォルトモデルを持つ。Ollama など OpenAI 互換エンドポイントも <code>OPENAI_BASE_URL</code> で指定可能。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Provider</th><th>認証 env</th><th>デフォルトモデル</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>openai</code></td><td><code>OPENAI_API_KEY</code></td><td><code>gpt-5.4</code></td></tr>
+          <tr><td><code>anthropic</code></td><td><code>ANTHROPIC_API_KEY</code></td><td><code>claude-opus-4-6</code></td></tr>
+          <tr><td><code>nv_build</code></td><td><code>NVIDIA_INFERENCE_KEY</code></td><td><code>deepseek-ai/deepseek-v4-flash</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-code-block">
+      <div class="ve-code-block__label">bash — ローカル Ollama 例</div>
+      <pre><code>export SKILLSPECTOR_PROVIDER=openai
+export OPENAI_API_KEY=ollama
+export OPENAI_BASE_URL=http://localhost:11434/v1
+export SKILLSPECTOR_MODEL=llama3.1:8b
+skillspector scan ./my-skill/</code></pre>
+    </div>
+    <div class="ve-callout">
+      <strong>Anti-jailbreak:</strong> LLM 解析プロンプトには、悪意スキルが解析自体を操作するのを防ぐ保護が組み込まれている。
+    </div>
+    <h3>Python API</h3>
+    <div class="ve-code-block">
+      <div class="ve-code-block__label">python</div>
+      <pre><code>from skillspector import graph
+
+result = graph.invoke({
+    "input_path": "/path/to/skill",
+    "output_format": "json",
+    "use_llm": True,
+})
+
+print(result["risk_score"], result["risk_recommendation"])</code></pre>
+    </div>
+  </div>
+
+  <section id="output" class="sec-head">7 — 出力形式と制限</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Formats</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>形式</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>terminal</code></td><td>対話的レビュー（Rich による整形表示）</td></tr>
+          <tr><td><code>json</code></td><td>プログラム連携・ダッシュボード取り込み</td></tr>
+          <tr><td><code>markdown</code></td><td>ドキュメント・PR コメントへの貼り付け</td></tr>
+          <tr><td><code>sarif</code></td><td>CI/CD・IDE 統合（GitHub Code Scanning 等）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>既知の制限</h3>
+    <ul>
+      <li>非英語コンテンツのパターン検出精度が低下する可能性</li>
+      <li>画像内テキスト・暗号化/バイナリコードは解析不可</li>
+      <li>静的解析のみ — 実行時挙動は観測しない</li>
+      <li>オフライン環境では SC4 が静的フォールバックリストに限定</li>
+    </ul>
+  </div>
+
+  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Official</span>
+    <ul class="link-list">
+      <li><a href="https://github.com/NVIDIA/skillspector" target="_blank" rel="noopener">GitHub: NVIDIA/skillspector</a> — 本体リポジトリ（Apache 2.0）</li>
+      <li><a href="https://osv.dev" target="_blank" rel="noopener">OSV.dev</a> — SC4 のライブ脆弱性データベース</li>
+      <li><a href="https://github.com/NVIDIA/skillspector/issues" target="_blank" rel="noopener">GitHub Issues</a> — バグ報告・機能要望</li>
+    </ul>
+    <p class="source-note" style="margin-top:1rem">内部参照: docs/DEVELOPMENT.md · docs/LLM_ANALYZER_BASE_GUIDE.md · docs/B.3.1-mcp-least-privilege.md</p>
+  </div>
+  </div>
+</div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#dce8f5',
+    primaryTextColor: '#1a3a4a',
+    primaryBorderColor: '#2a5a8a',
+    lineColor: '#2a5a8a',
+    secondaryColor: '#eef4fa',
+    tertiaryColor: '#f5f8fc',
+    fontSize: '14px',
+    fontFamily: 'system-ui, sans-serif'
+  },
+  flowchart: { curve: 'basis', padding: 16 }
+});
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
