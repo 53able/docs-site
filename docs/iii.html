@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>iii — ワーカー統合ランタイムとモノレポ構成</title>
-  <meta name="description" content="iii は Worker・Trigger・Function の3プリミティブで分散処理を統合するランタイム。エンジン（Rust・ELv2）、マルチ言語 SDK、コンソール、エージェント向け skills をひとつのリポジトリで提供する。">
+  <title>iii — リアルタイム統合ランタイムとモノレポ構成</title>
+  <meta name="description" content="iii は Worker・Trigger・Function の3プリミティブでスタックをリアルタイムに合成・拡張・観測するランタイム。iii worker add でキュー・エージェント・サンドボックス等をライブカタログへ追加。エンジン（Rust・ELv2）、Go 含む SDK、コンソール、Agent Skills をひとつのモノレポで提供。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="iii — ワーカー統合ランタイムとモノレポ構成">
-  <meta property="og:description" content="iii は Worker・Trigger・Function の3プリミティブで分散処理を統合するランタイム。エンジン、SDK、コンソール、skills の技術概要。">
+  <meta property="og:title" content="iii — リアルタイム統合ランタイムとモノレポ構成">
+  <meta property="og:description" content="iii worker add で能力を追加し、Function 呼び出しで合成、トレースで観測。Rust エンジンとマルチ言語 SDK の技術概要。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/iii.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="iii — ワーカー統合ランタイムとモノレポ構成">
-  <meta name="twitter:description" content="Worker・Trigger・Function で分散ワークを統合。Rust エンジンとマルチ言語 SDK の概要。">
+  <meta name="twitter:title" content="iii — リアルタイム統合ランタイムとモノレポ構成">
+  <meta name="twitter:description" content="Worker・Trigger・Function と iii worker add によるライブ統合。Rust エンジンと Go 含む SDK の概要。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Azeret+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -197,6 +197,7 @@
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
     <a href="#model">問題と方針</a>
+    <a href="#changes">導入前後</a>
     <a href="#primitives">3プリミティブ</a>
     <a href="#layout">モノレポ</a>
     <a href="#start">導入</a>
@@ -205,38 +206,62 @@
 
   <div class="main">
     <h1>iii</h1>
-    <p class="subtitle">Worker / Trigger / Function で分散ワークを束ねるランタイム（<a href="https://github.com/iii-hq/iii" target="_blank" rel="noopener">iii-hq/iii</a>）</p>
+    <p class="subtitle">スタックをリアルタイムに合成・拡張・観測するランタイム（<a href="https://github.com/iii-hq/iii" target="_blank" rel="noopener">iii-hq/iii</a>）</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 何を解くか</span>
-      <p><strong>iii</strong> は、サービスを増やすたびに積み上がる「サービス間の接続コスト」を下げるためのインフラだ。公式 README の整理では、マイクロサービスやワーカーを足すほど潜在的な接続点が増え、運用・学習・プロンプト設計の負荷が二次的に増える問題を、<strong>登録さえすれば他ワーカーと即座にやり取りできる単一の実行モデル</strong>へ寄せる。</p>
+      <p><strong>iii</strong> は、キュー・cron・HTTP・状態・観測・エージェント・サンドボックスなどがそれぞれ別の統合ストーリーを持つ問題を、<strong>ひとつのライブなシステム面</strong>に畳み込むランタイムだ。公式 README では「compose, extend, and observe every service in your stack in real time」と整理されている。</p>
       <div class="kpi-row">
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">Worker</span><span class="ve-kpi-card__label">プロセス単位の登録</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">Trigger</span><span class="ve-kpi-card__label">HTTP / cron / キュー等</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">Function</span><span class="ve-kpi-card__label">安定 ID の処理単位</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Any</span><span class="ve-kpi-card__label">言語・ランタイム非依存</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">worker add</span><span class="ve-kpi-card__label">CLI で能力を追加</span></div>
       </div>
-      <p>CLI でプロジェクトを初期化し、同じディレクトリでエンジンを起動する流れがドキュメント化されている。エージェント向けには <code>skills/</code> 配下の Skill 群を Skillkit から取り込む手順も README に載っている。</p>
+      <p>追加したワーカーはライブカタログに載り、他ワーカーが即座に呼び出せる。カタログは <a href="https://workers.iii.dev/" target="_blank" rel="noopener">workers.iii.dev</a> で閲覧できる。エージェントも開発者と同じインターフェイスで、不足する能力をワーカー追加 → 関数発見 → 呼び出し → トレース確認、という流れを取れる。</p>
+      <div class="ve-code-block">
+        <pre><code>iii worker add queue
+iii worker add agent
+iii worker add sandbox
+iii worker add &lt;anything&gt;</code></pre>
+      </div>
     </div>
 
     <section id="model" class="sec-head">2 — 問題設定と設計方針</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 統合コストの見立て</span>
-      <p>各サービスは内部実装・ライフサイクル・失敗モードがバラバラになりがちで、新規サービス <em>N</em> 本目は既存との組み合わせを増やす。iii はこの「足し算」を<strong>ワーカー登録と宣言的トリガー</strong>に畳み込み、4 本でも 20 本でも同じ操作感でスケールさせることを狙う。</p>
+      <p>各サービスは内部実装・ライフサイクル・失敗モードがバラバラになりがちで、新規サービス <em>N</em> 本目は既存との組み合わせを増やす。iii はこの「足し算」を<strong>ワーカー登録と宣言的トリガー</strong>に畳み込み、4 本でも 20 本でも同じ操作感でスケールさせる。</p>
+      <p>プラットフォームチームはワーカーを公開し、アプリチームは関数登録とトリガー宣言を行う。エージェントも同じカタログと同じ関数呼び出しを使う。拡張は <code>iii worker add</code>、合成は関数呼び出し、観測はトレースを開く、という README 上の三操作に集約される。</p>
       <div class="ve-callout">
-        <strong>観測性:</strong> すべての能力を同じ3語に写像すると、トレース・キュー・状態・ログを横断して追いやすい、という README 上の主張になっている（実装詳細は公式ドキュメント側）。
+        <strong>観測性:</strong> すべての能力を Worker / Trigger / Function の三語に写像すると、トレース・キュー・状態・ログを横断して追いやすい、という主張になっている（実装詳細は公式ドキュメント側）。
       </div>
     </div>
 
-    <section id="primitives" class="sec-head">3 — 3 プリミティブ</section>
+    <section id="changes" class="sec-head">3 — 導入前後の変化</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> What Changes（README 要約）</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>状況</th><th>iii 導入前</th><th>iii 導入後</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>観測ツール追加</td><td>数え切れない統合</td><td><code>iii worker add observability</code></td></tr>
+            <tr><td>エージェントハーネス</td><td>リトライ・トレース・タイムアウトが別系統</td><td>同じワーカー／関数モデル</td></tr>
+            <tr><td>キュー導入</td><td>ベンダー選定・調達・数週間の統合</td><td><code>iii worker add queue</code> → システム内でトレース可能・呼び出し可能</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="primitives" class="sec-head">4 — 3 プリミティブ</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> Worker → Trigger → Function</span>
-      <p>公式の言い切りは次の三つに集約される。</p>
+      <p>公式 README のメンタルモデルは次の三つに集約される。</p>
       <ul>
-        <li><strong>Worker:</strong> エンジンに登録するプロセス。TypeScript の API、Python のパイプライン、Rust のマイクロサービスなど、形を問わず「ワーカー化」できる。</li>
-        <li><strong>Trigger:</strong> 関数を起動する条件。直接呼び出し、HTTP、<code>cron</code>、キュー購読、状態変化、ストリームなど。ワーカー側で宣言し、ルーティング・シリアライズ・配信は iii 側が扱う、という役割分担。</li>
-        <li><strong>Function:</strong> <code>名前空間::識別子</code> 形式の安定 ID を持つ処理単位（例: <code>content::classify</code>）。入力を受け、任意で出力を返す。</li>
+        <li><strong>Worker:</strong> エンジンに登録し、トリガーと関数を登録するプロセス。TypeScript API、Python パイプライン、Rust マイクロサービスなど形を問わない。数行でワーカー化でき、<strong>実行中に他ワーカーを生成</strong>することもできる（エージェントやアプリがランタイム中にシステムを拡張する用途）。</li>
+        <li><strong>Trigger:</strong> 関数を起動する条件。直接呼び出し、HTTP、<code>cron</code>、キュー購読、状態変化、ストリームなど。ワーカー側で宣言的に定義し、ルーティング・シリアライズ・配信は iii が扱う。</li>
+        <li><strong>Function:</strong> <code>名前空間::識別子</code> 形式の安定 ID を持つ処理単位（例: <code>content::classify</code>、<code>orders::validate</code>）。入力を受け、任意で出力を返す。</li>
       </ul>
       <div class="pipeline">
         <span class="step">Worker 登録</span>
@@ -249,7 +274,7 @@
       </div>
     </div>
 
-    <section id="layout" class="sec-head">4 — モノレポ構成とライセンス</section>
+    <section id="layout" class="sec-head">5 — モノレポ構成とライセンス</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 主要ディレクトリ</span>
       <div class="ve-table-wrap">
@@ -259,7 +284,7 @@
           </thead>
           <tbody>
             <tr><td><code>engine/</code></td><td>Rust のコアランタイム・プロトコル（エンジン README 参照）</td></tr>
-            <tr><td><code>sdk/</code></td><td>Node.js / Python / Rust の SDK</td></tr>
+            <tr><td><code>sdk/</code></td><td>Node.js / Python / Rust / Go の SDK</td></tr>
             <tr><td><code>console/</code></td><td>開発者・運用向けコンソール（React と Rust）</td></tr>
             <tr><td><code>skills/</code></td><td>AI コーディングエージェント用 Skill</td></tr>
             <tr><td><code>website/</code></td><td>公式サイト</td></tr>
@@ -283,16 +308,18 @@
       <p>リポジトリ全体の依存関係や CI の詳細は、ルートの <code>STRUCTURE.md</code> が案内役になっている（本ページでは概要のみ）。</p>
     </div>
 
-    <section id="start" class="sec-head">5 — 導入と SDK</section>
+    <section id="start" class="sec-head">6 — 導入と SDK</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> CLI クイックスタート</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> CLI インストールとクイックスタート</span>
       <div class="ve-code-block">
-        <pre><code>iii project init myapp    # プロジェクトの足場
+        <pre><code>curl -fsSL https://install.iii.dev/iii/main/install.sh | sh
+
+iii project init myapp    # プロジェクトの足場
 cd myapp
 iii                       # エンジン起動</code></pre>
       </div>
-      <p>CLI の導入や初回セットアップの細部は <a href="https://iii.dev/docs/quickstart" target="_blank" rel="noopener">Quickstart（iii.dev）</a> を正とする。</p>
-      <h3>公式パッケージ（README の表に準拠）</h3>
+      <p>手順の詳細は <a href="https://iii.dev/docs/quickstart" target="_blank" rel="noopener">Quickstart（iii.dev）</a> を正とする。ワーカー追加は <code>iii worker add</code>（例は概要セクション参照）。</p>
+      <h3>公式 SDK（README の表に準拠）</h3>
       <div class="ve-table-wrap">
         <table>
           <thead>
@@ -302,24 +329,38 @@ iii                       # エンジン起動</code></pre>
             <tr><td>Node.js</td><td><code>iii-sdk</code></td><td><code>pnpm add iii-sdk</code> または <code>npm install iii-sdk</code></td></tr>
             <tr><td>Python</td><td><code>iii-sdk</code></td><td><code>pip install iii-sdk</code></td></tr>
             <tr><td>Rust</td><td><code>iii-sdk</code>（crates.io）</td><td><code>Cargo.toml</code> に依存追加</td></tr>
+            <tr><td>Go</td><td><code>iii-sdk</code></td><td><code>go get github.com/iii-hq/iii/sdk/packages/go/iii</code></td></tr>
           </tbody>
         </table>
       </div>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:1">
       <span class="ve-section-label"><span class="ve-dot"></span> Agent Skills</span>
-      <p>エージェントに iii の規約を読ませる場合、README では次のワンライナーが案内されている（Skill の網羅一覧は upstream の <code>skills/</code> ディレクトリ）。</p>
+      <p>エンジンプリミティブ（HTTP、キュー、cron、状態、ストリーム、カスタムトリガー等）向けの参照資料:</p>
       <div class="ve-code-block">
-        <pre><code>npx skillkit add iii-hq/iii/skills</code></pre>
+        <pre><code>npx skills add iii-hq/iii/skills</code></pre>
       </div>
+      <p><a href="https://github.com/iii-hq/workers" target="_blank" rel="noopener">iii-hq/workers</a> の各ワーカーも個別 Skill を同梱する。例:</p>
+      <div class="ve-code-block">
+        <pre><code>npx skills add iii-hq/workers --list
+npx skills add iii-hq/workers --skill database
+npx skills add iii-hq/workers --all</code></pre>
+      </div>
+      <p>エンジン組込みワーカー（<code>iii-queue</code>、<code>iii-state</code>、<code>iii-pubsub</code>、<code>iii-stream</code>、<code>iii-cron</code>、<code>iii-http</code>、<code>iii-observability</code>、<code>iii-bridge</code>、<code>iii-exec</code>、<code>iii-worker-manager</code>）の Skill は本体リポジトリ内に同梱。個別インストール例:</p>
+      <div class="ve-code-block">
+        <pre><code>npx skills add iii-hq/iii --full-depth --skill &lt;name&gt;</code></pre>
+      </div>
+      <p>各ワーカーの README（<code>engine/src/workers/</code> 配下）に <code>iii worker add</code> と Skill コマンドの正確な例が載っている。</p>
     </div>
 
-    <section id="links" class="sec-head">6 — 参考リンク</section>
+    <section id="links" class="sec-head">7 — 参考リンク</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
       <ul>
         <li><a href="https://iii.dev/docs" target="_blank" rel="noopener">Documentation（iii.dev）</a></li>
+        <li><a href="https://workers.iii.dev/" target="_blank" rel="noopener">Worker Catalog（workers.iii.dev）</a></li>
         <li><a href="https://github.com/iii-hq/iii" target="_blank" rel="noopener">GitHub: iii-hq/iii</a> — 本体モノレポ</li>
+        <li><a href="https://github.com/iii-hq/workers" target="_blank" rel="noopener">iii-hq/workers</a> — 公開ワーカー集</li>
         <li><a href="https://github.com/iii-hq/iii-examples" target="_blank" rel="noopener">iii-examples</a> — サンプル集</li>
         <li><a href="https://iii.dev/docs/console" target="_blank" rel="noopener">Console ドキュメント</a></li>
         <li><a href="https://hub.docker.com/r/iiidev/iii" target="_blank" rel="noopener">Docker Hub: iiidev/iii</a></li>
