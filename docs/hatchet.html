@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hatchet — バックグラウンドタスクと Durable Workflow のオーケストレーション</title>
+  <meta name="description" content="hatchet-dev/hatchet の技術概要。Postgres 永続化・RabbitMQ・Engine/API/Worker 構成、マルチ言語 SDK、セルフホストと Hatchet Cloud の入口。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Hatchet — バックグラウンドタスクと Durable Workflow のオーケストレーション">
+  <meta property="og:description" content="hatchet-dev/hatchet の技術概要。Postgres 永続化、Engine/API/Worker、Python・TypeScript・Go・Ruby SDK。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/hatchet.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Hatchet — バックグラウンドタスクと Durable Workflow のオーケストレーション">
+  <meta name="twitter:description" content="hatchet-dev/hatchet の技術概要。Postgres 永続化、Engine/API/Worker、マルチ言語 SDK。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.45 0.1 230);
+      --chart-4: oklch(0.65 0.14 55);
+      --chart-5: oklch(0.55 0.1 200);
+      --code-bg: var(--muted);
+      --code-text: #1e3a5f;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.62 0.14 248);
+        --chart-2: oklch(0.78 0.16 76);
+        --chart-3: oklch(0.55 0.1 230);
+        --chart-4: oklch(0.68 0.12 55);
+        --chart-5: oklch(0.58 0.08 200);
+        --code-bg: #0c1524;
+        --code-text: #93c5fd;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.38 0.12 248 / 0.12); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 15% 0%, oklch(0.38 0.12 248 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 15% 0%, oklch(0.62 0.14 248 / 0.1) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 720px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-grid h4 { font-size: 0.875rem; margin-bottom: 0.5rem; color: var(--chart-1); }
+
+    .mermaid-wrap {
+      position: relative; margin: 1.25rem 0; padding: 1rem;
+      background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      display: flex; justify-content: center; overflow: hidden;
+    }
+    .mermaid-wrap .mermaid { min-width: 0; transform-origin: top center; }
+    .mermaid-zoom { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 2; }
+    .mermaid-zoom button {
+      font-family: var(--font-mono); font-size: 11px; width: 28px; height: 28px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--card); color: var(--foreground); cursor: pointer;
+    }
+    .mermaid-zoom button:hover { background: var(--accent); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#features">主要機能</a>
+    <a href="#getting-started">はじめ方</a>
+    <a href="#sdks">SDK とリポジトリ</a>
+    <a href="#compare">他ツールとの比較</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>Hatchet</h1>
+  <p class="subtitle">An orchestration engine for background tasks, AI agents, and durable workflows.</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <p><strong>Hatchet</strong> は、バックグラウンドタスク・AI エージェント・長時間ワークフローを大規模にオーケストレーションするプラットフォーム。<a href="https://github.com/hatchet-dev/hatchet" target="_blank" rel="noopener">hatchet-dev/hatchet</a> は Go で書かれたサーバー本体と、Python / TypeScript / Go / Ruby の SDK、Web UI を含むモノレポ。キューイング・自動リトライ・耐久性・リアルタイム監視・アラート・ログを一体で提供する。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">公式 SDK 言語</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">PG</span><span class="ve-kpi-card__label">永続化レイヤ</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">gRPC</span><span class="ve-kpi-card__label">Worker 通信</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+    </div>
+    <p>利用形態は <a href="https://cloud.hatchet.run" target="_blank" rel="noopener">Hatchet Cloud</a>（マネージド）と <a href="https://docs.hatchet.run/self-hosting" target="_blank" rel="noopener">セルフホスト</a> の二通り。正確性・信頼性・水平スケール・可観測性が重要な非同期処理に向く。Temporal や Celery の代替として、<strong>Postgres をランタイムと可観測性の両方の耐久レイヤ</strong>に据える設計が特徴で、セルフホストの運用負荷を下げる。</p>
+    <div class="ve-callout">
+      <strong>向いている用途:</strong> バックグラウンドジョブ、エージェントのツールチェーン、障害から復旧できる durable workflow、イベント駆動の分散処理。データエンジニアリング向けの大量コネクタ統合より、アプリケーション内の高スループット非同期処理を中心に据える。
+    </div>
+  </div>
+
+  <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ランタイム構成</span>
+    <p>開発環境では <code>docker-compose.yml</code> が Postgres と RabbitMQ を起動し、<code>hatchet-api</code> が REST/gRPC を、<code>hatchet-engine</code> がスケジューリングとディスパッチを担う。Worker は各言語 SDK 経由で Engine と gRPC 接続し、タスクを実行する。実行履歴・メタデータ・可観測性データは Postgres に永続化される。</p>
+    <div class="mermaid-wrap" id="arch-diagram">
+      <div class="mermaid-zoom">
+        <button type="button" data-zoom="-">−</button>
+        <button type="button" data-zoom="reset">◎</button>
+        <button type="button" data-zoom="+">+</button>
+      </div>
+      <pre class="mermaid">
+flowchart TD
+  UI["Web UI\n(frontend/app)"]
+  API["hatchet-api\nREST / gRPC"]
+  ENG["hatchet-engine\nschedule & dispatch"]
+  PG["PostgreSQL\n(durability + observability)"]
+  RMQ["RabbitMQ\n(message queue)"]
+  WK["Workers\n(Python / TS / Go / Ruby)"]
+
+  UI --> API
+  API --> PG
+  API --> ENG
+  ENG --> RMQ
+  ENG --> PG
+  WK -->|"gRPC"| ENG
+  WK -->|"poll / subscribe"| API
+      </pre>
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コンポーネント</th><th>パス / バイナリ</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>API サーバー</td><td><code>cmd/hatchet-api</code></td><td>管理 API・認証・テナント・Worker 向けエンドポイント</td></tr>
+          <tr><td>Engine</td><td><code>cmd/hatchet-engine</code></td><td>タスクキュー、スケジューリング、ディスパッチ、再試行</td></tr>
+          <tr><td>CLI</td><td><code>cmd/hatchet-cli</code></td><td>ローカル開発・プロジェクト雛形・運用補助</td></tr>
+          <tr><td>Lite</td><td><code>cmd/hatchet-lite</code></td><td>オールインワンの軽量セルフホスト用サーバー</td></tr>
+          <tr><td>コアライブラリ</td><td><code>pkg/</code> <code>internal/</code></td><td>client、worker、repository、scheduling、msgqueue 等</td></tr>
+          <tr><td>契約</td><td><code>api-contracts/</code></td><td>OpenAPI・protobuf 定義（REST / gRPC 生成元）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>インフラ依存（開発時）</h3>
+    <p><code>Taskfile.yaml</code> の <code>setup</code> は DB マイグレーション・暗号鍵生成・ドキュメント生成・シードまでを一括実行する。メッセージキューは RabbitMQ（<code>SERVER_MSGQUEUE_KIND=rabbitmq</code>）、DB は Postgres + PgBouncer が標準構成。</p>
+  </div>
+
+  <section id="features" class="sec-head">3 — 主要機能</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> バックグラウンドタスク</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>機能</th><th>概要</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Background tasks</td><td>単発関数として定義。fire-and-forget と fire-and-wait、サブスクリプション対応</td></tr>
+          <tr><td>Retries</td><td>柔軟なリトライポリシー。指数バックオフオプション</td></tr>
+          <tr><td>Cron / Scheduled</td><td>定期実行と将来時刻へのスケジュール</td></tr>
+          <tr><td>Task routing</td><td>Worker ラベルによる厳密ルーティング、Worker affinity による重み付き割当</td></tr>
+          <tr><td>Events</td><td>イベントトリガと durable event waits によるイベント駆動構成</td></tr>
+          <tr><td>Webhooks</td><td>上流データソースから Hatchet タスクを起動</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card ve-card--elevated" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> オーケストレーション</span>
+    <ul>
+      <li><strong>Durable tasks:</strong> 障害後も復旧できる長時間ワークフロー（Temporal / DBOS の代替候補）</li>
+      <li><strong>DAG:</strong> データパイプライン向けの有向非巡回グラフ。durable tasks との選定ガイドは公式 Cookbook を参照</li>
+      <li><strong>Pause / Resume:</strong> durable sleep、event wait、または両方の組み合わせ</li>
+    </ul>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> スケールと制御</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>機能</th><th>目的</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Priority</td><td>クリティカルタスクをバックフィルより先に実行</td></tr>
+          <tr><td>Rate limits</td><td>外部 API 制限やユーザー単位の動的レート制限</td></tr>
+          <tr><td>Concurrency</td><td>動的キーに基づく同時実行上限（フェアスケジューリング）</td></tr>
+          <tr><td>Worker slots</td><td>Worker が過負荷にならないようスロットで受付量を制限</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:3">
+    <span class="ve-section-label"><span class="ve-dot"></span> 可観測性とマルチテナント</span>
+    <ul>
+      <li>リアルタイム Web UI（アラート・監視・ログ）</li>
+      <li>OpenTelemetry（組み込みコレクタまたは外部送信先）</li>
+      <li>Prometheus メトリクス</li>
+      <li>マルチテナント、ユーザー・ロール管理がデフォルトで有効</li>
+    </ul>
+  </div>
+
+  <section id="getting-started" class="sec-head">4 — はじめ方</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 最短ルート</span>
+    <p>まず <a href="https://cloud.hatchet.run" target="_blank" rel="noopener">Hatchet Cloud</a> で試すのが最速。セルフホストを見据える場合でも、デプロイ済み環境の UI と挙動を確認できる。</p>
+    <h3>ローカル（CLI + Docker）</h3>
+    <p>Mac / Linux / WSL ではインストールスクリプトと CLI でサーバーを起動できる。<strong>Docker が必須</strong>。</p>
+    <div class="ve-code-block">
+      <pre><code>curl -fsSL https://install.hatchet.run/install.sh | bash
+hatchet --version
+hatchet server start</code></pre>
+    </div>
+    <h3>ソースから開発</h3>
+    <p>リポジトリルートでインフラ起動後、<code>task setup</code> が依存関係・DB・マイグレーション・シードまで準備する（<a href="https://github.com/hatchet-dev/hatchet/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a> 参照）。</p>
+    <div class="ve-code-block">
+      <pre><code>docker compose -f docker-compose.yml up -d
+task setup
+# API: http://localhost:8080 など（.env の SERVER_URL を参照）</code></pre>
+    </div>
+    <div class="ve-callout">
+      <strong>負荷の目安:</strong> 公式ドキュメントでは最大約 10k tasks/秒の負荷試験実績がある一方、Redis/RabbitMQ ベースの軽量キューよりリソース消費は大きい。耐久性と履歴保持のトレードオフとして設計されている。
+    </div>
+  </div>
+
+  <section id="sdks" class="sec-head">5 — SDK とリポジトリ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 言語別 SDK</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>言語</th><th>パッケージ / パス</th><th>補足</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>TypeScript</td><td><code>@hatchet-dev/typescript-sdk</code> / <code>sdks/typescript</code></td><td>v1 client・worker・durable 例が <code>src/v1/examples/</code> に豊富</td></tr>
+          <tr><td>Python</td><td><code>hatchet-sdk</code> / <code>sdks/python</code></td><td>workflow・task・OpenTelemetry 連携</td></tr>
+          <tr><td>Go</td><td><code>sdks/go</code></td><td>サーバーと同リポジトリの Go モジュール</td></tr>
+          <tr><td>Ruby</td><td><code>sdks/ruby</code></td><td>REST クライアント生成を含む</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>リポジトリ構成（抜粋）</h3>
+    <div class="ve-code-block">
+      <pre><code>hatchet-dev/hatchet/
+├── cmd/                 … hatchet-api, hatchet-engine, hatchet-cli, hatchet-lite 等
+├── pkg/                 … client, worker, scheduling, repository
+├── internal/            … services, msgqueue, integrations
+├── sdks/                … go, python, typescript, ruby
+├── frontend/app/        … Web ダッシュボード（React）
+├── frontend/docs/       … 公開ドキュメントサイト用
+├── api-contracts/       … OpenAPI / protobuf
+├── examples/            … 言語別クイックスタート
+└── sql/schema/          … DB スキーマ（goose マイグレーション）</code></pre>
+    </div>
+    <p>Worker はアプリプロセス内で SDK の <code>worker</code> を起動し、宣言した task / workflow を Engine に登録して実行する。VS Code 拡張（<code>frontend/vscode-extension</code>）はワークフロー解析や DAG パネルを提供する。</p>
+  </div>
+
+  <section id="compare" class="sec-head">6 — 他ツールとの比較</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ポジショニング</span>
+    <div class="compare-grid">
+      <div class="ve-card ve-card--recessed" style="--i:1">
+        <h4>vs Temporal / DBOS</h4>
+        <p>durable tasks がワークフロー代替として使える。加えて OTel 統合、レート制限、ルーティング、Worker スロット、マルチテナントが同梱。キュー・DAG・durable execution を一つのプラットフォームに集約できる。</p>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:2">
+        <h4>vs Celery / BullMQ</h4>
+        <p>従来キューはブローカー上に実行中タスクだけを保持し、完了後の履歴は薄い。Hatchet は<strong>耐久キュー</strong>として実行履歴を Postgres に保持し、監視・デバッグ・durable 機能を支える。スループットは Redis 系より低いが、状態の永続性が高い。</p>
+      </div>
+    </div>
+    <div class="ve-card ve-card--elevated" style="--i:3; margin-top: 1rem;">
+      <h4>vs Airflow / Prefect / Dagster</h4>
+      <p>データエンジニアリング向けコネクタとバッチ指向の DAG オーケストレーションが強みのツール群。Hatchet はアプリケーション内の高スループット非同期処理（&gt;100/s を想定）と、自前関数・自前統合での DAG 構築に向く。既製コネクタをそのまま使いたい場合は従来 DAG プラットフォームが適する。</p>
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/hatchet-dev/hatchet" target="_blank" rel="noopener">GitHub: hatchet-dev/hatchet</a> — 本体リポジトリ（MIT）</li>
+      <li><a href="https://docs.hatchet.run" target="_blank" rel="noopener">公式ドキュメント</a> — 機能リファレンスとセルフホスト手順</li>
+      <li><a href="https://docs.hatchet.run/cookbooks" target="_blank" rel="noopener">Cookbooks</a> — エンドツーエンドのワークフロー例</li>
+      <li><a href="https://cloud.hatchet.run" target="_blank" rel="noopener">Hatchet Cloud</a> — マネージド提供（オートスケール・マルチリージョン・SSO 等）</li>
+      <li><a href="https://discord.gg/ZMeUafwH89" target="_blank" rel="noopener">Discord</a> — コミュニティとコントリビューション相談</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    look: 'classic',
+    themeVariables: {
+      primaryColor: isDark ? '#1e3a5f' : '#dbeafe',
+      primaryBorderColor: isDark ? '#3b82f6' : '#2563eb',
+      primaryTextColor: isDark ? '#eff6ff' : '#1e3a5f',
+      secondaryColor: isDark ? '#1e293b' : '#f0f9ff',
+      secondaryBorderColor: isDark ? '#60a5fa' : '#3b82f6',
+      secondaryTextColor: isDark ? '#f1f5f9' : '#1e293b',
+      tertiaryColor: isDark ? '#27201a' : '#fef9c3',
+      lineColor: isDark ? '#64748b' : '#94a3b8',
+      fontSize: '14px',
+      fontFamily: 'DM Sans, system-ui, sans-serif'
+    }
+  });
+
+  const wrap = document.getElementById('arch-diagram');
+  if (wrap) {
+    const inner = wrap.querySelector('.mermaid');
+    let zoom = 1;
+    const INITIAL_ZOOM = 1.2;
+    zoom = INITIAL_ZOOM;
+    const applyZoom = () => { if (inner) inner.style.transform = 'scale(' + zoom + ')'; };
+    applyZoom();
+    wrap.querySelectorAll('[data-zoom]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const action = btn.getAttribute('data-zoom');
+        if (action === '+') zoom = Math.min(zoom + 0.15, 2);
+        else if (action === '-') zoom = Math.max(zoom - 0.15, 0.6);
+        else zoom = INITIAL_ZOOM;
+        applyZoom();
+      });
+    });
+  }
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
