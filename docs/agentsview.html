@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>agentsview — AI コーディングエージェントのセッション閲覧・検索・コスト追跡</title>
+  <meta name="description" content="agentsview は複数の AI コーディングエージェントのセッションをローカルに集約し、Web UI・CLI・REST API で閲覧・全文検索・トークンコスト追跡を行う Go + Svelte 5 アプリです。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="agentsview — AI コーディングエージェントのセッション閲覧・検索・コスト追跡">
+  <meta property="og:description" content="Claude Code / Cursor / Codex など 20 以上のエージェントセッションをローカル SQLite に同期し、ダッシュボードと CLI でコストを可視化する。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/agentsview.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="agentsview — AI コーディングエージェントのセッション閲覧・検索・コスト追跡">
+  <meta name="twitter:description" content="ローカルファーストのセッションブラウザ。全文検索・コストダッシュボード・PostgreSQL / DuckDB ミラー対応。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        fontSize: '14px',
+        primaryColor: '#e8f4f8',
+        primaryTextColor: '#0f3d4a',
+        primaryBorderColor: '#0891b2',
+        lineColor: '#0369a1',
+        secondaryColor: '#f0fdf4',
+        tertiaryColor: '#fef3c7'
+      },
+      flowchart: { curve: 'basis', padding: 16 }
+    });
+  </script>
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.005 200);
+      --foreground: oklch(0.18 0.03 220);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.18 0.03 220);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.18 0.03 220);
+      --primary: oklch(0.25 0.06 220);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.96 0.01 200);
+      --secondary-foreground: oklch(0.25 0.06 220);
+      --muted: oklch(0.96 0.01 200);
+      --muted-foreground: oklch(0.48 0.03 220);
+      --accent: oklch(0.94 0.02 190);
+      --accent-foreground: oklch(0.25 0.06 220);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.02 200);
+      --input: oklch(0.88 0.02 200);
+      --ring: oklch(0.55 0.08 200);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.55 0.10 170);
+      --chart-4: oklch(0.72 0.12 55);
+      --chart-5: oklch(0.50 0.08 240);
+      --code-bg: oklch(0.965 0.012 200);
+      --code-text: #0c4a6e;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.12 0.02 220);
+        --foreground: oklch(0.96 0.01 200);
+        --card: oklch(0.18 0.025 220);
+        --card-foreground: oklch(0.96 0.01 200);
+        --popover: oklch(0.18 0.025 220);
+        --popover-foreground: oklch(0.96 0.01 200);
+        --primary: oklch(0.88 0.04 190);
+        --primary-foreground: oklch(0.15 0.03 220);
+        --secondary: oklch(0.22 0.025 220);
+        --secondary-foreground: oklch(0.96 0.01 200);
+        --muted: oklch(0.24 0.025 220);
+        --muted-foreground: oklch(0.68 0.03 200);
+        --accent: oklch(0.24 0.03 200);
+        --accent-foreground: oklch(0.96 0.01 200);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.55 0.08 200);
+        --chart-1: oklch(0.62 0.14 190);
+        --chart-2: oklch(0.72 0.15 80);
+        --chart-3: oklch(0.68 0.12 170);
+        --chart-4: oklch(0.75 0.12 55);
+        --chart-5: oklch(0.58 0.10 240);
+        --code-bg: #0d1f28;
+        --code-text: #7dd3fc;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.5rem; line-height: 1.1; font-weight: 700; color: var(--chart-1); }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.65 0.15 80 / 0.12); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.45 0.12 200 / 0.08) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.62 0.14 190 / 0.12) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.875rem; margin-bottom: 2rem; line-height: 1.65; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 80px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 0.95rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .mermaid-wrap { display: flex; justify-content: center; margin: 1.25rem 0; overflow-x: auto; }
+    .mermaid-wrap .mermaid { min-width: min(100%, 640px); }
+
+    .layer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 800px) { .layer-grid { grid-template-columns: 1fr; } }
+    .layer-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; background: var(--card); }
+    .layer-card__tag { font-family: var(--font-mono); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--chart-1); margin-bottom: 0.5rem; }
+    .layer-card__title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
+    .layer-card p { font-size: 0.8125rem; color: var(--text-dim); margin: 0; }
+
+    .backend-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 800px) { .backend-cards { grid-template-columns: 1fr; } }
+    .backend-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; background: var(--muted); }
+    .backend-card h3 { margin: 0 0 0.5rem; font-family: var(--font-mono); font-size: 0.85rem; color: var(--chart-1); }
+    .backend-card p { font-size: 0.8125rem; margin: 0; color: var(--text-dim); }
+
+    .source-list { list-style: none; padding: 0; margin: 0; }
+    .source-list li { border-bottom: 1px solid var(--border); padding: 0.55rem 0; font-family: var(--font-mono); font-size: 0.82rem; }
+    .source-list li:last-child { border-bottom: none; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">Contents</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#install">インストール</a>
+    <a href="#agents">対応エージェント</a>
+    <a href="#cli">CLI と API</a>
+    <a href="#webui">Web UI</a>
+    <a href="#backends">バックエンド</a>
+    <a href="#deploy">配布形態</a>
+    <a href="#privacy">プライバシー</a>
+    <a href="#development">開発</a>
+    <a href="#sources">参照</a>
+  </nav>
+
+  <div class="main">
+    <h1>agentsview</h1>
+    <p class="subtitle">
+      <a href="https://github.com/kenn-io/agentsview" target="_blank" rel="noopener">kenn-io/agentsview</a> —
+      AI コーディングエージェントのセッションをローカルに集約し、閲覧・全文検索・コスト追跡を行う単一バイナリ + Web UI。
+      アカウント不要、データは端末内に保持する。
+    </p>
+
+    <section class="ve-card ve-card--hero" style="--i:0">
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">1</div>
+          <div class="ve-kpi-card__label">バイナリ配布</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">20+</div>
+          <div class="ve-kpi-card__label">対応エージェント</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">SQLite</div>
+          <div class="ve-kpi-card__label">ローカル主アーカイブ</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">FTS5</div>
+          <div class="ve-kpi-card__label">全文検索</div>
+        </div>
+      </div>
+      <p>初回起動時にマシン上の各エージェントセッションディレクトリを自動検出し、ローカル SQLite に同期したうえで <code>http://127.0.0.1:8080</code> の Web UI を開く。サーバー不要で <code>agentsview usage</code> だけを使う運用も可能。</p>
+    </section>
+
+    <h2 class="sec-head" id="overview">概要</h2>
+    <div class="ve-card" style="--i:1">
+      <p>agentsview は、Claude Code・Cursor・Codex・Gemini CLI など複数の AI コーディングエージェントが残すセッションログを横断的に扱うためのツール。セッション閲覧、全文検索、トークン使用量とコストの可視化、チーム向け PostgreSQL 同期、分析用 DuckDB ミラーを 1 つのプロダクトにまとめている。</p>
+      <ul>
+        <li>公式サイト: <a href="https://agentsview.io" target="_blank" rel="noopener">agentsview.io</a></li>
+        <li>ライセンス: MIT</li>
+        <li>技術スタック: Go 1.26+（CGO）+ Svelte 5 SPA（Vite）+ 任意で Tauri デスクトップ</li>
+      </ul>
+    </div>
+
+    <h2 class="sec-head" id="architecture">アーキテクチャ</h2>
+    <div class="ve-card" style="--i:2">
+      <p>データはエージェント固有のセッションファイルから取り込まれ、パーサー層で正規化されたあとストア層（SQLite が主）に格納される。Go サーバーが REST API（Huma）と SSE を提供し、埋め込み済み Svelte フロントエンドが UI を描画する。</p>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+  A["エージェントセッション<br/>~/.claude, ~/.cursor など"] --> B["internal/parser<br/>形式別パース"]
+  B --> C["internal/sync<br/>ファイルウォッチ・取り込み"]
+  C --> D["internal/db<br/>SQLite 主アーカイブ"]
+  D --> E["internal/server<br/>REST + SSE"]
+  E --> F["frontend/<br/>Svelte 5 SPA"]
+  D --> G["agentsview pg push<br/>PostgreSQL"]
+  D --> H["agentsview duckdb push<br/>DuckDB ミラー"]
+        </pre>
+      </div>
+      <div class="layer-grid">
+        <div class="layer-card">
+          <div class="layer-card__tag">cmd</div>
+          <div class="layer-card__title">CLI エントリ</div>
+          <p><code>cmd/agentsview</code> — serve / usage / stats / pg / duckdb などのサブコマンド</p>
+        </div>
+        <div class="layer-card">
+          <div class="layer-card__tag">internal</div>
+          <div class="layer-card__title">バックエンド</div>
+          <p>config, db, parser, server, sync, postgres, duckdb, pricing, insight など</p>
+        </div>
+        <div class="layer-card">
+          <div class="layer-card__tag">frontend</div>
+          <div class="layer-card__title">Web UI</div>
+          <p>Svelte 5 + TypeScript。OpenAPI 生成クライアントで API と接続</p>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="sec-head" id="install">インストールと起動</h2>
+    <div class="ve-card" style="--i:3">
+      <h3>インストール</h3>
+      <div class="ve-code-block"><pre><code># macOS / Linux
+curl -fsSL https://agentsview.io/install.sh | bash
+
+# Windows
+powershell -ExecutionPolicy ByPass -c "irm https://agentsview.io/install.ps1 | iex"
+
+# Homebrew（デスクトップアプリ）
+brew install --cask agentsview</code></pre></div>
+
+      <h3>クイックスタート</h3>
+      <div class="ve-code-block"><pre><code>agentsview serve           # サーバー起動 + Web UI を開く
+agentsview usage daily     # 直近 30 日の日次コストサマリー</code></pre></div>
+
+      <div class="ve-callout">
+        <strong>リモートアクセス:</strong> デフォルトはループバックバインドで <code>Host</code> ヘッダーを検証する（DNS リバインディング対策）。SSH ポートフォワードやリバースプロキシ経由で開く場合は <code>--public-url</code> にブラウザで開くオリジンを指定する。ループバック外に公開する場合は <code>--require-auth</code> も有効にする。
+      </div>
+    </div>
+
+    <h2 class="sec-head" id="agents">対応エージェント</h2>
+    <div class="ve-card ve-card--recessed" style="--i:4">
+      <p>以下は代表例。各ディレクトリは環境変数で上書き可能（詳細は <a href="https://agentsview.io/configuration/" target="_blank" rel="noopener">Configuration</a>）。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>エージェント</th><th>セッションディレクトリ（デフォルト）</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Claude Code</td><td><code>~/.claude/projects/</code></td></tr>
+            <tr><td>Codex</td><td><code>~/.codex/sessions/</code></td></tr>
+            <tr><td>Cursor</td><td><code>~/.cursor/projects/</code></td></tr>
+            <tr><td>Gemini CLI</td><td><code>~/.gemini/</code></td></tr>
+            <tr><td>OpenCode</td><td><code>~/.local/share/opencode/</code></td></tr>
+            <tr><td>Pi</td><td><code>~/.pi/agent/sessions/</code></td></tr>
+            <tr><td>Forge</td><td><code>~/.forge/</code></td></tr>
+            <tr><td>Copilot CLI / VSCode Copilot</td><td><code>~/.copilot/</code> ほか</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>README には OpenHands、Amp、Kiro、Warp、Antigravity など計 20 以上が列挙されている。コンテナ実行時はマウントしたディレクトリだけが検出対象になる点に注意。</p>
+    </div>
+
+    <h2 class="sec-head" id="cli">CLI と API</h2>
+    <div class="ve-card" style="--i:5">
+      <h3>コスト・使用量（<code>agentsview usage</code>）</h3>
+      <p>ccusage 系ツールの代替として、インデックス済み SQLite から集計するため raw ファイルの毎回パースより高速。LiteLLM レートで自動価格付け（オフライン時はフォールバック）。プロンプトキャッシュトークンもコスト計算に反映。</p>
+      <div class="ve-code-block"><pre><code>agentsview usage daily
+agentsview usage daily --breakdown --agent claude --since 2026-04-01
+agentsview usage daily --all --json
+agentsview usage statusline    # シェルプロンプト向け 1 行出力</code></pre></div>
+
+      <h3>セッション統計（<code>agentsview stats</code>）</h3>
+      <p>期間内のセッション数、アーキタイプ、ツール/モデル構成、キャッシュ経済性などを JSON v1 スキーマで出力。Git / GitHub 由来の成果指標は <code>--include-git-outcomes</code> 等で明示的に有効化。</p>
+
+      <h3>REST API</h3>
+      <p>例: セッション単位の使用量は <code>GET /api/v1/sessions/{id}/usage</code>。Huma ベースのルート一覧はリポジトリ内 <code>docs/huma-api-routes.md</code> を参照。</p>
+    </div>
+
+    <h2 class="sec-head" id="webui">Web UI の機能</h2>
+    <div class="ve-card ve-card--elevated" style="--i:6">
+      <ul>
+        <li><strong>全文検索</strong> — メッセージ本文を FTS5 で横断検索</li>
+        <li><strong>コストダッシュボード</strong> — セッション/モデル別のトークン・コスト、日次支出チャート</li>
+        <li><strong>アナリティクス</strong> — アクティビティヒートマップ、ツール使用、velocity、プロジェクト内訳</li>
+        <li><strong>ライブ更新</strong> — アクティブセッションへの新メッセージを SSE で反映</li>
+        <li><strong>キーボード操作</strong> — <code>j</code>/<code>k</code>、<code>Cmd+K</code> 検索 など</li>
+        <li><strong>エクスポート</strong> — HTML エクスポート、GitHub Gist 公開</li>
+      </ul>
+    </div>
+
+    <h2 class="sec-head" id="backends">バックエンドと同期</h2>
+    <div class="ve-card" style="--i:7">
+      <div class="backend-cards">
+        <div class="backend-card">
+          <h3>SQLite（主）</h3>
+          <p>ローカルアーカイブ。ファイル同期、FTS5 検索、書き込み可能な UI。<code>agentsview serve</code> のデフォルト。</p>
+        </div>
+        <div class="backend-card">
+          <h3>PostgreSQL</h3>
+          <p><code>agentsview pg push</code> でチーム共有 DB へ同期。<code>pg serve</code> は読み取り専用 UI。<code>pg push --watch</code> でデーモン化も可能。</p>
+        </div>
+        <div class="backend-card">
+          <h3>DuckDB / Quack</h3>
+          <p>SQLite からのミラー。<code>duckdb push</code> / <code>duckdb serve</code>。Quack 経由のリモート読み取りはトークン必須・ループバック既定。</p>
+        </div>
+      </div>
+      <div class="ve-callout">
+        <strong>役割分担:</strong> 取り込みの正は常に SQLite。<code>serve</code> は主アーカイブへ書き込む。PostgreSQL と DuckDB は分析・共有・読み取り専用配信向けのオプション層。
+      </div>
+    </div>
+
+    <h2 class="sec-head" id="deploy">配布形態</h2>
+    <div class="ve-card ve-card--recessed" style="--i:8">
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>形態</th><th>用途</th><th>備考</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>単一バイナリ</td><td>ローカル CLI + 埋め込み Web UI</td><td>インストールスクリプトまたは <code>make install</code></td></tr>
+            <tr><td>デスクトップアプリ</td><td>macOS / Windows</td><td>Tauri（<code>desktop/</code>）、GitHub Releases</td></tr>
+            <tr><td>Docker</td><td>コンテナ運用</td><td><code>ghcr.io/kenn-io/agentsview:latest</code>。エージェント dir は明示マウントが必要</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Docker 例ではループバックのみ公開（<code>127.0.0.1:8080</code>）。<code>PG_SERVE=1</code> で PostgreSQL バックエンド起動に切り替え可能。</p>
+    </div>
+
+    <h2 class="sec-head" id="privacy">プライバシーとセキュリティ</h2>
+    <div class="ve-card" style="--i:9">
+      <ul>
+        <li>セッションデータは端末内に保持。サーバーはデフォルトで <code>127.0.0.1</code> にバインド</li>
+        <li>テレメトリは起動時と 24 時間ごとの匿名 <code>daemon_active</code> イベントのみ（PostHog）。プロンプトやパスは含まない。<code>AGENTSVIEW_TELEMETRY_ENABLED=0</code> で無効化</li>
+        <li>アップデートチェックは <code>--no-update-check</code> でオフ可能</li>
+        <li>Antigravity CLI の復号サイドカー連携はローカル完結（<a href="https://github.com/mjacobs/agy-reader" target="_blank" rel="noopener">agy-reader</a>）。信頼モデルは <code>SECURITY.md</code> 参照</li>
+      </ul>
+    </div>
+
+    <h2 class="sec-head" id="development">開発</h2>
+    <div class="ve-card" style="--i:10">
+      <p>要件: Go 1.26+（CGO）、Node.js 22+。</p>
+      <div class="ve-code-block"><pre><code>make dev            # Go サーバー（開発モード）
+make frontend-dev   # Vite（別ターミナル）
+make build          # フロントエンド埋め込みビルド
+make test           # Go テスト（fts5 タグ）
+make e2e            # Playwright E2E</code></pre></div>
+      <p>レイアウト:</p>
+      <div class="ve-code-block"><pre><code>cmd/agentsview/     CLI エントリ
+internal/           Go パッケージ群
+frontend/           Svelte 5 SPA
+desktop/            Tauri ラッパー</code></pre></div>
+    </div>
+
+    <h2 class="sec-head" id="sources">参照</h2>
+    <div class="ve-card ve-card--recessed" style="--i:11">
+      <ul class="source-list">
+        <li><a href="https://github.com/kenn-io/agentsview" target="_blank" rel="noopener">kenn-io/agentsview</a> — ソースリポジトリ</li>
+        <li><a href="https://agentsview.io/quickstart/" target="_blank" rel="noopener">Quick Start</a></li>
+        <li><a href="https://agentsview.io/architecture/" target="_blank" rel="noopener">Architecture</a></li>
+        <li><a href="https://agentsview.io/commands/" target="_blank" rel="noopener">CLI Reference</a></li>
+        <li><a href="https://agentsview.io/postgresql/" target="_blank" rel="noopener">PostgreSQL</a></li>
+        <li>本ページの要約元: <code>README.md</code>（kenn-io/agentsview）</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
