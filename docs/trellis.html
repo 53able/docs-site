@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trellis — チーム向け AI コーディングハーネス（mindfold-ai）</title>
-  <meta name="description" content="進行型 spec・タスク・ワークフロー・セッション記憶を、Claude Code / Cursor / Codex / OpenCode / Pi など複数エージェントで共有するプロジェクト層。npm CLI、.trellis ディレクトリ、公式ドキュメントの要点を整理。">
+  <meta name="description" content="mindfold-ai/Trellis の要点。進行型 spec・タスク PRD・ワークフロー・ジャーナルをリポジトリに永続化し、15 プラットフォーム向けに CLI で生成する AI コーディングハーネス。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Trellis — チーム向け AI コーディングハーネス（mindfold-ai）">
-  <meta property="og:description" content="巨大な CLAUDE.md を分割し、spec・PRD・ワークフロー・ジャーナルを JiT で読み込むチーム向けハーネス。CLI、.trellis レイヤー、対応プラットフォームの概要。">
+  <meta property="og:description" content="spec・タスク・ワークフロー・セッション記憶を .trellis/ に置き、Plan→Implement→Verify→Finish の 4 フェーズと 15 プラットフォーム対応を要約。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/trellis.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
@@ -198,34 +198,35 @@
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
     <a href="#layers">.trellis レイヤー</a>
-    <a href="#loop">コアループ</a>
+    <a href="#loop">4 フェーズ</a>
     <a href="#platforms">対応プラットフォーム</a>
     <a href="#install">インストール</a>
-    <a href="#first-task">最初のタスク</a>
+    <a href="#usage">使い方</a>
+    <a href="#cli">CLI</a>
     <a href="#faq">CLAUDE.md との違い</a>
     <a href="#links">リンク</a>
   </nav>
 
   <div class="main">
   <h1>Trellis</h1>
-  <p class="subtitle">mindfold-ai / npm <code>@mindfoldhq/trellis</code> — progressive specs, tasks, workflows, session memory</p>
+  <p class="subtitle">mindfold-ai / npm <code>@mindfoldhq/trellis</code> — specs, tasks, workflow, session memory in-repo</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
     <div class="badge-row">
       <span class="badge badge--accent">@mindfoldhq/trellis</span>
-      <span class="badge">0.5 skill-first</span>
+      <span class="badge">15 platforms</span>
       <span class="badge">AGPL-3.0</span>
       <span class="badge">Node 18+ / Python 3.9+</span>
     </div>
-    <p><strong>Trellis</strong> は、リポジトリに組み込む <strong>チーム向け AI コーディングハーネス</strong>。通常 <code>CLAUDE.md</code> や <code>AGENTS.md</code> に詰め込む巨大システムプロンプトを、必要なときだけ読み込む <strong>進行型の spec・タスク・ワークフロー・ジャーナル</strong> に分割する。</p>
-    <p>公式 README の位置づけどおり、Claude Code・Cursor・Codex・OpenCode・Pi Agent など複数のコーディングエージェントが、<strong>同じプロジェクトの正</strong>（チーム標準・タスク判断・手順・セッション記憶）を共有できる。</p>
+    <p><strong>Trellis</strong> は、AI が毎セッションゼロから始まる問題に対し、<strong>spec・タスク・ワークフロー・記憶をリポジトリに永続化</strong>する out-of-the-box のエンジニアリングフレームワーク。巨大な <code>CLAUDE.md</code> を、必要なときだけ注入される進行型レイヤーへ分割する。</p>
+    <p>README では、チーム標準を <code>.trellis/spec/</code> に書き、PRD と状態を <code>.trellis/tasks/</code> に置き、前回の文脈を <code>.trellis/workspace/</code> のジャーナルで引き継ぐ、という 5 つの能力（自動 spec 注入・タスク中心・プロジェクト記憶・チーム共有・マルチプラットフォーム）を列挙している。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">.trellis/</span><span class="ve-kpi-card__label">プロジェクト層のルート</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">spec</span><span class="ve-kpi-card__label">標準・ガイドライン</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">tasks</span><span class="ve-kpi-card__label">PRD・受入・状態</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">CLI</span><span class="ve-kpi-card__label"><code>trellis init</code> ほか</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">.trellis/</span><span class="ve-kpi-card__label">プロジェクト層</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">Plan→Verify フェーズ</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">15</span><span class="ve-kpi-card__label">対応プラットフォーム</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">CLI</span><span class="ve-kpi-card__label"><code>trellis init</code></span></div>
     </div>
     <div class="ve-callout">
       <strong>ライセンス:</strong> 本体は AGPL-3.0。利用条件の詳細は <a href="https://github.com/mindfold-ai/Trellis/blob/main/LICENSE" target="_blank" rel="noopener">GitHub の LICENSE</a> を参照。
@@ -252,30 +253,66 @@
     </div>
   </div>
 
-  <section id="loop" class="sec-head">3 — コアループ</section>
+  <section id="loop" class="sec-head">3 — 4 フェーズループ</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> README で示される 6 手順</span>
-    <p>タスクを PRD に落とし、関連 spec を注入し、境界の中で実装し、引き渡し前にチェックを走らせ、再利用できる学びを spec に還元し、次のエージェントが読む記録を残す、という短い循環。</p>
-    <div class="pipeline" aria-label="コアループ">
-      <span class="step">PRD 化</span>
-      <span class="arrow">→</span>
-      <span class="step">spec 注入</span>
-      <span class="arrow">→</span>
-      <span class="step">実装</span>
-      <span class="arrow">→</span>
-      <span class="step">チェック</span>
-      <span class="arrow">→</span>
-      <span class="step">spec へ還元</span>
-      <span class="arrow">→</span>
-      <span class="step">セッション記録</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> README の How It Works</span>
+    <p>README は <strong>Plan → Implement → Verify → Finish</strong> の 4 フェーズを、スキルとサブエージェントの自動呼び出し付きで説明している。<code>.trellis/workflow.md</code> 側では Phase 1（Plan）・Phase 2（Execute）・Phase 3（Finish）に整理されている。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>フェーズ</th><th>主なスキル / エージェント</th><th>成果物</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Plan</strong></td><td><code>trellis-brainstorm</code>、必要時 <code>trellis-research</code></td><td><code>prd.md</code>、<code>implement.jsonl</code> / <code>check.jsonl</code> に spec・調査を登録</td></tr>
+          <tr><td><strong>Implement</strong></td><td><code>trellis-implement</code> サブエージェント</td><td>PRD と curated context からコード（この段階では git commit しない）</td></tr>
+          <tr><td><strong>Verify</strong></td><td><code>trellis-check</code> サブエージェント</td><td>spec 照合、lint / type-check / test、可能な範囲で自己修正</td></tr>
+          <tr><td><strong>Finish</strong></td><td>最終チェック後 <code>trellis-update-spec</code></td><td>学びを <code>.trellis/spec/</code> へ還元し、次セッションの起点を更新</td></tr>
+        </tbody>
+      </table>
     </div>
-    <p>詳細なプロダクトモデルは <a href="https://docs.trytrellis.app/" target="_blank" rel="noopener">公式ドキュメント</a> と <a href="https://docs.trytrellis.app/start/real-world-scenarios" target="_blank" rel="noopener">Real-World Scenarios</a> が一次情報。</p>
+    <div class="pipeline" aria-label="4 フェーズ">
+      <span class="step">Plan</span>
+      <span class="arrow">→</span>
+      <span class="step">Implement</span>
+      <span class="arrow">→</span>
+      <span class="step">Verify</span>
+      <span class="arrow">→</span>
+      <span class="step">Finish</span>
+    </div>
+    <div class="ve-callout">
+      <strong>セッション終了:</strong> 作業完了またはコンテキスト上限に達したら <code>/trellis:finish-work</code>（プラットフォームにより <code>/trellis-finish-work</code> 等）でタスクをアーカイブし、ジャーナルを更新する（README How to Use）。
+    </div>
   </div>
 
   <section id="platforms" class="sec-head">4 — 対応プラットフォーム</section>
   <div class="ve-card ve-card--recessed" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> マルチエージェント</span>
-    <p>単一ベンダー専用ではなく、プロジェクト層として複数 IDE・エージェントにまたがる。README では Claude Code、Cursor、Codex、OpenCode、Pi Agent などに言及があり、<a href="https://docs.trytrellis.app/advanced/multi-platform" target="_blank" rel="noopener">Supported Platforms</a> で差分を整理している。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> CLI レジストリ（15）</span>
+    <p>README は「14 AI coding platforms」と記載。CLI の <code>packages/cli/src/types/ai-tools.ts</code> では <strong>15 エントリ</strong>が正とされている。<code>trellis init --&lt;platform&gt;</code> で利用ツールを選び、各 <code>.&lt;tool&gt;/</code> 配下に hooks・skills・agents を生成する。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>CLI フラグ</th><th>表示名</th><th>設定ディレクトリ</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--claude</code></td><td>Claude Code</td><td><code>.claude/</code></td></tr>
+          <tr><td><code>--cursor</code></td><td>Cursor</td><td><code>.cursor/</code></td></tr>
+          <tr><td><code>--opencode</code></td><td>OpenCode</td><td><code>.opencode/</code></td></tr>
+          <tr><td><code>--codex</code></td><td>Codex</td><td><code>.codex/</code>（<code>.agents/skills/</code> も）</td></tr>
+          <tr><td><code>--pi</code></td><td>Pi</td><td><code>.pi/</code></td></tr>
+          <tr><td><code>--copilot</code></td><td>GitHub Copilot</td><td><code>.github/</code> ほか</td></tr>
+          <tr><td><code>--gemini</code></td><td>Gemini CLI</td><td><code>.gemini/</code></td></tr>
+          <tr><td><code>--kiro</code></td><td>Kiro Code</td><td><code>.kiro/</code></td></tr>
+          <tr><td><code>--qoder</code></td><td>Qoder</td><td><code>.qoder/</code></td></tr>
+          <tr><td><code>--codebuddy</code></td><td>CodeBuddy</td><td><code>.codebuddy/</code></td></tr>
+          <tr><td><code>--droid</code></td><td>Droid</td><td><code>.droid/</code></td></tr>
+          <tr><td><code>--windsurf</code></td><td>Windsurf</td><td><code>.windsurf/</code></td></tr>
+          <tr><td><code>--kilo</code></td><td>Kilo CLI</td><td><code>.kilocode/</code></td></tr>
+          <tr><td><code>--antigravity</code></td><td>Antigravity</td><td><code>.agent/</code></td></tr>
+          <tr><td><code>--reasonix</code></td><td>Reasonix</td><td>Reasonix 用テンプレート</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>差分の詳細は <a href="https://docs.trytrellis.app/advanced/multi-platform" target="_blank" rel="noopener">Supported Platforms</a> が一次情報。</p>
   </div>
 
   <section id="install" class="sec-head">5 — インストール</section>
@@ -283,32 +320,60 @@
     <span class="ve-section-label"><span class="ve-dot"></span> 前提と CLI</span>
     <p>前提は <strong>Node.js 18 以上</strong> と <strong>Python 3.9 以上</strong>（hooks と自動化スクリプト用）。グローバル導入と初期化の例は README に一致させている。</p>
     <div class="ve-code-block">
-      <pre><code>npm install -g @mindfoldhq/trellis@beta
+      <pre><code>npm install -g @mindfoldhq/trellis@latest
 
-# 開発者ワークスペースを作成して開始
-trellis init -u your-name</code></pre>
+# 開発者ワークスペースを作成
+trellis init -u your-name
+
+# 利用中のプラットフォームだけ初期化
+trellis init --cursor --opencode --codex -u your-name</code></pre>
     </div>
     <p>手順の詳細は <a href="https://docs.trytrellis.app/start/install-and-first-task" target="_blank" rel="noopener">Quick Start（install and first task）</a>。</p>
   </div>
 
-  <section id="first-task" class="sec-head">6 — 最初のタスク</section>
+  <section id="usage" class="sec-head">6 — 使い方</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 0.5 の skill-first 動線</span>
-    <p>フックまたは拡張が使えるプラットフォームではセッション文脈が自動ロードされる。手動エントリが必要な環境では、README のとおり <code>/start</code> または <code>/trellis:start</code> からプロジェクト文脈を読み込む。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> README How to Use</span>
+    <ol>
+      <li>自然言語でやりたいことを述べる。</li>
+      <li><code>trellis-brainstorm</code> で 1 問ずつ要件を詰め、PRD が固まったら実装フェーズへ。</li>
+      <li><code>trellis-implement</code> が spec・lint・型・テストを自動チェックしながら実装。</li>
+      <li>完了またはコンテキスト上限で <code>/trellis:finish-work</code> — タスクをアーカイブしジャーナルを更新。</li>
+    </ol>
+    <p>フック / 拡張があるプラットフォームではセッション開始時に文脈が自動ロードされる。手動入口が必要な環境では <code>/start</code> または <code>/trellis:start</code> でプロジェクト文脈を読み込む。</p>
     <div class="ve-code-block">
-      <pre><code>/start or /trellis:start   # プロジェクト文脈を読み込む</code></pre>
+      <pre><code>/start or /trellis:start   # プロジェクト文脈を読み込む
+/trellis:finish-work        # 作業完了・セッション終了</code></pre>
     </div>
-    <p>自然言語でタスクを述べると、ブレインストーミング・spec 読込・実装チェック・ナレッジ記録などのスキル経路にルーティングされる。README では <code>continue</code> でタスクを進め、人間テストとコミット後に <code>finish-work</code> を使う流れに触れている。</p>
   </div>
 
-  <section id="faq" class="sec-head">7 — <code>CLAUDE.md</code> との関係</section>
+  <section id="cli" class="sec-head">7 — CLI（packages/cli）</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 主要コマンド</span>
+    <p>npm パッケージ <code>@mindfoldhq/trellis</code> のエントリは <code>packages/cli</code>。テンプレート取得・プラットフォーム別 configurators・マイグレーション manifest で <code>.trellis/</code> と各ツール用ファイルを生成・更新する。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>trellis init</code></td><td>初回セットアップ。spec / tasks / workspace / 選択プラットフォーム用生成物を配置。</td></tr>
+          <tr><td><code>trellis update</code></td><td>テンプレート差分を取り込み。workflow.md や hooks の更新を配布。</td></tr>
+          <tr><td><code>trellis uninstall</code></td><td>管理対象パスの削除（manifest ベース）。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>タスク操作は Python スクリプト（<code>.trellis/scripts/task.py</code> 等）が担い、<code>task.py create</code> / <code>start</code> / <code>finish</code> / <code>archive</code> でライフサイクルを管理する（<code>workflow.md</code> Task System）。</p>
+  </div>
+
+  <section id="faq" class="sec-head">8 — <code>CLAUDE.md</code> との関係</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> FAQ の要約</span>
     <p><code>CLAUDE.md</code>、<code>AGENTS.md</code>、<code>.cursorrules</code> は有効な入口だが肥大化しやすい。Trellis はその外側に <strong>スコープ付き spec・タスク PRD・ワークフローゲート・ワークスペース記憶・プラットフォーム別生成物</strong> を足す、という README FAQ の整理。</p>
     <p>Claude Code 専用ではなく、チームとソロの両方を想定したプロジェクト層である点も FAQ で明示されている。</p>
   </div>
 
-  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <section id="links" class="sec-head">9 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・リポジトリ</span>
     <ul>
