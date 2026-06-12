@@ -231,8 +231,7 @@
     .api-card__name { font-family: var(--font-mono); color: var(--chart-1); font-size: 0.86rem; font-weight: 600; margin-bottom: 0.5rem; }
     .api-card__desc { font-size: 0.93rem; line-height: 1.58; color: var(--text-dim); }
 
-    .provider-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-    @media (max-width: 900px) { .provider-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .provider-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
     @media (max-width: 560px) { .provider-grid { grid-template-columns: 1fr; } }
     .provider-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%); min-width: 0; }
     .provider-card:nth-child(2n) { background: color-mix(in oklch, var(--card) 92%, var(--chart-2) 8%); }
@@ -262,7 +261,8 @@
     <a href="#overview">概要</a>
     <a href="#flow">実行フロー</a>
     <a href="#api">公開 API</a>
-    <a href="#providers">Provider</a>
+    <a href="#agents">Agent</a>
+    <a href="#providers">Sandbox</a>
     <a href="#prompts">Prompt</a>
     <a href="#guards">運用ガード</a>
     <a href="#links">参考</a>
@@ -270,7 +270,7 @@
 
   <div class="main">
     <h1>Sandcastle</h1>
-    <p class="subtitle">AI coding agent orchestration / sandbox provider / branch strategy / prompt iteration / commit recovery</p>
+    <p class="subtitle">@ai-hero/sandcastle v0.8 — agent orchestration / 6 agent providers / sandbox isolation / branch strategy / session resume</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
@@ -278,8 +278,8 @@
       <p class="hero-note"><strong>Sandcastle</strong> は、AI コーディングエージェントを隔離された sandbox で動かし、変更を branch / worktree 経由で回収する TypeScript CLI / SDK。単発実行なら <code>run()</code>、長く使う環境なら <code>createSandbox()</code>、sandbox なしの探索から始めるなら <code>createWorktree()</code> が中心になる。</p>
       <div class="kpi-row">
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">run() で一発起動</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">agent provider</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">branch strategy</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">6</span><span class="ve-kpi-card__label">agent provider</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">5</span><span class="ve-kpi-card__label">sandbox provider</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">N</span><span class="ve-kpi-card__label">iteration loop</span></div>
       </div>
     </div>
@@ -332,9 +332,9 @@
         <div class="api-card__name">createWorktree(options)</div>
         <p class="api-card__desc">worktree を first-class に扱う。先に探索し、後で sandboxed AFK run に渡せる。</p>
       </div>
-      <div class="api-card" style="--i:3">
+        <div class="api-card" style="--i:3">
         <div class="api-card__name">interactive(options)</div>
-        <p class="api-card__desc">agent を対話モードで起動。worktree interactive は sandbox 未指定なら no-sandbox provider を使う。</p>
+        <p class="api-card__desc">agent を対話モードで起動。<code>noSandbox()</code> を指定すれば host 上で直接実行できる。worktree の <code>wt.interactive()</code> は sandbox 未指定時に no-sandbox が既定。</p>
       </div>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:4; margin-top:1rem">
@@ -344,9 +344,9 @@
 import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
 
 const result = await run({
-  agent: claudeCode("claude-opus-4-6"),
+  agent: claudeCode("claude-opus-4-7"),
   sandbox: docker(),
-  promptFile: "prompt.md",
+  promptFile: ".sandcastle/prompt.md",
   maxIterations: 3,
 });
 
@@ -354,7 +354,29 @@ console.log(result.commits);</code></pre>
       </div>
     </div>
 
-    <section id="providers" class="sec-head">4 — Sandbox Provider</section>
+    <section id="agents" class="sec-head">4 — Agent Provider</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> どの agent CLI を動かすか</span>
+      <p><code>AgentProvider</code> は sandbox 内で起動するコマンド組み立てと output parse を担う。factory 関数に model 文字列を渡して <code>run()</code> / <code>createSandbox()</code> / <code>interactive()</code> へ注入する。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>Factory</th><th>例</th><th>session capture</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>claudeCode(model, opts?)</code></td><td><code>claudeCode("claude-opus-4-7", { effort: "high" })</code></td><td>既定 ON（<code>captureSessions: false</code> で opt-out）</td></tr>
+            <tr><td><code>codex(model, opts?)</code></td><td><code>codex("gpt-5.4")</code></td><td>既定 ON</td></tr>
+            <tr><td><code>pi(model, opts?)</code></td><td><code>pi("claude-sonnet-4-6", { thinking: "high" })</code></td><td>既定 ON</td></tr>
+            <tr><td><code>cursor(model)</code></td><td><code>cursor("composer-2")</code></td><td>—</td></tr>
+            <tr><td><code>opencode(model)</code></td><td><code>opencode("opencode/big-pickle")</code></td><td>—</td></tr>
+            <tr><td><code>copilot(model)</code></td><td><code>copilot("claude-sonnet-4.5")</code></td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout"><strong>session resume / fork:</strong> Claude Code・Codex・Pi は iteration 後に session ファイルを host へ取り込む。<code>RunResult.resume()</code> は同一 session を継続、<code>RunResult.fork()</code> は新 session ID で分岐する。fork は session のみを分離し branch / worktree は分離しない（並行 fork には明示 branch が必要）。</div>
+    </div>
+
+    <section id="providers" class="sec-head">5 — Sandbox Provider</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> isolation boundary</span>
       <p><code>SandboxProvider</code> は「どこで agent を動かすか」を差し替える小さな契約。built-in provider は実行場所だけでなく、使える branch strategy と同期方式も変える。</p>
@@ -377,7 +399,12 @@ console.log(result.commits);</code></pre>
         <div class="provider-card" style="--i:3">
           <div class="provider-card__name">No-sandbox</div>
           <span class="provider-card__type">none</span>
-          <p>host で直接 agent を動かす。interactive 系に限定される。</p>
+          <p>container を作らず host で agent を直接実行。<code>run()</code> / <code>createSandbox()</code> / <code>interactive()</code> すべてで指定可能。</p>
+        </div>
+        <div class="provider-card" style="--i:4">
+          <div class="provider-card__name">Daytona</div>
+          <span class="provider-card__type">isolated</span>
+          <p><code>@daytona/sdk</code> 経由の cloud isolated sandbox。Vercel と同様に code in / commits out の sync が必要。</p>
         </div>
       </div>
       <div class="ve-table-wrap">
@@ -388,13 +415,13 @@ console.log(result.commits);</code></pre>
           <tbody>
             <tr><td><code>bind-mount</code></td><td><code>exec()</code>, <code>interactiveExec()</code>, file copy, <code>close()</code></td><td>host filesystem へ mount 経由で直接書く。sync が不要。</td></tr>
             <tr><td><code>isolated</code></td><td><code>exec()</code>, <code>copyIn()</code>, <code>copyFileOut()</code>, <code>close()</code></td><td>sandbox 側 filesystem が独立。commit extraction が必要。</td></tr>
-            <tr><td><code>no-sandbox</code></td><td>host command execution</td><td>探索や対話用。AFK run の必須 sandbox 境界には使わない。</td></tr>
+            <tr><td><code>no-sandbox</code></td><td>host command execution</td><td>隔離を省略したい run / interactive。worktree 探索の既定にも使われる。</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <section id="prompts" class="sec-head">5 — Prompt と Iteration</section>
+    <section id="prompts" class="sec-head">6 — Prompt と Iteration</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> workflow は prompt 側に置く</span>
       <p>Sandcastle の prompt system は薄く、強い workflow 意見を押し付けない。<code>prompt</code> は literal、<code>promptFile</code> は template として扱われる。この差が重要。</p>
@@ -406,14 +433,16 @@ console.log(result.commits);</code></pre>
           <tbody>
             <tr><td><code>prompt</code></td><td>そのまま agent へ渡す。<code>promptArgs</code> と併用不可。</td><td>JavaScript 側で文字列を組む短い指示。</td></tr>
             <tr><td><code>promptFile</code></td><td><code>{{KEY}}</code> substitution と shell expression expansion を実行。</td><td>issue / branch / command output を混ぜる再利用 prompt。</td></tr>
-            <tr><td><code>completionSignal</code></td><td>agent output に含まれたら iteration loop を早期停止。</td><td>タスク完了時に無駄な iteration を走らせない。</td></tr>
-            <tr><td><code>resumeSession</code></td><td>Claude Code session を移送して iteration 1 で resume。</td><td>前回の会話を sandbox 内で継続。</td></tr>
+            <tr><td><code>completionSignal</code></td><td>agent output に含まれたら iteration loop を早期停止。既定は <code>&lt;promise&gt;COMPLETE&lt;/promise&gt;</code>。</td><td>タスク完了時に無駄な iteration を走らせない。</td></tr>
+            <tr><td><code>completionTimeoutSeconds</code></td><td>completion signal 検出後、process が exit しない「hanging process」に対する猶予（既定 60 秒）。</td><td>signal 後の MCP / 子 process 残留でも commit を失わず成功扱いにできる。</td></tr>
+            <tr><td><code>output: Output.object()</code></td><td>prompt 内の XML tag から schema 検証済み JSON を抽出。<code>maxIterations === 1</code> 必須。</td><td>型付き結果を run の戻り値として受け取る。</td></tr>
+            <tr><td><code>resumeSession</code></td><td>host 上の session ファイルを sandbox へ移送し iteration 1 で resume。</td><td>前回会話を sandbox 内で継続。</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <section id="guards" class="sec-head">6 — 運用ガード</section>
+    <section id="guards" class="sec-head">7 — 運用ガード</section>
     <div class="guard-grid">
       <div class="guard-card" style="--i:0">
         <h3>branch strategy</h3>
@@ -424,29 +453,29 @@ console.log(result.commits);</code></pre>
         <p>named branch の worktree 共有を lock file で fail-fast。待機や retry ではなく「同じ branch を同時に使う caller error」と扱う。</p>
       </div>
       <div class="guard-card" style="--i:2">
-        <h3>idle timeout</h3>
-        <p>agent output が止まると timeout。streaming <code>onLine</code> は provider 契約の一部で、live feedback と timeout に必要。</p>
+        <h3>idle / completion timeout</h3>
+        <p><code>idleTimeoutSeconds</code>（既定 600）は output 停止中の agent を fail-fast。<code>completionTimeoutSeconds</code> は signal 検出後の hanging process 用で、expire 時は warning 付き成功。</p>
       </div>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:3; margin-top:1rem">
       <span class="ve-section-label"><span class="ve-dot"></span> 読んだ主要ソース</span>
       <ul class="source-list">
-        <li>README.md — 価値提案、API、provider、CLI、prompt system</li>
-        <li>CONTEXT.md — 用語と関係性</li>
-        <li>src/index.ts — 公開 export</li>
+        <li>README.md — Quick start、API、provider、session、structured output</li>
+        <li>CONTEXT.md — 用語（completion timeout、hanging process、structured output）</li>
+        <li>src/index.ts — 公開 export（6 agent / 5 sandbox factory）</li>
         <li>src/run.ts / src/createSandbox.ts / src/createWorktree.ts — 実行モデル</li>
-        <li>src/SandboxProvider.ts / src/Orchestrator.ts — provider 契約と iteration 制御</li>
-        <li>docs/adr/0007-worktree-locking.md — worktree lock の判断</li>
+        <li>docs/adr/0019-completion-timeout-for-hanging-process.md — completion timeout</li>
+        <li>docs/adr/0018-fork-is-session-only.md — fork の branch 非分離</li>
       </ul>
     </div>
 
-    <section id="links" class="sec-head">7 — 参考</section>
+    <section id="links" class="sec-head">8 — 参考</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> public references</span>
       <ul>
         <li><a href="https://github.com/mattpocock/sandcastle" target="_blank" rel="noopener">GitHub: mattpocock/sandcastle</a> — 本体リポジトリ</li>
-        <li><a href="https://www.npmjs.com/package/@ai-hero/sandcastle" target="_blank" rel="noopener">npm: @ai-hero/sandcastle</a> — package registry</li>
-        <li><a href="https://www.docker.com/" target="_blank" rel="noopener">Docker</a> / <a href="https://podman.io/" target="_blank" rel="noopener">Podman</a> / <a href="https://vercel.com/" target="_blank" rel="noopener">Vercel</a> — built-in sandbox provider の前提環境</li>
+        <li><a href="https://www.npmjs.com/package/@ai-hero/sandcastle" target="_blank" rel="noopener">npm: @ai-hero/sandcastle</a> — package registry（v0.8.x）</li>
+        <li><a href="https://www.docker.com/" target="_blank" rel="noopener">Docker</a> / <a href="https://podman.io/" target="_blank" rel="noopener">Podman</a> / <a href="https://vercel.com/" target="_blank" rel="noopener">Vercel</a> / <a href="https://www.daytona.io/" target="_blank" rel="noopener">Daytona</a> — built-in sandbox provider の前提環境</li>
       </ul>
     </div>
   </div>
