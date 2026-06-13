@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Superpowers — マルチプラットフォーム開発ワークフロー</title>
-  <meta name="description" content="Claude Code、Cursor、Codex、OpenCode、Gemini CLI、GitHub Copilot CLI 向けのスキルベース開発ワークフロー。v5.0.7 時点の対応プラットフォーム、inline self-review、TDD、サブエージェント実行を整理。">
+  <meta name="description" content="Claude Code、Cursor、Codex、Factory Droid、OpenCode、Gemini CLI、GitHub Copilot CLI 向けのスキルベース開発ワークフロー。v5.1.0 時点の worktree 検出、code review 統合、AI 向け貢献ガイドを整理。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Superpowers — マルチプラットフォーム開発ワークフロー">
-  <meta property="og:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。v5.0.7 時点の対応プラットフォーム、inline self-review、TDD、サブエージェント実行を整理。">
+  <meta property="og:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。v5.1.0 時点の worktree 検出、code review 統合、AI 向け貢献ガイドを整理。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/superpowers.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Superpowers — マルチプラットフォーム開発ワークフロー">
-  <meta name="twitter:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。v5.0.7 時点の対応プラットフォームと実行モデルを整理。">
+  <meta name="twitter:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。v5.1.0 時点の対応ハーネスと実行モデルを整理。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -219,15 +219,15 @@
 
   <div class="main">
   <h1>Superpowers</h1>
-  <p class="subtitle">Composable skills for coding agents. v5.0.7 updates the same disciplined workflow for Claude Code, Cursor, Codex, OpenCode, Gemini CLI, and GitHub Copilot CLI.</p>
+  <p class="subtitle">Composable skills for coding agents. v5.1.0 extends the same disciplined workflow to Claude Code, Cursor, Codex, Factory Droid, OpenCode, Gemini CLI, and GitHub Copilot CLI.</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
     <p><strong>Superpowers</strong> は、コーディングエージェント向けの<strong>ソフトウェア開発ワークフロー一式</strong>。組み合わせ可能な「スキル」と、エージェントがそれらを確実に使うための初期指示で構成され、コードを書く前に仕様を引き出し、設計を承認してからプランに落とし、TDD とレビューを通してマージ判断まで進める。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">5.0.7</span><span class="ve-kpi-card__label">最新確認版</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">7+</span><span class="ve-kpi-card__label">対応ハーネス</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">5.1.0</span><span class="ve-kpi-card__label">最新確認版</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">8</span><span class="ve-kpi-card__label">対応ハーネス</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">14</span><span class="ve-kpi-card__label">コアスキル</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">0 deps</span><span class="ve-kpi-card__label">brainstorm server</span></div>
     </div>
@@ -236,17 +236,19 @@
 
   <section id="updates" class="sec-head">2 — 最新アップデート</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> v5 系で変わったところ</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> v5.1.0 の主な変更</span>
     <div class="ve-table-wrap">
       <table>
         <thead>
           <tr><th>領域</th><th>更新</th><th>意味</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge--new">v5.0.7</span></td><td>GitHub Copilot CLI の SessionStart context injection と tool mapping を追加</td><td>Copilot CLI でも起動時に Superpowers の bootstrap を注入できる。</td></tr>
-          <tr><td><span class="badge badge--new">v5.0.6</span></td><td><code>brainstorming</code> と <code>writing-plans</code> のレビューを inline self-review に変更</td><td>別サブエージェントレビューの約 25 分オーバーヘッドを避け、30 秒前後の自己点検で穴を潰す。</td></tr>
-          <tr><td><span class="badge badge--safe">server</span></td><td>brainstorm server の <code>content/</code> と <code>state/</code> を分離</td><td>ブラウザに出す HTML とセッション状態を分け、HTTP 経由で状態が露出しにくい構成へ。</td></tr>
-          <tr><td><span class="badge badge--safe">runtime</span></td><td>Express / Chokidar / WebSocket 依存を削除し、Node.js 標準 API だけで実装</td><td>新規プラグイン導入時に npm 実行なしで動きやすくなった。</td></tr>
+          <tr><td><span class="badge badge--new">v5.1.0</span></td><td><code>using-git-worktrees</code> / <code>finishing-a-development-branch</code> を書き直し</td><td>既存 worktree 内なら作成をスキップ。作成前にユーザー同意を取り、ハーネス固有の worktree ツールを優先。クリーンアップは <code>.worktrees/</code> 配下のみ。</td></tr>
+          <tr><td><span class="badge badge--new">review</span></td><td><code>superpowers:code-reviewer</code> 名前付きエージェントを削除し、<code>requesting-code-review</code> を自己完結化</td><td>ペルソナとチェックリストを <code>code-reviewer.md</code> に集約し、<code>Task (general-purpose)</code> で直接ディスパッチ。</td></tr>
+          <tr><td><span class="badge badge--new">sdd</span></td><td><code>subagent-driven-development</code> の「3 タスクごとに停止」を廃止</td><td>タスク単位または自然な区切りでレビューし、計画に沿って連続実行しやすくした。</td></tr>
+          <tr><td><span class="badge badge--safe">commands</span></td><td>レガシー slash コマンド <code>/brainstorm</code>、<code>/execute-plan</code>、<code>/write-plan</code> を削除</td><td>対応スキル（<code>superpowers:brainstorming</code> など）を直接呼び出す前提へ。</td></tr>
+          <tr><td><span class="badge badge--safe">contrib</span></td><td><code>CLAUDE.md</code> / <code>AGENTS.md</code> に AI エージェント向け貢献ガイドを追加</td><td>PR テンプレート確認、重複検索、実在する問題の検証、完全 diff の人間承認を必須化。</td></tr>
+          <tr><td><span class="badge badge--safe">install</span></td><td>Factory Droid のインストール手順を README に追加</td><td>8 ハーネス目として marketplace 登録と plugin install を明記。</td></tr>
         </tbody>
       </table>
     </div>
@@ -265,9 +267,9 @@
           <tr><td>1</td><td><code>brainstorming</code></td><td>コードを書く前に発動。曖昧なアイデアを問いで整理し、設計をセクションごとに示して承認を得る。仕様は inline self-review でプレースホルダ、矛盾、曖昧さを点検。</td></tr>
           <tr><td>2</td><td><code>using-git-worktrees</code></td><td>設計承認後に発動。分離したワークスペースで新ブランチを作成し、セットアップとクリーンなテストベースを確認。</td></tr>
           <tr><td>3</td><td><code>writing-plans</code></td><td>承認された設計に基づき、2〜5 分で完了するタスクに分解。各タスクにファイルパス・完全なコード・検証手順を記載し、プラン自体も自己点検。</td></tr>
-          <tr><td>4</td><td><code>subagent-driven-development</code> / <code>executing-plans</code></td><td>実行方式を選ぶ。推奨は fresh subagent per task、代替は同一セッションでのバッチ実行＋人間チェックポイント。</td></tr>
+          <tr><td>4</td><td><code>subagent-driven-development</code> / <code>executing-plans</code></td><td>実行方式を選ぶ。推奨は fresh subagent per task でタスク間を連続実行（v5.1.0 で 3 タスクごとの強制停止を廃止）。代替は同一セッションでのバッチ実行＋人間チェックポイント。</td></tr>
           <tr><td>5</td><td><code>test-driven-development</code></td><td>実装中に発動。RED-GREEN-REFACTOR を強制。失敗テストを書き、落ちることを確認し、最小コードで通す。テストより前に書いたコードは削除。</td></tr>
-          <tr><td>6</td><td><code>requesting-code-review</code></td><td>タスク間で発動。プランとの整合性をレビューし、深刻度別に報告。クリティカルな問題は進行をブロック。</td></tr>
+          <tr><td>6</td><td><code>requesting-code-review</code></td><td>タスク間で発動。<code>code-reviewer.md</code> テンプレートで <code>Task (general-purpose)</code> をディスパッチし、プランとの整合性を深刻度別に報告。クリティカルな問題は進行をブロック。</td></tr>
           <tr><td>7</td><td><code>finishing-a-development-branch</code></td><td>タスク完了時に発動。テスト確認後、マージ / PR / 維持 / 破棄の選択肢を提示し、ワークツリーを整理。</td></tr>
         </tbody>
       </table>
@@ -294,7 +296,7 @@
           <tr><td>Collaboration</td><td><code>receiving-code-review</code></td><td>フィードバックへの対応</td></tr>
           <tr><td>Collaboration</td><td><code>using-git-worktrees</code></td><td>分離ブランチでの並行開発</td></tr>
           <tr><td>Collaboration</td><td><code>finishing-a-development-branch</code></td><td>マージ / PR 判断ワークフロー</td></tr>
-          <tr><td>Collaboration</td><td><code>subagent-driven-development</code></td><td>二段階レビュー付きの高速イテレーション</td></tr>
+          <tr><td>Collaboration</td><td><code>subagent-driven-development</code></td><td>二段階レビュー（spec → code quality）付きの連続イテレーション</td></tr>
           <tr><td>Meta</td><td><code>writing-skills</code></td><td>ベストプラクティスに沿った新規スキル作成（テスト手法含む）</td></tr>
           <tr><td>Meta</td><td><code>using-superpowers</code></td><td>スキルシステムの導入</td></tr>
         </tbody>
@@ -305,14 +307,15 @@
   <section id="install" class="sec-head">5 — インストール</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> プラットフォーム別</span>
-    <p>v5.0.7 時点では、Claude Code、Cursor、OpenAI Codex CLI/App、OpenCode、GitHub Copilot CLI、Gemini CLI に導線がある。各環境でインストール後、新セッションで「この機能を計画して」などスキルが発動しそうな依頼をすると、エージェントが該当スキルを読み込む。</p>
+    <p>v5.1.0 時点では、Claude Code、Cursor、OpenAI Codex CLI/App、Factory Droid、OpenCode、GitHub Copilot CLI、Gemini CLI に導線がある。ハーネスごとに別途インストールが必要。各環境で導入後、新セッションで「この機能を計画して」などスキルが発動しそうな依頼をすると、エージェントが該当スキルを読み込む。</p>
     <div class="platform-grid">
       <div class="platform-card"><strong>Claude Code</strong><small>公式プラグイン市場、または Superpowers Marketplace から導入。</small></div>
-      <div class="platform-card"><strong>Cursor</strong><small>プラグイン市場で <code>superpowers</code> を検索。Cursor 用 hook 形式に対応。</small></div>
+      <div class="platform-card"><strong>Cursor</strong><small>プラグイン市場で <code>superpowers</code> を検索。Windows では SessionStart hook が <code>run-hook.cmd</code> 経由。</small></div>
       <div class="platform-card"><strong>Codex</strong><small>CLI は <code>/plugins</code> から、App は sidebar の Plugins から導入。</small></div>
-      <div class="platform-card"><strong>OpenCode</strong><small>プラグインが skills directory を自動登録。手動 symlink は不要。</small></div>
-      <div class="platform-card"><strong>Copilot CLI</strong><small>Marketplace 登録と install コマンドで導入。v5.0.7 で tool mapping 追加。</small></div>
-      <div class="platform-card"><strong>Gemini CLI</strong><small>Gemini extension と <code>GEMINI.md</code> で tool mapping を読み込む。</small></div>
+      <div class="platform-card"><strong>Factory Droid</strong><small>marketplace 登録と plugin install で導入（v5.1.0 で README に手順追加）。</small></div>
+      <div class="platform-card"><strong>OpenCode</strong><small>bootstrap 内容をセッション中キャッシュ。詳細は <code>.opencode/INSTALL.md</code>。</small></div>
+      <div class="platform-card"><strong>Copilot CLI</strong><small>Marketplace 登録と install コマンドで導入。SessionStart で bootstrap を注入。</small></div>
+      <div class="platform-card"><strong>Gemini CLI</strong><small>extension と <code>GEMINI.md</code> で tool mapping。Task は <code>@agent-name</code> にマップ。</small></div>
     </div>
     <h3>Claude Code（公式マーケットプレース）</h3>
     <div class="ve-code-block">
@@ -333,6 +336,11 @@ superpowers
     </div>
     <h3>OpenAI Codex App</h3>
     <p>Codex app の sidebar で Plugins を開き、Coding セクションにある <code>Superpowers</code> の <code>+</code> をクリックして案内に従う。</p>
+    <h3>Factory Droid</h3>
+    <div class="ve-code-block">
+      <pre><code>droid plugin marketplace add https://github.com/obra/superpowers
+droid plugin install superpowers@superpowers</code></pre>
+    </div>
     <h3>OpenCode</h3>
     <div class="ve-code-block">
       <pre><code>Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.opencode/INSTALL.md</code></pre>
@@ -356,9 +364,9 @@ gemini extensions update superpowers   # 更新時</code></pre>
   <section id="contributing" class="sec-head">6 — 貢献時の注意</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> AI agent 向けの安全柵</span>
-    <p>Superpowers 本体への PR はかなり厳しく見られる。特にスキル本文は「文章」ではなく、エージェントの行動を変える実行可能なプロンプト資産として扱われる。</p>
+    <p>Superpowers 本体への PR は厳しく審査される。直近 100 件の closed PR を監査したところ、却下率は約 94%。スキル本文は「文章」ではなく、エージェントの行動を変える実行可能なプロンプト資産として扱われる。</p>
     <div class="ve-callout">
-      <strong>要点:</strong> PR 前にテンプレート全項目を埋める、既存 PR を open/closed 両方検索する、実在する問題か確認する、core に入れるべき変更か見極める、人間が完全な diff を確認する。これを満たせない変更は、単独プラグインに分ける判断が推奨されている。
+      <strong>PR 前の必須チェック（v5.1.0）:</strong> PR テンプレート全項目を具体的内容で埋める。open/closed 両方で重複 PR を検索する。実在する問題か検証する。core に属する変更か判断する。モデル・ハーネス・プラグインを開示する。完全 diff を人間パートナーに見せて明示承認を得る。ターゲットブランチは <code>dev</code>（<code>main</code> ではない）。
     </div>
     <div class="ve-table-wrap">
       <table>
@@ -367,9 +375,11 @@ gemini extensions update superpowers   # 更新時</code></pre>
         </thead>
         <tbody>
           <tr><td>ドメイン特化・プロジェクト特化のスキル</td><td>core は汎用スキルの場所。特定領域向けは standalone plugin が適切。</td></tr>
-          <tr><td>評価なしのスキル文面リライト</td><td>Red Flags や “human partner” などの語彙は挙動調整済み。改善には before/after eval が必要。</td></tr>
+          <tr><td>評価なしのスキル文面リライト</td><td>Red Flags などの語彙は挙動調整済み。改善には before/after eval が必要。</td></tr>
           <tr><td>架空の問題や理論上の修正</td><td>実際のセッション、エラー、ユーザー体験に基づかない PR は却下されやすい。</td></tr>
           <tr><td>複数の無関係な修正を束ねる</td><td>1 PR 1 problem。まとめた変更はレビュー不能になりやすい。</td></tr>
+          <tr><td>第三者依存の追加</td><td>新ハーネス対応を除き zero-dependency 方針。外部ツール依存は別プラグインへ。</td></tr>
+          <tr><td>新ハーネス PR にセッション transcript なし</td><td>「Let's make a react todo list」で <code>brainstorming</code> が自動発火する end-to-end 証拠が必要。</td></tr>
         </tbody>
       </table>
     </div>
