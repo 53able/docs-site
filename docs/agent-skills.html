@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agent Skills — AI エージェント向けプロダクションエンジニアリングスキル集</title>
-  <meta name="description" content="22 のスキルディレクトリ（メタ含む）を 6 フェーズに整理し、Claude Code / Cursor / Gemini / OpenCode / Copilot 等に導入できる OSS。各スキルは手順・検証ゲート・アンチ合理化表を内包。">
+  <meta name="description" content="24 スキル（23 ライフサイクル + メタ）を 6 フェーズに整理し、Claude Code / Cursor / Antigravity / Gemini / OpenCode / Copilot 等に導入できる OSS。各スキルは手順・検証ゲート・アンチ合理化表を内包。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Agent Skills — AI エージェント向けプロダクションエンジニアリングスキル集">
-  <meta property="og:description" content="22 スキル・6 フェーズ・7 コマンド。source-driven / doubt-driven を含む Build フェーズと、メタの using-agent-skills。Claude Code マーケットプレースほか複数 IDE 向けドキュメント付き。">
+  <meta property="og:description" content="24 スキル・6 フェーズ・8 コマンド（/webperf 含む）。interview-me、source-driven / doubt-driven、web-performance-auditor。Claude Code マーケットプレースと Antigravity プラグイン対応。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/agent-skills.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Agent Skills — AI エージェント向けプロダクションエンジニアリングスキル集">
-  <meta name="twitter:description" content="22 スキルディレクトリ・6 フェーズ・7 コマンド。AI エージェント向けプロダクション品質ワークフロー集（addyosmani/agent-skills）。">
+  <meta name="twitter:description" content="24 スキル・6 フェーズ・8 コマンド。AI エージェント向けプロダクション品質ワークフロー集（addyosmani/agent-skills）。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
@@ -270,7 +270,7 @@
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
     <a href="#lifecycle">ライフサイクル</a>
-    <a href="#skills">22 スキル</a>
+    <a href="#skills">24 スキル</a>
     <a href="#commands">コマンド</a>
     <a href="#personas">ペルソナ</a>
     <a href="#setup">セットアップ</a>
@@ -286,10 +286,10 @@
       <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
       <p><strong>Agent Skills</strong> は、AI コーディングエージェントがシニアエンジニアと同じ品質規律でソフトウェアを開発できるように設計されたワークフロー集。各スキルは「手順（Process）・アンチ合理化表（Rationalizations）・検証要件（Verification）」の 3 要素で構成され、エージェントが最短ルートを選んで仕様・テスト・セキュリティレビューをスキップする問題を防ぐ。</p>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">22</span><span class="ve-kpi-card__label">skills/ 配下</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">24</span><span class="ve-kpi-card__label">skills/ 配下</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">6</span><span class="ve-kpi-card__label">開発フェーズ</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">7</span><span class="ve-kpi-card__label">スラッシュコマンド</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">エージェントペルソナ</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">8</span><span class="ve-kpi-card__label">スラッシュコマンド</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">エージェントペルソナ</span></div>
       </div>
       <div class="ve-callout">
         <strong>設計哲学:</strong> スキルは「参照ドキュメント」ではなく「エージェントが従うワークフロー」。手順・チェックポイント・終了条件を持ち、<code>SKILL.md</code> がエントリポイント。サポート参照はトークン節約のために必要時だけロードする Progressive Disclosure を採用。
@@ -360,6 +360,7 @@
         <div class="mermaid">
 flowchart TD
     T["タスク到着"] --> A{"フェーズ判定"}
+    A --> D0["要件が曖昧<br/>→ interview-me"]
     A --> D1["曖昧なアイデア<br/>→ idea-refine"]
     A --> D2["新機能・新プロジェクト<br/>→ spec-driven-development"]
     A --> D3["仕様あり・タスク分解<br/>→ planning-and-task-breakdown"]
@@ -388,7 +389,7 @@ flowchart TD
     </div>
 
     <!-- ===== 3 — スキル一覧 ===== -->
-    <section id="skills" class="sec-head">3 — スキル一覧（22）</section>
+    <section id="skills" class="sec-head">3 — スキル一覧（24）</section>
 
     <!-- Meta -->
     <div class="phase-row">
@@ -424,6 +425,11 @@ flowchart TD
             <tr><th>スキル</th><th>何をするか</th><th>いつ使うか</th></tr>
           </thead>
           <tbody>
+            <tr>
+              <td><code>interview-me</code></td>
+              <td>1 問ずつインタビューし、ユーザーが本当に望む要件を ~95% の確信まで抽出</td>
+              <td>依頼が曖昧なとき、「interview me」「grill me」と言われたとき</td>
+            </tr>
             <tr>
               <td><code>idea-refine</code></td>
               <td>発散・収束の構造思考で曖昧なアイデアを具体的な提案に変換</td>
@@ -610,6 +616,11 @@ flowchart TD
               <td>アーキテクチャ決定時・API 変更時・機能出荷時</td>
             </tr>
             <tr>
+              <td><code>observability-and-instrumentation</code></td>
+              <td>構造化ログ・RED メトリクス・OpenTelemetry トレース・症状ベースのアラート — 構築と同時に計装</td>
+              <td>テレメトリ追加時、本番で動くものを出荷するとき</td>
+            </tr>
+            <tr>
               <td><code>shipping-and-launch</code></td>
               <td>出荷前チェックリスト・フィーチャーフラグライフサイクル・段階的ロールアウト・ロールバック手順・監視設定</td>
               <td>プロダクションへのデプロイ準備</td>
@@ -620,10 +631,10 @@ flowchart TD
     </div>
 
     <!-- ===== 4 — コマンド ===== -->
-    <section id="commands" class="sec-head">4 — 7 スラッシュコマンド</section>
+    <section id="commands" class="sec-head">4 — スラッシュコマンド（8）</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 開発ライフサイクルにマップされたコマンド</span>
-      <p>スラッシュコマンドはエントリポイント。内部で適切なスキルを自動的にアクティベートする。</p>
+      <p>7 つのライフサイクルコマンドがエントリポイント。内部で適切なスキルを自動的にアクティベートする。加えて <code>/webperf</code> で Web パフォーマンス監査ペルソナを起動できる。</p>
       <div class="cmd-grid">
         <div class="cmd-card">
           <div class="cmd-name">/spec</div>
@@ -660,10 +671,20 @@ flowchart TD
           <div class="cmd-principle">Faster is safer</div>
           <div class="cmd-desc">プロダクションへデプロイ。shipping-and-launch スキルを起動。</div>
         </div>
+        <div class="cmd-card">
+          <div class="cmd-name">/webperf</div>
+          <div class="cmd-principle">Measure, don't guess</div>
+          <div class="cmd-desc">Core Web Vitals 監査。web-performance-auditor ペルソナを Quick / Deep モードで起動。</div>
+        </div>
       </div>
     </div>
 
     <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> /build auto</span>
+      <p>仕様が固まったあと手順を減らしたい場合は <code>/build auto</code>。プラン生成から全タスク実装までを 1 回の承認で走らせる。タスク間の人間ステップは省くが、各タスクは TDD と個別コミットのまま。失敗やリスクの高いステップでは一時停止する。</p>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:2">
       <span class="ve-section-label"><span class="ve-dot"></span> 自動スキル選択</span>
       <p>コマンドを使わなくても、何をしているかに基づいてスキルが自動的にアクティベートされる。API 設計をしていれば <code>api-and-interface-design</code> が、UI を構築していれば <code>frontend-ui-engineering</code> が動く。</p>
     </div>
@@ -688,6 +709,11 @@ flowchart TD
           <div class="persona-role">Security Engineer</div>
           <div class="persona-name">security-auditor</div>
           <div class="persona-desc">脆弱性検出・脅威モデリング・OWASP アセスメント。</div>
+        </div>
+        <div class="persona-card">
+          <div class="persona-role">Web Performance Engineer</div>
+          <div class="persona-name">web-performance-auditor</div>
+          <div class="persona-desc">Core Web Vitals 監査（Quick / Deep）。メトリクスの正直さルール付き。<code>/webperf</code> から起動。</div>
         </div>
       </div>
     </div>
@@ -731,6 +757,7 @@ flowchart TD
       <div class="tool-list">
         <span class="tool-pill">Claude Code</span>
         <span class="tool-pill">Cursor</span>
+        <span class="tool-pill">Antigravity CLI</span>
         <span class="tool-pill">Gemini CLI</span>
         <span class="tool-pill">Windsurf</span>
         <span class="tool-pill">OpenCode</span>
@@ -767,6 +794,17 @@ cp skills/spec-driven-development/SKILL.md .cursor/rules/spec.md
 # ディレクトリ参照（推奨）
 # .cursor/rules/ に skills/ を追加して全スキルを有効化</code></pre>
       </div>
+    </div>
+
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> Antigravity CLI</span>
+      <p>スキル・サブエージェント・スラッシュコマンドをネイティブプラグインとして登録する。Antigravity 内部の <code>/plan</code> と衝突するため、プラグイン側は <code>/planning</code> を使う。</p>
+      <div class="ve-code-block">
+        <pre><code>agy plugin install https://github.com/addyosmani/agent-skills.git
+# ローカル clone から
+agy plugin install ./agent-skills</code></pre>
+      </div>
+      <p>詳細は <a href="https://github.com/addyosmani/agent-skills/blob/main/docs/antigravity-setup.md" target="_blank" rel="noopener">docs/antigravity-setup.md</a>。</p>
     </div>
 
     <div class="ve-card" style="--i:3">
@@ -819,13 +857,14 @@ cp skills/spec-driven-development/SKILL.md .cursor/rules/spec.md
       <span class="ve-section-label"><span class="ve-dot"></span> リポジトリ構成（要約）</span>
       <div class="ve-code-block">
         <pre><code>agent-skills/
-├── skills/                 # SKILL.md ごとのスキル（22 ディレクトリ）
-├── agents/                 # ペルソナ用 Markdown
+├── skills/                 # 24 スキル（23 ライフサイクル + メタ）
+├── agents/                 # 4 ペルソナ（code-reviewer 等）
 ├── references/             # チェックリスト 4 種
 ├── hooks/                  # セッション・SDD・simplify 等
-├── .claude/commands/       # 7 スラッシュコマンド（Claude Code）
+├── .claude/commands/       # 8 スラッシュコマンド（Claude Code）
 ├── .gemini/commands/       # Gemini CLI 用コマンド
-├── .opencode/skills/       # OpenCode 連携用
+├── commands/               # 8 スラッシュコマンド（Antigravity CLI）
+├── plugin.json             # Antigravity プラグインマニフェスト
 └── docs/                   # ツール別セットアップガイド</code></pre>
       </div>
       <p class="subtitle" style="margin-top:0.75rem;margin-bottom:0;">上流: <a href="https://github.com/addyosmani/agent-skills" target="_blank" rel="noopener">github.com/addyosmani/agent-skills</a>（MIT）</p>
