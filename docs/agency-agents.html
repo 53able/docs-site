@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>agency-agents リポジトリ説明 — The Agency: AI エキスパート集</title>
-  <meta name="description" content="The Agency: AI エキスパート集。agency-agents リポジトリの説明資料。">
+  <title>agency-agents リポジトリ説明 — The Agency: 16 部門・232 エージェント</title>
+  <meta name="description" content="msitarzewski/agency-agents の構成。16 部門・232 エージェント、install.sh によるマルチツール連携、部門別スペシャリストの選び方。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="agency-agents リポジトリ説明 — The Agency: AI エキスパート集">
-  <meta property="og:description" content="The Agency: AI エキスパート集。agency-agents リポジトリの説明資料。">
+  <meta property="og:title" content="agency-agents リポジトリ説明 — The Agency: 16 部門・232 エージェント">
+  <meta property="og:description" content="msitarzewski/agency-agents の構成。16 部門・232 エージェント、install.sh によるマルチツール連携、部門別スペシャリストの選び方。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/agency-agents.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="agency-agents リポジトリ説明 — The Agency: AI エキスパート集">
-  <meta name="twitter:description" content="The Agency: AI エキスパート集。agency-agents リポジトリの説明資料。">
+  <meta name="twitter:title" content="agency-agents リポジトリ説明 — The Agency: 16 部門・232 エージェント">
+  <meta name="twitter:description" content="msitarzewski/agency-agents の構成。16 部門・232 エージェント、install.sh によるマルチツール連携、部門別スペシャリストの選び方。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -195,11 +195,12 @@
       <a href="#overview">概要</a>
       <a href="#features">特徴</a>
       <a href="#quickstart">クイックスタート</a>
+      <a href="#integrations">ツール連携</a>
       <a href="#structure">ディレクトリ構成</a>
       <a href="#divisions">部門一覧</a>
       <a href="#usecases">ユースケース</a>
       <a href="#philosophy">設計思想</a>
-      <a href="#stats">統計・ロードマップ</a>
+        <a href="#stats">統計・品質</a>
     </nav>
 
     <div class="main">
@@ -230,43 +231,102 @@
       </div>
 
       <section id="quickstart" class="sec-head">3 — クイックスタート</section>
-      <div class="ve-card ve-card--accent" style="--i:0">
-        <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-1)"></span> Claude Code で使う（推奨）</div>
-        <div class="ve-code-block">
-          <pre><code># エージェントを Claude Code 用ディレクトリにコピー
-cp -r agency-agents/* ~/.claude/agents/
+      <div class="diagram">
+        <div class="ve-card ve-card--accent" style="--i:0">
+          <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-1)"></span> Claude Code（ネイティブ形式）</div>
+          <div class="ve-code-block">
+            <pre><code># 全エージェントを Claude Code 用にインストール
+./scripts/install.sh --tool claude-code
 
-# セッションで任意のエージェントを有効化
-# 「Frontend Developer モードで React コンポーネントを作って」のように依頼</code></pre>
+# 特定部門だけ入れる例
+./scripts/install.sh --tool claude-code --division engineering,security
+
+# セッション例: 「Frontend Developer モードで React コンポーネントを作って」</code></pre>
+          </div>
         </div>
-        <p style="margin-top:1rem;">各エージェントファイルには、アイデンティティ・人格、ミッション・ワークフロー、技術成果物（コード例）、成功指標・コミュニケーションスタイルが含まれています。必要なものを選んでコピー・改変して利用できます。</p>
+        <div class="ve-card" style="--i:1">
+          <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-2)"></span> 他ツール（変換 + インストール）</div>
+          <div class="ve-code-block">
+            <pre><code># Step 1: 各ツール向けファイルを生成
+./scripts/convert.sh
+
+# Step 2: 対話式インストール（検出済みツールを表示）
+./scripts/install.sh
+
+# ツール指定例
+./scripts/install.sh --tool cursor
+./scripts/install.sh --tool copilot
+./scripts/install.sh --tool opencode --division engineering --dry-run
+
+# 部門・エージェント一覧
+./scripts/install.sh --list teams</code></pre>
+          </div>
+          <p style="margin-top:1rem;">対応ツール: Claude Code、GitHub Copilot、Cursor、Antigravity、Gemini CLI、OpenCode、OpenClaw、Aider、Windsurf、Qwen Code、Kimi Code、Codex など。各エージェントファイルにはアイデンティティ、ワークフロー、コード例、成功指標が含まれる。</p>
+        </div>
+        <div class="ve-callout" style="--i:2">
+          <strong>参照として使う</strong>：インストールせず、README の部門表から必要な <code>*.md</code> を選び、プロンプトやルールにコピーして改変してもよい。
+        </div>
       </div>
 
-      <section id="structure" class="sec-head">4 — リポジトリのディレクトリ構成</section>
-      <p style="margin-bottom:1rem;">クローンした <code>agency-agents</code> のルートは、部門ごとのディレクトリとドキュメントで構成されています。各部門フォルダ内にエージェント定義ファイルが格納されています。</p>
+      <section id="integrations" class="sec-head">4 — マルチツール連携</section>
+      <p style="margin-bottom:1rem;"><code>scripts/convert.sh</code> がエージェント定義を各ホスト形式へ変換し、<code>scripts/install.sh</code> が配置先へコピーする。詳細は <code>integrations/</code> 配下の README を参照。</p>
+      <div class="ve-table-wrap" style="--i:0">
+        <table>
+          <thead>
+            <tr>
+              <th>ツール</th>
+              <th>出力形式</th>
+              <th>主な配置先</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Claude Code</td><td>そのまま <code>.md</code></td><td><code>~/.claude/agents/</code></td></tr>
+            <tr><td>GitHub Copilot</td><td>そのまま <code>.md</code></td><td><code>~/.github/agents/</code> など</td></tr>
+            <tr><td>Cursor</td><td><code>.mdc</code> ルール</td><td><code>.cursor/rules/</code></td></tr>
+            <tr><td>Antigravity / Gemini CLI</td><td><code>SKILL.md</code></td><td><code>~/.gemini/</code> 配下</td></tr>
+            <tr><td>OpenCode</td><td><code>.md</code> エージェント</td><td><code>.opencode/agents/</code></td></tr>
+            <tr><td>OpenClaw</td><td>SOUL / AGENTS / IDENTITY</td><td><code>~/.openclaw/agency-agents/</code></td></tr>
+            <tr><td>Aider / Windsurf</td><td>単一規約ファイル</td><td><code>CONVENTIONS.md</code> / <code>.windsurfrules</code></td></tr>
+            <tr><td>Qwen / Kimi / Codex</td><td>各ホスト仕様</td><td>各ツールの agents ディレクトリ</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top:1rem;">
+        <strong>OpenCode 注意</strong>：ランタイムが約 119 エージェントまでしか登録しない既知の制限がある。全件入れるとサイレントに落ちるため、<code>--division</code> で部門を絞る。インストーラが上限超過時に警告する。
+      </div>
+
+      <section id="structure" class="sec-head">5 — リポジトリのディレクトリ構成</section>
+      <p style="margin-bottom:1rem;">ルートは部門ディレクトリ（エージェント定義）、戦略・例・連携ガイド、品質用スクリプトで構成される。</p>
       <div class="ve-code-block" style="--i:0">
         <div class="ve-code-filename">agency-agents/（ルート）</div>
         <pre><code>agency-agents/
-├── .github/              # GitHub 用設定
-├── design/               # Design 部門エージェント
-├── engineering/          # Engineering 部門エージェント
+├── academic/             # 学術・世界観設計（5）
+├── design/               # デザイン（9）
+├── engineering/          # エンジニアリング（33）
+├── finance/              # 財務・会計（5）
+├── game-development/     # ゲーム開発（20、エンジン別サブフォルダ）
+├── gis/                  # GIS・空間情報（13）
+├── marketing/            # マーケティング（36）
+├── paid-media/           # 有料広告（7）
+├── product/              # プロダクト（5）
+├── project-management/   # PM（7）
+├── sales/                # セールス（9）
+├── security/             # セキュリティ（10）
+├── spatial-computing/    # 空間コンピューティング（6）
+├── specialized/          # 横断スペシャリスト（53）
+├── support/              # サポート・分析（6）
+├── testing/              # テスト・QA（8）
 ├── examples/             # マルチエージェントワークフロー例
-├── marketing/            # Marketing 部門エージェント
-├── product/              # Product 部門エージェント
-├── project-management/   # Project Management 部門エージェント
-├── spatial-computing/    # Spatial Computing 部門エージェント
-├── specialized/         # Specialized 部門エージェント
-├── strategy/             # Strategy 関連エージェント
-├── support/              # Support 部門エージェント
-├── testing/              # Testing 部門エージェント
+├── integrations/         # ツール別セットアップ README
+├── strategy/             # Nexus 戦略、フェーズ別プレイブック
+├── scripts/              # convert.sh, install.sh, lint-agents.sh
 ├── CONTRIBUTING.md
-├── LICENSE
 └── README.md</code></pre>
       </div>
-      <p>クイックスタートの <code>cp -r agency-agents/* ~/.claude/agents/</code> では、上記の部門ディレクトリとドキュメントがそのまま <code>~/.claude/agents/</code> にコピーされ、Claude Code から部門名でエージェントを指定して利用できます。</p>
+      <p><code>strategy/nexus-strategy.md</code> は部門横断の協調モデル、<code>examples/nexus-spatial-discovery.md</code> は 8 エージェント並列の演習例。</p>
 
-      <section id="divisions" class="sec-head">5 — 部門一覧</section>
-      <p style="margin-bottom:1rem;">9 部門・55 以上の専門エージェントが定義されています。</p>
+      <section id="divisions" class="sec-head">6 — 部門一覧</section>
+      <p style="margin-bottom:1rem;">16 部門・232 エージェント（<code>install.sh --list teams</code> 基準）。</p>
       <div class="ve-table-wrap" style="--i:0">
         <table>
           <thead>
@@ -276,40 +336,47 @@ cp -r agency-agents/* ~/.claude/agents/
             </tr>
           </thead>
           <tbody>
-            <tr><td><strong>Engineering</strong></td><td>Frontend / Backend / Mobile / AI Engineer / DevOps / Rapid Prototyper / Senior Developer</td></tr>
-            <tr><td><strong>Design</strong></td><td>UI Designer / UX Researcher / UX Architect / Brand Guardian / Visual Storyteller / Whimsy Injector / Image Prompt Engineer</td></tr>
-            <tr><td><strong>Marketing</strong></td><td>Growth Hacker / Content Creator / Twitter・TikTok・Instagram・Reddit 戦略 / App Store Optimizer / Social Media Strategist</td></tr>
-            <tr><td><strong>Product</strong></td><td>Sprint Prioritizer / Trend Researcher / Feedback Synthesizer</td></tr>
-            <tr><td><strong>Project Management</strong></td><td>Studio Producer / Project Shepherd / Studio Operations / Experiment Tracker / Senior PM</td></tr>
-            <tr><td><strong>Testing</strong></td><td>Evidence Collector / Reality Checker / Test Results Analyzer / Performance Benchmarker / API Tester / Tool Evaluator / Workflow Optimizer</td></tr>
-            <tr><td><strong>Support</strong></td><td>Support Responder / Analytics Reporter / Finance Tracker / Infrastructure Maintainer / Legal Compliance / Executive Summary Generator</td></tr>
-            <tr><td><strong>Spatial Computing</strong></td><td>XR Interface Architect / macOS Spatial-Metal / XR Immersive Developer / XR Cockpit / visionOS / Terminal Integration</td></tr>
-            <tr><td><strong>Specialized</strong></td><td>Agents Orchestrator / Data Analytics / LSP-Index Engineer / Sales Data Extraction / Data Consolidation / Report Distribution</td></tr>
+            <tr><td><strong>Engineering</strong> <span class="ve-badge ve-badge--secondary">33</span></td><td>Frontend / Backend / Mobile / AI / DevOps / SRE / Data / Feishu / Voice AI / Multi-Agent Architect など</td></tr>
+            <tr><td><strong>Specialized</strong> <span class="ve-badge ve-badge--secondary">53</span></td><td>Agents Orchestrator / MCP Builder / Workflow Architect / 法務・医療・不動産 CS / CFO / DPO など業界特化</td></tr>
+            <tr><td><strong>Marketing</strong> <span class="ve-badge ve-badge--secondary">36</span></td><td>Growth / 中国 SNS（抖音・小红书・B站）/ SEO / AEO / Podcast / Livestream Commerce</td></tr>
+            <tr><td><strong>Design</strong> <span class="ve-badge ve-badge--secondary">9</span></td><td>UI / UX Research / UX Architect / Brand / Whimsy / Inclusive Visuals / Persona Walkthrough</td></tr>
+            <tr><td><strong>Game Development</strong> <span class="ve-badge ve-badge--secondary">20</span></td><td>Unity / Unreal / Godot / Roblox / Blender。Designer / Level / Audio / Narrative</td></tr>
+            <tr><td><strong>GIS</strong> <span class="ve-badge ve-badge--secondary">13</span></td><td>Web GIS / GeoAI / BIM-GIS / Drone Mapping / Cartography / Spatial Data Engineer</td></tr>
+            <tr><td><strong>Security</strong> <span class="ve-badge ve-badge--secondary">10</span></td><td>Architect / AppSec / Pentest / Cloud / Incident / Threat Intel / Compliance / Blockchain</td></tr>
+            <tr><td><strong>Sales</strong> <span class="ve-badge ve-badge--secondary">9</span></td><td>Outbound / Discovery / Deal Strategist / Sales Engineer / Pipeline / Account Strategist</td></tr>
+            <tr><td><strong>Paid Media</strong> <span class="ve-badge ve-badge--secondary">7</span></td><td>PPC / Search Query / Auditor / Tracking / Creative / Programmatic / Paid Social</td></tr>
+            <tr><td><strong>Project Management</strong> <span class="ve-badge ve-badge--secondary">7</span></td><td>Studio Producer / Project Shepherd / Jira Steward / Meeting Notes / Experiment Tracker</td></tr>
+            <tr><td><strong>Testing</strong> <span class="ve-badge ve-badge--secondary">8</span></td><td>Evidence Collector / Reality Checker / API Tester / Accessibility Auditor / Performance</td></tr>
+            <tr><td><strong>Spatial Computing</strong> <span class="ve-badge ve-badge--secondary">6</span></td><td>XR Interface / visionOS / macOS Metal / WebXR / Terminal Integration</td></tr>
+            <tr><td><strong>Support</strong> <span class="ve-badge ve-badge--secondary">6</span></td><td>Support Responder / Analytics / Finance Tracker / Legal Compliance / Exec Summary</td></tr>
+            <tr><td><strong>Product</strong> <span class="ve-badge ve-badge--secondary">5</span></td><td>Product Manager / Sprint Prioritizer / Trend Researcher / Feedback / Behavioral Nudge</td></tr>
+            <tr><td><strong>Finance</strong> <span class="ve-badge ve-badge--secondary">5</span></td><td>Bookkeeper / Financial Analyst / FP&amp;A / Investment Research / Tax Strategist</td></tr>
+            <tr><td><strong>Academic</strong> <span class="ve-badge ve-badge--secondary">5</span></td><td>Anthropologist / Geographer / Historian / Narratologist / Psychologist（世界観・物語）</td></tr>
           </tbody>
         </table>
       </div>
 
-      <section id="usecases" class="sec-head">6 — ユースケース例</section>
+      <section id="usecases" class="sec-head">7 — ユースケース例</section>
       <div class="grid-2">
         <div class="ve-card" style="--i:0">
           <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-2)"></span> スタートアップ MVP</div>
-          <p>Frontend Developer（React）、Backend Architect（API/DB）、Growth Hacker（獲得）、Rapid Prototyper（短期イテレーション）、Reality Checker（リリース前品質）の組み合わせで、各段階に専門家を配置して高速にリリース。</p>
+          <p>Frontend Developer、Backend Architect、Growth Hacker、Rapid Prototyper、Reality Checker を組み合わせ、設計から品質ゲートまで段階ごとに専門家を配置する。</p>
         </div>
         <div class="ve-card" style="--i:1">
-          <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-4)"></span> マーケティング施策</div>
-          <p>Content Creator（コンテンツ）、Twitter Engager・Instagram Curator・Reddit Community Builder（プラットフォーム別）、Analytics Reporter（効果測定）で、チャネル横断かつプラットフォーム特化のキャンペーンを構成。</p>
+          <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-4)"></span> 有料広告アカウント引き継ぎ</div>
+          <p>Paid Media Auditor → Tracking Specialist → PPC Strategist → Search Query Analyst → Ad Creative Strategist → Analytics Reporter の順で、計測確認・無駄削減・構成刷新を 30 日以内に進める。</p>
         </div>
         <div class="ve-card" style="--i:2">
-          <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-1)"></span> エンタープライズ機能開発</div>
-          <p>Senior PM（スコープ・タスク）、Senior Developer（実装）、UI Designer（デザインシステム）、Experiment Tracker（A/B）、Evidence Collector（証跡）、Reality Checker（本番可否）で、品質ゲートとドキュメントを伴う企業向け納品を想定。</p>
+          <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-1)"></span> スマートキャンパス・デジタルツイン</div>
+          <p>GIS Technical Consultant、BIM/GIS Specialist、Drone Mapping、Web GIS Developer、3D Scene Developer、GeoAI Engineer、GIS QA Engineer で、BIM・ドローン・3D 可視化を一パイプラインにまとめる。</p>
         </div>
         <div class="ve-card" style="--i:3">
-          <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-3)"></span> プロダクトディスカバリ（8 部門並列）</div>
-          <p>Product / Backend / Brand / Growth / Support / UX Research / Project Shepherd / XR Interface など複数エージェントを同時投入し、市場検証・技術設計・ブランド・Go-to-Market・サポート・UX・実行・XR UI をカバーした統合プロダクト案を 1 セッションで出力する例があります。リポジトリの <a href="https://github.com/msitarzewski/agency-agents/blob/main/examples/nexus-spatial-discovery.md" target="_blank" rel="noopener">Nexus Spatial Discovery Exercise</a>（<code>examples/</code>）を参照。</p>
+          <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-3)"></span> Nexus 並列ディスカバリ（8 エージェント）</div>
+          <p>Product / Backend / Brand / Growth / Support / UX Research / Project Shepherd / XR Interface を同時投入し、市場・技術・GTM・UX を 1 セッションで統合する。<a href="https://github.com/msitarzewski/agency-agents/blob/main/examples/nexus-spatial-discovery.md" target="_blank" rel="noopener">Nexus Spatial Discovery Exercise</a>（<code>examples/</code>）を参照。</p>
         </div>
       </div>
 
-      <section id="philosophy" class="sec-head">7 — 設計思想</section>
+      <section id="philosophy" class="sec-head">8 — 設計思想</section>
       <div class="ve-card ve-card--recessed" style="--i:0">
         <ul style="list-style:none; font-size:0.9375rem; line-height:1.9;">
           <li><strong>強い人格</strong> — 汎用テンプレートではなく、一貫した声とキャラクター</li>
@@ -320,24 +387,28 @@ cp -r agency-agents/* ~/.claude/agents/
         </ul>
       </div>
 
-      <section id="stats" class="sec-head">8 — 統計・ロードマップ</section>
+      <section id="stats" class="sec-head">9 — 統計・品質</section>
       <div class="diagram" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:1.5rem;">
         <div class="ve-kpi-card" style="--i:0">
-          <div class="ve-kpi-card__value">55+</div>
+          <div class="ve-kpi-card__value">232</div>
           <div class="ve-kpi-card__label">専門エージェント</div>
         </div>
         <div class="ve-kpi-card" style="--i:1">
-          <div class="ve-kpi-card__value">9</div>
+          <div class="ve-kpi-card__value">16</div>
           <div class="ve-kpi-card__label">部門</div>
         </div>
         <div class="ve-kpi-card" style="--i:2">
-          <div class="ve-kpi-card__value">10,000+</div>
-          <div class="ve-kpi-card__label">行（人格・プロセス・コード例）</div>
+          <div class="ve-kpi-card__value">12+</div>
+          <div class="ve-kpi-card__label">対応 AI ツール</div>
+        </div>
+        <div class="ve-kpi-card" style="--i:3">
+          <div class="ve-kpi-card__value">65k</div>
+          <div class="ve-kpi-card__label">行（定義・手順・コード例）</div>
         </div>
       </div>
       <div class="ve-card" style="--i:1">
-        <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-4)"></span> ロードマップ</div>
-        <p>マルチエージェントワークフロー例（<code>examples/</code>）はリポジトリで提供済み。今後の予定：インタラクティブなエージェント選択 Web ツール、エージェント設計の動画チュートリアル、コミュニティエージェントマーケット、プロジェクトマッチング用「人格クイズ」、人気ツールとの連携例、「今週のエージェント」紹介など。</p>
+        <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-4)"></span> 品質・拡張</div>
+        <p><code>scripts/lint-agents.sh</code> と CI（<code>.github/workflows/lint-agents.yml</code>）でエージェント定義を検証。<code>examples/</code> に MVP・ランディングページ・書籍章・メモリ付きワークフローなどの実例。<code>strategy/playbooks/</code> は Phase 0（Discovery）から Phase 6（Operate）までのフェーズ別プレイブック。</p>
       </div>
 
       <div class="ve-callout" style="margin-top:2.5rem;">
