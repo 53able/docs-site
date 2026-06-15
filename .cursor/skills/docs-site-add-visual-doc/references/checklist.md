@@ -2,7 +2,7 @@
 
 ## docs-site 手順
 
-- [ ] Step 0 でリポジトリ URL を `repos/<名前>/` にクローン（または既存を pull）し、解説対象のパスが確定している
+- [ ] Step 0 で Workflow CLI `prepare`（または手動 clone / origin 同期）により `repos/<名前>/` を用意し、解説対象のパスが確定している
 - [ ] `scripts/scan-source.sh` で一覧を取り、JiT で読むファイルを絞っている（または同等の理由付きでスキップ）
 - [ ] 構造化抽出で情報タイプ分類し、必要なら `context-extraction.md` / `spell-ui-map.md` を参照している
 - [ ] Step 1（code-reading）を必要範囲で実施している

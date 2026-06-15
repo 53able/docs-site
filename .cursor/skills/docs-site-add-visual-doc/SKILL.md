@@ -37,21 +37,35 @@ description: >-
 ## 入力
 
 - **リポジトリ URL（通常）**: HTTPS または SSH → Step 0 で `repos/` にクローン。
-- **既存 `repos/<名前>/` のみ**: URL なしでパスだけなら Step 0 をスキップ。必要なら `git -C repos/<名前> pull`。
+- **既存 `repos/<名前>/` のみ**: URL なしでパスだけなら Step 0 をスキップ。同期が必要なら Workflow CLI の `prepare` を使う（手動 `git pull` は使わない）。
 - **クローン先名（任意）**: URL 時のみ。省略時は URL から推測。
 
 ---
 
 ## Phase 1: Source Acquisition（JiT — ディレクトリ優先）
 
-### Step 0: リポジトリのクローン（URL があるときのみ）
+### Step 0: リポジトリの取得（URL があるとき、または既存 clone の同期）
+
+**推奨**: Workflow CLI で Source Acquisition する（既存 clone は `origin/HEAD` へ強制同期、新規は clone）。
+
+```bash
+# 既存 repos/<clone-dir> を同期して runbook を出す
+npx tsx scripts/visual-doc-workflow.ts prepare --source <clone-dir>
+
+# URL から新規取得（または既存を同期）
+npx tsx scripts/visual-doc-workflow.ts prepare --url <URL> [--name <clone-dir>]
+```
+
+`prepare` 成功時は `tmp/<slug>-runbook.md` を読み、以降 **`repos/<clone-dir>` を解説ルート**とする。
+
+**手動で行う場合のみ**（Workflow CLI を使わないとき）:
 
 1. プロジェクトルート（`docs/` と `index.html` がある階層）で作業する。
 2. `repos/<clone-dir>/` を決める（ユーザー指定 → URL から推測 → 長すぎる場合は短名を確認）。
 3. `mkdir -p repos`。
-4. 既存あり **かつ Git リポジトリ**: `git -C repos/<clone-dir> pull --ff-only` を試す。衝突時は別名を確認。
-5. 新規: `git clone <URL> repos/<clone-dir>`（任意で `--depth 1`）。
-6. `ls repos/<clone-dir>` で取得を確認。以降 **`repos/<clone-dir>` を解説ルート**とする。
+4. 新規: `git clone <URL> repos/<clone-dir>`（任意で `--depth 1`）。
+5. 既存あり **かつ Git リポジトリ**: `git fetch origin` のあと、デフォルトブランチ（`origin/HEAD`）へ `checkout -B` → `reset --hard` → `clean -fd` でローカル差分を捨てて最新に合わせる。`origin` が無い・`.git` が無い場合は別名で再 clone を確認。
+6. `ls repos/<clone-dir>` で取得を確認。
 
 ### Step 1a: スキャン（推奨）
 
