@@ -23,7 +23,7 @@ Visual Documentation Page の作成は既存スキルで実行できるが、Sou
 - CLI内でHTML本文やビジュアル構成を生成しない。
 - 初版では複数リポジトリの自動巡回や変更検出を行わない。
 - 初版ではcommit、push、draft PR作成、Pages公開確認をCLI責務に含めない。
-- Source Repository のdirty状態やfast-forward不可状態を自動修復しない。
+- Source Repository のローカル変更を保持しない。既存 clone は毎回 `origin/HEAD` の最新へ強制同期する。
 
 ## 4. 提案する設計（HOW）
 
@@ -87,8 +87,8 @@ sequenceDiagram
     participant Git as Git / gh handoff
 
     User->>CLI: prepare with source or URL
-    CLI->>Source: clone or fast-forward acquisition
-    Source-->>CLI: clean source state
+    CLI->>Source: clone or origin-sync acquisition
+    Source-->>CLI: default-branch source state
     CLI-->>User: Documentation Runbook
     User->>Agent: runbook-based authoring
     Agent-->>User: Visual Documentation Page + index update
@@ -146,7 +146,7 @@ npm run test:workflow
 
 ### セキュリティ・プライバシー
 
-公開HTMLにローカル環境パスや作業用ソースパスを残さない。Source Acquisitionはdirty状態やfast-forward不可状態を自動修復せず停止する。
+公開HTMLにローカル環境パスや作業用ソースパスを残さない。Source Acquisitionは既存 clone を `git fetch`、デフォルトブランチへの `checkout -B`、`reset --hard`、`clean -fd` で `origin/HEAD` に合わせる。`.git` が無い、または `origin` リモートが無い場合のみ **Blocked Source Repository** として停止する。
 
 ### 移行・廃止計画
 
@@ -171,4 +171,4 @@ npm run test:workflow
 | 2026-05-01 | 初版作成 | Workflow CLIの責務と初版スコープを固定するため |
 | 2026-05-01 | CLI実装開始を反映 | 未解決質問を閉じるため |
 | 2026-05-01 | TypeScript実行方針を反映 | `tsx`でWorkflow CLIを実行するため |
-| 2026-05-01 | Vitest実行方針を反映 | テストランナーを統一するため |
+| 2026-06-15 | Source Acquisition を origin 強制同期に変更 | force-push 後の手動 reset を不要にするため |

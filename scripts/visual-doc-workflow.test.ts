@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import {
   basenameFromUrl,
   boundedSlug,
+  branchFromOriginHeadRef,
   buildRunbook,
   collectCliArgs,
   collectInteractiveArgs,
@@ -249,13 +250,19 @@ describe("visual-doc-workflow pure helpers", () => {
     expect(hasHeadMeta(bodyOnly, "twitter:card")).toBe(false);
   });
 
+  it("extracts branch names from origin head refs", () => {
+    expect(branchFromOriginHeadRef("origin/main")).toBe("main");
+    expect(branchFromOriginHeadRef("origin/master")).toBe("master");
+  });
+
   it("builds a runbook with the authoring handoff", () => {
     const runbook = buildRunbook({
       source: {
         absolutePath: "/workspace/repos/system-design-primer",
         relativePath: "repos/system-design-primer",
         cloneName: "system-design-primer",
-        acquiredBy: "fast-forward",
+        acquiredBy: "origin-sync",
+        syncBranch: "main",
       },
       doc: {
         slug: "system-design-primer",
