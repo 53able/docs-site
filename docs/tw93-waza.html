@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Waza — エンジニアリング習慣を Skill 化した Claude / Codex 向けツールキット</title>
-  <meta name="description" content="tw93/Waza は「技」のように鍛えた 8 つの習慣を Slash Command と Skill として束ねるオープンソース集。think / design / check / hunt / write / learn / read / health の役割分担と導入手順を視覚化します。">
+  <meta name="description" content="tw93/Waza はエンジニアリング習慣 8 つを Skill 化したオープンソース。Claude Code / Codex / OpenCode / Pi ほかで think・design・check・hunt・write・learn・read・health を使う導線とルーティングを整理。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Waza — エンジニアリング習慣を Skill 化した Claude / Codex 向けツールキット">
-  <meta property="og:description" content="Kaku（書く）・Waza（技）・Kami（紙）の一角。8 スキル、ルーティング、インストール、よくある連鎖ワークフローを整理したビジュアル解説。">
+  <meta property="og:description" content="Kaku・Waza・Kami 三部作の一角。8 スキル、RESOLVER ルーティング、複数エージェント向けインストール、手動チェーンのワークフローを整理。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/tw93-waza.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
@@ -233,7 +233,7 @@
 
   <main class="main">
     <h1>Waza</h1>
-    <p class="subtitle">tw93/Waza — Engineering habits you already know, turned into skills Claude can run.</p>
+    <p class="subtitle">tw93/Waza — Engineering habits you already know, turned into skills AI agents can run.</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="hero-grid">
@@ -246,9 +246,11 @@
         <span class="ve-section-label"><span class="ve-dot"></span> ひとことで</span>
         <span class="badge">Claude Code</span>
         <span class="badge">Codex</span>
+        <span class="badge">OpenCode</span>
+        <span class="badge">Pi</span>
         <span class="badge">Desktop ZIP</span>
         <span class="badge">MIT</span>
-        <p class="compact">各 Skill はフォルダ単位で <code>SKILL.md</code>、参照資料、補助スクリプトを持つ。<code>/health</code> は Claude Code 専用で初回はサマリ監査が既定。ほかはホスト環境の質問・検索・フェッチに依存しないよう書かれている。</p>
+        <p class="compact">各 Skill は <code>SKILL.md</code>・参照資料・補助スクリプトを持つ。目標と制約だけを渡し、細かい手順で天井を作らない設計。起動時は <code>check-update.sh</code> で新バージョンを非ブロッキング通知できる。</p>
       </div>
     </div>
     <div class="kpi-row">
@@ -271,8 +273,8 @@
           <tr><td><code>/hunt</code></td><td>バグ・回帰</td><td>修正の前に根本原因を確認する体系的デバッグ。</td></tr>
           <tr><td><code>/write</code></td><td>文章</td><td>中英のプロズを自然な語り口に整え、硬い AI 調を削る。</td></tr>
           <tr><td><code>/learn</code></td><td>未知ドメイン</td><td>収集・咀嚼・アウトライン・肉付け・推敲・自己レビューまでの 6 フェーズ研究。</td></tr>
-          <tr><td><code>/read</code></td><td>URL / PDF</td><td>プラットフォーム別ルーティングでクリーンな Markdown に取得（GitHub・PDF・WeChat・Feishu など）。</td></tr>
-          <tr><td><code>/health</code></td><td>環境監査</td><td>CLAUDE.md・rules・skills・hooks・MCP を予算意識して点検（Claude Code のみ）。</td></tr>
+          <tr><td><code>/read</code></td><td>URL / PDF</td><td>プラットフォーム別ルーティング。通常は簡潔な要約、変換・引用・保存・下流利用の依頼時は Markdown 出力。</td></tr>
+          <tr><td><code>/health</code></td><td>エージェント健全性</td><td>Codex / Claude Code / Pi の設定、検証出力、AI 保守性を予算付きサマリのあと深掘り監査。</td></tr>
         </tbody>
       </table>
     </div>
@@ -300,26 +302,36 @@
     <section id="install" class="sec-head">4 — インストールと更新</section>
     <div class="two-col">
       <div class="ve-card" style="--i:0">
-        <span class="ve-section-label"><span class="ve-dot"></span> Claude Code（スラッシュ）</span>
+        <span class="ve-section-label"><span class="ve-dot"></span> Claude Code</span>
         <div class="ve-code-block" aria-label="Claude Code install">
           <pre><code>npx skills add tw93/Waza -a claude-code -g -y</code></pre>
         </div>
-        <p class="compact">個別の <code>/think</code> … <code>/health</code> がグローバルに入る。</p>
+        <p class="compact">個別 Skill は <code>--skill think</code> など。Marketplace は <code>/plugin marketplace add tw93/Waza</code>（単体プラグインは v2.1.143+）。</p>
       </div>
       <div class="ve-card" style="--i:1">
-        <span class="ve-section-label"><span class="ve-dot"></span> Codex</span>
+        <span class="ve-section-label"><span class="ve-dot"></span> Codex / OpenCode</span>
         <div class="ve-code-block" aria-label="Codex install">
-          <pre><code>npx skills add tw93/Waza -a codex -g -y</code></pre>
+          <pre><code>npx skills add tw93/Waza -a codex -g -y
+npx skills add tw93/Waza -a opencode -g -y</code></pre>
         </div>
       </div>
     </div>
-    <div class="ve-card ve-card--recessed" style="--i:2">
-      <span class="ve-section-label"><span class="ve-dot"></span> その他</span>
-      <ul>
-        <li><strong>Marketplace:</strong> <code>/plugin marketplace add tw93/Waza</code> から個別プラグインを入れる流れ。</li>
-        <li><strong>Desktop:</strong> GitHub Releases の <code>waza.zip</code> を Customize → Skills から ZIP 作成。</li>
-        <li><strong>更新:</strong> <code>npx skills update -g -y</code>、または marketplace / ZIP の差し替え。</li>
-      </ul>
+    <div class="two-col" style="margin-top:1rem">
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> Antigravity / Pi</span>
+        <div class="ve-code-block" aria-label="Antigravity and Pi">
+          <pre><code>npx skills add tw93/Waza -a antigravity -g -y
+npx skills add tw93/Waza -a antigravity-cli -g -y
+pi install npm:@tw93/waza</code></pre>
+        </div>
+      </div>
+      <div class="ve-card" style="--i:3">
+        <span class="ve-section-label"><span class="ve-dot"></span> Desktop / 更新</span>
+        <ul>
+          <li><strong>Desktop:</strong> Releases の <code>waza.zip</code> を Customize → Skills から登録。</li>
+          <li><strong>更新:</strong> <code>npx skills update -g -y</code>、<code>pi update npm:@tw93/waza</code>、または marketplace / ZIP の差し替え。</li>
+        </ul>
+      </div>
     </div>
 
     <section id="chaining" class="sec-head">5 — 連鎖ワークフロー</section>
@@ -348,25 +360,47 @@
         <p class="compact">判断や文脈適応が要るものは Skill。同じ入力で常に同じ出力なら script や rule。<code>verify-skills.sh</code> や <code>rules/*.md</code> が決定性側。</p>
       </div>
       <div class="ve-card" style="--i:1">
-        <span class="ve-section-label"><span class="ve-dot"></span> プロジェクト文脈</span>
-        <p class="compact"><code>check</code> は対象リポジトリの README・マニフェスト・CI・ユーザー指示など公開情報からコマンドやリスクを抽出する。非公開の機密パスは Skill に焼かない方針。</p>
+        <span class="ve-section-label"><span class="ve-dot"></span> 制約より委譲</span>
+        <p class="compact">ルールを増やすほどモデルの上限も下がる、という作者の立場。各 Skill はゴールと重要な制約だけを置き、あとはモデルに任せる。300+ セッション・7 プロジェクト由来の gotcha が参照に落ちている。</p>
       </div>
     </div>
 
-    <section id="extras" class="sec-head">7 — オプション（Statusline / English Coaching）</section>
-    <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> Statusline</span>
-      <p>Claude Code 向けにコンテキスト窓・5 時間枠・7 日枠のクォータをコンパクトに表示。色は閾値で緑／黄／赤など。</p>
-      <div class="ve-code-block" aria-label="statusline setup">
-        <pre><code>curl -sL https://raw.githubusercontent.com/tw93/Waza/main/scripts/setup-statusline.sh | bash</code></pre>
+    <section id="extras" class="sec-head">7 — オプション（Statusline / Rules）</section>
+    <div class="two-col">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Statusline</span>
+        <p>Claude Code 向けにコンテキスト窓・5 時間枠・7 日枠をコンパクト表示。Codex は <code>config.toml</code> の <code>status_line</code> で同等項目を設定できる。</p>
+        <div class="ve-code-block" aria-label="statusline setup">
+          <pre><code>curl -sL https://github.com/tw93/Waza/releases/latest/download/setup-statusline.sh | bash</code></pre>
+        </div>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> English Coaching</span>
+        <p>英語プロンプトの誤りだけ短い添削を末尾に付けるオプションルール（中国語のみは対象外）。</p>
+        <div class="ve-code-block" aria-label="english coaching">
+          <pre><code>curl -sL https://github.com/tw93/Waza/releases/latest/download/setup-rule.sh | bash -s -- english claude-code</code></pre>
+        </div>
       </div>
     </div>
-    <div class="ve-card" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> English Coaching</span>
-      <p>オプションのルールで、プロンプトに英語の誤りがあるときだけ短い添削を末尾に付ける（中国語のみのプロンプトは対象外）。</p>
-      <div class="ve-code-block" aria-label="english coaching">
-        <pre><code>curl -sL https://raw.githubusercontent.com/tw93/Waza/main/scripts/setup-english-coaching.sh | bash -s -- claude-code</code></pre>
+    <div class="two-col" style="margin-top:1rem">
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> Anti-Patterns</span>
+        <p>常時オンの横断ガード: 読まずに動かない、幻のパス、スコープクリープ、不要な要約を抑止。</p>
+        <div class="ve-code-block" aria-label="anti-patterns">
+          <pre><code>curl -sL https://github.com/tw93/Waza/releases/latest/download/setup-rule.sh | bash -s -- anti-patterns claude-code</code></pre>
+        </div>
       </div>
+      <div class="ve-card" style="--i:3">
+        <span class="ve-section-label"><span class="ve-dot"></span> Routing Hint</span>
+        <p>description だけでは Skill を選びにくいホスト向け。Codex / Pi などで Waza スキルへのポインタを置く（Claude Code では任意）。</p>
+        <div class="ve-code-block" aria-label="waza routing">
+          <pre><code>curl -sL https://github.com/tw93/Waza/releases/latest/download/setup-rule.sh | bash -s -- waza-routing claude-code</code></pre>
+        </div>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:4;margin-top:1rem">
+      <span class="ve-section-label"><span class="ve-dot"></span> プロジェクト文脈（check）</span>
+      <p class="compact"><code>check</code> は対象リポジトリの README・マニフェスト・CI・ユーザー指示からコマンドとハードストップを抽出。公開ドキュメントに資格情報や個人マシン固有パスを載せない方針。</p>
     </div>
 
     <section id="links" class="sec-head">8 — 参考リンク</section>
