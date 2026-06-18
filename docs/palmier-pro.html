@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Palmier Pro — AI ネイティブ macOS 動画エディタ</title>
+  <meta name="description" content="palmier-io/palmier-pro を、Swift ネイティブのタイムライン編集・生成 AI・MCP 連携の観点から読み解くビジュアル解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Palmier Pro — AI ネイティブ macOS 動画エディタ">
+  <meta property="og:description" content="Swift で構築されたタイムラインエディタと、Claude / Cursor / Codex 向け MCP サーバーの構成と接続手順。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/palmier-pro.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Palmier Pro — AI ネイティブ macOS 動画エディタ">
+  <meta name="twitter:description" content="タイムライン編集・生成 AI・MCP 連携を俯瞰するビジュアル解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Commit+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        fontFamily: 'Archivo, system-ui, sans-serif',
+        fontSize: '15px',
+        primaryColor: 'oklch(0.93 0.03 42)',
+        primaryTextColor: 'oklch(0.18 0.04 42)',
+        primaryBorderColor: 'oklch(0.55 0.16 42)',
+        lineColor: 'oklch(0.55 0.16 42)',
+        secondaryColor: 'oklch(0.91 0.04 155)',
+        tertiaryColor: 'oklch(0.96 0.02 42)',
+        clusterBkg: 'oklch(0.97 0.02 42)',
+        clusterBorder: 'oklch(0.82 0.04 42)'
+      },
+      flowchart: { curve: 'basis', padding: 16 }
+    });
+  </script>
+  <style>
+    /* ============ THEME (Spell UI — Warm / Archivo) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.012 42);
+      --foreground: oklch(0.17 0.04 42);
+      --card: oklch(0.998 0.006 42);
+      --card-foreground: oklch(0.17 0.04 42);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.17 0.04 42);
+      --primary: oklch(0.55 0.16 42);
+      --primary-foreground: oklch(0.985 0.01 42);
+      --secondary: oklch(0.94 0.02 42);
+      --secondary-foreground: oklch(0.22 0.05 42);
+      --muted: oklch(0.93 0.018 42);
+      --muted-foreground: oklch(0.48 0.05 42);
+      --accent: oklch(0.91 0.035 155);
+      --accent-foreground: oklch(0.18 0.04 42);
+      --destructive: oklch(0.57 0.20 25);
+      --border: oklch(0.84 0.028 42);
+      --input: oklch(0.84 0.028 42);
+      --ring: oklch(0.62 0.12 155);
+      --chart-1: oklch(0.55 0.16 42);
+      --chart-2: oklch(0.62 0.12 155);
+      --chart-3: oklch(0.52 0.11 248);
+      --chart-4: oklch(0.72 0.14 76);
+      --chart-5: oklch(0.48 0.10 290);
+      --code-bg: oklch(0.20 0.04 42);
+      --code-text: oklch(0.94 0.02 42);
+      --font-body: 'Archivo', system-ui, sans-serif;
+      --font-mono: 'Commit Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.03 42);
+        --foreground: oklch(0.94 0.018 42);
+        --card: oklch(0.19 0.032 42);
+        --card-foreground: oklch(0.94 0.018 42);
+        --popover: oklch(0.19 0.032 42);
+        --popover-foreground: oklch(0.94 0.018 42);
+        --primary: oklch(0.72 0.14 42);
+        --primary-foreground: oklch(0.14 0.03 42);
+        --secondary: oklch(0.24 0.03 42);
+        --secondary-foreground: oklch(0.94 0.018 42);
+        --muted: oklch(0.24 0.03 42);
+        --muted-foreground: oklch(0.72 0.028 42);
+        --accent: oklch(0.25 0.04 155);
+        --accent-foreground: oklch(0.94 0.018 42);
+        --destructive: oklch(0.66 0.18 25);
+        --border: oklch(0.90 0.02 42 / 14%);
+        --input: oklch(0.90 0.02 42 / 18%);
+        --ring: oklch(0.68 0.10 155);
+        --chart-1: oklch(0.72 0.14 42);
+        --chart-2: oklch(0.68 0.10 155);
+        --chart-3: oklch(0.68 0.10 248);
+        --chart-4: oklch(0.76 0.12 76);
+        --chart-5: oklch(0.72 0.10 290);
+        --code-bg: oklch(0.10 0.028 42);
+        --code-text: oklch(0.94 0.02 42);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 8px 26px rgba(48, 28, 12, 0.09); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(48, 28, 12, 0.05); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 82%, var(--chart-1) 18%);
+      box-shadow: 0 18px 44px rgba(48, 28, 12, 0.12);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block__label { color: var(--code-text); border-bottom: 1px solid oklch(1 0 0 / 12%); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; padding: 0.625rem 0.875rem; text-transform: uppercase; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 72%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(48, 28, 12, 0.06); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-size: 1.35rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.03em; }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 700; }
+    .badge { display: inline-flex; align-items: center; border-radius: 4px; padding: 0.15rem 0.45rem; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+    .badge--good { background: color-mix(in oklch, var(--chart-2) 18%, transparent); color: var(--chart-2); border: 1px solid color-mix(in oklch, var(--chart-2) 35%, transparent); }
+    .badge--bad { background: color-mix(in oklch, var(--destructive) 14%, transparent); color: var(--destructive); border: 1px solid color-mix(in oklch, var(--destructive) 30%, transparent); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 8% 0%, oklch(0.55 0.16 42 / 0.10) 0%, transparent 44%),
+        radial-gradient(ellipse at 92% 12%, oklch(0.62 0.12 155 / 0.08) 0%, transparent 36%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 220px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: clamp(2.1rem, 5vw, 4rem); font-weight: 700; letter-spacing: -0.04em; line-height: 1.02; margin-bottom: 1rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.875rem; margin-bottom: 2rem; line-height: 1.7; max-width: 58rem; }
+    .sec-head { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.04em; scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.68; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.35rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    strong { font-weight: 700; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    @media (max-width: 760px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .mermaid-wrap { display: flex; justify-content: center; margin: 1.25rem 0; overflow-x: auto; }
+    .mermaid { min-width: 0; }
+
+    .module-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin: 1rem 0; }
+    @media (max-width: 900px) { .module-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .module-grid { grid-template-columns: 1fr; } }
+    .module-chip {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.65rem 0.75rem;
+      background: color-mix(in oklch, var(--card) 80%, var(--muted) 20%);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--muted-foreground);
+    }
+    .module-chip strong { display: block; color: var(--foreground); font-size: 0.78rem; margin-bottom: 0.2rem; }
+
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 700px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; background: var(--card); }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; color: var(--chart-2); margin-bottom: 0.35rem; }
+    .step-card__title { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.4rem; }
+    .step-card__body { font-size: 0.875rem; color: var(--muted-foreground); line-height: 1.55; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">Contents</div>
+    <a href="#overview">概要</a>
+    <a href="#features">主要機能</a>
+    <a href="#architecture">構成</a>
+    <a href="#mcp">MCP 接続</a>
+    <a href="#agent-modes">エージェント連携</a>
+    <a href="#opensource">公開範囲</a>
+    <a href="#dev">開発</a>
+    <a href="#links">参照</a>
+  </nav>
+
+  <div class="main">
+    <h1>Palmier Pro</h1>
+    <p class="subtitle">palmier-io/palmier-pro — Swift ネイティブの macOS 動画エディタ。タイムライン編集と生成 AI を同一プロジェクト内で扱い、Claude / Cursor / Codex から MCP で操作できる。</p>
+
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> プロジェクト概要</span>
+      <p><a href="https://github.com/palmier-io/palmier-pro" target="_blank" rel="noopener">Palmier Pro</a> は、人間とエージェントが同じタイムライン上で動画を生成・編集するためのオープンソース動画エディタ。Premiere Pro を参照モデルにしつつ、生成 AI と MCP 連携をワークフローに組み込む。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">Swift 6.2</div>
+          <div class="ve-kpi-card__label">ネイティブ実装</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">macOS 26</div>
+          <div class="ve-kpi-card__label">Apple Silicon のみ</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">:19789</div>
+          <div class="ve-kpi-card__label">MCP HTTP ポート</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">GPLv3</div>
+          <div class="ve-kpi-card__label">エディタ本体</div>
+        </div>
+      </div>
+    </div>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 解決する課題</span>
+      <p>YC S24 の Palmier が社内で AI 動画制作を行う中で、Web 上の生成プラットフォームとデスクトップのタイムラインエディタの往復がボトルネックになっていた。生成 → ダウンロード → インポート → 差し替え編集のループと、バージョン管理の煩雑さが主な痛み。</p>
+      <p>Palmier Pro は<strong>タイムラインを単一のソース・オブ・トゥルース</strong>に据え、スクリプト作成・生成・編集のコンテキストを一か所に集約する。エージェントはアプリ内チャットまたは外部 MCP クライアントから同じツール群にアクセスできる。</p>
+      <div class="ve-callout">
+        <strong>対象プラットフォーム:</strong> macOS 26 (Tahoe) on Apple Silicon のみ。ログイン不要でエディタ本体と MCP サーバーは無料利用可能。生成 AI 機能はログインとサブスクリプションが必要。
+      </div>
+    </div>
+
+    <section id="features" class="sec-head">2 — 主要機能</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 3 つの柱</span>
+      <div class="step-flow">
+        <div class="step-card">
+          <div class="step-card__num">01</div>
+          <div class="step-card__title">Swift ネイティブ動画エディタ</div>
+          <div class="step-card__body">ゼロから Swift で構築。タイムライン・プレビュー・メディアパネル・エクスポートなど、従来型 NLE の骨格を持つ。エフェクト・トランジション・カラーグレード等は未実装。</div>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">02</div>
+          <div class="step-card__title">組み込み生成 AI</div>
+          <div class="step-card__body">Seedance、Kling、Nano Banana Pro などの SOTA モデルでタイムライン内から動画・画像を生成。処理パイプラインはクローズドソース。</div>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">03</div>
+          <div class="step-card__title">エージェント連携 (MCP)</div>
+          <div class="step-card__body">アプリ起動中に <code>http://127.0.0.1:19789/mcp</code> で HTTP MCP を公開。タイムライン読み取り・クリップ編集・メディア生成・トラック操作を外部エージェントから実行可能。</div>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">04</div>
+          <div class="step-card__title">mcpb バンドル</div>
+          <div class="step-card__body">Claude Desktop 向け Desktop Extension を同梱。<code>mcp-remote</code> プロキシ経由でローカル HTTP サーバーへ接続する Node エントリを <code>mcpb/</code> に配置。</div>
+        </div>
+      </div>
+    </div>
+
+    <section id="architecture" class="sec-head">3 — 構成</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> システム全体像</span>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+  subgraph clients["MCP クライアント"]
+    CC[Claude Code / Desktop]
+    CX[Codex]
+    CR[Cursor]
+    IN[アプリ内 Agent チャット]
+  end
+
+  subgraph bridge["ブリッジ層"]
+    MCPB[mcpb プロキシ<br/>mcp-remote]
+    HTTP["HTTP MCP<br/>127.0.0.1:19789/mcp"]
+  end
+
+  subgraph app["Palmier Pro (Swift)"]
+    TL[Timeline / Editor]
+    AG[Agent モジュール]
+    GEN[Generation<br/>クローズド]
+    PRJ[Project / MediaPanel]
+  end
+
+  CC --> MCPB
+  MCPB --> HTTP
+  CX --> HTTP
+  CR --> HTTP
+  IN --> AG
+  HTTP --> AG
+  AG --> TL
+  AG --> PRJ
+  GEN --> TL
+        </pre>
+      </div>
+      <h3>Swift パッケージ依存（抜粋）</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>パッケージ</th><th>用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>swift-sdk</code> (MCP)</td><td>アプリ内 MCP サーバー実装</td></tr>
+            <tr><td><code>DSWaveformImage</code></td><td>波形表示</td></tr>
+            <tr><td><code>Sparkle</code></td><td>自動アップデート</td></tr>
+            <tr><td><code>sentry-cocoa</code></td><td>エラートラッキング</td></tr>
+            <tr><td><code>clerk-ios</code> / <code>convex-swift</code></td><td>アカウント・バックエンド連携</td></tr>
+            <tr><td><code>swift-transformers</code></td><td>トークナイザー（SigLIP2 等）</td></tr>
+            <tr><td><code>lottie-ios</code></td><td>UI アニメーション</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>ソースモジュール（<code>Sources/PalmierPro/</code>）</h3>
+      <div class="module-grid">
+        <div class="module-chip"><strong>Timeline</strong>クリップ・トラック操作の中核</div>
+        <div class="module-chip"><strong>Editor / Preview</strong>編集 UI とプレビュー</div>
+        <div class="module-chip"><strong>Agent</strong>MCP ツールとチャット</div>
+        <div class="module-chip"><strong>Generation</strong>生成 AI 連携（処理は非公開）</div>
+        <div class="module-chip"><strong>Project</strong>プロジェクト・メディア管理</div>
+        <div class="module-chip"><strong>Export</strong>書き出し</div>
+        <div class="module-chip"><strong>MediaPanel</strong>メディアブラウザ</div>
+        <div class="module-chip"><strong>Inspector</strong>プロパティ編集</div>
+        <div class="module-chip"><strong>Help</strong>MCP インストール手順 UI</div>
+      </div>
+    </div>
+
+    <section id="mcp" class="sec-head">4 — MCP 接続</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 前提</span>
+      <p>Palmier Pro を起動し、プロジェクトを開いた状態で <code>http://127.0.0.1:19789/mcp</code> が応答する。Claude Desktop は <code>mcpb/</code> バンドル（<code>mcp-remote</code> プロキシ）経由で同じエンドポイントへ接続する。</p>
+
+      <h3>Claude Code</h3>
+      <div class="ve-code-block">
+        <div class="ve-code-block__label">bash</div>
+        <pre><code>claude mcp add --transport http palmier-pro http://127.0.0.1:19789/mcp</code></pre>
+      </div>
+
+      <h3>Codex</h3>
+      <div class="ve-code-block">
+        <div class="ve-code-block__label">bash</div>
+        <pre><code>codex mcp add palmier-pro --url http://127.0.0.1:19789/mcp</code></pre>
+      </div>
+
+      <h3>Cursor</h3>
+      <p>アプリ内 <code>Help → MCP Instructions → Install in Cursor</code> が最短。手動設定は <code>~/.cursor/mcp.json</code> に以下を追加:</p>
+      <div class="ve-code-block">
+        <div class="ve-code-block__label">json</div>
+        <pre><code>{
+  "mcpServers": {
+    "palmier-pro": {
+      "type": "http",
+      "url": "http://127.0.0.1:19789/mcp"
+    }
+  }
+}</code></pre>
+      </div>
+
+      <h3>Claude Desktop（mcpb）</h3>
+      <p><code>Help → MCP Instructions → Install in Claude Desktop</code> で Desktop Extension をワンクリック導入。バンドル内の Node エントリは <code>mcp-remote</code> を起動し、ローカル HTTP MCP へプロキシする:</p>
+      <div class="ve-code-block">
+        <div class="ve-code-block__label">mcpb/server/index.js（要約）</div>
+        <pre><code>process.argv = [
+  process.argv[0], 'mcp-remote',
+  'http://127.0.0.1:19789/mcp',
+  '--allow-http', '--transport', 'http-only'
+];
+require('mcp-remote/dist/proxy.js');</code></pre>
+      </div>
+    </div>
+
+    <section id="agent-modes" class="sec-head">5 — エージェント連携</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> MCP サーバー vs アプリ内チャット</span>
+      <p>同一のプロンプトとツール群を共有するが、UX と課金モデルが異なる。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>観点</th><th>外部 MCP（Claude / Cursor / Codex）</th><th>アプリ内チャット</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>料金</td><td><span class="badge badge--good">無料</span>（MCP サーバー自体）</td><td>BYOK またはサブスクリプション</td></tr>
+            <tr><td>メディア参照</td><td>ツール経由</td><td><code>@</code> でメディアを直接参照（生成イテレーション向き）</td></tr>
+            <tr><td>コンテキスト</td><td>クライアント側のメモリ・Web 検索を活用</td><td>タイムライン直上でコンテキストウィンドウを制御</td></tr>
+            <tr><td>連携例</td><td>Slack MCP + Epidemic Sound MCP と併用</td><td>編集作業中のコンテキスト切替が少ない</td></tr>
+            <tr><td>対応モデル</td><td>MCP 経由で各クライアントのモデル</td><td>現状 Anthropic のみ（アプリ内）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>MCP 連携のユースケース例</h3>
+      <ul>
+        <li>Claude で脚本を書き、同じ会話から Palmier Pro 内で動画を生成する</li>
+        <li>Epidemic Sound MCP で効果音を取得し、Palmier Pro MCP でタイムラインに配置する</li>
+        <li>Slack の #marketing からアイデアを取得し、プロトタイプ動画を素早く組む</li>
+      </ul>
+    </div>
+
+    <section id="opensource" class="sec-head">6 — 公開範囲</section>
+    <div class="ve-card ve-card--recessed" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> オープン vs クローズド</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>領域</th><th>ライセンス</th><th>備考</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>動画エディタ（生成 AI 除く）</td><td><span class="badge badge--good">GPLv3</span></td><td>完全オープンソース</td></tr>
+            <tr><td>MCP サーバー</td><td><span class="badge badge--good">オープン</span></td><td>無料利用可</td></tr>
+            <tr><td>エージェントチャット</td><td><span class="badge badge--good">オープン</span></td><td>UI は公開、生成処理は別</td></tr>
+            <tr><td>生成 AI 処理</td><td><span class="badge badge--bad">クローズド</span></td><td>クラウド処理・サブスク</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout">
+        <strong>未実装の編集機能:</strong> エフェクト、トランジション、カラーグレード、マスキング、グラフィックス。AI 機能なしではミニマルな NLE だが、コミュニティ改善のためエディタ本体は無料公開している。
+      </div>
+    </div>
+
+    <section id="dev" class="sec-head">7 — 開発</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ビルド手順</span>
+      <p><strong>前提:</strong> macOS 26+、Xcode 16+、Swift 6.2 toolchain。</p>
+      <div class="ve-code-block">
+        <div class="ve-code-block__label">bash — 基本ビルド</div>
+        <pre><code>git clone https://github.com/palmier-io/palmier-pro
+cd palmier-pro
+swift build
+swift run</code></pre>
+      </div>
+      <p>デバッグ用 <code>.app</code> バンドルと OSLog ストリーム:</p>
+      <div class="ve-code-block">
+        <div class="ve-code-block__label">bash — scripts/dev.sh</div>
+        <pre><code>./scripts/dev.sh</code></pre>
+      </div>
+      <div class="ve-callout">
+        <strong>コントリビューション:</strong> 大規模な無依頼 PR はレビュー帯域の都合で受けにくい。Issue ベースのバグ報告・機能要望が推奨される（<code>CONTRIBUTING.md</code>）。
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">8 — 参照</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/palmier-io/palmier-pro" target="_blank" rel="noopener">GitHub: palmier-io/palmier-pro</a> — ソースリポジトリ</li>
+        <li><a href="https://github.com/palmier-io/palmier-pro/releases/latest/download/PalmierPro.dmg" target="_blank" rel="noopener">最新 DMG ダウンロード</a></li>
+        <li><a href="https://palmier.io" target="_blank" rel="noopener">palmier.io</a> — プロダクトサイト</li>
+        <li><a href="https://github.com/modelcontextprotocol/mcpb" target="_blank" rel="noopener">mcpb</a> — Claude Desktop Extension 形式</li>
+        <li><a href="https://discord.com/invite/SMVW6pKYmg" target="_blank" rel="noopener">Discord コミュニティ</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
