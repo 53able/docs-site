@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LazyCodex — Codex 向け OmO エージェントハーネス</title>
+  <meta name="description" content="code-yeongyu/lazycodex の技術概要。npx lazycodex-ai install で OmO を Codex に導入し、$ulw-plan / $start-work / $ulw-loop とスキル・フック・マルチモデルルーティングで複雑なコードベースを扱う。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="LazyCodex — Codex 向け OmO エージェントハーネス">
+  <meta property="og:description" content="npx lazycodex-ai install で OmO を Codex に導入。計画・実行・検証完了までを $ コマンドとスキルで扱う配布レイヤ。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/lazycodex.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="LazyCodex — Codex 向け OmO エージェントハーネス">
+  <meta name="twitter:description" content="OmO を Codex 向けにパッケージ化した lazycodex-ai。インストール手順、コマンド、スキル、アーキテクチャ。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    /* ============ THEME (Warm terracotta) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.008 85);
+      --foreground: oklch(0.18 0.03 45);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.18 0.03 45);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.18 0.03 45);
+      --primary: oklch(0.32 0.08 42);
+      --primary-foreground: oklch(0.98 0.01 85);
+      --secondary: oklch(0.96 0.02 85);
+      --secondary-foreground: oklch(0.22 0.04 42);
+      --muted: oklch(0.95 0.018 80);
+      --muted-foreground: oklch(0.48 0.04 55);
+      --accent: oklch(0.94 0.035 72);
+      --accent-foreground: oklch(0.22 0.05 38);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.025 75);
+      --input: oklch(0.88 0.025 75);
+      --ring: oklch(0.62 0.12 42);
+      --chart-1: oklch(0.55 0.16 42);
+      --chart-2: oklch(0.62 0.12 155);
+      --chart-3: oklch(0.45 0.10 248);
+      --chart-4: oklch(0.72 0.14 72);
+      --chart-5: oklch(0.58 0.14 25);
+      --code-bg: var(--muted);
+      --code-text: #5c2e12;
+      --font-body: 'Fraunces', Georgia, 'Times New Roman', serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.02 42);
+        --foreground: oklch(0.94 0.015 85);
+        --card: oklch(0.18 0.025 40);
+        --card-foreground: oklch(0.94 0.015 85);
+        --popover: oklch(0.18 0.025 40);
+        --popover-foreground: oklch(0.94 0.015 85);
+        --primary: oklch(0.82 0.10 72);
+        --primary-foreground: oklch(0.16 0.03 42);
+        --secondary: oklch(0.22 0.03 40);
+        --secondary-foreground: oklch(0.94 0.015 85);
+        --muted: oklch(0.24 0.03 38);
+        --muted-foreground: oklch(0.68 0.04 70);
+        --accent: oklch(0.26 0.04 38);
+        --accent-foreground: oklch(0.94 0.015 85);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.62 0.12 42);
+        --chart-1: oklch(0.72 0.14 55);
+        --chart-2: oklch(0.68 0.14 155);
+        --chart-3: oklch(0.62 0.12 248);
+        --chart-4: oklch(0.78 0.12 72);
+        --chart-5: oklch(0.70 0.14 25);
+        --code-bg: #1a1410;
+        --code-text: #e8c4a0;
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 6px 24px rgba(80, 40, 20, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(80, 40, 20, 0.1);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.84rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); font-size: 0.76rem; }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 60%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(80, 40, 20, 0.06); min-width: 0; }
+    .ve-kpi-card__value { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.5rem; line-height: 1.1; color: var(--chart-1); overflow-wrap: anywhere; }
+    .ve-kpi-card__label { display: block; font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.45rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.55 0.16 42 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.55 0.16 42 / 0.12) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.82rem; margin-bottom: 2rem; max-width: 58rem; line-height: 1.7; }
+    .sec-head { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.02em; scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.95rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.95rem; line-height: 1.65; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.78rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8rem; margin: 1rem 0; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.65rem; border-radius: var(--radius-sm); font-family: var(--font-mono); border: 1px solid var(--border); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin: 1rem 0; overflow-x: auto; }
+    .badge { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.5rem; font-family: var(--font-mono); font-size: 0.65rem; font-weight: 600; color: var(--primary); background: color-mix(in oklch, var(--card) 70%, var(--chart-1) 30%); margin: 0.1rem 0.2rem 0.1rem 0; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">Contents</div>
+    <a href="#overview">概要</a>
+    <a href="#install">インストール</a>
+    <a href="#commands">コマンド</a>
+    <a href="#workflows">ワークフロー</a>
+    <a href="#skills">スキルとエージェント</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#routing">モデルルーティング</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>LazyCodex</h1>
+    <p class="subtitle">Codex 向けに <a href="https://github.com/code-yeongyu/oh-my-openagent" target="_blank" rel="noopener">oh-my-openagent（OmO）</a> をパッケージ化したエージェントハーネス。npm パッケージ <code>lazycodex-ai</code> が <code>npx</code> 経由で OmO の Codex インストーラを呼び出す。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> プロジェクトの位置づけ</span>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">OmO</span>
+          <span class="ve-kpi-card__label">コアエンジン</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">Codex</span>
+          <span class="ve-kpi-card__label">対象プラットフォーム</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">$</span>
+          <span class="ve-kpi-card__label">スキル・コマンド接頭辞</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">0</span>
+          <span class="ve-kpi-card__label">グローバル install 不要</span>
+        </div>
+      </div>
+      <p>LazyCodex は複雑なコードベース向けのエージェントハーネスを、Codex 上でそのまま使える形にまとめた配布レイヤ。プロジェクトメモリ、計画、実行、検証完了までをスキル・フック・マルチエージェントで扱う。LazyVim が lazy.nvim をまとめたのと同様に、OmO の品質バーを Codex ユーザー向けに一括導入する。</p>
+      <p>公開サイトは <a href="https://lazycodex.ai" target="_blank" rel="noopener">lazycodex.ai</a>。詳細ドキュメントも同ドメイン配下。</p>
+    </div>
+
+    <section id="install" class="sec-head">2 — インストール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 推奨: npx インストーラ</span>
+      <p>グローバル install は不要。<code>npx</code> で常に最新の OmO インストーラを呼ぶ。</p>
+      <div class="ve-code-block"><pre><code>npx lazycodex-ai install</code></pre></div>
+      <p>内部では <code>npx --yes --package oh-my-openagent omo install --platform=codex</code> に相当する。TUI なし・自律モード:</p>
+      <div class="ve-code-block"><pre><code>npx lazycodex-ai install --no-tui --codex-autonomous</code></pre></div>
+      <p><code>bin/lazycodex-ai.js</code> は <code>install</code> 以外のサブコマンドも <code>oh-my-openagent</code> の <code>omo</code> CLI へ透過的に転送する。</p>
+
+      <h3>インストール確認と削除</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>コマンド</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>npx lazycodex-ai doctor</code></td><td>プラグインキャッシュ、フック、MCP、エージェント、設定の健全性レポート</td></tr>
+            <tr><td><code>npx lazycodex-ai uninstall</code></td><td>プラグインキャッシュ・bin リンク・エージェントロール・<code>~/.codex/config.toml</code> の管理セクションを削除</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>実験的: Codex マーケットプレイス</h3>
+      <p>主経路は npx のまま。Codex 内 <code>/plugins</code> または CLI からマーケットプレイス <code>sisyphuslabs</code> 経由でも <code>omo</code> を追加できる。</p>
+      <div class="ve-code-block"><pre><code>codex plugin marketplace add https://github.com/code-yeongyu/lazycodex
+codex plugin add omo@sisyphuslabs</code></pre></div>
+      <div class="ve-callout">
+        <strong>フック承認:</strong> マーケットプレイス経路では起動時レビューで omo フックを承認するまでフックは動かない。初回承認後はバックグラウンドで bootstrap が走り、完了後にセッション再起動が必要。自律モードは明示的に <code>--codex-autonomous</code> を選ぶ。
+      </div>
+    </div>
+
+    <section id="commands" class="sec-head">3 — コマンド</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Codex コンポーザで呼ぶ $ コマンド</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>入力</th><th>概要</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>$ulw-loop "task" [--completion-promise=TEXT] [--strategy=reset|continue]</code></td>
+              <td>Oracle 検証付きの自己参照ループ。ultrawork モードは最大 500 反復、通常は 100 反復で打ち切り。</td>
+            </tr>
+            <tr>
+              <td><code>$ulw-plan "what to build"</code></td>
+              <td>Prometheus 戦略プランナー。<code>plans/&lt;slug&gt;.md</code> に計画を書き、プロダクトコードは変更しない。</td>
+            </tr>
+            <tr>
+              <td><code>$start-work [plan-name] [--worktree &lt;path&gt;]</code></td>
+              <td>計画のチェックリストを Boulder 進捗で実行し、全項目完了で <strong>ORCHESTRATION COMPLETE</strong> を出力。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Composer で <code>$</code> を入力するとインストール済みスキル一覧（<code>init-deep</code>、<code>ulw-loop</code> など）が開く。セッション中のフックは <code>LazyCodex(&lt;version&gt;): ...</code> 形式でステータスを表示する。</p>
+    </div>
+
+    <section id="workflows" class="sec-head">4 — ワークフロー</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 典型的な作業の流れ</span>
+      <div class="pipeline">
+        <span class="step">$init-deep</span>
+        <span class="arrow">→</span>
+        <span class="step">$ulw-plan</span>
+        <span class="arrow">→</span>
+        <span class="step">$start-work</span>
+        <span class="arrow">→</span>
+        <span class="step">$ulw-loop / review-work</span>
+      </div>
+      <ol>
+        <li><strong>プロジェクトメモリ:</strong> <code>$init-deep</code> が階層的 <code>AGENTS.md</code> を生成。複雑なディレクトリをスコアリングし、コード近傍にガイダンスを置く。</li>
+        <li><strong>計画:</strong> 実装前に判断が要るとき <code>$ulw-plan</code>。出力は <code>plans/</code> 配下の Markdown のみ。</li>
+        <li><strong>実行:</strong> 計画が固まったら <code>$start-work</code>。チェックリストを durable な進捗で消化する。</li>
+        <li><strong>検証完了:</strong> 証拠ベースで終わらせるとき <code>$ulw-loop</code>。実装後の多角的レビューは <code>review-work</code> スキル。</li>
+      </ol>
+      <div class="ve-callout">
+        <strong>使い分け:</strong> 計画だけ → <code>$ulw-plan</code>。計画済みの一括実行 → <code>$start-work</code>。終了条件が曖昧な反復作業 → <code>$ulw-loop</code>。
+      </div>
+    </div>
+
+    <section id="skills" class="sec-head">5 — スキルとエージェント</section>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> インストールされる主なスキル</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>スキル</th><th>用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>$init-deep</code></td><td>階層的 <code>AGENTS.md</code> によるプロジェクトメモリ</td></tr>
+            <tr><td><code>review-work</code></td><td>実装後の多角的レビュー</td></tr>
+            <tr><td><code>remove-ai-slops</code></td><td>挙動を変えず AI 臭のあるコードを整理</td></tr>
+            <tr><td><code>frontend-ui-ux</code></td><td>UI 面の仕上げ</td></tr>
+            <tr><td><code>programming</code></td><td>TypeScript / Rust / Python / Go の厳格な実装規律</td></tr>
+            <tr><td><code>LSP</code></td><td>診断・定義・参照・シンボル・リネーム</td></tr>
+            <tr><td><code>AST-grep</code></td><td>構造的検索・書き換え（MCP ではなくスキルとして同梱）</td></tr>
+            <tr><td><code>rules</code></td><td>AGENTS / rules / instruction ファイルからのプロジェクト指示</td></tr>
+            <tr><td><code>comment-checker</code></td><td>編集系操作後のフィードバック</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>サブエージェントロール</h3>
+      <p><code>~/.codex/agents/</code> にロールが展開される。Codex の <code>spawn_agent</code> で <code>agent_type</code> を指定して子エージェントを起動する。</p>
+      <div class="ve-code-block"><pre><code>spawn_agent({
+  "message": "TASK: map the auth flow end to end.",
+  "agent_type": "explorer"
+})</code></pre></div>
+      <p>利用可能なロール例: <span class="badge">explorer</span> <span class="badge">librarian</span> <span class="badge">plan</span> <span class="badge">momus</span> <span class="badge">metis</span> <span class="badge">codex-ultrawork-reviewer</span></p>
+      <p><code>agent_type</code> パラメータが無い Codex ビルドでは、<code>message</code> 内でロールを記述するフォールバックにスキル側が対応する。</p>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> omo プラグイン構成（抜粋）</span>
+      <p>ローカル Codex プラグイン名は <code>omo</code>。内部コンポーネントは <code>components/</code> 配下で分離されている。</p>
+      <ul>
+        <li><code>ulw-loop</code> / <code>ultrawork</code> — ループと ultrawork モード</li>
+        <li><code>lsp</code> / <code>lsp-daemon</code> / <code>lsp-tools-mcp</code> — LSP 連携</li>
+        <li><code>rules</code> / <code>comment-checker</code> — 指示と編集後チェック</li>
+        <li><code>bootstrap</code> — 初回セットアップ（config、エージェントロール、<code>sg</code> バイナリなど）</li>
+        <li><code>telemetry</code> — 匿名 DAU イベント（オプトアウト可能）</li>
+      </ul>
+      <p>テレメトリはプロンプト・ソースファイル・パスを送らない。無効化例:</p>
+      <div class="ve-code-block"><pre><code>export OMO_CODEX_DISABLE_POSTHOG=1
+export OMO_CODEX_SEND_ANONYMOUS_TELEMETRY=0</code></pre></div>
+    </div>
+
+    <section id="architecture" class="sec-head">6 — アーキテクチャ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> リポジトリ構成</span>
+      <p>LazyCodex 本体は薄い配布レイヤ。コアは <code>src/</code> サブモジュールの oh-my-openagent。</p>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TB
+  subgraph dist["lazycodex（配布）"]
+    BIN["bin/lazycodex-ai.js\nnpx エントリ"]
+    PKG["package.json\nlazycodex-ai"]
+    WEB["packages/web\nNext.js 15 + Tailwind v4"]
+    PLG["plugins/omo\nCodex プラグイン omo"]
+  end
+  subgraph core["コアエンジン"]
+    OMO["src/ → oh-my-openagent"]
+  end
+  BIN -->|"spawnSync npx omo"| OMO
+  PKG --> BIN
+  PLG -->|"install 時に展開"| OMO
+  WEB -->|"lazycodex.ai"| CF["Cloudflare Workers"]
+        </pre>
+      </div>
+      <div class="ve-code-block"><pre><code>lazycodex/
+├── src/                     → oh-my-openagent（submodule）
+├── packages/
+│   └── web/                 → Next.js 15 + Tailwind v4（lazycodex.ai）
+├── plugins/omo/             → Codex 向け omo プラグイン
+├── bin/lazycodex-ai.js      → npx エントリ
+└── package.json</code></pre></div>
+      <p><a href="https://omo.dev" target="_blank" rel="noopener">omo.dev</a> プロジェクトの一部として、OmO を Codex 向けにパッケージした製品線。</p>
+    </div>
+
+    <section id="routing" class="sec-head">7 — モデルルーティング</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> タスク別モデル選択</span>
+      <p>OmO は全サブタスクに最上位モデルを使い続けない。タスクカテゴリとフォールバックチェーンでモデルを切り替え、クォータを抑えつつ品質を保つ。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>カテゴリ</th><th>向き</th><th>例（README 記載）</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>quick</code></td><td>小さな編集・軽量作業</td><td><code>gpt-5.4-mini</code></td></tr>
+            <tr><td><code>ultrabrain</code></td><td>難しい論理・深い推論</td><td>高推論 GPT（<code>xhigh</code> 等）</td></tr>
+            <tr><td>agentic coding</td><td>ツール連鎖・実装</td><td><code>gpt-5.3-codex</code> など Codex 向けモデル</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>定義の参照元は OmO 側の <code>openai-categories.ts</code> と <code>model-requirements.ts</code>。セッション中に複数の GPT 系モデル名が出ても、ベンチマーク駆動の意図的ルーティングである。</p>
+    </div>
+
+    <section id="links" class="sec-head">8 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/code-yeongyu/lazycodex" target="_blank" rel="noopener">GitHub: code-yeongyu/lazycodex</a> — 本リポジトリ（npm: <code>lazycodex-ai</code>）</li>
+        <li><a href="https://lazycodex.ai" target="_blank" rel="noopener">lazycodex.ai</a> — 製品サイト・ドキュメント</li>
+        <li><a href="https://github.com/code-yeongyu/oh-my-openagent" target="_blank" rel="noopener">oh-my-openagent</a> — コアエンジン（OmO）</li>
+        <li><a href="https://omo.dev" target="_blank" rel="noopener">omo.dev</a> — プロジェクトハブ</li>
+        <li><a href="https://sisyphuslabs.ai" target="_blank" rel="noopener">Sisyphus Labs</a> — 保守・Jobdori（OmO ビルド担当）</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

@@ -260,6 +260,7 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
+    <a href="#invocation">呼び出しモデル</a>
     <a href="#routes">失敗モード別ルート</a>
     <a href="#setup">セットアップ契約</a>
     <a href="#quality">品質ループ</a>
@@ -278,12 +279,13 @@
       <span class="ve-section-label"><span class="ve-dot"></span> Operating model</span>
       <p><strong>mattpocock/skills</strong> は、Claude Code などのエージェントに読み込ませる小さなスキル集。リポジトリ全体のプロセスを奪うのではなく、計画確認、共有語彙、TDD、診断、トリアージ、設計改善という「事故りやすい瞬間」にだけ介入する。</p>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">12</span><span class="ve-kpi-card__label">plugin entries</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">9</span><span class="ve-kpi-card__label">engineering skills</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">productivity skills</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">17</span><span class="ve-kpi-card__label">plugin entries</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">12</span><span class="ve-kpi-card__label">user-invoked</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">5</span><span class="ve-kpi-card__label">model-invoked</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">setup contract</span></div>
       </div>
-      <p class="source-note">Source: <code>README.md</code>, <code>.claude-plugin/plugin.json</code>, <code>docs/adr/0001-...</code></p>
+      <p>入口は <code>/ask-matt</code>。状況に合う user-invoked スキルへルーティングする。</p>
+      <p class="source-note">Source: <code>README.md</code>, <code>.claude-plugin/plugin.json</code>, <code>docs/invocation.md</code></p>
     </div>
     <div class="hero-side">
       <div class="ve-card ve-card--elevated" style="--i:1">
@@ -296,7 +298,25 @@
     </div>
   </div>
 
-  <section id="routes" class="sec-head">2 — 失敗モード別ルート</section>
+  <section id="invocation" class="sec-head">2 — 呼び出しモデル</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> User-invoked vs model-invoked</span>
+    <p>v1.0 以降、スキルは <strong>誰が到達できるか</strong> で分類される。旧来の Commands / Skills 区分は廃止。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>種別</th><th>到達方法</th><th>description の向き</th><th>例</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge badge--hard">user-invoked</span></td><td>人間が slash 名を入力したときのみ</td><td>人間向けの一行要約（<code>disable-model-invocation: true</code>）</td><td><code>/grill-me</code>, <code>/to-prd</code>, <code>/ask-matt</code></td></tr>
+          <tr><td><span class="badge badge--soft">model-invoked</span></td><td>人間またはエージェントの自動選択</td><td>モデル向けトリガー文（"Use when…"）</td><td><code>/tdd</code>, <code>/domain-modeling</code>, <code>/grilling</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>user-invoked は model-invoked を呼べるが、別の user-invoked は呼べない。共有語彙は <code>/codebase-design</code> と <code>/domain-modeling</code> に集約され、<code>improve-codebase-architecture</code> や <code>grill-with-docs</code> が参照する。</p>
+  </div>
+
+  <section id="routes" class="sec-head">3 — 失敗モード別ルート</section>
   <div class="route-grid">
     <div class="ve-card route-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> Misalignment</span>
@@ -313,18 +333,18 @@
     <div class="ve-card route-card" style="--i:2">
       <span class="ve-section-label"><span class="ve-dot"></span> Broken output</span>
       <h3>Code doesn't work</h3>
-      <p>エージェントが動くフィードバックループを持っていない。<code>/tdd</code> は vertical slice で RED/GREEN を作り、<code>/diagnose</code> は再現信号から原因へ進む。</p>
-      <p class="source-note">Main skills: <code>tdd</code>, <code>diagnose</code></p>
+      <p>エージェントが動くフィードバックループを持っていない。<code>/tdd</code> は vertical slice で RED/GREEN を作り、<code>/diagnosing-bugs</code> は再現信号から原因へ進む。</p>
+      <p class="source-note">Main skills: <code>tdd</code>, <code>diagnosing-bugs</code></p>
     </div>
     <div class="ve-card route-card" style="--i:3">
       <span class="ve-section-label"><span class="ve-dot"></span> Entropy</span>
       <h3>Ball of mud</h3>
-      <p>生成速度が設計負債も加速している。<code>/to-prd</code> と <code>/to-issues</code> で薄い slice に分け、<code>/improve-codebase-architecture</code> で deep module 候補を探す。</p>
-      <p class="source-note">Main skills: <code>to-prd</code>, <code>to-issues</code>, <code>improve-codebase-architecture</code></p>
+      <p>生成速度が設計負債も加速している。<code>/to-prd</code> は触る module を確認してから PRD を作り、<code>/to-issues</code> で vertical slice に分ける。<code>/prototype</code> で捨て UI/CLI を試し、<code>/improve-codebase-architecture</code> で deep module 候補を探す。</p>
+      <p class="source-note">Main skills: <code>to-prd</code>, <code>to-issues</code>, <code>prototype</code>, <code>improve-codebase-architecture</code></p>
     </div>
   </div>
 
-  <section id="setup" class="sec-head">3 — セットアップ契約</section>
+  <section id="setup" class="sec-head">4 — セットアップ契約</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> Hard vs soft dependency</span>
     <p><code>/setup-matt-pocock-skills</code> は、他の engineering skills が共有する repo 固有の契約を作る。ADR は依存を 2 種類に分ける。Issue tracker や label mapping がないと誤った外部操作になるスキルは hard。domain docs がなくても動くが出力が鈍るだけのスキルは soft。</p>
@@ -335,7 +355,7 @@
         </thead>
         <tbody>
           <tr><td><span class="badge badge--hard">hard</span></td><td><code>to-issues</code>, <code>to-prd</code>, <code>triage</code></td><td>Issue tracker と triage label vocabulary</td><td>Issue 作成先や label が間違う</td></tr>
-          <tr><td><span class="badge badge--soft">soft</span></td><td><code>diagnose</code>, <code>tdd</code>, <code>improve-codebase-architecture</code>, <code>zoom-out</code></td><td>domain glossary と ADR</td><td>動くが、語彙と判断が浅くなる</td></tr>
+          <tr><td><span class="badge badge--soft">soft</span></td><td><code>diagnosing-bugs</code>, <code>tdd</code>, <code>improve-codebase-architecture</code>, <code>codebase-design</code>, <code>domain-modeling</code></td><td>domain glossary と ADR</td><td>動くが、語彙と判断が浅くなる</td></tr>
         </tbody>
       </table>
     </div>
@@ -370,10 +390,10 @@
     </div>
   </div>
 
-  <section id="quality" class="sec-head">4 — 品質ループ</section>
+  <section id="quality" class="sec-head">5 — 品質ループ</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> Feedback first</span>
-    <p><code>/diagnose</code> の中心は「まず高速で決定的な pass/fail signal を作る」こと。<code>/tdd</code> は一括で全テストを書く horizontal slice を避け、1つの振る舞いを RED → GREEN で通す。</p>
+    <p><code>/diagnosing-bugs</code> の中心は「まず高速で決定的な pass/fail signal を作る」こと。<code>/tdd</code> は一括で全テストを書く horizontal slice を避け、1つの振る舞いを RED → GREEN で通す。interface 設計の語彙は <code>/codebase-design</code> に委譲する。</p>
     <div class="rail">
       <div class="rail__item" style="--i:0"><strong>Signal</strong>test / CLI / browser / harness</div>
       <div class="rail__item" style="--i:1"><strong>Reproduce</strong>user symptom を確認</div>
@@ -399,7 +419,7 @@
     </div>
   </div>
 
-  <section id="issue-flow" class="sec-head">5 — Issue 化フロー</section>
+  <section id="issue-flow" class="sec-head">6 — Issue 化フロー</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> PRD to slices</span>
     <p><code>/to-prd</code> は会話とコード理解を PRD にまとめ、<code>/to-issues</code> は tracer bullet の vertical slice に分解する。slice は schema/API/UI/tests の層ではなく、完了したら単体で demoable な細い経路として切る。</p>
@@ -444,10 +464,10 @@
     </div>
   </div>
 
-  <section id="architecture" class="sec-head">6 — 設計レビュー</section>
+  <section id="architecture" class="sec-head">7 — 設計レビュー</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> Deepening opportunities</span>
-    <p><code>/improve-codebase-architecture</code> は、浅い module を深くする候補を探す。目的は美しい抽象化ではなく、<strong>locality</strong> と <strong>leverage</strong>。bug、変更、知識が散らばる場所を見つけ、interface の後ろに実装の複雑さを隠せるかを見る。</p>
+    <p><code>/improve-codebase-architecture</code> は、浅い module を深くする候補を探す。語彙は <code>/codebase-design</code>、ドメインモデルは <code>/domain-modeling</code> から借りる。目的は美しい抽象化ではなく、<strong>locality</strong> と <strong>leverage</strong>。bug、変更、知識が散らばる場所を見つけ、interface の後ろに実装の複雑さを隠せるかを見る。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
@@ -463,18 +483,23 @@
     </div>
   </div>
   <div class="ve-callout" style="--i:1">
-    <strong>運用のコツ:</strong> 実装前は <code>grill-with-docs</code>、実装中は <code>tdd</code>、壊れたら <code>diagnose</code>、作業を外に渡すなら <code>to-issues</code>、泥団子化したら <code>improve-codebase-architecture</code>。順番より、失敗モードへの適合が大事。
+    <strong>運用のコツ:</strong> 迷ったら <code>/ask-matt</code>。実装前は <code>grill-with-docs</code>、実装中は <code>tdd</code>、壊れたら <code>diagnosing-bugs</code>、作業を外に渡すなら <code>to-issues</code>、泥団子化したら <code>improve-codebase-architecture</code>。順番より、失敗モードへの適合が大事。
   </div>
 
-  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <section id="links" class="sec-head">8 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> Source references</span>
     <ul class="link-list">
       <li><a href="https://github.com/mattpocock/skills" target="_blank" rel="noopener">GitHub: mattpocock/skills</a> — Skills For Real Engineers</li>
       <li><code>README.md</code> — 目的、Quickstart、4つの失敗モード、スキル一覧</li>
-      <li><code>.claude-plugin/plugin.json</code> — Claude plugin として公開される 12 entries</li>
+      <li><code>.claude-plugin/plugin.json</code> — Claude plugin として公開される 17 entries</li>
+      <li><code>docs/invocation.md</code> — user-invoked / model-invoked の定義と依存の書き方</li>
+      <li><code>skills/engineering/ask-matt/SKILL.md</code> — user-invoked スキルへのルーター</li>
+      <li><code>skills/engineering/codebase-design/SKILL.md</code> — deep module 語彙（module, interface, seam, depth）</li>
+      <li><code>skills/engineering/domain-modeling/SKILL.md</code> — CONTEXT.md と ADR の能動的更新</li>
       <li><code>skills/engineering/tdd/SKILL.md</code> — vertical slice の RED/GREEN loop</li>
-      <li><code>skills/engineering/diagnose/SKILL.md</code> — feedback loop first の診断手順</li>
+      <li><code>skills/engineering/diagnosing-bugs/SKILL.md</code> — feedback loop first の診断手順（旧 <code>/diagnose</code>）</li>
+      <li><code>skills/productivity/writing-great-skills/SKILL.md</code> — スキル執筆の参照（旧 write-a-skill）</li>
       <li><code>docs/adr/0001-explicit-setup-pointer-only-for-hard-dependencies.md</code> — hard / soft dependency の判断</li>
     </ul>
   </div>

@@ -9,7 +9,7 @@ A cloned repository under `repos` that is used as the source material for one vi
 _Avoid_: Input, target, arbitrary repository
 
 **Source Acquisition**:
-The step that ensures the source repository exists locally and is fast-forwarded when it was already cloned.
+The step that ensures the source repository exists locally and is synchronized to the latest `origin/HEAD` default branch when it was already cloned.
 _Avoid_: Shallow sync, unchecked local reuse
 
 **Source Inventory**:
@@ -17,8 +17,8 @@ The scan output that summarizes the source repository structure and key files be
 _Avoid_: Full source dump, independent scanner
 
 **Blocked Source Repository**:
-A source repository that cannot be safely used because its local git state prevents a clean fast-forward acquisition.
-_Avoid_: Auto-stashed source, fallback clone
+A source repository that cannot be used because it is not a valid git clone with an `origin` remote.
+_Avoid_: Dirty-tree stop, fast-forward-only gate
 
 **Single Repository Workflow**:
 A workflow that takes exactly one selected repository under `repos` as the source and produces a reviewed documentation update.
@@ -99,7 +99,7 @@ _Avoid_: Finished publication, direct publish
 ## Relationships
 
 - A GitHub URL or existing `repos` path is normalized into exactly one **Source Repository**
-- **Source Acquisition** creates or fast-forwards exactly one **Source Repository**
+- **Source Acquisition** creates or synchronizes exactly one **Source Repository**
 - **Source Acquisition** stops when it encounters a **Blocked Source Repository**
 - A **Single Repository Workflow** runs against exactly one **Source Repository**
 - A **Single Repository Workflow** starts from exactly one **Requested Documentation Run**
@@ -138,8 +138,8 @@ _Avoid_: Finished publication, direct publish
 - "保存するもの" could mix reusable decisions with per-run handoffs; resolved: reusable decisions belong in a **Workflow Design Document**, while per-run handoffs remain unversioned.
 - "CLIモード" could expand into authoring, PR, and deployment; resolved: the first version has **Prepare Mode** and **Validate Mode** only.
 - "検証" could include auto-remediation; resolved: **Validate Mode** only emits **Validation Findings**.
-- "取得" could mean shallow clone, full clone, pull, or local reuse; resolved: **Source Acquisition** uses full clone for new sources and fast-forward pull for existing sources.
-- "取得失敗" could trigger stash, fallback clone, or unsafe reuse; resolved: a dirty or non-fast-forward source becomes a **Blocked Source Repository**.
+- "取得" could mean shallow clone, full clone, pull, or local reuse; resolved: **Source Acquisition** uses full clone for new sources and forced `origin/HEAD` synchronization for existing sources.
+- "取得失敗" could trigger stash, fallback clone, or unsafe reuse; resolved: fetch or sync failures return explicit errors, while missing `.git` or `origin` becomes a **Blocked Source Repository**.
 - "命名" could mean final branch creation or doc creation; resolved: the **Workflow CLI** only emits a **Naming Suggestion**.
 - "検証範囲" could mean a shallow existence check; resolved: **Validate Mode** evaluates the full **Review Gate** before review handoff.
 - "`validate --doc` input" could require an exact path or a slug; resolved: **Document Path Normalization** accepts common forms and resolves them to one canonical path.

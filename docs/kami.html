@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kami — tw93/kami 文書組版スキル</title>
-  <meta name="description" content="tw93/kami のビジュアル解説。パーチメント地とインクブル一色のルール、八つの文書テンプレ、エージェント向けの組版フローを整理する。">
+  <meta name="description" content="tw93/kami のビジュアル解説。パーチメント地とインクブル一色のルール、九つの文書テンプレ（Landing Page 含む）、エージェント向けの組版フローを整理する。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Kami — tw93/kami 文書組版スキル">
-  <meta property="og:description" content="八テンプレ、パーチメント＋インクブル、Kaku・Waza・Kami のうち「紙」担当。組版フローと CLI を短くまとめた。">
+  <meta property="og:description" content="九テンプレ、Landing Page、パーチメント＋インクブル。Kaku・Waza・Kami のうち「紙」担当。組版フローと導入コマンドを短くまとめた。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/kami.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Kami — tw93/kami 文書組版スキル">
-  <meta name="twitter:description" content="Claude Skill。八テンプレ、WeasyPrint 既定、CJK は日本語ベストエフォート。">
+  <meta name="twitter:description" content="Claude Skill。九テンプレ、WeasyPrint 既定、Landing Page は静的 HTML、CJK は日本語・韓国語ベストエフォート。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
@@ -199,7 +199,7 @@
     <a href="#why">なぜ Kami か</a>
     <a href="#trilogy">三部作</a>
     <a href="#flow">届くまで</a>
-    <a href="#doc-types">八つの文書</a>
+    <a href="#doc-types">九つの文書</a>
     <a href="#design">デザインの約束</a>
     <a href="#start">はじめの一歩</a>
     <a href="#links">公式リンク</a>
@@ -207,17 +207,17 @@
 
   <div class="main">
     <h1>Kami</h1>
-    <p class="subtitle"><a href="https://github.com/tw93/kami" target="_blank" rel="noopener">tw93/kami</a> の要約ページ。スローガン、三部作での位置、テンプレ八種、デザイン制約、導入コマンドを並べた。</p>
+    <p class="subtitle"><a href="https://github.com/tw93/kami" target="_blank" rel="noopener">tw93/kami</a> の要約ページ。スローガン、三部作での位置、テンプレ九種（Landing Page 含む）、デザイン制約、導入コマンドを並べた。</p>
 
     <section id="welcome" class="sec-head">概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> スローガンと役割</span>
-      <p><strong>Good content deserves good paper.</strong> Kami は UI フレームワークではなく、紙面のトーンとレイアウトを固定する<strong>制約セット</strong>だ。パーチメント地（<code>#f5f4ed</code>）とインクブル（<code>#1B365D</code>）だけで八つの文書タイプを回す。</p>
-      <p>英語・中国語テンプレが第一級。日本語は CJK 経路でベストエフォート。出す前に目視で崩れを見る想定。</p>
+      <p><strong>Good content deserves good paper.</strong> Kami は UI フレームワークではなく、紙面のトーンとレイアウトを固定する<strong>制約セット</strong>だ。パーチメント地（<code>#f5f4ed</code>）とインクブル（<code>#1B365D</code>）だけで九つの文書タイプを回す。</p>
+      <p>英語・中国語テンプレが第一級。日本語は CJK 経路、韓国語は <code>*-ko.html</code> 系でベストエフォート。出す前に目視で崩れを見る想定。</p>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">8</span><span class="ve-kpi-card__label">ドキュメント種別</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">9</span><span class="ve-kpi-card__label">ドキュメント種別</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">14</span><span class="ve-kpi-card__label">SVG 図版プリミティブ</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">EN / CN</span><span class="ve-kpi-card__label">第一級テンプレ</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">EN / CN / KO</span><span class="ve-kpi-card__label">言語別テンプレ</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">アクセント色（インクブル）</span></div>
       </div>
     </div>
@@ -245,7 +245,7 @@
     <section id="flow" class="sec-head">アイデアが紙になるまで</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 処理の流れ</span>
-      <p>自然言語で依頼すると、スキルが言語・用途・テンプレを選び、必要なら素材確認や蒸留（distill）を挟んでから、HTML ベースの組版へ進みます。スライドは WeasyPrint 経由の PDF を既定に、編集可能な PPTX が要望にだけ応じます。</p>
+      <p>自然言語で依頼すると、スキルが言語・用途・テンプレを選び、必要なら素材確認や蒸留（distill）を挟んでから、HTML ベースの組版へ進みます。スライドは WeasyPrint 経由の PDF を既定に、編集可能な PPTX や Marp（Markdown デッキ）は明示されたときだけ。Landing Page は PDF ではなく画面向けの静的 HTML として配布する。</p>
       <div class="mermaid-wrap">
         <pre class="mermaid">%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#e8ecf4", "primaryTextColor": "#1b365d", "primaryBorderColor": "#1b365d", "lineColor": "#5a7aa5", "secondaryColor": "#f5f0e6", "tertiaryColor": "#faf6ed", "fontFamily": "Source Sans 3, system-ui, sans-serif", "fontSize": "15px"}}}%%
 flowchart TD
@@ -261,7 +261,7 @@ flowchart TD
       </div>
     </div>
 
-    <section id="doc-types" class="sec-head">八つの文書タイプ</section>
+    <section id="doc-types" class="sec-head">九つの文書タイプ</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> テンプレ対応</span>
       <div class="ve-table-wrap">
@@ -270,18 +270,22 @@ flowchart TD
             <tr><th>いま欲しいもの</th><th>ドキュメント</th><th>テンプレの目印（概要）</th></tr>
           </thead>
           <tbody>
-            <tr><td>一枚にまとめたい・エグゼクサマリー</td><td>One-Pager</td><td><code>one-pager.html</code> / <code>one-pager-en.html</code></td></tr>
-            <tr><td>白書・長文レポート</td><td>Long Doc</td><td><code>long-doc.html</code> / <code>long-doc-en.html</code></td></tr>
-            <tr><td>正式な手紙・推薦状など</td><td>Letter</td><td><code>letter.html</code> / <code>letter-en.html</code></td></tr>
-            <tr><td>事例と実績のポートフォリオ</td><td>Portfolio</td><td><code>portfolio.html</code> / <code>portfolio-en.html</code></td></tr>
-            <tr><td>履歴書・CV</td><td>Resume</td><td><code>resume.html</code> / <code>resume-en.html</code></td></tr>
-            <tr><td>登壇・社内発表のスライド</td><td>Slides</td><td>既定は WeasyPrint（<code>slides-weasy.html</code> 系）</td></tr>
-            <tr><td>個別株・投資メモ</td><td>Equity Report</td><td><code>equity-report.html</code> / 英語版</td></tr>
-            <tr><td>リリースの変遷を美しく</td><td>Changelog</td><td><code>changelog.html</code> / 英語版</td></tr>
+            <tr><td>一枚にまとめたい・エグゼクサマリー</td><td>One-Pager</td><td><code>one-pager.html</code> / <code>-en</code> / <code>-ko</code></td></tr>
+            <tr><td>白書・長文レポート</td><td>Long Doc</td><td><code>long-doc.html</code> / <code>-en</code> / <code>-ko</code></td></tr>
+            <tr><td>正式な手紙・推薦状など</td><td>Letter</td><td><code>letter.html</code> / <code>-en</code> / <code>-ko</code></td></tr>
+            <tr><td>事例と実績のポートフォリオ</td><td>Portfolio</td><td><code>portfolio.html</code> / <code>-en</code> / <code>-ko</code></td></tr>
+            <tr><td>履歴書・CV</td><td>Resume</td><td><code>resume.html</code> / <code>-en</code> / <code>-ko</code></td></tr>
+            <tr><td>登壇・社内発表のスライド</td><td>Slides</td><td>既定 <code>slides-weasy.html</code> 系。PPTX は <code>slides.py</code>、Marp は <code>assets/templates/marp/</code></td></tr>
+            <tr><td>個別株・投資メモ</td><td>Equity Report</td><td><code>equity-report.html</code> / <code>-en</code> / <code>-ko</code></td></tr>
+            <tr><td>リリースの変遷を美しく</td><td>Changelog</td><td><code>changelog.html</code> / <code>-en</code> / <code>-ko</code></td></tr>
+            <tr><td>製品紹介・ランディング</td><td>Landing Page</td><td><code>landing-page.html</code> / <code>-en</code>（静的 HTML。Vercel 等へそのまま配置）</td></tr>
           </tbody>
         </table>
       </div>
       <p>長文やスライドの<strong>中だけ</strong>に図が要るなら <code>assets/diagrams/</code> の SVG テンプレへ振る。段落で足りる話に図を足さない（スキル側も同趣旨）。</p>
+      <div class="ve-callout">
+        <strong>Landing Page の付帯ファイル:</strong> 本番向け多言語サイトでは <code>landing-page-*.example</code> 五種（Vercel 設定、sitemap、robots、llms など）を同梱し、プレースホルダを埋めてデプロイする。詳細は <code>references/design.md</code> の Product site / Companion assets。
+      </div>
     </div>
 
     <section id="design" class="sec-head">デザインの約束</section>
@@ -312,7 +316,12 @@ flowchart TD
       <div class="ve-code-block">
         <pre><code>npx skills add tw93/kami -a claude-code -g -y</code></pre>
       </div>
-      <p>汎用エージェント向けには <code>-a '*'</code>、Claude Desktop ではリリースの ZIP を Skills にそのままアップロードする方法もあります。更新は同じ URL から差し替えるだけ、とのことです。</p>
+      <p>Claude Code v2.1.142 以降ではプラグインマーケットプレイスからも入れられる。</p>
+      <div class="ve-code-block">
+        <pre><code>/plugin marketplace add tw93/kami
+/plugin install kami@kami</code></pre>
+      </div>
+      <p>汎用エージェント向けには <code>npx skills add tw93/kami -a '*' -g -y</code>。Claude Desktop ではリリースの ZIP を Skills にそのままアップロードする。更新は <code>npx skills update kami -g -y</code> または最新 ZIP の差し替え。</p>
       <div class="ve-callout">
         <strong>任意:</strong> <code>~/.config/kami/brand.md</code> に名前・トーン・通貨ロケールなどを書いておくと、曖昧な依頼のときだけ参照される。雛形は <a href="https://github.com/tw93/kami/blob/main/references/brand.example.md" target="_blank" rel="noopener">brand.example.md</a>。
       </div>

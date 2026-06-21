@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillOpt — エージェントスキルの自己進化フレームワーク</title>
+  <meta name="description" content="Microsoft SkillOpt はスキル Markdown を学習可能な状態として、rollout → reflect → gate のループで最適化する。6 ベンチマーク・複数バックエンド・SkillOpt-Sleep 付き。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="SkillOpt — エージェントスキルの自己進化フレームワーク">
+  <meta property="og:description" content="モデル重みを触らず、スキル文書だけを epoch・learning rate・validation gate で訓練する Microsoft 製フレームワーク。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/skill-opt.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="SkillOpt — エージェントスキルの自己進化フレームワーク">
+  <meta name="twitter:description" content="rollout → reflect → aggregate → select → update → gate。深層学習の訓練ループをスキル文書最適化に写像する。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Georama:ital,wght@0,400;0,600;0,700;1,400&family=Fragment+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.012 145);
+      --foreground: oklch(0.22 0.04 155);
+      --card: oklch(0.995 0.008 145);
+      --card-foreground: oklch(0.22 0.04 155);
+      --muted: oklch(0.94 0.022 145);
+      --muted-foreground: oklch(0.44 0.04 155);
+      --accent: oklch(0.92 0.04 145);
+      --accent-foreground: oklch(0.22 0.04 155);
+      --border: oklch(0.86 0.028 145);
+      --ring: oklch(0.45 0.12 200);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.55 0.16 42);
+      --chart-4: oklch(0.62 0.12 155);
+      --chart-5: oklch(0.72 0.14 95);
+      --code-bg: oklch(0.16 0.035 200);
+      --code-text: oklch(0.92 0.025 145);
+      --font-body: 'Georama', system-ui, sans-serif;
+      --font-mono: 'Fragment Mono', 'SF Mono', Consolas, monospace;
+      --font-sans: system-ui, sans-serif;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.028 200);
+        --foreground: oklch(0.94 0.018 145);
+        --card: oklch(0.18 0.032 200);
+        --card-foreground: oklch(0.94 0.018 145);
+        --muted: oklch(0.24 0.034 200);
+        --muted-foreground: oklch(0.72 0.030 145);
+        --accent: oklch(0.22 0.045 200);
+        --accent-foreground: oklch(0.94 0.018 145);
+        --border: oklch(0.90 0.02 145 / 14%);
+        --ring: oklch(0.65 0.12 200);
+        --chart-1: oklch(0.72 0.12 200);
+        --chart-2: oklch(0.78 0.15 80);
+        --chart-3: oklch(0.72 0.14 42);
+        --chart-4: oklch(0.72 0.12 155);
+        --chart-5: oklch(0.78 0.12 95);
+        --code-bg: oklch(0.10 0.026 200);
+        --code-text: oklch(0.92 0.025 145);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 8px 26px rgba(20, 60, 50, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(20, 60, 50, 0.05); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%);
+      box-shadow: 0 16px 40px rgba(20, 60, 50, 0.10);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; overflow-x: auto; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-family: var(--font-sans); font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-weight: 700; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 72%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(20, 60, 50, 0.06); min-width: 0; }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-size: clamp(1.35rem, 3vw, 2rem); line-height: 1.1; font-weight: 700; color: var(--chart-1); }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 700; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 12% 0%, oklch(0.45 0.12 200 / 0.10) 0%, transparent 45%),
+        radial-gradient(ellipse at 88% 8%, oklch(0.65 0.15 80 / 0.08) 0%, transparent 38%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 220px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc { position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1; max-height: calc(100dvh - 48px); overflow-y: auto; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-sans); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; }
+      body { padding: 24px; }
+      .toc { position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; overflow-x: auto; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0; margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; margin-bottom: 0.75rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.7; max-width: 62rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.68; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.35rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 1rem 0; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.65rem; border-radius: var(--radius-sm); font-family: var(--font-mono); border: 1px solid var(--border); }
+    .pipeline .arrow { color: var(--text-dim); font-family: var(--font-mono); }
+
+    .mermaid-wrap { position: relative; margin: 1.25rem 0; padding: 1rem; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: auto; }
+    .mermaid-wrap .mermaid { display: flex; justify-content: center; min-width: min(100%, 520px); }
+
+    .badge { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); margin: 0 0.25rem 0.25rem 0; }
+    .badge--accent { background: color-mix(in oklch, var(--chart-1) 12%, transparent); border-color: color-mix(in oklch, var(--chart-1) 45%, transparent); color: var(--chart-1); }
+
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 1rem 0; }
+    @media (max-width: 720px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; color: var(--chart-1); margin-bottom: 0.35rem; }
+    .step-card__title { font-weight: 700; font-size: 0.9375rem; margin-bottom: 0.35rem; }
+    .step-card__body { font-size: 0.8125rem; color: var(--muted-foreground); line-height: 1.55; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#pipeline">訓練ループ</a>
+    <a href="#dl-analogy">DL 対応表</a>
+    <a href="#benchmarks">ベンチマーク</a>
+    <a href="#quickstart">クイックスタート</a>
+    <a href="#sleep">SkillOpt-Sleep</a>
+    <a href="#extend">拡張性</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>SkillOpt</h1>
+    <p class="subtitle">Executive Strategy for Self-Evolving Agent Skills — 凍結したエージェントの<strong>スキル Markdown だけ</strong>を、epoch・learning rate・validation gate 付きの訓練ループで最適化する Microsoft 製フレームワーク。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
+      <p>従来のエージェントスキルは手書き・一発生成・緩い自己改稿が多く、フィードバック下で<strong>再現可能に改善する</strong>仕組みが弱い。SkillOpt は<strong>スキル文書を学習可能な状態</strong>として扱い、別の optimizer モデルがスコア付き rollout から bounded な add / delete / replace 編集を提案する。候補は held-out validation で<strong>厳密に改善したときだけ</strong>採用される。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">6</span><span class="ve-kpi-card__label">組込みベンチマーク</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">52/52</span><span class="ve-kpi-card__label">評価セルで best/tied</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">+23.5pt</span><span class="ve-kpi-card__label">GPT-5.5 平均 (direct chat)</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">0</span><span class="ve-kpi-card__label">推論時の追加モデル呼び出し</span></div>
+      </div>
+      <p>成果物は通常 300–2,000 トークンの <code>best_skill.md</code>。ターゲットモデルはそのまま、デプロイ時の推論コストは増えない。</p>
+      <p style="margin-top:0.75rem">
+        <span class="badge badge--accent">Python 3.10+</span>
+        <span class="badge">PyPI: skillopt</span>
+        <span class="badge">MIT</span>
+        <span class="badge">microsoft/SkillOpt</span>
+      </p>
+    </div>
+
+    <section id="pipeline" class="sec-head">2 — 訓練ループ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 1 step の流れ</span>
+      <div class="pipeline">
+        <span class="step">Rollout</span><span class="arrow">→</span>
+        <span class="step">Reflect</span><span class="arrow">→</span>
+        <span class="step">Aggregate</span><span class="arrow">→</span>
+        <span class="step">Select</span><span class="arrow">→</span>
+        <span class="step">Update</span><span class="arrow">→</span>
+        <span class="step">Gate</span>
+      </div>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+  R[Rollout<br/>Target がタスク実行] --> RF[Reflect<br/>Optimizer が edit patch 生成]
+  RF --> AG[Aggregate<br/>類似 patch をマージ]
+  AG --> SL[Select<br/>learning_rate で clip]
+  SL --> UP[Update<br/>スキル文書へ適用]
+  UP --> GT[Gate<br/>selection split で検証]
+  GT -->|accept| R
+  GT -->|reject| R
+  subgraph epoch["Epoch 境界"]
+    SU[Slow Update]
+    MS[Meta Skill memory]
+  end
+  GT -.-> SU
+  SU -.-> MS
+        </pre>
+      </div>
+      <div class="step-flow">
+        <div class="step-card"><div class="step-card__num">01</div><div class="step-card__title">Rollout（順伝播）</div><div class="step-card__body">Target が現在のスキル文書をプロンプトにタスクを実行。各 trajectory にスコアが付く。</div></div>
+        <div class="step-card"><div class="step-card__num">02</div><div class="step-card__title">Reflect（逆伝播）</div><div class="step-card__body">Optimizer が失敗 trajectory を解析し edit patch を生成。Shallow / Deep の 2 モード。</div></div>
+        <div class="step-card"><div class="step-card__num">03</div><div class="step-card__title">Aggregate</div><div class="step-card__body">意味的に近い patch をマージし冗長編集を抑える。</div></div>
+        <div class="step-card"><div class="step-card__num">04</div><div class="step-card__title">Select（勾配クリップ）</div><div class="step-card__body"><code>learning_rate</code> が 1 step で適用する最大編集数を上限する。<code>lr_scheduler</code> は cosine / linear / constant。</div></div>
+        <div class="step-card"><div class="step-card__num">05</div><div class="step-card__title">Update</div><div class="step-card__body">選ばれた patch をスキル Markdown に適用し新バージョンを作る。</div></div>
+        <div class="step-card"><div class="step-card__num">06</div><div class="step-card__title">Gate（検証）</div><div class="step-card__body">selection split で再評価。スコアが<strong>厳密に</strong>上がった候補だけ採用。rejected-edit buffer で不安定化を抑える。</div></div>
+      </div>
+      <h3>Epoch 境界</h3>
+      <ul>
+        <li><strong>Slow Update:</strong> epoch 2 以降、前 epoch と現スキルを同サンプルで rollout し improved / regressed / persistent_fail / stable_success を分類。高レベル guidance をスキルへ注入し忘却を防ぐ。</li>
+        <li><strong>Meta Skill:</strong> 訓練全体を通じた戦略メモを蓄積し、以降の reflect に追加コンテキストとして渡す。</li>
+      </ul>
+    </div>
+
+    <section id="dl-analogy" class="sec-head">3 — 深層学習との対応</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 写像表</span>
+      <p>SkillOpt の設計思想は「自然言語プロンプト最適化 ≒ ニューラルネット訓練」という対応に基づく。ML 実務者は hyperparameter の感覚をそのまま持ち込める。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>深層学習</th><th>SkillOpt</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td>Model weights</td><td>Skill document</td><td>最適化対象</td></tr>
+            <tr><td>Forward pass</td><td>Rollout</td><td>Target がタスク実行</td></tr>
+            <tr><td>Loss / gradient</td><td>Reflect → edit patches</td><td>失敗から改善案を生成</td></tr>
+            <tr><td>Gradient clipping</td><td><code>learning_rate</code></td><td>1 step の最大編集数</td></tr>
+            <tr><td>LR scheduler</td><td><code>lr_scheduler</code></td><td>cosine / linear / constant</td></tr>
+            <tr><td>Validation set</td><td>Selection split</td><td>Gate で改善確認</td></tr>
+            <tr><td>Early stopping</td><td>Gate patience</td><td>改善しない更新を拒否</td></tr>
+            <tr><td>Momentum</td><td>Slow update</td><td>Epoch 境界の longitudinal 比較</td></tr>
+            <tr><td>Meta-learning</td><td>Meta skill memory</td><td>跨 epoch の optimizer 戦略</td></tr>
+            <tr><td>Batch size</td><td><code>batch_size</code></td><td>rollout でサンプルするタスク数</td></tr>
+            <tr><td>Checkpoint</td><td>Skill snapshots</td><td>採用 step ごとに保存</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top:1rem">
+        <strong>経験則:</strong> cosine schedule と moderate LR (4–16) が有効。batch を大きくしすぎても API コスト対効果は頭打ち。スキルは NN より早く収束し、2–4 epoch で足りることが多い。
+      </div>
+    </div>
+
+    <section id="benchmarks" class="sec-head">4 — ベンチマーク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 組込み環境</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>ベンチマーク</th><th>種別</th><th>設定</th></tr></thead>
+          <tbody>
+            <tr><td>DocVQA</td><td>Document QA</td><td><code>configs/docvqa/</code></td></tr>
+            <tr><td>ALFWorld</td><td>Embodied AI</td><td><code>configs/alfworld/</code></td></tr>
+            <tr><td>OfficeQA</td><td>Enterprise QA</td><td><code>configs/officeqa/</code></td></tr>
+            <tr><td>SearchQA</td><td>Open-domain QA</td><td><code>configs/searchqa/</code></td></tr>
+            <tr><td>LiveMathBench</td><td>Math reasoning</td><td><code>configs/livemathematicianbench/</code></td></tr>
+            <tr><td>SpreadsheetBench</td><td>Spreadsheet agent</td><td><code>configs/spreadsheetbench/</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:1rem">各ベンチマークは <code>skillopt/envs/&lt;name&gt;/</code> に <code>dataloader.py</code>・<code>rollout.py</code>・<code>initial.md</code> を持つ。7 ターゲットモデル × 3 実行ハーネス（direct chat / Codex CLI / Claude Code CLI）で評価済み。</p>
+    </div>
+
+    <section id="quickstart" class="sec-head">5 — クイックスタート</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 最小コマンド</span>
+      <div class="ve-code-block"><pre><code># インストール
+pip install skillopt
+# または開発版
+pip install -e .
+
+# 認証（Azure OpenAI の例）
+export AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com/"
+export AZURE_OPENAI_API_KEY="your-key"
+
+# SearchQA で訓練
+python scripts/train.py --config configs/searchqa/default.yaml
+
+# 最良スキルで評価のみ
+python scripts/eval_only.py \
+  --config configs/searchqa/default.yaml \
+  --skill outputs/best_skill.md</code></pre></div>
+      <h3>WebUI（任意）</h3>
+      <div class="ve-code-block"><pre><code>pip install -e ".[webui]"
+python -m skillopt_webui.app --port 7860</code></pre></div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>フラグ</th><th>デフォルト</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td><code>--port</code></td><td>7860</td><td>サーバポート</td></tr>
+            <tr><td><code>--host</code></td><td>0.0.0.0</td><td>バインドアドレス</td></tr>
+            <tr><td><code>--share</code></td><td>off</td><td>Gradio 公開リンク</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:1rem">バックエンド: OpenAI / Azure / Claude / Qwen / MiniMax / Codex exec / Claude Code exec など。<code>skillopt/model/</code> に backend モジュールを追加して拡張する。</p>
+    </div>
+
+    <section id="sleep" class="sec-head">6 — SkillOpt-Sleep</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> デプロイ時コンパニオン（preview）</span>
+      <p>論文の <code>skillopt/</code> とは独立した <code>skillopt_sleep/</code> パッケージ。ローカルコーディングエージェント向けに、夜間の offline サイクルでセッションを harvest → 反復タスクを replay → gate 付き consolidate → ステージング → 人手 adopt する。</p>
+      <div class="pipeline">
+        <span class="step">harvest</span><span class="arrow">→</span>
+        <span class="step">mine</span><span class="arrow">→</span>
+        <span class="step">replay</span><span class="arrow">→</span>
+        <span class="step">consolidate</span><span class="arrow">→</span>
+        <span class="step">gate</span><span class="arrow">→</span>
+        <span class="step">stage</span>
+      </div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>プラットフォーム</th><th>導線</th></tr></thead>
+          <tbody>
+            <tr><td>Claude Code</td><td><code>plugins/claude-code</code> — marketplace 追加後 <code>/skillopt-sleep</code></td></tr>
+            <tr><td>Codex</td><td><code>plugins/codex/install.sh</code> → <code>skillopt-sleep</code> skill</td></tr>
+            <tr><td>Copilot</td><td><code>plugins/copilot/mcp_server.py</code> を MCP サーバ登録</td></tr>
+            <tr><td>OpenClaw</td><td><code>plugins/openclaw</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:1rem">API キー不要の決定論的検証: <code>python -m skillopt_sleep.experiments.run_experiment --persona researcher --assert-improves</code></p>
+    </div>
+
+    <section id="extend" class="sec-head">7 — 拡張性</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 追加ポイント</span>
+      <h3>新しい backend</h3>
+      <p><code>skillopt/model/&lt;name&gt;_backend.py</code> を追加し、<code>common.py</code>・<code>backend_config.py</code>・<code>__init__.py</code> の router に登録。<code>qwen_backend.py</code> / <code>minimax_backend.py</code> がテンプレート。</p>
+      <h3>新しい benchmark</h3>
+      <p><code>skillopt/envs/&lt;name&gt;/</code> に dataloader・rollout・<code>initial.md</code> seed skill。<code>skillopt/envs/searchqa/</code> が最小参照。</p>
+      <h3>リポジトリ構成（主要）</h3>
+      <div class="ve-code-block"><pre><code>skillopt/          # 訓練エンジン（engine, gradient, optimizer, envs, model）
+skillopt_sleep/    # 夜間自己進化（論文コード非依存）
+skillopt_webui/    # Gradio ダッシュボード
+configs/           # ベンチマーク別 YAML
+scripts/           # train.py, eval_only.py, run_*.sh
+plugins/           # Claude Code / Codex / Copilot / OpenClaw 連携
+ckpt/              # 公開済み best_skill.md 例</code></pre></div>
+    </div>
+
+    <section id="links" class="sec-head">8 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+      <ul>
+        <li><a href="https://github.com/microsoft/SkillOpt" target="_blank" rel="noopener">GitHub — microsoft/SkillOpt</a></li>
+        <li><a href="https://microsoft.github.io/SkillOpt/" target="_blank" rel="noopener">Project Page</a></li>
+        <li><a href="https://microsoft.github.io/SkillOpt/docs/guideline.html" target="_blank" rel="noopener">Documentation &amp; Reproduction Guide</a></li>
+        <li><a href="https://arxiv.org/abs/2605.23904" target="_blank" rel="noopener">Paper (arXiv:2605.23904)</a></li>
+        <li><a href="https://pypi.org/project/skillopt/" target="_blank" rel="noopener">PyPI — skillopt</a></li>
+        <li><a href="https://youtu.be/JUBMDTCiM0M" target="_blank" rel="noopener">Demo Video (YouTube)</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    look: 'classic',
+    themeVariables: {
+      primaryColor: isDark ? '#134e4a' : '#ccfbf1',
+      primaryBorderColor: isDark ? '#14b8a6' : '#0d9488',
+      primaryTextColor: isDark ? '#f0fdfa' : '#134e4a',
+      secondaryColor: isDark ? '#1e293b' : '#f0fdf4',
+      lineColor: isDark ? '#64748b' : '#94a3b8',
+      fontSize: '14px',
+      fontFamily: 'Georama, system-ui, sans-serif'
+    }
+  });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var docTop = s.head.getBoundingClientRect().top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

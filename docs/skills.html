@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>mattpocock/skills — エージェント開発スキル運用ガイド</title>
-  <meta name="description" content="mattpocock/skills の失敗モード別ルーティング、セットアップ契約、TDD・診断・トリアージの品質ループ、全14スキルのカタログ。">
+  <title>vercel-labs/skills — オープンエージェントスキル CLI</title>
+  <meta name="description" content="vercel-labs/skills v1.5.11 の add / use / list / update コマンド、70+ エージェント対応、スキル探索と blob 高速パスの技術解説。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="mattpocock/skills — エージェント開発スキル運用ガイド">
-  <meta property="og:description" content="real engineering を支える小さな agent skills の選び方、セットアップ、品質ループ。">
+  <meta property="og:title" content="vercel-labs/skills — オープンエージェントスキル CLI">
+  <meta property="og:description" content="npx skills — GitHub・URL・ローカルから SKILL.md をエージェントへ配布する CLI のコマンドと内部構成。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/skills.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="mattpocock/skills — エージェント開発スキル運用ガイド">
-  <meta name="twitter:description" content="失敗モードから mattpocock/skills を選ぶためのビジュアル運用ガイド。">
+  <meta name="twitter:title" content="vercel-labs/skills — オープンエージェントスキル CLI">
+  <meta name="twitter:description" content="add / use / update と 70+ エージェント対応を押さえた skills CLI 解説。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
     /* ============ THEME (Spell UI tokens + fonts) ============ */
     :root {
@@ -25,104 +25,98 @@
       --radius-sm: calc(var(--radius) - 4px);
       --radius-md: calc(var(--radius) - 2px);
       --radius-lg: var(--radius);
-      --background: oklch(0.985 0.012 25);
-      --foreground: oklch(0.18 0.04 25);
-      --card: oklch(0.998 0.006 25);
-      --card-foreground: oklch(0.18 0.04 25);
+      --background: oklch(0.985 0.012 210);
+      --foreground: oklch(0.17 0.034 230);
+      --card: oklch(0.998 0.006 210);
+      --card-foreground: oklch(0.17 0.034 230);
       --popover: oklch(1 0 0);
-      --popover-foreground: oklch(0.18 0.04 25);
-      --primary: oklch(0.42 0.16 15);
-      --primary-foreground: oklch(0.985 0.012 25);
-      --secondary: oklch(0.94 0.018 25);
-      --secondary-foreground: oklch(0.22 0.045 25);
-      --muted: oklch(0.93 0.016 25);
-      --muted-foreground: oklch(0.46 0.045 25);
-      --accent: oklch(0.92 0.04 350);
-      --accent-foreground: oklch(0.18 0.04 25);
+      --popover-foreground: oklch(0.17 0.034 230);
+      --primary: oklch(0.42 0.11 200);
+      --primary-foreground: oklch(0.985 0.012 210);
+      --secondary: oklch(0.94 0.018 210);
+      --secondary-foreground: oklch(0.20 0.04 230);
+      --muted: oklch(0.93 0.016 210);
+      --muted-foreground: oklch(0.46 0.045 225);
+      --accent: oklch(0.91 0.035 185);
+      --accent-foreground: oklch(0.17 0.034 230);
       --destructive: oklch(0.57 0.20 25);
-      --border: oklch(0.82 0.026 25);
-      --input: oklch(0.82 0.026 25);
-      --ring: oklch(0.55 0.14 350);
-      --chart-1: oklch(0.42 0.16 15);
-      --chart-2: oklch(0.55 0.14 350);
+      --border: oklch(0.82 0.026 210);
+      --input: oklch(0.82 0.026 210);
+      --ring: oklch(0.52 0.12 200);
+      --chart-1: oklch(0.48 0.12 200);
+      --chart-2: oklch(0.62 0.14 85);
       --chart-3: oklch(0.52 0.11 150);
       --chart-4: oklch(0.55 0.13 25);
       --chart-5: oklch(0.40 0.10 250);
-      --code-bg: oklch(0.16 0.035 25);
-      --code-text: oklch(0.94 0.025 25);
-      --font-body: 'Instrument Serif', Georgia, serif;
-      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --code-bg: oklch(0.14 0.032 230);
+      --code-text: oklch(0.94 0.025 210);
+      --font-body: 'Source Serif 4', Georgia, serif;
+      --font-mono: 'Space Mono', 'SF Mono', Consolas, monospace;
       --font-sans: system-ui, sans-serif;
       --bg: var(--background);
       --surface: var(--card);
       --surface2: var(--muted);
       --text: var(--foreground);
       --text-dim: var(--muted-foreground);
-      --grid-line: oklch(0.42 0.16 15 / 0.07);
+      --grid-line: oklch(0.48 0.12 200 / 0.07);
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --background: oklch(0.13 0.032 25);
-        --foreground: oklch(0.94 0.018 25);
-        --card: oklch(0.18 0.034 25);
-        --card-foreground: oklch(0.94 0.018 25);
-        --popover: oklch(0.18 0.034 25);
-        --popover-foreground: oklch(0.94 0.018 25);
-        --primary: oklch(0.72 0.14 15);
-        --primary-foreground: oklch(0.12 0.032 25);
-        --secondary: oklch(0.24 0.034 25);
-        --secondary-foreground: oklch(0.94 0.018 25);
-        --muted: oklch(0.24 0.034 25);
-        --muted-foreground: oklch(0.72 0.030 25);
-        --accent: oklch(0.25 0.045 350);
-        --accent-foreground: oklch(0.94 0.018 25);
+        --background: oklch(0.13 0.032 230);
+        --foreground: oklch(0.94 0.018 210);
+        --card: oklch(0.18 0.034 230);
+        --card-foreground: oklch(0.94 0.018 210);
+        --popover: oklch(0.18 0.034 230);
+        --popover-foreground: oklch(0.94 0.018 210);
+        --primary: oklch(0.72 0.12 200);
+        --primary-foreground: oklch(0.12 0.032 230);
+        --secondary: oklch(0.24 0.034 230);
+        --secondary-foreground: oklch(0.94 0.018 210);
+        --muted: oklch(0.24 0.034 230);
+        --muted-foreground: oklch(0.72 0.030 210);
+        --accent: oklch(0.25 0.045 185);
+        --accent-foreground: oklch(0.94 0.018 210);
         --destructive: oklch(0.66 0.18 25);
-        --border: oklch(0.90 0.02 25 / 14%);
-        --input: oklch(0.90 0.02 25 / 18%);
-        --ring: oklch(0.72 0.12 350);
-        --chart-1: oklch(0.72 0.14 15);
-        --chart-2: oklch(0.72 0.12 350);
+        --border: oklch(0.90 0.02 210 / 14%);
+        --input: oklch(0.90 0.02 210 / 18%);
+        --ring: oklch(0.72 0.10 200);
+        --chart-1: oklch(0.72 0.12 200);
+        --chart-2: oklch(0.78 0.13 85);
         --chart-3: oklch(0.72 0.12 150);
         --chart-4: oklch(0.72 0.13 25);
         --chart-5: oklch(0.72 0.10 250);
-        --code-bg: oklch(0.09 0.026 25);
-        --code-text: oklch(0.94 0.025 25);
+        --code-bg: oklch(0.09 0.026 230);
+        --code-text: oklch(0.94 0.025 210);
         --bg: var(--background);
         --surface: var(--card);
         --surface2: var(--muted);
         --text: var(--foreground);
         --text-dim: var(--muted-foreground);
-        --grid-line: oklch(0.72 0.14 15 / 0.10);
+        --grid-line: oklch(0.72 0.12 200 / 0.10);
       }
     }
 
     /* ============ Spell UI static ============ */
     .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
-    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 8px 26px rgba(40, 18, 24, 0.09); }
-    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(40, 18, 24, 0.05); }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 8px 26px rgba(20, 40, 48, 0.09); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(20, 40, 48, 0.05); }
     .ve-card--hero {
       background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%);
-      box-shadow: 0 18px 44px rgba(40, 18, 24, 0.12);
+      box-shadow: 0 18px 44px rgba(20, 40, 48, 0.12);
       border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
-    }
-    @media (prefers-color-scheme: dark) {
-      .ve-card--hero {
-        background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%);
-        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
-      }
     }
     .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
     .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
     .ve-code-block__label { color: var(--code-text); border-bottom: 1px solid oklch(1 0 0 / 12%); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; padding: 0.625rem 0.875rem; text-transform: uppercase; }
     .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; }
-    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; overflow-x: auto; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-family: var(--font-sans); font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 700; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
     .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
     .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 72%, transparent); }
-    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(40, 18, 24, 0.06); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(20, 40, 48, 0.06); }
     .ve-kpi-card__value { font-family: var(--font-mono); font-size: 2.15rem; line-height: 1; font-weight: 700; letter-spacing: -0.05em; }
     .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
     .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-family: var(--font-sans); font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); }
@@ -135,8 +129,8 @@
       background-image:
         linear-gradient(var(--grid-line) 1px, transparent 1px),
         linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
-        radial-gradient(ellipse at 12% 0%, oklch(0.42 0.16 15 / 0.10) 0%, transparent 42%),
-        radial-gradient(ellipse at 88% 16%, oklch(0.55 0.14 350 / 0.09) 0%, transparent 34%);
+        radial-gradient(ellipse at 12% 0%, oklch(0.48 0.12 200 / 0.10) 0%, transparent 42%),
+        radial-gradient(ellipse at 88% 16%, oklch(0.62 0.14 85 / 0.08) 0%, transparent 34%);
       background-size: 36px 36px, 36px 36px, auto, auto;
       color: var(--text);
       font-family: var(--font-body);
@@ -148,8 +142,8 @@
         background-image:
           linear-gradient(var(--grid-line) 1px, transparent 1px),
           linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
-          radial-gradient(ellipse at 12% 0%, oklch(0.72 0.14 15 / 0.12) 0%, transparent 42%),
-          radial-gradient(ellipse at 88% 16%, oklch(0.72 0.12 350 / 0.10) 0%, transparent 34%);
+          radial-gradient(ellipse at 12% 0%, oklch(0.72 0.12 200 / 0.12) 0%, transparent 42%),
+          radial-gradient(ellipse at 88% 16%, oklch(0.78 0.13 85 / 0.10) 0%, transparent 34%);
       }
     }
 
@@ -183,7 +177,7 @@
     }
 
     /* ============ Typography ============ */
-    h1 { font-size: clamp(2.4rem, 6vw, 5rem); font-weight: 400; letter-spacing: -0.04em; line-height: 0.95; margin-bottom: 1rem; text-wrap: balance; }
+    h1 { font-size: clamp(2.4rem, 6vw, 5rem); font-weight: 600; letter-spacing: -0.04em; line-height: 0.95; margin-bottom: 1rem; text-wrap: balance; }
     .subtitle { color: var(--text-dim); font-family: var(--font-sans); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.7; max-width: 62rem; }
     .sec-head { font-family: var(--font-sans); font-size: 1.125rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
     .sec-head:first-of-type { margin-top: 0; }
@@ -211,22 +205,6 @@
     .kpi-row .ve-kpi-card { min-width: 0; }
     @media (max-width: 760px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
 
-    .route-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-    .route-card { min-width: 0; position: relative; overflow: hidden; }
-    .route-card::after {
-      content: "";
-      position: absolute;
-      right: 1rem;
-      bottom: 1rem;
-      width: 48px;
-      height: 48px;
-      border-radius: 999px;
-      border: 1px solid color-mix(in oklch, var(--chart-1) 38%, transparent);
-      opacity: 0.34;
-    }
-    .route-card h3 { margin-top: 0; }
-    @media (max-width: 760px) { .route-grid { grid-template-columns: 1fr; } }
-
     .step-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.85rem; }
     .step-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; min-width: 0; }
     .step-card__num { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 999px; background: var(--primary); color: var(--primary-foreground); font-family: var(--font-mono); font-weight: 700; font-size: 0.75rem; margin-bottom: 0.75rem; }
@@ -235,23 +213,20 @@
     @media (max-width: 960px) { .step-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 560px) { .step-flow { grid-template-columns: 1fr; } }
 
-    .rail { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.55rem; align-items: stretch; margin-top: 1rem; }
-    .rail__item { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.72rem; min-width: 0; font-family: var(--font-mono); font-size: 0.70rem; line-height: 1.45; }
-    .rail__item strong { display: block; font-family: var(--font-sans); font-size: 0.80rem; margin-bottom: 0.25rem; }
-    @media (max-width: 900px) { .rail { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    @media (max-width: 560px) { .rail { grid-template-columns: 1fr; } }
-
-    .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.16rem 0.5rem; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; white-space: nowrap; }
-    .badge--hard { background: color-mix(in oklch, var(--chart-4) 15%, transparent); color: var(--chart-4); border: 1px solid color-mix(in oklch, var(--chart-4) 38%, transparent); }
-    .badge--soft { background: color-mix(in oklch, var(--chart-3) 15%, transparent); color: var(--chart-3); border: 1px solid color-mix(in oklch, var(--chart-3) 38%, transparent); }
-    .badge--neutral { background: var(--muted); color: var(--text-dim); border: 1px solid var(--border); }
+    .agent-grid { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.5rem; }
+    .agent-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.22rem 0.55rem; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; background: var(--muted); border: 1px solid var(--border); color: var(--text-dim); }
+    .agent-badge--primary { background: color-mix(in oklch, var(--chart-1) 14%, transparent); color: var(--chart-1); border-color: color-mix(in oklch, var(--chart-1) 38%, transparent); }
 
     .source-note { color: var(--text-dim); font-size: 0.82rem; font-family: var(--font-mono); }
     .link-list { list-style: none; padding: 0; margin: 0; }
     .link-list li { border-bottom: 1px solid var(--border); padding: 0.65rem 0; margin: 0; }
+    .gap { margin-top: 1rem; }
+
+    .mermaid-wrap { margin: 1rem 0; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--card); }
+    .mermaid-stage { overflow: auto; padding: 1.25rem; display: flex; justify-content: center; }
 
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .ve-card, .step-card, .rail__item { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    .ve-card, .step-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
   </style>
 </head>
@@ -260,272 +235,312 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
-    <a href="#routes">失敗モード別ルート</a>
-    <a href="#setup">セットアップ契約</a>
-    <a href="#quality">品質ループ</a>
-    <a href="#issue-flow">Issue 化フロー</a>
-    <a href="#architecture">設計レビュー</a>
-    <a href="#catalog">スキルカタログ</a>
+    <a href="#commands">コマンド</a>
+    <a href="#use">use コマンド</a>
+    <a href="#sources">ソース形式</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#discovery">スキル探索</a>
+    <a href="#install">インストール</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
-  <h1>mattpocock/skills</h1>
-  <p class="subtitle">README の “real engineering, not vibe coding” を、実務での選び方に変換する運用地図。巨大な自動運転ではなく、ズレを減らす小さなループを必要な場面に差し込む。</p>
+  <h1>vercel-labs/skills</h1>
+  <p class="subtitle"><code>npx skills</code> — オープンなエージェントスキルエコシステム向け CLI。GitHub・GitLab・git URL・ローカルパスから <code>SKILL.md</code> を取得し、Claude Code・Cursor・Codex など 70 以上のコーディングエージェントへシンリンクまたはコピーで配布する。</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="hero-grid">
     <div class="ve-card ve-card--hero" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> Operating model</span>
-      <p><strong>mattpocock/skills</strong> は、Claude Code などのエージェントに読み込ませる小さなスキル集。リポジトリ全体のプロセスを奪うのではなく、計画確認、共有語彙、TDD、診断、トリアージ、設計改善、プロトタイピングという「事故りやすい瞬間」にだけ介入する。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> CLI role</span>
+      <p><strong>skills</strong> は <a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills 仕様</a> に沿った指示セット（<code>SKILL.md</code>）を、リポジトリからエージェント固有の skills ディレクトリへ届ける配布レイヤー。スキル本体は各リポジトリ（例: <code>vercel-labs/agent-skills</code>）にあり、CLI は探索・取得・配置・更新を担う。</p>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">14</span><span class="ve-kpi-card__label">plugin entries</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">10</span><span class="ve-kpi-card__label">engineering skills</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">productivity skills</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">setup contract</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">70+</span><span class="ve-kpi-card__label">対応エージェント</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">v1.5</span><span class="ve-kpi-card__label">.11 最新</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">7</span><span class="ve-kpi-card__label">主要コマンド</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
       </div>
-      <p class="source-note">出典: README.md、.claude-plugin/plugin.json、docs/adr/0001-...</p>
+      <p class="source-note">出典: README.md、package.json、src/cli.ts</p>
     </div>
     <div class="hero-side">
       <div class="ve-card ve-card--elevated" style="--i:1">
-        <span class="ve-section-label"><span class="ve-dot"></span> Design stance</span>
-        <p>GSD / BMAD / Spec-Kit のように全体ワークフローを所有するより、ユーザーが制御を持ったまま必要なスキルを組み合わせる設計。失敗時にプロセス自体を直しやすい。</p>
+        <span class="ve-section-label"><span class="ve-dot"></span> Typical flow</span>
+        <p>リポジトリを指定して <code>add</code> → エージェント skills ディレクトリへ配置 → <code>list</code> で確認 → <code>update</code> で最新化。試すだけなら <code>use</code> でインストールせずプロンプト生成もできる。</p>
       </div>
       <div class="ve-callout" style="--i:2">
-        <strong>読み方:</strong> これはスキル一覧ではなくルーティング表。今起きている失敗を見て、入れるループを選ぶ。
+        <strong>スキルとは:</strong> YAML frontmatter に <code>name</code> と <code>description</code> を持つ Markdown 指示書。PR 作成手順・リリースノート生成・外部ツール連携など、エージェントの専門タスクを再利用可能にする。
       </div>
     </div>
   </div>
 
-  <section id="routes" class="sec-head">2 — 失敗モード別ルート</section>
-  <div class="route-grid">
-    <div class="ve-card route-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> Misalignment</span>
-      <h3>Agent didn't do what I want</h3>
-      <p>作る前の合意が薄い。<code>/grill-me</code> または <code>/grill-with-docs</code> で、設計ツリーを質問で潰してから実装へ進む。設計が固まる前に UI を試したいなら <code>/prototype</code>。</p>
-      <p class="source-note">Main skills: grill-me, grill-with-docs, prototype</p>
-    </div>
-    <div class="ve-card route-card" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> Vocabulary drift</span>
-      <h3>Agent is too verbose</h3>
-      <p>同じ概念を毎回20語で説明している。<code>CONTEXT.md</code> と ADR に共有語彙を置き、会話とコードの命名を短くする。</p>
-      <p class="source-note">Main skills: grill-with-docs, setup-matt-pocock-skills</p>
-    </div>
-    <div class="ve-card route-card" style="--i:2">
-      <span class="ve-section-label"><span class="ve-dot"></span> Broken output</span>
-      <h3>Code doesn't work</h3>
-      <p>エージェントが動くフィードバックループを持っていない。<code>/tdd</code> は vertical slice で RED/GREEN を作り、<code>/diagnose</code> は再現信号から原因へ進む。</p>
-      <p class="source-note">Main skills: tdd, diagnose</p>
-    </div>
-    <div class="ve-card route-card" style="--i:3">
-      <span class="ve-section-label"><span class="ve-dot"></span> Entropy</span>
-      <h3>Ball of mud</h3>
-      <p>生成速度が設計負債も加速している。<code>/to-prd</code> と <code>/to-issues</code> で薄い slice に分け、<code>/improve-codebase-architecture</code> で deep module 候補を探す。</p>
-      <p class="source-note">Main skills: to-prd, to-issues, improve-codebase-architecture</p>
-    </div>
-  </div>
-
-  <section id="setup" class="sec-head">3 — セットアップ契約</section>
+  <section id="commands" class="sec-head">2 — コマンド一覧</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> Hard vs soft dependency</span>
-    <p><code>/setup-matt-pocock-skills</code> は、他の engineering skills が共有する repo 固有の契約を作る。ADR は依存を 2 種類に分ける。Issue tracker や label mapping がないと誤った外部操作になるスキルは hard。domain docs がなくても動くが出力が鈍るだけのスキルは soft。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> Manage skills</span>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>依存タイプ</th><th>対象スキル</th><th>必要な契約</th><th>ない場合</th></tr>
+          <tr><th>コマンド</th><th>説明</th><th>エイリアス</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge--hard">hard</span></td><td><code>to-issues</code>, <code>to-prd</code>, <code>triage</code></td><td>Issue tracker と triage label vocabulary</td><td>Issue 作成先や label が間違う</td></tr>
-          <tr><td><span class="badge badge--soft">soft</span></td><td><code>diagnose</code>, <code>tdd</code>, <code>improve-codebase-architecture</code>, <code>zoom-out</code></td><td>domain glossary と ADR</td><td>動くが、語彙と判断が浅くなる</td></tr>
+          <tr><td><code>skills add &lt;source&gt;</code></td><td>Git リポジトリ・URL・ローカルパスからスキルをインストール</td><td><code>a</code></td></tr>
+          <tr><td><code>skills use &lt;source&gt;@&lt;skill&gt;</code></td><td>インストールせず 1 スキルのプロンプトを生成（<code>--agent</code> で対話起動）</td><td>—</td></tr>
+          <tr><td><code>skills list</code></td><td>インストール済みスキルを一覧（<code>--json</code> 対応）</td><td><code>ls</code></td></tr>
+          <tr><td><code>skills find [query]</code></td><td>スキルをインタラクティブまたはキーワード検索</td><td>—</td></tr>
+          <tr><td><code>skills remove [skills]</code></td><td>エージェントからスキルを削除</td><td><code>rm</code></td></tr>
+          <tr><td><code>skills update [skills...]</code></td><td>インストール済みスキルを最新版へ更新</td><td><code>upgrade</code></td></tr>
+          <tr><td><code>skills init [name]</code></td><td>新規 <code>SKILL.md</code> テンプレートを生成</td><td>—</td></tr>
         </tbody>
       </table>
     </div>
   </div>
-  <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> Quickstart</span>
+  <div class="ve-card ve-card--recessed gap" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Experimental / project</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>skills experimental_install</code></td><td><code>skills-lock.json</code> からスキルを復元</td></tr>
+          <tr><td><code>skills experimental_sync</code></td><td><code>node_modules</code> 内スキルをエージェントディレクトリへ同期</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="use" class="sec-head">3 — use コマンド</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Try without install</span>
+    <p><code>skills use</code> は <code>add</code> と同じソース解決を行い、選択した 1 スキルを一時ディレクトリへ展開したうえで生成プロンプトを stdout に出力する。<code>--agent</code> を付けると対応エージェントを対話起動する。</p>
     <div class="ve-code-block">
-      <div class="ve-code-block__label">install</div>
-      <pre><code>npx skills@latest add mattpocock/skills</code></pre>
+      <div class="ve-code-block__label">examples</div>
+      <pre><code># プロンプトをパイプで Claude に渡す
+npx skills use vercel-labs/agent-skills@web-design-guidelines | claude
+
+# エージェントを直接起動
+npx skills use vercel-labs/agent-skills --skill web-design-guidelines --agent claude-code</code></pre>
     </div>
     <div class="step-flow">
       <div class="step-card" style="--i:0">
         <div class="step-card__num">1</div>
-        <div class="step-card__title">Add skills</div>
-        <div class="step-card__body"><code>skills</code> CLI で repo を追加する。</div>
+        <div class="step-card__title">Resolve source</div>
+        <div class="step-card__body"><code>source-parser.ts</code> が GitHub shorthand / URL / ローカルを正規化。</div>
       </div>
       <div class="step-card" style="--i:1">
         <div class="step-card__num">2</div>
-        <div class="step-card__title">Select setup</div>
-        <div class="step-card__body"><code>/setup-matt-pocock-skills</code> を必ず選ぶ。</div>
+        <div class="step-card__title">Fetch skill</div>
+        <div class="step-card__body">git clone、blob 高速パス、well-known プロバイダのいずれかで取得。</div>
       </div>
       <div class="step-card" style="--i:2">
         <div class="step-card__num">3</div>
-        <div class="step-card__title">Record contract</div>
-        <div class="step-card__body">Issue tracker（GitHub / GitLab / local markdown）、labels、domain docs を記録する。</div>
+        <div class="step-card__title">Materialize</div>
+        <div class="step-card__body">一時ディレクトリに <code>SKILL.md</code> と付随ファイルを配置。</div>
       </div>
       <div class="step-card" style="--i:3">
         <div class="step-card__num">4</div>
-        <div class="step-card__title">Route work</div>
-        <div class="step-card__body">以後のスキルが同じ語彙で作業する。</div>
+        <div class="step-card__title">Emit / spawn</div>
+        <div class="step-card__body">プロンプトを stdout 出力、または <code>--agent</code> で子プロセス起動。</div>
       </div>
     </div>
   </div>
 
-  <section id="quality" class="sec-head">4 — 品質ループ</section>
+  <section id="sources" class="sec-head">4 — ソース形式と add オプション</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> Feedback first</span>
-    <p><code>/diagnose</code> の中心は「まず高速で決定的な pass/fail signal を作る」こと。<code>/tdd</code> は一括で全テストを書く horizontal slice を避け、1つの振る舞いを RED → GREEN で通す。</p>
-    <div class="rail">
-      <div class="rail__item" style="--i:0"><strong>Signal</strong>test / CLI / browser / harness</div>
-      <div class="rail__item" style="--i:1"><strong>Reproduce</strong>user symptom を確認</div>
-      <div class="rail__item" style="--i:2"><strong>Hypothesize</strong>3-5 個、予測つき</div>
-      <div class="rail__item" style="--i:3"><strong>Instrument</strong>仮説に対応する probe</div>
-      <div class="rail__item" style="--i:4"><strong>Fix</strong>regression test → fix</div>
-      <div class="rail__item" style="--i:5"><strong>Postmortem</strong>防げた設計を確認</div>
-    </div>
-  </div>
-  <div class="ve-card ve-card--elevated" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> TDD contrast</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> Source formats</span>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>やらない</th><th>やる</th><th>理由</th></tr>
+          <tr><th>形式</th><th>例</th></tr>
         </thead>
         <tbody>
-          <tr><td>全テストを先に書く</td><td>1 test → 1 implementation</td><td>想像上の振る舞いではなく、学びに反応した test になる</td></tr>
-          <tr><td>private method を検証する</td><td>public interface の振る舞いを検証する</td><td>内部リファクタで壊れない</td></tr>
-          <tr><td>mock で形だけ通す</td><td>real code path を通す</td><td>本当の統合バグを拾える</td></tr>
+          <tr><td>GitHub shorthand</td><td><code>npx skills add vercel-labs/agent-skills</code></td></tr>
+          <tr><td>フル GitHub URL</td><td><code>npx skills add https://github.com/org/repo</code></td></tr>
+          <tr><td>サブパス（特定スキル）</td><td><code>npx skills add org/repo/tree/main/skills/foo</code></td></tr>
+          <tr><td>GitLab / 任意 git URL</td><td><code>npx skills add https://gitlab.com/org/repo</code></td></tr>
+          <tr><td>ローカルパス</td><td><code>npx skills add ./my-local-skills</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed gap" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> add オプション（代表）</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>オプション</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>-g, --global</code></td><td>ユーザーディレクトリ（<code>~/</code> 配下）へインストール</td></tr>
+          <tr><td><code>-a, --agent &lt;agents&gt;</code></td><td>対象エージェント指定（<code>*</code> で全エージェント）</td></tr>
+          <tr><td><code>-s, --skill &lt;skills&gt;</code></td><td>特定スキルのみ（<code>*</code> で全スキル）</td></tr>
+          <tr><td><code>-l, --list</code></td><td>インストールせずリポジトリ内スキルを一覧</td></tr>
+          <tr><td><code>--copy</code></td><td>シンリンクの代わりにファイルコピー</td></tr>
+          <tr><td><code>--full-depth</code></td><td>ルート <code>SKILL.md</code> があっても全サブディレクトリを探索</td></tr>
+          <tr><td><code>-y, --yes</code></td><td>確認プロンプトをスキップ（CI 向け）</td></tr>
+          <tr><td><code>--all</code></td><td><code>--skill '*' --agent '*' -y</code> の省略形</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-code-block">
+      <div class="ve-code-block__label">ci-friendly</div>
+      <pre><code>npx skills add vercel-labs/agent-skills --skill frontend-design -g -a claude-code -y</code></pre>
+    </div>
+  </div>
+
+  <section id="architecture" class="sec-head">5 — アーキテクチャ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Module graph</span>
+    <p><code>cli.ts</code> がコマンドをルーティング。<code>add.ts</code> と <code>use.ts</code> がソース取得から配置までを担い、<code>installer.ts</code> がシンリンク / コピーを実行する。GitHub 公開リポジトリでは <code>blob.ts</code> 経由で skills.sh ダウンロード API を使う高速パスもある。</p>
+    <div class="mermaid-wrap">
+      <div class="mermaid-stage">
+        <div class="mermaid">
+flowchart TD
+    CLI["cli.ts"] --> ADD["add.ts"]
+    CLI --> USE["use.ts"]
+    CLI --> LIST["list.ts"]
+    CLI --> FIND["find.ts"]
+    CLI --> REMOVE["remove.ts"]
+    CLI --> UPDATE["update.ts"]
+
+    ADD --> PARSE["source-parser.ts"]
+    ADD --> DISC["skills.ts\n探索"]
+    ADD --> INST["installer.ts"]
+    USE --> PARSE
+    USE --> DISC
+
+    ADD --> BLOB["blob.ts\nskills.sh API"]
+    ADD --> WK["providers/wellknown.ts"]
+    ADD --> PLUG["plugin-manifest.ts"]
+
+    INST --> GLOCK["skill-lock.ts\n~/.agents/.skill-lock.json"]
+    INST --> LLOCK["local-lock.ts\nskills-lock.json"]
+    INST --> AGENTS["agents.ts\n70+ 定義"]
+
+    classDef entry fill:color-mix(in oklch, var(--chart-1) 25%, white),stroke:var(--chart-1)
+    classDef cmd fill:color-mix(in oklch, var(--chart-2) 20%, white),stroke:var(--chart-2)
+    classDef core fill:color-mix(in oklch, var(--chart-3) 18%, white),stroke:var(--chart-3)
+    class CLI entry
+    class ADD,USE,LIST,FIND,REMOVE,UPDATE cmd
+    class PARSE,DISC,INST,BLOB,WK,PLUG,GLOCK,LLOCK,AGENTS core
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed gap" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> src/ 主要モジュール</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ファイル</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>add.ts</code></td><td>インタラクティブ選択・セキュリティ監査・インストール一連処理</td></tr>
+          <tr><td><code>use.ts</code></td><td>一時展開とプロンプト生成、エージェント子プロセス起動</td></tr>
+          <tr><td><code>blob.ts</code></td><td>Trees API → frontmatter → skills.sh download の高速取得。一部リポジトリは自前 CDN（例: zapier/connectors）</td></tr>
+          <tr><td><code>installer.ts</code></td><td>シンリンク / コピー配置、canonical path 管理</td></tr>
+          <tr><td><code>skill-lock.ts</code> / <code>local-lock.ts</code></td><td>グローバル / プロジェクトのロックファイルと更新検知</td></tr>
+          <tr><td><code>agents.ts</code></td><td>エージェント別 project / global skills パス定義と自動検出</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <section id="issue-flow" class="sec-head">5 — Issue 化フロー</section>
+  <section id="discovery" class="sec-head">6 — スキル探索</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> PRD to slices</span>
-    <p><code>/to-prd</code> は会話とコード理解を PRD にまとめ、<code>/to-issues</code> は tracer bullet の vertical slice に分解する。slice は schema/API/UI/tests の層ではなく、完了したら単体で demoable な細い経路として切る。</p>
-    <div class="step-flow">
-      <div class="step-card" style="--i:0">
-        <div class="step-card__num">A</div>
-        <div class="step-card__title">Conversation</div>
-        <div class="step-card__body">既に話した内容と codebase 状態を合成する。</div>
-      </div>
-      <div class="step-card" style="--i:1">
-        <div class="step-card__num">B</div>
-        <div class="step-card__title">PRD</div>
-        <div class="step-card__body">Problem、Solution、User Stories、Testing Decisions を作る。</div>
-      </div>
-      <div class="step-card" style="--i:2">
-        <div class="step-card__num">C</div>
-        <div class="step-card__title">Vertical slices</div>
-        <div class="step-card__body">AFK / HITL と依存関係を明示して薄く分ける。</div>
-      </div>
-      <div class="step-card" style="--i:3">
-        <div class="step-card__num">D</div>
-        <div class="step-card__title">Triage roles</div>
-        <div class="step-card__body"><code>needs-triage</code> から state machine に乗せる。</div>
-      </div>
-    </div>
-  </div>
-  <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> Triage state machine</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> Discovery rules</span>
+    <p>CLI はリポジトリ内のコンテナディレクトリを最大 2 階層まで走査する。フラット配置（<code>skills/&lt;name&gt;/SKILL.md</code>）とカタログ配置（<code>skills/&lt;category&gt;/&lt;name&gt;/SKILL.md</code>）の両方に対応。浅い階層で見つかった <code>SKILL.md</code> は深い階層より優先される。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>Role</th><th>意味</th><th>次の動き</th></tr>
+          <tr><th>探索対象</th><th>備考</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>needs-triage</code></td><td>maintainer 評価待ち</td><td>bug/enhancement と実装可能性を判断</td></tr>
-          <tr><td><code>needs-info</code></td><td>reporter から情報待ち</td><td>具体質問に回答が来たら再評価</td></tr>
-          <tr><td><code>ready-for-agent</code></td><td>AFK agent が拾える</td><td>agent brief を投稿</td></tr>
-          <tr><td><code>ready-for-human</code></td><td>人間判断が必要</td><td>判断ポイント込みで brief 化</td></tr>
-          <tr><td><code>wontfix</code></td><td>対応しない</td><td>理由を残して閉じる</td></tr>
+          <tr><td>リポジトリルート（<code>SKILL.md</code> がある場合）</td><td>単一スキルリポジトリ向け</td></tr>
+          <tr><td><code>skills/</code>、<code>skills/.curated/</code> 等</td><td>標準コンテナ。エージェント固有パス（<code>.claude/skills/</code> 等）も列挙</td></tr>
+          <tr><td><code>.claude-plugin/plugin.json</code></td><td>Claude Code プラグインマーケットプレイス互換。manifest 宣言パスは深度制限なし</td></tr>
+          <tr><td><code>--full-depth</code></td><td><code>examples/</code> や <code>tests/</code> などコンテナ外も再帰探索</td></tr>
         </tbody>
       </table>
     </div>
+  </div>
+  <div class="ve-card ve-card--elevated gap" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> SKILL.md 必須フィールド</span>
+    <div class="ve-code-block">
+      <pre><code>---
+name: my-skill
+description: このスキルの目的と使うタイミング
+---
+
+# My Skill
+エージェントが実行する手順を記述する。</code></pre>
+    </div>
+    <p><code>metadata.internal: true</code> のスキルは通常探索から除外。<code>INSTALL_INTERNAL_SKILLS=1</code> で表示・インストール可能。</p>
   </div>
 
-  <section id="architecture" class="sec-head">6 — 設計レビュー</section>
+  <section id="install" class="sec-head">7 — インストールスコープ</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> Deepening opportunities</span>
-    <p><code>/improve-codebase-architecture</code> は、浅い module を深くする候補を探す。目的は美しい抽象化ではなく、<strong>locality</strong> と <strong>leverage</strong>。bug、変更、知識が散らばる場所を見つけ、interface の後ろに実装の複雑さを隠せるかを見る。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> Scope & method</span>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>語彙</th><th>見るポイント</th><th>判断質問</th></tr>
+          <tr><th>スコープ</th><th>フラグ</th><th>配置先</th><th>用途</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>Module</code></td><td>interface と implementation を持つ単位</td><td>削除すると複雑さは消えるか、caller に散るか</td></tr>
-          <tr><td><code>Interface</code></td><td>caller が知る必要のある契約</td><td>test surface として十分に安定しているか</td></tr>
-          <tr><td><code>Seam</code></td><td>振る舞いを差し替える場所</td><td>adapter が2つ以上あり、現実の seam になっているか</td></tr>
-          <tr><td><code>Depth</code></td><td>小さな interface の背後にある大きな振る舞い</td><td>caller は少ない知識で大きな効果を得ているか</td></tr>
+          <tr><td>プロジェクト</td><td>（デフォルト）</td><td><code>./&lt;agent&gt;/skills/</code></td><td>リポジトリにコミット、チーム共有</td></tr>
+          <tr><td>グローバル</td><td><code>-g</code></td><td><code>~/&lt;agent&gt;/skills/</code></td><td>全プロジェクトで利用</td></tr>
         </tbody>
       </table>
     </div>
-  </div>
-  <div class="ve-callout" style="--i:1">
-    <strong>運用のコツ:</strong> 実装前は <code>grill-with-docs</code> または <code>prototype</code>、実装中は <code>tdd</code>、壊れたら <code>diagnose</code>、作業を外に渡すなら <code>to-issues</code>、泥団子化したら <code>improve-codebase-architecture</code>。順番より、失敗モードへの適合が大事。
-  </div>
-
-  <section id="catalog" class="sec-head">7 — スキルカタログ</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> Engineering（plugin 公開）</span>
-    <div class="ve-table-wrap">
-      <table>
-        <thead>
-          <tr><th>スキル</th><th>用途</th></tr>
-        </thead>
-        <tbody>
-          <tr><td><code>diagnose</code></td><td>再現 → 最小化 → 仮説 → 計測 → 修正 → 回帰テストの診断ループ</td></tr>
-          <tr><td><code>grill-with-docs</code></td><td>計画を domain model に照らして質問し、CONTEXT.md と ADR を更新</td></tr>
-          <tr><td><code>triage</code></td><td>Issue を triage role の state machine で処理</td></tr>
-          <tr><td><code>improve-codebase-architecture</code></td><td>CONTEXT.md と ADR を参照し deep module 候補を探索</td></tr>
-          <tr><td><code>setup-matt-pocock-skills</code></td><td>Issue tracker、label vocabulary、domain doc layout を scaffold</td></tr>
-          <tr><td><code>tdd</code></td><td>vertical slice の red-green-refactor</td></tr>
-          <tr><td><code>to-issues</code></td><td>plan / spec / PRD を独立して拾える vertical slice issue に分解</td></tr>
-          <tr><td><code>to-prd</code></td><td>会話コンテキストを PRD に合成して issue tracker へ投稿</td></tr>
-          <tr><td><code>zoom-out</code></td><td>不慣れなコードをシステム全体の文脈で説明</td></tr>
-          <tr><td><code>prototype</code></td><td>terminal app または UI バリエーションで throwaway prototype を構築</td></tr>
-        </tbody>
-      </table>
+    <div class="ve-callout" style="margin-top:0.75rem">
+      <strong>シンリンク（推奨）:</strong> canonical copy を 1 か所に置き、各エージェントから参照。更新は 1 点変更で済む。<code>--copy</code> はシンリンク非対応環境向け。
     </div>
   </div>
-  <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> Productivity（plugin 公開）</span>
-    <div class="ve-table-wrap">
-      <table>
-        <thead>
-          <tr><th>スキル</th><th>用途</th></tr>
-        </thead>
-        <tbody>
-          <tr><td><code>caveman</code></td><td>フィラーを削り token 使用量を約75% 削減する圧縮モード</td></tr>
-          <tr><td><code>grill-me</code></td><td>計画の全分岐が解消されるまでインタビュー</td></tr>
-          <tr><td><code>handoff</code></td><td>会話を handoff 文書に圧縮し別 agent が継続可能にする</td></tr>
-          <tr><td><code>write-a-skill</code></td><td>progressive disclosure 付きの新スキルを作成</td></tr>
-        </tbody>
-      </table>
+  <div class="ve-card ve-card--recessed gap" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 主要エージェントとパス</span>
+    <div class="agent-grid">
+      <span class="agent-badge agent-badge--primary">claude-code → .claude/skills/</span>
+      <span class="agent-badge agent-badge--primary">cursor → .agents/skills/</span>
+      <span class="agent-badge agent-badge--primary">codex → .agents/skills/</span>
+      <span class="agent-badge agent-badge--primary">opencode → .agents/skills/</span>
+      <span class="agent-badge">windsurf</span>
+      <span class="agent-badge">github-copilot</span>
+      <span class="agent-badge">gemini-cli</span>
+      <span class="agent-badge">openclaw</span>
+      <span class="agent-badge">... 70+ total</span>
     </div>
-    <p class="source-note">misc / personal / in-progress / deprecated バケットにもスキルがあるが、Claude plugin には含まれない。</p>
+    <p style="margin-top:0.75rem">CLI はインストール済みエージェントを自動検出。未検出時は対話で選択する。互換性の詳細は README の Compatibility 表を参照（<code>allowed-tools</code>、<code>context: fork</code>、Hooks などエージェント固有機能の差分）。</p>
   </div>
 
   <section id="links" class="sec-head">8 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> Source references</span>
     <ul class="link-list">
-      <li><a href="https://github.com/mattpocock/skills" target="_blank" rel="noopener">GitHub: mattpocock/skills</a> — Skills For Real Engineers</li>
-      <li><a href="https://skills.sh/mattpocock/skills" target="_blank" rel="noopener">skills.sh: mattpocock/skills</a> — インストールとスキル選択</li>
-      <li>README.md — 目的、Quickstart、4つの失敗モード、スキル一覧</li>
-      <li>.claude-plugin/plugin.json — Claude plugin として公開される 14 entries</li>
-      <li>skills/engineering/tdd/SKILL.md — vertical slice の RED/GREEN loop</li>
-      <li>skills/engineering/diagnose/SKILL.md — feedback loop first の診断手順</li>
-      <li>docs/adr/0001-explicit-setup-pointer-only-for-hard-dependencies.md — hard / soft dependency の判断</li>
+      <li><a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">GitHub: vercel-labs/skills</a> — CLI 本体（TypeScript、v1.5.11）</li>
+      <li><a href="https://skills.sh" target="_blank" rel="noopener">skills.sh</a> — 公開スキルディレクトリ</li>
+      <li><a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills 仕様</a> — SKILL.md フォーマット</li>
+      <li><a href="https://github.com/vercel-labs/agent-skills" target="_blank" rel="noopener">vercel-labs/agent-skills</a> — Vercel 公式スキル集（README の代表例）</li>
+      <li>README.md — コマンドリファレンス、対応エージェント表、探索パス一覧</li>
+      <li>src/cli.ts — コマンドルーティングとヘルプテキスト</li>
+      <li>src/blob.ts — skills.sh download API と自前 CDN 対応</li>
     </ul>
   </div>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>
 (function() {
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: 'oklch(0.91 0.035 185)',
+      primaryTextColor: 'oklch(0.17 0.034 230)',
+      primaryBorderColor: 'oklch(0.48 0.12 200)',
+      lineColor: 'oklch(0.62 0.04 210)',
+      fontSize: '13px',
+    }
+  });
+
   var toc = document.getElementById('toc');
   if (!toc) return;
   var links = toc.querySelectorAll('a[href^="#"]');

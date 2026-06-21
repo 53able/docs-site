@@ -7,7 +7,7 @@
  * **English:** Acquire source repos, emit authoring runbooks, and validate visual doc pages against the review gate (scope, meta tags, public paths).
  *
  * **サブコマンド概要**
- * - `prepare`: `repos/*` をクローンまたは fast-forward、インベントリスキャン、`tmp/<slug>-runbook.md` を出力。
+ * - `prepare`: `repos/*` をクローンまたは origin デフォルトブランチへ強制同期、インベントリスキャン、`tmp/<slug>-runbook.md` を出力。
  * - `validate`: `docs/*.html`、`index.html` へのリンク、`<head>` メタ、公開パス用 bash、git 変更スコープを検証。
  *
  * @example npm scripts
@@ -72,8 +72,8 @@ const SourceRepositorySchema = z.object({
   absolutePath: z.string(),
   relativePath: z.string(),
   cloneName: z.string(),
-  acquiredBy: z.enum(["clone", "fast-forward"]).optional(),
-  pullOutput: z.string().optional(),
+  acquiredBy: z.enum(["clone", "origin-sync"]).optional(),
+  syncBranch: z.string().optional(),
 });
 
 /** `docs/` 直下のビジュアルドキュメント HTML の正規表現。 */
@@ -675,37 +675,125 @@ const resolveWorkflowScriptPath = (relativePath: string): Result<string> => {
       });
 };
 
+/** `origin/HEAD` の short ref からブランチ名を取り出す（例: `origin/main` → `main`）。 */
+const branchFromOriginHeadRef = (ref: string): string => ref.replace(/^origin\//u, "").trim();
+
+/** `origin/HEAD` が解決できないときのフォールバックブランチ名。 */
+const ORIGIN_FALLBACK_BRANCH = "main";
+
 /**
- * 既存ソースが git リポジトリでワーキングツリーがクリーンか検証する。
+ * 既存ソースが git リポジトリとして利用可能か検証する。
  *
  * @param source - 検査対象の {@link SourceRepository}。
  */
-const assertCleanGitRepository = (source: SourceRepository): Result<SourceRepository> => {
+const assertGitRepository = (source: SourceRepository): Result<SourceRepository> => {
   const gitDir = path.join(source.absolutePath, ".git");
   if (!existsSync(gitDir)) {
     return err("Blocked Source Repository: source is not a git repository.", { source: source.relativePath });
-  }
-
-  const status = runCommand("git", ["-C", source.absolutePath, "status", "--porcelain"]);
-  if (status.status !== 0) {
-    return err("Blocked Source Repository: failed to read source git status.", {
-      source: source.relativePath,
-      stderr: status.stderr,
-    });
-  }
-
-  if (status.stdout.trim().length > 0) {
-    return err("Blocked Source Repository: source has local changes.", {
-      source: source.relativePath,
-      status: status.stdout.trim(),
-    });
   }
 
   return ok(source);
 };
 
 /**
- * ソースが無ければ `--url` でクローンし、あればクリーンな状態で `git pull --ff-only` する。
+ * `origin/HEAD` からデフォルトブランチ名を解決する。失敗時は `origin/main` を試す。
+ *
+ * @param absolutePath - ソースリポジトリの絶対パス。
+ */
+const resolveOriginDefaultBranch = (absolutePath: string): Result<string> => {
+  const symbolic = runCommand("git", ["-C", absolutePath, "symbolic-ref", "--short", "refs/remotes/origin/HEAD"]);
+  if (symbolic.status === 0) {
+    const branch = branchFromOriginHeadRef(symbolic.stdout.trim());
+    if (branch.length > 0) {
+      return ok(branch);
+    }
+  }
+
+  const fallback = runCommand("git", [
+    "-C",
+    absolutePath,
+    "rev-parse",
+    "--verify",
+    `origin/${ORIGIN_FALLBACK_BRANCH}`,
+  ]);
+  return fallback.status === 0
+    ? ok(ORIGIN_FALLBACK_BRANCH)
+    : err("Failed to resolve origin default branch.", {
+        stderr: symbolic.stderr || fallback.stderr,
+      });
+};
+
+/**
+ * 既存 clone を `origin` のデフォルトブランチ最新へ強制同期する。
+ *
+ * @param source - 同期対象の {@link SourceRepository}。
+ */
+const syncSourceToOriginDefault = (source: SourceRepository): Result<SourceRepository> => {
+  const gitRepository = assertGitRepository(source);
+  if (!gitRepository.ok) {
+    return gitRepository;
+  }
+
+  const originUrl = runCommand("git", ["-C", source.absolutePath, "remote", "get-url", "origin"]);
+  if (originUrl.status !== 0) {
+    return err("Blocked Source Repository: source has no origin remote.", {
+      source: source.relativePath,
+      stderr: originUrl.stderr,
+    });
+  }
+
+  const fetch = runCommand("git", ["-C", source.absolutePath, "fetch", "origin"]);
+  if (fetch.status !== 0) {
+    return err("Failed to fetch Source Repository.", {
+      source: source.relativePath,
+      stderr: fetch.stderr || fetch.stdout,
+    });
+  }
+
+  const branchResult = resolveOriginDefaultBranch(source.absolutePath);
+  if (!branchResult.ok) {
+    return branchResult;
+  }
+
+  const branch = branchResult.value;
+  const remoteBranch = `origin/${branch}`;
+
+  const checkout = runCommand("git", ["-C", source.absolutePath, "checkout", "-B", branch, remoteBranch]);
+  if (checkout.status !== 0) {
+    return err("Failed to sync Source Repository.", {
+      source: source.relativePath,
+      phase: "checkout",
+      stderr: checkout.stderr || checkout.stdout,
+    });
+  }
+
+  const reset = runCommand("git", ["-C", source.absolutePath, "reset", "--hard", remoteBranch]);
+  if (reset.status !== 0) {
+    return err("Failed to sync Source Repository.", {
+      source: source.relativePath,
+      phase: "reset",
+      stderr: reset.stderr || reset.stdout,
+    });
+  }
+
+  const clean = runCommand("git", ["-C", source.absolutePath, "clean", "-fd"]);
+  return clean.status === 0
+    ? ok(
+        SourceRepositorySchema.parse({
+          ...source,
+          acquiredBy: "origin-sync",
+          syncBranch: branch,
+        }),
+      )
+    : err("Failed to sync Source Repository.", {
+        source: source.relativePath,
+        phase: "clean",
+        stderr: clean.stderr || clean.stdout,
+      });
+};
+
+/**
+ * ソースが無ければ `--url` でクローンし、あれば `origin/HEAD` の最新へ強制同期する。
  *
  * @param options - CLI オプション（`--source`, `--url`, `--name` など）。
  */
@@ -732,21 +820,7 @@ const acquireSource = (options: CliOptions): Result<SourceRepository> => {
     return ok(SourceRepositorySchema.parse({ ...resolved, acquiredBy: "clone" }));
   }
 
-  const clean = assertCleanGitRepository(resolved);
-  if (!clean.ok) {
-    return clean;
-  }
-
-  const pull = runCommand("git", ["-C", resolved.absolutePath, "pull", "--ff-only"]);
-  if (pull.status !== 0) {
-    return err("Blocked Source Repository: fast-forward pull failed.", {
-      source: resolved.relativePath,
-      stderr: pull.stderr || pull.stdout,
-    });
-  }
-  return ok(
-    SourceRepositorySchema.parse({ ...resolved, acquiredBy: "fast-forward", pullOutput: pull.stdout.trim() }),
-  );
+  return syncSourceToOriginDefault(resolved);
 };
 
 /**
@@ -1151,6 +1225,7 @@ if (isDirectRun) {
 export {
   basenameFromUrl,
   boundedSlug,
+  branchFromOriginHeadRef,
   buildRunbook,
   collectCliArgs,
   collectInteractiveArgs,
