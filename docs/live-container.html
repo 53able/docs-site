@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiveContainer — インストール不要で iOS アプリを起動</title>
+  <meta name="description" content="LiveContainer/LiveContainer の仕組み。ゲスト IPA を Mach-O パッチと dlopen でホスト内実行し、SideStore 連携・マルチタスク・JIT 対応を持つ iOS アプリランチャー。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="LiveContainer — インストール不要で iOS アプリを起動">
+  <meta property="og:description" content="エミュレータではなくランチャーとして iOS アプリを実行。Mach-O 改変、TweakLoader、ZSign による sideload 基盤。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/live-container.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="LiveContainer — インストール不要で iOS アプリを起動">
+  <meta name="twitter:description" content="LiveContainer がゲストアプリをホスト内で動かす仕組みとモジュール構成。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
+        fontSize: '15px',
+        primaryColor: 'oklch(0.94 0.03 200)',
+        primaryTextColor: 'oklch(0.22 0.04 230)',
+        primaryBorderColor: 'oklch(0.45 0.12 200)',
+        lineColor: 'oklch(0.45 0.12 200)',
+        secondaryColor: 'oklch(0.90 0.04 80)',
+        tertiaryColor: 'oklch(0.97 0.02 200)',
+        clusterBkg: 'oklch(0.97 0.02 200)',
+        clusterBorder: 'oklch(0.78 0.06 200)'
+      },
+      flowchart: { curve: 'basis', padding: 16 }
+    });
+  </script>
+  <style>
+    /* ============ THEME (Spell UI — Teal / Plus Jakarta Sans) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.012 200);
+      --foreground: oklch(0.20 0.04 230);
+      --card: oklch(0.998 0.008 200);
+      --card-foreground: oklch(0.20 0.04 230);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.20 0.04 230);
+      --primary: oklch(0.45 0.12 200);
+      --primary-foreground: oklch(0.985 0.01 200);
+      --secondary: oklch(0.93 0.025 200);
+      --secondary-foreground: oklch(0.22 0.05 230);
+      --muted: oklch(0.92 0.02 200);
+      --muted-foreground: oklch(0.48 0.05 230);
+      --accent: oklch(0.90 0.04 80);
+      --accent-foreground: oklch(0.18 0.04 230);
+      --destructive: oklch(0.57 0.20 25);
+      --border: oklch(0.84 0.03 200);
+      --input: oklch(0.84 0.03 200);
+      --ring: oklch(0.45 0.12 200);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.52 0.11 248);
+      --chart-4: oklch(0.55 0.16 42);
+      --chart-5: oklch(0.48 0.10 290);
+      --code-bg: oklch(0.18 0.04 230);
+      --code-text: oklch(0.94 0.02 200);
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.03 230);
+        --foreground: oklch(0.94 0.018 200);
+        --card: oklch(0.19 0.032 230);
+        --card-foreground: oklch(0.94 0.018 200);
+        --popover: oklch(0.19 0.032 230);
+        --popover-foreground: oklch(0.94 0.018 200);
+        --primary: oklch(0.68 0.12 200);
+        --primary-foreground: oklch(0.14 0.03 230);
+        --secondary: oklch(0.22 0.03 230);
+        --secondary-foreground: oklch(0.94 0.018 200);
+        --muted: oklch(0.22 0.03 230);
+        --muted-foreground: oklch(0.72 0.028 200);
+        --accent: oklch(0.24 0.04 80);
+        --accent-foreground: oklch(0.94 0.018 200);
+        --destructive: oklch(0.66 0.18 25);
+        --border: oklch(0.90 0.02 200 / 14%);
+        --input: oklch(0.90 0.02 200 / 18%);
+        --ring: oklch(0.68 0.12 200);
+        --chart-1: oklch(0.68 0.12 200);
+        --chart-2: oklch(0.72 0.12 80);
+        --chart-3: oklch(0.68 0.10 248);
+        --chart-4: oklch(0.72 0.14 42);
+        --chart-5: oklch(0.72 0.10 290);
+        --code-bg: oklch(0.10 0.028 230);
+        --code-text: oklch(0.94 0.02 200);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 8px 26px rgba(16, 32, 40, 0.09); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(16, 32, 40, 0.05); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 82%, var(--chart-1) 18%);
+      box-shadow: 0 18px 44px rgba(16, 32, 40, 0.12);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block__label { color: var(--code-text); border-bottom: 1px solid oklch(1 0 0 / 12%); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; padding: 0.625rem 0.875rem; text-transform: uppercase; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 72%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(16, 32, 40, 0.06); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-size: 1.35rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.03em; }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 700; }
+    .badge { display: inline-flex; align-items: center; border-radius: 4px; padding: 0.15rem 0.45rem; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+    .badge--good { background: color-mix(in oklch, var(--chart-2) 18%, transparent); color: var(--chart-2); border: 1px solid color-mix(in oklch, var(--chart-2) 35%, transparent); }
+    .badge--warn { background: color-mix(in oklch, var(--chart-4) 18%, transparent); color: var(--chart-4); border: 1px solid color-mix(in oklch, var(--chart-4) 35%, transparent); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 12% 0%, oklch(0.45 0.12 200 / 0.10) 0%, transparent 48%),
+        radial-gradient(ellipse at 88% 100%, oklch(0.65 0.15 80 / 0.08) 0%, transparent 42%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 220px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: clamp(2rem, 4.5vw, 3.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 1rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.875rem; margin-bottom: 2rem; line-height: 1.7; max-width: 58rem; }
+    .sec-head { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.04em; scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.68; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.35rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .mermaid-wrap { margin: 1.25rem 0; padding: 1rem; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); display: flex; justify-content: center; }
+    .dir { color: var(--chart-2); }
+    .file-main { color: var(--chart-1); }
+    .comment { color: var(--muted-foreground); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#modules">モジュール構成</a>
+    <a href="#launch">起動メカニズム</a>
+    <a href="#features">主な機能</a>
+    <a href="#limits">制限事項</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>LiveContainer</h1>
+    <p class="subtitle">iOS アプリランチャー — ゲスト IPA をホストプロセス内で実行し、1 つの App ID で複数アプリ・複数データコンテナを運用する sideload 基盤。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+      <p><strong>LiveContainer</strong>（<a href="https://github.com/LiveContainer/LiveContainer" target="_blank" rel="noopener">LiveContainer/LiveContainer</a>）は、iOS アプリを<strong>端末へ個別インストールせず</strong>、ランチャー本体の中で起動する sideload ツール。エミュレータやハイパーバイザではなく、Mach-O の改変と <code>dlopen</code> による<strong>ゲスト実行環境</strong>を構築する。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">∞ apps</span><span class="ve-kpi-card__label">1 App ID で複数</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">iOS 15+</span><span class="ve-kpi-card__label">対応 OS</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">JIT</span><span class="ve-kpi-card__label">iOS 26 未満で署名省略可</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">SideStore</span><span class="ve-kpi-card__label">内蔵版あり</span></div>
+      </div>
+      <p>無料開発者アカウントの 3/10 アプリ制限は LiveContainer 内のゲストには適用されない。同一アプリの複数バージョン・複数データコンテナも共存できる。配布は <strong>Standalone</strong> と <strong>LiveContainer+SideStore</strong> の 2 系統（Stable / Nightly）。</p>
+    </div>
+
+    <div class="ve-callout" style="margin-top: 1rem;">
+      <strong>第三者ビルドへの注意:</strong> すべてのゲストアプリは LiveContainer 内に置かれるため、非公式ビルドは keychain やログイン情報を含むデータへフルアクセスできる。公式 README も公式ビルド以外のサポート対象外と明記している。
+    </div>
+
+    <div class="ve-table-wrap" style="margin-top: 1rem;">
+      <table>
+        <thead>
+          <tr><th>要件</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>OS</td><td>iOS / iPadOS 15+（マルチタスクは 16.0+）</td></tr>
+          <tr><td>インストーラ</td><td>AltStore 2.0+ または SideStore 0.6.0+</td></tr>
+          <tr><td>ビルド</td><td>Xcode。Debug 用 <code>DEVELOPMENT_TEAM</code> を <code>xcconfigs/Global.xcconfig</code> に設定</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section id="modules" class="sec-head">2 — モジュール構成</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Xcode ターゲットと責務</span>
+      <div class="ve-code-block">
+        <div class="ve-code-block__label">主要ディレクトリ</div>
+        <pre><code><span class="dir">LiveContainer/</span>          <span class="comment"># メイン実行体 — ゲスト環境セットアップ・ロード</span>
+<span class="dir">LiveContainerSwiftUI/</span> <span class="comment"># SwiftUI ランチャー UI（未選択時に表示）</span>
+<span class="dir">MultitaskSupport/</span>     <span class="comment"># 仮想ウィンドウ・PiP・iPad ネイティブウィンドウ</span>
+<span class="dir">SideStore/</span>            <span class="comment"># SideStore 更新連携（XPC）</span>
+<span class="dir">TweakLoader/</span>          <span class="comment"># CydiaSubstrate +  tweak 注入（全ゲスト）</span>
+<span class="dir">ZSign/</span>                  <span class="comment"># 同梱署名（Feather 派生 zsign）</span>
+<span class="dir">LaunchAppExtension/</span>   <span class="comment"># ホーム画面ショートカット用</span>
+<span class="dir">LiveProcess/</span>          <span class="comment"># SideStore 連携プロセスハンドラ</span></code></pre>
+      </div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>モジュール</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>LiveContainer</code>（main）</td><td><code>LCBootstrap.m</code> / <code>dyld_bypass_validation</code> 等でゲスト Mach-O をパッチし <code>dlopen</code> 起動</td></tr>
+            <tr><td><code>LiveContainerSwiftUI</code></td><td>IPA 追加・選択・設定 UI。<code>Localizable.xcstrings</code> で多言語</td></tr>
+            <tr><td><code>MultitaskSupport</code></td><td><a href="https://github.com/khanhduytran0/FrontBoardAppLauncher" target="_blank" rel="noopener">FrontBoardAppLauncher</a> ベースの in-app マルチタスク</td></tr>
+            <tr><td><code>TweakLoader</code></td><td>ゲストごとに tweak フォルダを読み込み、UIKit フック等を注入</td></tr>
+            <tr><td><code>ZSign</code></td><td>JIT-less 時は LiveContainer と同証明書でゲストを再署名</td></tr>
+            <tr><td><code>SideStore</code></td><td>アプリ更新（refresh）統合用 XPC サーバー</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="launch" class="sec-head">3 — 起動メカニズム</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ゲスト実行パイプライン</span>
+      <p>README の「How does it work?」に沿った流れ。ホスト（LiveContainer）がゲスト実行ファイルを<strong>動的ライブラリ化</strong>し、パスと Bundle を差し替えてからエントリポイントへジャンプする。</p>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+  A[IPA インストール] --> B[Mach-O パッチ]
+  B --> B1["__PAGEZERO を 0xFFFFC000 / 0x4000 に変更"]
+  B --> B2["MH_EXECUTE → MH_DYLIB"]
+  B --> B3["TweakLoader.dylib を load command 注入"]
+  B --> C["@executable_path フック<br/>_NSGetExecutablePath"]
+  C --> D["NSBundle.mainBundle をゲストに差替"]
+  D --> E{JIT 利用?}
+  E -->|Yes iOS26未満| F[Library Validation バイパス]
+  E -->|JIT-less| G[ZSign で再署名]
+  F --> H[dlopen ゲスト実行体]
+  G --> H
+  H --> I[TweakLoader が tweak 読込]
+  I --> J[エントリポイント → UIApplicationMain]
+        </pre>
+      </div>
+      <h3>Mach-O パッチの要点</h3>
+      <ul>
+        <li><code>__PAGEZERO</code> の <code>vmaddr</code> / <code>vmsize</code> を固定値へ書き換え、ゲストがホストアドレス空間に載る余地を確保</li>
+        <li>ファイルタイプを <code>MH_DYLIB</code> に変更し、通常の実行ファイルではなく動的ライブラリとしてロード可能にする</li>
+        <li><code>TweakLoader.dylib</code> を load command で注入 — 以降すべてのゲストに tweak 基盤が載る</li>
+      </ul>
+      <h3>実行パスと Bundle の偽装</h3>
+      <ul>
+        <li><code>dyld4::APIs::_NSGetExecutablePath</code> をフックし、<code>config.process.mainExecutablePath</code> を書き換え可能な領域へ差し替え（<code>builtin_vm_protect</code> または TPRO unlock）</li>
+        <li><code>NSBundle.mainBundle</code> をゲストアプリの bundle に上書き — ゲストから見た「自分自身」のパスが正しく見える</li>
+      </ul>
+      <h3>Library Validation バイパス</h3>
+      <p>JIT が使える環境（iOS 26 未満）では codesign を完全に迂回できる。JIT-less では全実行ファイルを署名するためこの経路は使わない。実装は <a href="https://blog.xpnsec.com/restoring-dyld-memory-loading/" target="_blank" rel="noopener">Restoring Dyld Memory Loading</a> 系の手法に由来。</p>
+      <h3>Keychain の半分離</h3>
+      <p><code>entitlements.xml</code> で 128 個の keychain access group を定義し、同一アプリの各コンテナへランダム割当。最大 128 コンテナで keychain を分離できる（完全サンドボックスではない — 後述の制限参照）。</p>
+    </div>
+
+    <section id="features" class="sec-head">4 — 主な機能</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ユーザー向け機能</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>機能</th><th>操作・条件</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>IPA インストール</td><td>「+」から IPA 選択 → 次回起動アプリを指定。長押しで管理</td></tr>
+            <tr><td>ホーム画面追加</td><td><a href="https://livecontainer.github.io/docs/guides/add-to-home-screen" target="_blank" rel="noopener">公式ガイド</a> — LaunchAppExtension 経由</td></tr>
+            <tr><td>複数 LiveContainer</td><td>別インスタンス間でデータ移行ほぼシームレス。同時起動に利用</td></tr>
+            <tr><td>マルチタスク</td><td>バナー長押し → Multitask。SideStore/AltStore インストール時は <strong>Keep App Extensions</strong> 必須。JIT は PID アタッチ対応 enabler（StikDebug 等）が必要</td></tr>
+            <tr><td>JIT</td><td>iOS 26 未満で署名省略。詳細は <a href="https://livecontainer.github.io/docs/guides/jit-support" target="_blank" rel="noopener">JIT ガイド</a></td></tr>
+            <tr><td>Tweak</td><td>外部 tweak フォルダをゲストごとに指定 — TweakLoader が注入</td></tr>
+            <tr><td>複数コンテナ</td><td>同一アプリのデータコンテナを複数保持。外部コンテナも可</td></tr>
+            <tr><td>アプリ非表示</td><td>ロック / 非表示設定（README の Hiding Apps 参照）</td></tr>
+            <tr><td>Fix File Picker / 通知</td><td>ゲスト個別設定でファイルピッカー・ローカル通知の互換修正</td></tr>
+            <tr><td>Open In App</td><td>URL 入力または iCloud ショートカット共有で対応アプリを起動</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 互換性</span>
+      <p>全アプリが動くわけではない。<a href="https://github.com/LiveContainer/LiveContainer/labels/compatibility" target="_blank" rel="noopener">compatibility ラベル</a>付き Issue で既知問題を確認。リストに無ければ多くは動作するが、動かない場合は Issue テンプレートから報告。</p>
+    </div>
+
+    <section id="limits" class="sec-head">5 — 制限事項</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> README が列挙する制約</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>項目</th><th>影響</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>ゲスト entitlements</td><td>ホストへは適用されない（sideload では基本 entitlements で足りる想定）</td></tr>
+            <tr><td>App Permissions</td><td>端末全体でグローバルに適用 — ゲスト単位の分離なし</td></tr>
+            <tr><td>サンドボックス</td><td>ゲストコンテナは相互アクセス可能 — 他ゲストのデータを読める</td></tr>
+            <tr><td>App Extensions</td><td>未対応（LiveContainer は sandbox 内、SpringBoard がゲストを認識しない、App ID 消費）</td></tr>
+            <tr><td>マルチタスク + iPhone Mirroring</td><td>iPad 物理キーボードは修正済みだが、Mirroring は別チェックで未解決</td></tr>
+            <tr><td>Push 通知</td><td>リモート push は動作しない</td></tr>
+            <tr><td>Custom URL scheme 照会</td><td>動作しない可能性（README は ? 付き）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>TODO（上流）:</strong> カスタム Mach-O パーサの代わりに <a href="https://github.com/trailofbits/choma" target="_blank" rel="noopener">ChOma</a> 採用が README に記載されている。
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">6 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/LiveContainer/LiveContainer" target="_blank" rel="noopener">GitHub: LiveContainer/LiveContainer</a> — 本体リポジトリ</li>
+        <li><a href="https://livecontainer.github.io/docs/intro" target="_blank" rel="noopener">LiveContainer 公式ドキュメント</a></li>
+        <li><a href="https://livecontainer.github.io/docs/installation" target="_blank" rel="noopener">インストールガイド</a></li>
+        <li><a href="https://livecontainer.github.io/docs/faq" target="_blank" rel="noopener">FAQ</a></li>
+        <li><a href="https://crowdin.com/project/livecontainer" target="_blank" rel="noopener">Crowdin — 翻訳プロジェクト</a></li>
+        <li><a href="docs/pake-plus-i-os.html">docs-site: PakePlus-iOS 解説</a> — Web を iOS ネイティブ化する別系統（WKWebView ラッパー）</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
