@@ -270,7 +270,7 @@
 
   <div class="main">
     <h1>Sandcastle</h1>
-    <p class="subtitle">@ai-hero/sandcastle v0.8 — agent orchestration / 6 agent providers / sandbox isolation / branch strategy / session resume</p>
+    <p class="subtitle">@ai-hero/sandcastle v0.9 — agent orchestration / 6 agent providers / sandbox isolation / branch strategy / session resume</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
@@ -364,8 +364,8 @@ console.log(result.commits);</code></pre>
             <tr><th>Factory</th><th>例</th><th>session capture</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>claudeCode(model, opts?)</code></td><td><code>claudeCode("claude-opus-4-7", { effort: "high" })</code></td><td>既定 ON（<code>captureSessions: false</code> で opt-out）</td></tr>
-            <tr><td><code>codex(model, opts?)</code></td><td><code>codex("gpt-5.4")</code></td><td>既定 ON</td></tr>
+            <tr><td><code>claudeCode(model, opts?)</code></td><td><code>claudeCode("claude-opus-4-7", { effort: "high", permissionMode: "auto" })</code></td><td>既定 ON。v0.8+ で <code>permissionMode</code> により AFK run の tool approval を bypass 以外に切替可能。</td></tr>
+            <tr><td><code>codex(model, opts?)</code></td><td><code>codex("gpt-5.4", { approvalsReviewer: "auto_review" })</code></td><td>既定 ON。v0.8+ で <code>approvalsReviewer: "auto_review"</code> が reviewer agent 経由の approval を有効化。</td></tr>
             <tr><td><code>pi(model, opts?)</code></td><td><code>pi("claude-sonnet-4-6", { thinking: "high" })</code></td><td>既定 ON</td></tr>
             <tr><td><code>cursor(model)</code></td><td><code>cursor("composer-2")</code></td><td>—</td></tr>
             <tr><td><code>opencode(model)</code></td><td><code>opencode("opencode/big-pickle")</code></td><td>—</td></tr>
@@ -373,7 +373,7 @@ console.log(result.commits);</code></pre>
           </tbody>
         </table>
       </div>
-      <div class="ve-callout"><strong>session resume / fork:</strong> Claude Code・Codex・Pi は iteration 後に session ファイルを host へ取り込む。<code>RunResult.resume()</code> は同一 session を継続、<code>RunResult.fork()</code> は新 session ID で分岐する。fork は session のみを分離し branch / worktree は分離しない（並行 fork には明示 branch が必要）。</div>
+      <div class="ve-callout"><strong>session resume / fork:</strong> Claude Code・Codex・Pi は iteration 後に session ファイルを host へ取り込む。v0.9 では Claude Code の subagent / workflow transcript（<code>&lt;session-id&gt;/subagents/agent-*.jsonl</code>）も main session と一緒に capture する（個別失敗は warning、main session 失敗は run 失敗）。<code>RunResult.resume()</code> は同一 session を継続、<code>RunResult.fork()</code> は新 session ID で分岐。fork は session のみを分離し branch / worktree は分離しない（並行 fork には明示 branch が必要）。</div>
     </div>
 
     <section id="providers" class="sec-head">5 — Sandbox Provider</section>
@@ -432,7 +432,7 @@ console.log(result.commits);</code></pre>
           </thead>
           <tbody>
             <tr><td><code>prompt</code></td><td>そのまま agent へ渡す。<code>promptArgs</code> と併用不可。</td><td>JavaScript 側で文字列を組む短い指示。</td></tr>
-            <tr><td><code>promptFile</code></td><td><code>{{KEY}}</code> substitution と shell expression expansion を実行。</td><td>issue / branch / command output を混ぜる再利用 prompt。</td></tr>
+            <tr><td><code>promptFile</code></td><td><code>{{KEY}}</code> substitution と shell expression expansion を実行。<code>promptArgs</code> の null / undefined は v0.9 で <code>PromptError</code> として fail-fast。</td><td>issue / branch / command output を混ぜる再利用 prompt。</td></tr>
             <tr><td><code>completionSignal</code></td><td>agent output に含まれたら iteration loop を早期停止。既定は <code>&lt;promise&gt;COMPLETE&lt;/promise&gt;</code>。</td><td>タスク完了時に無駄な iteration を走らせない。</td></tr>
             <tr><td><code>completionTimeoutSeconds</code></td><td>completion signal 検出後、process が exit しない「hanging process」に対する猶予（既定 60 秒）。</td><td>signal 後の MCP / 子 process 残留でも commit を失わず成功扱いにできる。</td></tr>
             <tr><td><code>output: Output.object()</code></td><td>prompt 内の XML tag から schema 検証済み JSON を抽出。<code>maxIterations === 1</code> 必須。</td><td>型付き結果を run の戻り値として受け取る。</td></tr>
@@ -460,7 +460,8 @@ console.log(result.commits);</code></pre>
     <div class="ve-card ve-card--recessed" style="--i:3; margin-top:1rem">
       <span class="ve-section-label"><span class="ve-dot"></span> 読んだ主要ソース</span>
       <ul class="source-list">
-        <li>README.md — Quick start、API、provider、session、structured output</li>
+        <li>README.md — Quick start、API、provider、session capture / resume / fork</li>
+        <li>CHANGELOG.md — v0.9.0 subagent transcript capture、init / promptArgs 改善</li>
         <li>CONTEXT.md — 用語（completion timeout、hanging process、structured output）</li>
         <li>src/index.ts — 公開 export（6 agent / 5 sandbox factory）</li>
         <li>src/run.ts / src/createSandbox.ts / src/createWorktree.ts — 実行モデル</li>
@@ -474,7 +475,7 @@ console.log(result.commits);</code></pre>
       <span class="ve-section-label"><span class="ve-dot"></span> public references</span>
       <ul>
         <li><a href="https://github.com/mattpocock/sandcastle" target="_blank" rel="noopener">GitHub: mattpocock/sandcastle</a> — 本体リポジトリ</li>
-        <li><a href="https://www.npmjs.com/package/@ai-hero/sandcastle" target="_blank" rel="noopener">npm: @ai-hero/sandcastle</a> — package registry（v0.8.x）</li>
+        <li><a href="https://www.npmjs.com/package/@ai-hero/sandcastle" target="_blank" rel="noopener">npm: @ai-hero/sandcastle</a> — package registry（v0.9.x）</li>
         <li><a href="https://www.docker.com/" target="_blank" rel="noopener">Docker</a> / <a href="https://podman.io/" target="_blank" rel="noopener">Podman</a> / <a href="https://vercel.com/" target="_blank" rel="noopener">Vercel</a> / <a href="https://www.daytona.io/" target="_blank" rel="noopener">Daytona</a> — built-in sandbox provider の前提環境</li>
       </ul>
     </div>
