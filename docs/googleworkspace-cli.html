@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gws — Google Workspace 統合 CLI（googleworkspace/cli）</title>
+  <meta name="description" content="googleworkspace/cli（gws）の技術概要。Discovery Document から動的にコマンドを生成する Rust CLI。Drive・Gmail・Calendar ほか Workspace API 全体を JSON 出力で操作し、100 超の Agent Skills を同梱。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="gws — Google Workspace 統合 CLI（googleworkspace/cli）">
+  <meta property="og:description" content="Discovery から動的生成する gws CLI。認証フロー、+ ヘルパー、Agent Skills、Model Armor、構造化 JSON 出力の整理。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/googleworkspace-cli.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="gws — Google Workspace 統合 CLI">
+  <meta name="twitter:description" content="googleworkspace/cli：Discovery 動的 CLI、認証、+ ヘルパー、100+ Agent Skills。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Code+Pro:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.006 145);
+      --foreground: oklch(0.2 0.03 145);
+      --card: oklch(1 0.004 145);
+      --card-foreground: var(--foreground);
+      --popover: var(--card);
+      --popover-foreground: var(--foreground);
+      --primary: oklch(0.32 0.09 145);
+      --primary-foreground: oklch(0.98 0.01 145);
+      --secondary: oklch(0.94 0.02 145);
+      --secondary-foreground: var(--foreground);
+      --muted: oklch(0.93 0.015 145);
+      --muted-foreground: oklch(0.48 0.04 145);
+      --accent: oklch(0.94 0.025 250);
+      --accent-foreground: var(--foreground);
+      --destructive: oklch(0.55 0.2 25);
+      --border: oklch(0.88 0.02 145);
+      --input: var(--border);
+      --ring: oklch(0.52 0.14 145);
+      --chart-1: oklch(0.52 0.16 145);
+      --chart-2: oklch(0.48 0.14 250);
+      --chart-3: oklch(0.55 0.12 85);
+      --chart-4: oklch(0.58 0.16 25);
+      --chart-5: oklch(0.62 0.1 200);
+      --code-bg: oklch(0.16 0.04 145);
+      --code-text: oklch(0.88 0.05 145);
+      --font-body: 'Work Sans', system-ui, sans-serif;
+      --font-mono: 'Source Code Pro', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.025 145);
+        --foreground: oklch(0.94 0.01 145);
+        --card: oklch(0.18 0.03 145);
+        --card-foreground: var(--foreground);
+        --popover: var(--card);
+        --popover-foreground: var(--foreground);
+        --primary: oklch(0.82 0.06 145);
+        --primary-foreground: oklch(0.14 0.03 145);
+        --secondary: oklch(0.22 0.03 145);
+        --secondary-foreground: var(--foreground);
+        --muted: oklch(0.24 0.03 145);
+        --muted-foreground: oklch(0.68 0.04 145);
+        --accent: oklch(0.22 0.04 250);
+        --accent-foreground: var(--foreground);
+        --destructive: oklch(0.65 0.18 25);
+        --border: oklch(1 0 0 / 12%);
+        --input: var(--border);
+        --ring: oklch(0.62 0.12 145);
+        --chart-1: oklch(0.72 0.14 145);
+        --chart-2: oklch(0.68 0.12 250);
+        --chart-3: oklch(0.75 0.1 85);
+        --chart-4: oklch(0.7 0.14 25);
+        --chart-5: oklch(0.72 0.1 200);
+        --code-bg: oklch(0.11 0.03 145);
+        --code-text: oklch(0.82 0.06 145);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--text-dim); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-table-wrap tr:last-child td { border-bottom: none; }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.5rem; line-height: 1.15; font-weight: 700; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--text-dim); margin: 0.75rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 0.9375rem;
+      padding: 40px;
+      min-height: 100vh;
+      background-image: radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-1) 8%, transparent) 0%, transparent 55%);
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-1) 12%, transparent) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.7; max-width: 760px; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { margin: 0 0 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0 0.5rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+    .badge { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.2rem 0.45rem; border-radius: 999px; border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); margin: 0 0.25rem 0.25rem 0; }
+    .badge--accent { color: var(--foreground); background: color-mix(in oklch, var(--chart-1) 18%, var(--card)); border-color: color-mix(in oklch, var(--chart-1) 42%, var(--border)); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#syntax">コマンド構文</a>
+    <a href="#auth">認証</a>
+    <a href="#agents">エージェント向け</a>
+    <a href="#config">設定・終了コード</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>gws</h1>
+    <p class="subtitle">Google Workspace 全 API を 1 本の CLI で。Discovery Document から動的にコマンドを組み立て、JSON 出力と Agent Skills で人間と LLM の両方を想定した設計。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> プロジェクト</span>
+      <p><strong>gws</strong>（<a href="https://github.com/googleworkspace/cli" target="_blank" rel="noopener">googleworkspace/cli</a>）は、Drive・Gmail・Calendar・Sheets など Google Workspace API を統合操作する Rust 製 CLI。静的なサブコマンド一覧を持たず、実行時に Google の <a href="https://developers.google.com/discovery" target="_blank" rel="noopener">Discovery Service</a> を読み取り、API 追加に追従する。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Discovery</span><span class="ve-kpi-card__label">動的コマンド生成</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">JSON</span><span class="ve-kpi-card__label">構造化 stdout</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">100+</span><span class="ve-kpi-card__label">Agent Skills</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Rust</span><span class="ve-kpi-card__label">npm / brew / cargo</span></div>
+      </div>
+      <p>npm パッケージ <code>@googleworkspace/cli</code> は GitHub Releases から各 OS 向けバイナリを取得するラッパー。Homebrew・Nix flake・<code>cargo install</code> も利用できる。</p>
+      <div class="ve-callout">
+        <strong>非公式プロダクト:</strong> Google 公式サポート対象外。v1.0 前のため破壊的変更があり得る。
+      </div>
+    </div>
+
+    <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 二段階パース</span>
+      <p>コマンド木は <code>clap</code> で Discovery Document から都度構築する。成功・失敗・ダウンロードメタデータはすべて JSON で返る。</p>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart LR
+  A["argv[1] で service 特定"] --> B["Discovery Document 取得\n（24h キャッシュ）"]
+  B --> C["clap::Command 木を構築"]
+  C --> D["残り argv を再パース"]
+  D --> E["認証 → HTTP 実行"]
+  E --> F["JSON stdout"]
+        </pre>
+      </div>
+      <h3>リポジトリ構成（要点）</h3>
+      <ul>
+        <li><code>crates/google-workspace-cli</code> — CLI 本体（Rust）</li>
+        <li><code>crates/google-workspace</code> — 共有ライブラリ</li>
+        <li><code>skills/</code> — API 別・workflow・recipe・persona の Agent Skills（<code>SKILL.md</code>）</li>
+        <li><code>npm/</code> — プラットフォーム別バイナリ取得スクリプト</li>
+      </ul>
+    </div>
+
+    <section id="syntax" class="sec-head">3 — コマンド構文</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 基本形</span>
+      <div class="ve-code-block"><pre><code>gws &lt;service&gt; &lt;resource&gt; [sub-resource] &lt;method&gt; [flags]
+gws --help
+gws &lt;service&gt; --help</code></pre></div>
+      <h3>主要フラグ</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>フラグ</th><th>用途</th></tr></thead>
+          <tbody>
+            <tr><td><code>--params '&lt;JSON&gt;'</code></td><td>URL / クエリパラメータ（<code>pageSize</code>、<code>q</code> など）</td></tr>
+            <tr><td><code>--json '&lt;JSON&gt;'</code></td><td>POST / PUT / PATCH のリクエストボディ</td></tr>
+            <tr><td><code>--fields '&lt;MASK&gt;'</code></td><td>レスポンスフィールド制限（エージェントのコンテキスト節約に重要）</td></tr>
+            <tr><td><code>--page-all</code></td><td>自動ページング、NDJSON（1 行 1 JSON）</td></tr>
+            <tr><td><code>--dry-run</code></td><td>変更系操作のペイロード検証（実行しない）</td></tr>
+            <tr><td><code>--upload &lt;PATH&gt;</code></td><td>multipart アップロード</td></tr>
+            <tr><td><code>--sanitize &lt;TEMPLATE&gt;</code></td><td>Model Armor による出力サニタイズ</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>クイックスタート</h3>
+      <div class="ve-code-block"><pre><code>gws auth setup
+gws auth login
+gws drive files list --params '{"pageSize": 5}'
+gws schema drive.files.list</code></pre></div>
+      <div class="ve-callout">
+        <strong>エージェント向けルール（CONTEXT.md）:</strong> ペイロード不明時は先に <code>gws schema &lt;resource&gt;.&lt;method&gt;</code>。LIST/GET は <code>--fields</code> で巨大 JSON を避ける。変更操作は <code>--dry-run</code> を先に使う。
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--elevated" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> + ヘルパーコマンド</span>
+      <p>Discovery 自動生成に加え、よく使う操作は <code>+</code> 接頭辞の手書きヘルパーとして同梱。Discovery 名と衝突しない。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>サービス</th><th>例</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td><code>gmail</code></td><td><code>+send</code> <code>+triage</code> <code>+watch</code></td><td>送信・未読サマリ・NDJSON ストリーム</td></tr>
+            <tr><td><code>calendar</code></td><td><code>+insert</code> <code>+agenda</code></td><td>イベント作成・予定一覧（アカウント TZ 自動）</td></tr>
+            <tr><td><code>sheets</code></td><td><code>+read</code> <code>+append</code></td><td>値の読み書き（range はシングルクォート推奨）</td></tr>
+            <tr><td><code>drive</code></td><td><code>+upload</code></td><td>メタデータ付きアップロード</td></tr>
+            <tr><td><code>workflow</code></td><td><code>+standup-report</code> <code>+meeting-prep</code></td><td>複数 API を跨ぐ定型ワークフロー</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-code-block"><pre><code>gws gmail +send --to alice@example.com --subject "Hello" --body "Hi there"
+gws calendar +agenda --today --timezone America/New_York
+gws workflow +standup-report</code></pre></div>
+    </div>
+
+    <section id="auth" class="sec-head">4 — 認証</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 方式の選択</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>状況</th><th>推奨</th></tr></thead>
+          <tbody>
+            <tr><td><code>gcloud</code> 済み</td><td><code>gws auth setup</code>（最速）</td></tr>
+            <tr><td>GCP プロジェクトのみ</td><td>Cloud Console で Desktop OAuth クライアント作成 → <code>gws auth login</code></td></tr>
+            <tr><td>既存アクセストークン</td><td><code>GOOGLE_WORKSPACE_CLI_TOKEN</code></td></tr>
+            <tr><td>サービスアカウント / エクスポート JSON</td><td><code>GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE</code></td></tr>
+            <tr><td>CI / ヘッドレス</td><td>対話マシンで <code>gws auth export</code> → 環境変数で渡す</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>優先順位</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>優先度</th><th>ソース</th><th>設定</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>アクセストークン</td><td><code>GOOGLE_WORKSPACE_CLI_TOKEN</code></td></tr>
+            <tr><td>2</td><td>資格情報ファイル</td><td><code>GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE</code></td></tr>
+            <tr><td>3</td><td>暗号化資格情報</td><td><code>gws auth login</code>（AES-256-GCM、OS キーリング）</td></tr>
+            <tr><td>4</td><td>平文 JSON</td><td><code>~/.config/gws/credentials.json</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout">
+        <strong>testing mode の OAuth:</strong> 未検証アプリは約 25 スコープ上限。<code>recommended</code> プリセット（85+ スコープ）は失敗しうる。<code>gws auth login -s drive,gmail,sheets</code> のように必要サービスだけ選ぶ。テストユーザー登録忘れは「Access blocked」の典型原因。
+      </div>
+    </div>
+
+    <section id="agents" class="sec-head">5 — エージェント向け機能</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Agent Skills</span>
+      <p><code>skills/</code> に API 別（<code>gws-drive</code> 等）、workflow（<code>gws-workflow-*</code>）、50 件の recipe、persona スキルが同梱。一覧はリポジトリ内 <code>docs/skills.md</code>。</p>
+      <div class="ve-code-block"><pre><code>npx skills add https://github.com/googleworkspace/cli
+npx skills add https://github.com/googleworkspace/cli/tree/main/skills/gws-drive</code></pre></div>
+      <p>
+        <span class="badge badge--accent">Gemini CLI</span>
+        <span class="badge badge--accent">OpenClaw</span>
+        <span class="badge">npx skills</span>
+      </p>
+      <p>Gemini CLI 拡張: 先に <code>gws auth setup</code> 後、<code>gemini extensions install https://github.com/googleworkspace/cli</code>。<code>gws-shared</code> スキルは CLI 未インストール時に npm 経由で導入する install ブロックを持つ。</p>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> Model Armor</span>
+      <p>API レスポンスを <a href="https://cloud.google.com/security/products/model-armor" target="_blank" rel="noopener">Google Cloud Model Armor</a> でスキャンし、プロンプトインジェクションをエージェント到達前に検知。</p>
+      <div class="ve-code-block"><pre><code>gws gmail users messages get --params '...' \
+  --sanitize "projects/P/locations/L/templates/T"</code></pre></div>
+      <p>デフォルトテンプレート: <code>GOOGLE_WORKSPACE_CLI_SANITIZE_TEMPLATE</code>。モード: <code>GOOGLE_WORKSPACE_CLI_SANITIZE_MODE</code>（<code>warn</code> / <code>block</code>）。</p>
+    </div>
+
+    <section id="config" class="sec-head">6 — 設定・終了コード</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 環境変数（抜粋）</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>変数</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td><code>GOOGLE_WORKSPACE_CLI_CONFIG_DIR</code></td><td>設定ディレクトリ（既定 <code>~/.config/gws</code>）</td></tr>
+            <tr><td><code>GOOGLE_WORKSPACE_CLI_CLIENT_ID</code> / <code>_SECRET</code></td><td><code>client_secret.json</code> の代替</td></tr>
+            <tr><td><code>GOOGLE_WORKSPACE_PROJECT_ID</code></td><td>クォータ / 課金用 GCP プロジェクト ID</td></tr>
+            <tr><td><code>GOOGLE_WORKSPACE_CLI_LOG</code></td><td>stderr ログレベル（例: <code>gws=debug</code>）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>.env</code> ファイル（dotenvy）にも対応。テンプレートはリポジトリ内 <code>.env.example</code>。</p>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 終了コード</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>コード</th><th>意味</th><th>例</th></tr></thead>
+          <tbody>
+            <tr><td><code>0</code></td><td>成功</td><td>—</td></tr>
+            <tr><td><code>1</code></td><td>API エラー</td><td>Google 4xx / 5xx</td></tr>
+            <tr><td><code>2</code></td><td>認証エラー</td><td>資格情報欠落・期限切れ</td></tr>
+            <tr><td><code>3</code></td><td>検証エラー</td><td>未知サービス・不正フラグ</td></tr>
+            <tr><td><code>4</code></td><td>Discovery エラー</td><td>スキーマ取得失敗</td></tr>
+            <tr><td><code>5</code></td><td>内部エラー</td><td>予期しない失敗</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card ve-card--recessed" style="--i:0">
+      <ul>
+        <li><a href="https://github.com/googleworkspace/cli" target="_blank" rel="noopener">googleworkspace/cli</a> — ソース・Releases</li>
+        <li><a href="https://www.npmjs.com/package/@googleworkspace/cli" target="_blank" rel="noopener">@googleworkspace/cli</a> — npm パッケージ</li>
+        <li><a href="https://github.com/googleworkspace/cli/blob/main/docs/skills.md" target="_blank" rel="noopener">Skills Index</a> — 同梱 Agent Skills 一覧</li>
+        <li><a href="https://developers.google.com/discovery" target="_blank" rel="noopener">Google Discovery Service</a> — コマンド生成の元データ</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
