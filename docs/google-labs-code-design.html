@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@google/design.md — DESIGN.md フォーマットと CLI（google-labs-code/design.md）</title>
+  <meta name="description" content="google-labs-code/design.md の技術概要。YAML トークンと Markdown 散文でビジュアル ID を記述する DESIGN.md フォーマット、lint / diff / export CLI、9 ルールのリンター、Tailwind・DTCG へのエクスポート。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="@google/design.md — DESIGN.md フォーマットと CLI">
+  <meta property="og:description" content="AI コーディングエージェント向け DESIGN.md フォーマット。トークン + 散文の二層構造、CLI（lint / diff / export / spec）、WCAG コントラスト検査。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/google-labs-code-design.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="@google/design.md — DESIGN.md フォーマットと CLI">
+  <meta name="twitter:description" content="google-labs-code/design.md：DESIGN.md 仕様、CLI、リンター 9 ルール、Tailwind / DTCG エクスポート。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.008 55);
+      --foreground: oklch(0.22 0.04 45);
+      --card: oklch(1 0.004 55);
+      --card-foreground: var(--foreground);
+      --popover: var(--card);
+      --popover-foreground: var(--foreground);
+      --primary: oklch(0.35 0.1 42);
+      --primary-foreground: oklch(0.98 0.01 55);
+      --secondary: oklch(0.94 0.02 55);
+      --secondary-foreground: var(--foreground);
+      --muted: oklch(0.93 0.018 55);
+      --muted-foreground: oklch(0.48 0.04 45);
+      --accent: oklch(0.95 0.025 42);
+      --accent-foreground: var(--foreground);
+      --destructive: oklch(0.55 0.2 25);
+      --border: oklch(0.88 0.025 55);
+      --input: var(--border);
+      --ring: oklch(0.55 0.16 42);
+      --chart-1: oklch(0.55 0.16 42);
+      --chart-2: oklch(0.62 0.12 155);
+      --chart-3: oklch(0.48 0.08 250);
+      --chart-4: oklch(0.72 0.14 78);
+      --chart-5: oklch(0.58 0.1 15);
+      --code-bg: oklch(0.16 0.035 45);
+      --code-text: oklch(0.88 0.04 55);
+      --font-body: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+      --font-mono: 'Space Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.025 45);
+        --foreground: oklch(0.94 0.015 55);
+        --card: oklch(0.19 0.03 45);
+        --card-foreground: var(--foreground);
+        --popover: var(--card);
+        --popover-foreground: var(--foreground);
+        --primary: oklch(0.82 0.06 42);
+        --primary-foreground: oklch(0.14 0.03 45);
+        --secondary: oklch(0.22 0.03 45);
+        --secondary-foreground: var(--foreground);
+        --muted: oklch(0.24 0.03 45);
+        --muted-foreground: oklch(0.68 0.04 55);
+        --accent: oklch(0.24 0.04 42);
+        --accent-foreground: var(--foreground);
+        --destructive: oklch(0.65 0.18 25);
+        --border: oklch(1 0 0 / 12%);
+        --input: var(--border);
+        --ring: oklch(0.65 0.14 42);
+        --chart-1: oklch(0.72 0.14 42);
+        --chart-2: oklch(0.68 0.12 155);
+        --chart-3: oklch(0.62 0.1 250);
+        --chart-4: oklch(0.78 0.12 78);
+        --chart-5: oklch(0.68 0.1 15);
+        --code-bg: oklch(0.11 0.025 45);
+        --code-text: oklch(0.86 0.04 55);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; font-family: var(--font-mono); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); min-width: 0; }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.5rem; line-height: 1.15; font-weight: 700; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; font-family: var(--font-mono); }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.55 0.16 42 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.72 0.14 42 / 0.1) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; font-family: var(--font-mono); }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.7; max-width: 760px; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.0625rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .badge { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.2rem 0.45rem; border-radius: 999px; border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); margin: 0 0.25rem 0.25rem 0; }
+    .badge--accent { color: var(--foreground); background: color-mix(in oklch, var(--chart-1) 18%, var(--card)); border-color: color-mix(in oklch, var(--chart-1) 42%, var(--border)); }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+    .layer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 720px) { .layer-grid { grid-template-columns: 1fr; } }
+    .layer-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; }
+    .layer-card__title { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--chart-1); margin-bottom: 0.5rem; }
+    .check-list { list-style: none; padding: 0; margin: 0.75rem 0 0; }
+    .check-list li { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+    .check-list li:last-child { border-bottom: none; }
+    .check-mark { color: var(--chart-2); font-family: var(--font-mono); font-weight: 700; flex-shrink: 0; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#format">ファイル構造</a>
+    <a href="#philosophy">設計思想</a>
+    <a href="#cli">CLI</a>
+    <a href="#lint">Lint ルール</a>
+    <a href="#export">エクスポート</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>@google/design.md</h1>
+    <p class="subtitle">コーディングエージェント向けにビジュアル ID を記述する DESIGN.md フォーマットと、その検証・差分・エクスポートを行う CLI（npm: <code>@google/design.md</code>）。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+      <p><strong>DESIGN.md</strong> は、ブランドの見た目・雰囲気・振る舞いをプレーンテキストで記述するオープンフォーマット。YAML フロントマターに機械可読なデザイントークン、Markdown 本文に人間（とエージェント）向けの設計意図を書く。同梱 CLI が構造検証・WCAG コントラスト・トークン参照の解決・Tailwind / DTCG への変換を JSON 出力で返す。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">alpha</span>
+          <span class="ve-kpi-card__label">フォーマット版</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">4</span>
+          <span class="ve-kpi-card__label">CLI サブコマンド</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">9</span>
+          <span class="ve-kpi-card__label">Lint ルール</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">3</span>
+          <span class="ve-kpi-card__label">export 形式</span>
+        </div>
+      </div>
+      <p>
+        <span class="badge badge--accent">lint</span>
+        <span class="badge badge--accent">diff</span>
+        <span class="badge badge--accent">export</span>
+        <span class="badge badge--accent">spec</span>
+        <span class="badge">Tailwind v3/v4</span>
+        <span class="badge">DTCG</span>
+        <span class="badge">WCAG AA</span>
+      </p>
+      <div class="ve-callout">
+        <strong>Awesome DESIGN.md との違い:</strong> <a href="https://github.com/google-labs-code/design.md" target="_blank" rel="noopener">google-labs-code/design.md</a> はフォーマット仕様とリンター本体。<a href="awesome-design-md.html">Awesome DESIGN.md</a> は既存サービスから抽出した DESIGN.md ファイルのキュレーション集。
+      </div>
+    </div>
+
+    <section id="format" class="sec-head">2 — ファイル構造</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 二層構造</span>
+      <p>1 ファイルにトークン（規範値）と散文（適用文脈）を同居させる。トークンは正確な値、散文は「なぜその値か」「どこに使うか」をエージェントへ伝える。</p>
+      <div class="layer-grid">
+        <div class="layer-card">
+          <div class="layer-card__title">YAML front matter</div>
+          <p>先頭 <code>---</code> で囲んだトークン群。<code>colors</code> / <code>typography</code> / <code>rounded</code> / <code>spacing</code> / <code>components</code> など。参照は <code>{colors.primary}</code> 形式。</p>
+        </div>
+        <div class="layer-card">
+          <div class="layer-card__title">Markdown body</div>
+          <p><code>##</code> 見出しで区切った散文セクション。Overview → Colors → Typography → … の順序が推奨。未知のセクションは保持され、エラーにならない。</p>
+        </div>
+      </div>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TB
+  subgraph file["DESIGN.md"]
+    FM["YAML front matter\n(name, colors, typography, components…)"]
+    MD["Markdown body\n(Overview, Colors, Do's and Don'ts…)"]
+  end
+  FM -->|"規範値"| Agent["コーディングエージェント"]
+  MD -->|"意図・制約"| Agent
+  Agent --> UI["一貫した UI 生成"]
+        </pre>
+      </div>
+      <h3>最小スキーマ</h3>
+      <div class="ve-code-block">
+        <pre><code>---
+name: Heritage
+colors:
+  primary: "#1A1C1E"
+  tertiary: "#B8422E"
+typography:
+  h1:
+    fontFamily: Public Sans
+    fontSize: 3rem
+components:
+  button-primary:
+    backgroundColor: "{colors.tertiary}"
+    textColor: "{colors.on-tertiary}"
+---
+
+## Overview
+Architectural Minimalism meets Journalistic Gravitas…
+
+## Colors
+- **Primary (#1A1C1E):** Deep ink for headlines…</code></pre>
+      </div>
+      <h3>セクション順（存在する場合）</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>セクション</th><th>別名</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>Overview</td><td>Brand &amp; Style</td></tr>
+            <tr><td>2</td><td>Colors</td><td>—</td></tr>
+            <tr><td>3</td><td>Typography</td><td>—</td></tr>
+            <tr><td>4</td><td>Layout</td><td>Layout &amp; Spacing</td></tr>
+            <tr><td>5</td><td>Elevation &amp; Depth</td><td>Elevation</td></tr>
+            <tr><td>6</td><td>Shapes</td><td>—</td></tr>
+            <tr><td>7</td><td>Components</td><td>—</td></tr>
+            <tr><td>8</td><td>Do's and Don'ts</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout">
+        <strong>拡張:</strong> <code>motion</code> や <code>iconography</code> など仕様外キーも受理される。リンターは既知スキーマキーの typo のみ警告し、カスタム拡張は黙認する。
+      </div>
+    </div>
+
+    <section id="philosophy" class="sec-head">3 — 設計思想</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 散文が主役</span>
+      <p>PHILOSOPHY.md の中心命題: <strong>生成品質は値の精度より、意図の記述の明確さで決まる</strong>。トークンは散文の参照用コンテキストであり、レンダリング命令ではない。</p>
+      <ul class="check-list">
+        <li><span class="check-mark">→</span><span><strong>具体参照 &gt; 形容詞:</strong> 「1970 年代の大学院配布資料」は「モダンでクリーンで信頼感」より情報量が大きい。参照が点を、形容詞が領域を示す。</span></li>
+        <li><span class="check-mark">→</span><span><strong>否定制約:</strong> 参照が具体なら「グラデーション禁止」等は暗黙に伝わる。<code>Do's and Don'ts</code> は意図的な補強として併用する。</span></li>
+        <li><span class="check-mark">→</span><span><strong>ユーザー主導の成長:</strong> 仕様は colors / typography 等の最小集合を標準化し、motion 等は各チームが prose + 任意 YAML で拡張する。</span></li>
+      </ul>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> リポジトリ構成</span>
+      <p>モノレポ（Bun + Turbo）。<code>packages/cli</code> が <code>@google/design.md</code> 本体。<code>examples/</code> に Atmospheric Glass・Paws and Paths・Totality Festival など実例 DESIGN.md と <code>design_tokens.json</code> が同梱される。</p>
+    </div>
+
+    <section id="cli" class="sec-head">4 — CLI</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> インストールと実行</span>
+      <div class="ve-code-block">
+        <pre><code>npm install @google/design.md
+
+# 検証（JSON 出力、エラー時 exit 1）
+npx @google/design.md lint DESIGN.md
+
+# 2 版のトークン差分
+npx @google/design.md diff DESIGN.md DESIGN-v2.md
+
+# Tailwind / DTCG へエクスポート
+npx @google/design.md export --format css-tailwind DESIGN.md &gt; theme.css
+
+# 仕様本文をプロンプトへ注入
+npx @google/design.md spec --rules</code></pre>
+      </div>
+      <div class="ve-callout">
+        <strong>Windows:</strong> <code>design.md</code> バイナリ名が <code>.md</code> ファイル関連付けと衝突する場合がある。<code>npx -p @google/design.md designmd lint DESIGN.md</code> または <code>package.json</code> scripts で <code>designmd</code> エイリアスを使う。
+      </div>
+      <h3>サブコマンド一覧</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>コマンド</th><th>役割</th><th>終了コード</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>lint</code></td><td>構造・参照・コントラスト・セクション順を検査。findings + summary を JSON 出力</td><td>error ありで 1</td></tr>
+            <tr><td><code>diff</code></td><td>2 ファイル間のトークン added / removed / modified と prose 回帰フラグ</td><td>回帰ありで 1</td></tr>
+            <tr><td><code>export</code></td><td><code>json-tailwind</code> / <code>css-tailwind</code> / <code>dtcg</code> へ変換</td><td>—</td></tr>
+            <tr><td><code>spec</code></td><td>フォーマット仕様（<code>--rules</code> で Lint 表付き）を stdout へ</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>プログラム API</h3>
+      <div class="ve-code-block">
+        <pre><code>import { lint } from '@google/design.md/linter';
+
+const report = lint(markdownString);
+// report.findings, report.summary, report.designSystem</code></pre>
+      </div>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart LR
+  MD["DESIGN.md"] --> Parse["parser"]
+  Parse --> Lint["lint / 9 rules"]
+  Parse --> Export["export"]
+  Lint --> JSON["structured JSON"]
+  Export --> TW["Tailwind v3/v4"]
+  Export --> DTCG["tokens.json (DTCG)"]
+        </pre>
+      </div>
+    </div>
+
+    <section id="lint" class="sec-head">5 — Lint ルール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 9 ルール</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>ルール</th><th>重大度</th><th>内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>broken-ref</code></td><td>error</td><td><code>{colors.primary}</code> 等の参照が未定義トークンを指す</td></tr>
+            <tr><td><code>missing-primary</code></td><td>warning</td><td>colors があるのに <code>primary</code> が無い</td></tr>
+            <tr><td><code>contrast-ratio</code></td><td>warning</td><td>component の backgroundColor / textColor が WCAG AA 未満（4.5:1）</td></tr>
+            <tr><td><code>orphaned-tokens</code></td><td>warning</td><td>定義された color がどの component からも参照されない</td></tr>
+            <tr><td><code>missing-typography</code></td><td>warning</td><td>colors のみで typography が無い</td></tr>
+            <tr><td><code>section-order</code></td><td>warning</td><td>Markdown セクションが canonical 順序から外れている</td></tr>
+            <tr><td><code>unknown-key</code></td><td>warning</td><td>既知 YAML キーの typo（例: <code>colours:</code>）</td></tr>
+            <tr><td><code>token-summary</code></td><td>info</td><td>セクション別トークン数のサマリ</td></tr>
+            <tr><td><code>missing-sections</code></td><td>info</td><td>spacing / rounded 等の推奨セクション欠落</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>lint 出力例</h3>
+      <div class="ve-code-block">
+        <pre><code>{
+  "findings": [
+    {
+      "severity": "warning",
+      "path": "components.button-primary",
+      "message": "textColor (#ffffff) on backgroundColor (#1A1C1E) has contrast ratio 15.42:1 — passes WCAG AA."
+    }
+  ],
+  "summary": { "errors": 0, "warnings": 1, "info": 1 }
+}</code></pre>
+      </div>
+    </div>
+
+    <section id="export" class="sec-head">6 — エクスポート</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 相互運用</span>
+      <p>トークン体系は <a href="https://www.designtokens.org/" target="_blank" rel="noopener">W3C Design Tokens Format</a> を参考に設計。CLI が既存ツールチェーンへ橋渡しする。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th><code>--format</code></th><th>出力</th><th>用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>json-tailwind</code> / <code>tailwind</code></td><td>JSON</td><td>Tailwind v3 <code>theme.extend</code></td></tr>
+            <tr><td><code>css-tailwind</code></td><td>CSS <code>@theme { … }</code></td><td>Tailwind v4 の CSS 変数（<code>--color-*</code>, <code>--font-*</code> 等）</td></tr>
+            <tr><td><code>dtcg</code></td><td>JSON</td><td>W3C DTCG <code>tokens.json</code>（Figma variables 等と相互変換しやすい）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/google-labs-code/design.md" target="_blank" rel="noopener">GitHub: google-labs-code/design.md</a> — 仕様・CLI・examples</li>
+        <li><a href="https://www.npmjs.com/package/@google/design.md" target="_blank" rel="noopener">npm: @google/design.md</a> — CLI パッケージ</li>
+        <li><a href="https://github.com/google-labs-code/design.md/blob/main/docs/spec.md" target="_blank" rel="noopener">docs/spec.md</a> — 生成された完全仕様</li>
+        <li><a href="https://github.com/google-labs-code/design.md/blob/main/PHILOSOPHY.md" target="_blank" rel="noopener">PHILOSOPHY.md</a> — 散文中心の設計哲学</li>
+        <li><a href="awesome-design-md.html">Awesome DESIGN.md</a> — 58+ サービス由来の DESIGN.md キュレーション（別リポジトリ）</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
