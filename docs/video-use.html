@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>video-use — 会話で動画を編集する Agent Skill（browser-use/video-use）</title>
+  <meta name="description" content="生映像をフォルダに置き、エージェントと会話するだけで final.mp4 を得る video-use。トランスクリプト読解・EDL・ffmpeg レンダリング・自己評価ループの構成と Hard Rules。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="video-use — 会話で動画を編集する Agent Skill（browser-use/video-use）">
+  <meta property="og:description" content="生映像をフォルダに置き、エージェントと会話するだけで final.mp4 を得る video-use。トランスクリプト読解・EDL・ffmpeg レンダリング・自己評価ループの構成と Hard Rules。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/video-use.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="video-use — 会話で動画を編集する Agent Skill（browser-use/video-use）">
+  <meta name="twitter:description" content="生映像をフォルダに置き、エージェントと会話するだけで final.mp4 を得る video-use。トランスクリプト読解・EDL・ffmpeg レンダリング・自己評価ループの構成と Hard Rules。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,400&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: #faf7f5;
+      --foreground: #1a1410;
+      --card: #fffdfb;
+      --card-foreground: #1a1410;
+      --popover: #fffdfb;
+      --popover-foreground: #1a1410;
+      --primary: #1a1410;
+      --primary-foreground: #faf7f5;
+      --secondary: #f3ece6;
+      --secondary-foreground: #1a1410;
+      --muted: #f3ece6;
+      --muted-foreground: #6b5e54;
+      --accent: #f3ece6;
+      --accent-foreground: #1a1410;
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: #e8ddd4;
+      --input: #e8ddd4;
+      --ring: #c4b5a8;
+      --chart-1: #c2410c;
+      --chart-2: #ff5a00;
+      --chart-3: #78716c;
+      --chart-4: #a8a29e;
+      --chart-5: #57534e;
+      --code-bg: #f0e8e0;
+      --code-text: #7c2d12;
+      --font-body: 'Newsreader', Georgia, 'Times New Roman', serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #12100e;
+        --foreground: #f5efe8;
+        --card: #1c1916;
+        --card-foreground: #f5efe8;
+        --popover: #1c1916;
+        --popover-foreground: #f5efe8;
+        --primary: #f5efe8;
+        --primary-foreground: #12100e;
+        --secondary: #2a2520;
+        --secondary-foreground: #f5efe8;
+        --muted: #2a2520;
+        --muted-foreground: #a89888;
+        --accent: #2a2520;
+        --accent-foreground: #f5efe8;
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: #3d3530;
+        --input: #3d3530;
+        --ring: #6b5e54;
+        --chart-1: #fb923c;
+        --chart-2: #ff5a00;
+        --chart-3: #a8a29e;
+        --chart-4: #78716c;
+        --chart-5: #57534e;
+        --code-bg: #0f0d0b;
+        --code-text: #fdba74;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-2) 12%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-2) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 85%, var(--chart-2) 15%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-2) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-2); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 24rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); font-family: var(--font-mono); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--border) 80%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 700; font-family: var(--font-mono); color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; font-family: var(--font-mono); }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-2) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .ve-badge { display: inline-flex; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--muted); color: var(--chart-1); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 80% 0%, color-mix(in oklch, var(--chart-2) 10%, transparent) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 80% 0%, color-mix(in oklch, var(--chart-2) 14%, transparent) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-2); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-2); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2.125rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.6; max-width: 62rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--text); }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .layer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 720px) { .layer-grid { grid-template-columns: 1fr; } }
+    .layer-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; background: var(--muted); }
+    .layer-card h4 { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--chart-1); margin-bottom: 0.5rem; }
+
+    .rule-list { list-style: none; padding: 0; counter-reset: rule; }
+    .rule-list li { counter-increment: rule; position: relative; padding: 0.75rem 0.75rem 0.75rem 2.75rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+    .rule-list li:last-child { border-bottom: none; }
+    .rule-list li::before {
+      content: counter(rule);
+      position: absolute; left: 0.75rem; top: 0.75rem;
+      width: 1.5rem; height: 1.5rem; border-radius: 999px;
+      background: var(--chart-2); color: #fff;
+      font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ============ Mermaid wrap + zoom controls ============ */
+    .mermaid-wrap {
+      position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg);
+      background: var(--card); overflow: hidden; margin: 1rem 0;
+    }
+    .mermaid-controls {
+      position: absolute; top: 8px; right: 10px; display: flex; gap: 4px; z-index: 10;
+    }
+    .mermaid-controls button {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      width: 26px; height: 26px; font-family: var(--font-mono); font-size: 13px; color: var(--text-dim);
+      cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s;
+    }
+    .mermaid-controls button:hover { background: var(--border); color: var(--text); }
+    .mermaid-viewport {
+      overflow: hidden; cursor: grab; padding: 1.5rem; display: flex; justify-content: center; min-height: 240px;
+    }
+    .mermaid-viewport:active { cursor: grabbing; }
+    .mermaid-inner { transform-origin: center top; }
+    .mermaid { min-width: 0; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#reading">読み方</a>
+    <a href="#pipeline">パイプライン</a>
+    <a href="#helpers">Helpers</a>
+    <a href="#rules">Hard Rules</a>
+    <a href="#process">編集プロセス</a>
+    <a href="#setup">セットアップ</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>video-use</h1>
+  <p class="subtitle">browser-use/video-use — 会話で動画を編集する 100% オープンソース Agent Skill · Python + ffmpeg</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何をするスキルか</span>
+    <p><strong>video-use</strong> は、生映像を任意フォルダに置き、Claude Code や Codex などのエージェントと会話するだけで <code>final.mp4</code> を得る Agent Skill。トーキングヘッド、モンタージュ、チュートリアル、旅行、インタビューなど<strong>コンテンツ種別を前提にしない</strong>。プリセットや GUI メニューはなく、エージェントが素材を読み、戦略を提案し、ユーザー承認後に編集を実行する。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">12KB</span><span class="ve-kpi-card__label">主読み取り面</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">30ms</span><span class="ve-kpi-card__label">境界フェード</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">12</span><span class="ve-kpi-card__label">Hard Rules</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">×3</span><span class="ve-kpi-card__label">自己評価上限</span></div>
+    </div>
+    <p>主な機能: フィラー語・デッドスペースのカット、セグメント単位のカラーグレード、30ms オーディオフェード、字幕焼き込み、HyperFrames / Remotion / Manim / PIL によるオーバーレイアニメーション（並列 sub-agent）、カット境界での自己評価、<code>project.md</code> によるセッション間メモリ。</p>
+  </div>
+  <div class="ve-callout" style="margin-top:1rem">
+    <strong>browser-use との対応:</strong> browser-use が LLM に構造化 DOM を渡すのと同様、video-use は<strong>フレーム列ではなくトランスクリプト + 必要時の PNG 合成</strong>で動画を「読ませる」。45M トークン級のノイズを避け、単語境界精度を保つ設計。
+  </div>
+
+  <section id="reading" class="sec-head">2 — 動画の読み方（2 レイヤー）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> LLM は映像を「見ない」</span>
+    <p>エージェントは動画ファイルを直接視聴しない。<strong>2 レイヤー</strong>の派生データから編集判断を行う。</p>
+    <div class="layer-grid">
+      <div class="layer-card">
+        <h4>Layer 1 — 常時ロード</h4>
+        <p>ElevenLabs Scribe でソースごとに単語レベルタイムスタンプ・話者分離・音声イベント（<code>(laughter)</code> 等）を取得。<code>pack_transcripts.py</code> が全テイクを <strong>約 12KB の <code>takes_packed.md</code></strong> に圧縮。エージェントの主読み取り面。</p>
+      </div>
+      <div class="layer-card">
+        <h4>Layer 2 — オンデマンド</h4>
+        <p><code>timeline_view.py</code> が任意区間のフィルムストリップ + 波形 + 単語ラベル PNG を生成。曖昧な間・リテイク比較・カット点確認など<strong>判断が必要な時だけ</strong>呼ぶ。常時スキャン用ではない。</p>
+      </div>
+    </div>
+    <div class="ve-code-block">
+      <pre><code>## C0103  (duration: 43.0s, 8 phrases)
+  [002.52-005.36] S0 Ninety percent of what a web agent does is completely wasted.
+  [006.08-006.74] S0 We fixed this.</code></pre>
+    </div>
+    <div class="ve-table-wrap" style="margin-top:1rem">
+      <table>
+        <thead>
+          <tr><th>アプローチ</th><th>トークン規模</th><th>問題</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>全フレーム投入</td><td>30,000 フレーム × 1,500 トークン ≈ <strong>45M</strong></td><td>ノイズだらけで編集精度が落ちる</td></tr>
+          <tr><td>video-use</td><td><strong>12KB テキスト</strong> + 判断点の PNG 数枚</td><td>単語境界・沈黙ギャップからカット候補を導出</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="pipeline" class="sec-head">3 — パイプライン</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Transcribe → Pack → Reason → EDL → Render → Self-Eval</span>
+    <div class="mermaid-wrap">
+      <div class="mermaid-controls">
+        <button id="zoomIn" title="拡大">+</button>
+        <button id="zoomOut" title="縮小">−</button>
+        <button id="zoomReset" title="リセット">⟳</button>
+      </div>
+      <div class="mermaid-viewport" id="mermaidViewport">
+        <div class="mermaid-inner" id="mermaidInner">
+          <pre class="mermaid">
+flowchart TD
+  Raw["生映像フォルダ"]
+  Tx["transcribe_batch.py\nScribe 並列"]
+  Pack["pack_transcripts.py\ntakes_packed.md"]
+  LLM["エージェント推論\n戦略確認"]
+  EDL["edl.json"]
+  Anim["アニメーション\n並列 sub-agent"]
+  Render["render.py\nextract → concat → overlay → subtitle"]
+  Eval["timeline_view\n出力の境界検査"]
+  Out["preview.mp4 / final.mp4"]
+  Fix["修正 + 再レンダー\n最大 3 回"]
+
+  Raw --> Tx --> Pack --> LLM
+  LLM --> EDL
+  LLM --> Anim
+  EDL --> Render
+  Anim --> Render
+  Render --> Eval
+  Eval -->|"合格"| Out
+  Eval -->|"問題"| Fix --> Render
+
+  classDef ioCls fill:#fff7ed,stroke:#c2410c,color:#1a1410,rx:6
+  classDef procCls fill:#f3ece6,stroke:#78716c,color:#1a1410,rx:6
+  classDef llmCls fill:#ffedd5,stroke:#ff5a00,color:#1a1410,rx:6
+  classDef outCls fill:#ecfdf5,stroke:#16a34a,color:#1a1410,rx:6
+  class Raw,Out ioCls
+  class Tx,Pack,Render,Eval,Fix procCls
+  class LLM,EDL,Anim llmCls
+          </pre>
+        </div>
+      </div>
+    </div>
+    <p>自己評価は<strong>ソースではなくレンダリング済み出力</strong>の各カット境界（±1.5s）に <code>timeline_view</code> を当て、視覚的ジャンプ・波形スパイク（ポップ）・字幕のオーバーレイ隠れ・PTS ずれを検出。合格するまでプレビューをユーザーに見せない。</p>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 出力ディレクトリ</span>
+    <p>ユーザーの映像フォルダ <code>&lt;videos_dir&gt;/edit/</code> にセッション成果物を集約。スキル本体ディレクトリには書き込まない（Hard Rule 12）。</p>
+    <div class="ve-code-block">
+      <pre><code>&lt;videos_dir&gt;/
+├── （ソースファイル、未変更）
+└── edit/
+    ├── project.md               ← セッション間メモリ
+    ├── takes_packed.md          ← フレーズ単位トランスクリプト
+    ├── edl.json                 ← カット決定
+    ├── transcripts/*.json       ← Scribe キャッシュ
+    ├── animations/slot_&lt;id&gt;/    ← オーバーレイ生成
+    ├── clips_graded/            ← グレード済みセグメント
+    ├── master.srt               ← 出力タイムライン字幕
+    ├── verify/                  ← デバッグ PNG
+    ├── preview.mp4
+    └── final.mp4</code></pre>
+    </div>
+  </div>
+
+  <section id="helpers" class="sec-head">4 — Helpers</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> helpers/ スクリプト</span>
+    <p>SKILL.md と同階層の <code>helpers/</code> に Python スクリプトが置かれる。スキル登録時は<strong>リポジトリ全体を symlink</strong> し、相対パス解決を維持する。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>スクリプト</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>transcribe.py</code></td><td>単一ファイル Scribe 呼び出し（<code>--num-speakers</code> 任意）。結果キャッシュ。</td></tr>
+          <tr><td><code>transcribe_batch.py</code></td><td>4 ワーカー並列転写。マルチテイク向け。</td></tr>
+          <tr><td><code>pack_transcripts.py</code></td><td><code>transcripts/*.json</code> → <code>takes_packed.md</code>（沈黙 ≥0.5s でフレーズ分割）。</td></tr>
+          <tr><td><code>timeline_view.py</code></td><td>区間のフィルムストリップ + 波形 PNG。判断点専用。</td></tr>
+          <tr><td><code>render.py</code></td><td>セグメント extract → concat → PTS シフト済み overlay → 字幕 LAST。<code>--preview</code> で 720p 高速。</td></tr>
+          <tr><td><code>grade.py</code></td><td>ffmpeg フィルタチェーンによるグレード。プリセット + <code>--filter</code> カスタム。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card ve-card--elevated" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> アニメーションエンジン（スロット単位）</span>
+    <p>各オーバーレイは <code>edit/animations/slot_&lt;id&gt;/</code> に隔離。エンジンはスロットごとに選択し、<strong>並列 sub-agent</strong> で生成（Hard Rule 10）。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>エンジン</th><th>向いている用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>HyperFrames</strong></td><td>HTML/CSS/GSAP 合成、UI モーション、WebM 透過。Node.js 22+。<code>npx hyperframes</code>。</td></tr>
+          <tr><td><strong>Remotion</strong></td><td>React コンポーネント合成、既存 Remotion ブランド資産。</td></tr>
+          <tr><td><strong>Manim</strong></td><td>数式・状態機械・グラフ。同梱 <code>skills/manim-video/</code> を参照。</td></tr>
+          <tr><td><strong>PIL + ffmpeg</strong></td><td>カウンター、タイプライター、シンプルカード。高速反復。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="rules" class="sec-head">5 — Hard Rules（生産正しさ）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 非交渉の 12 条</span>
+    <p>以下は「好み」ではなく<strong>サイレント障害を防ぐ正しさ</strong>。SKILL.md の Hard Rules セクションと一致。</p>
+    <ol class="rule-list">
+      <li>字幕はフィルタチェーン<strong>最後</strong>。先に焼くと overlay が隠す。</li>
+      <li>セグメント単位 extract → lossless <code>-c copy</code> concat。単一 filtergraph は二重エンコード。</li>
+      <li>全セグメント境界に 30ms オーディオフェード。ポップ防止。</li>
+      <li>overlay は <code>setpts=PTS-STARTPTS+T/TB</code> でフレーム 0 をウィンドウ先頭へ。</li>
+      <li>master.srt は出力タイムラインオフセット（<code>word.start - segment_start + segment_offset</code>）。</li>
+      <li>単語の途中で切らない。Scribe の単語境界にスナップ。</li>
+      <li>カット端に 30–200ms パディング（Scribe ドリフト吸収）。</li>
+      <li>単語レベル verbatim ASR のみ。SRT/フレーズモードは禁止。</li>
+      <li>ソースごとに転写キャッシュ。ソース未変更なら再転写しない。</li>
+      <li>複数アニメーションは必ず並列 sub-agent。逐次は禁止。</li>
+      <li>戦略確認前にカットを触らない。</li>
+      <li>成果物は <code>&lt;videos_dir&gt;/edit/</code> のみ。スキル本体に書かない。</li>
+    </ol>
+  </div>
+
+  <section id="process" class="sec-head">6 — 編集プロセス</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Ask → confirm → execute → self-eval → persist</span>
+    <ol>
+      <li><strong>Inventory</strong> — <code>ffprobe</code>、<code>transcribe_batch.py</code>、<code>pack_transcripts.py</code>。必要なら <code>timeline_view</code> を 1–2 枚。</li>
+      <li><strong>Pre-scan</strong> — <code>takes_packed.md</code> から言い間違い・スリップ候補を列挙。</li>
+      <li><strong>Converse</strong> — 素材に応じた質問（固定チェックリストなし）。長さ・アスペクト・グレード・字幕・アニメ要否を収集。</li>
+      <li><strong>Propose strategy</strong> — 4–8 文で方針提示。<strong>ユーザー承認を待つ</strong>。</li>
+      <li><strong>Execute</strong> — <code>edl.json</code>、並列アニメ、<code>grade.py</code>、<code>render.py</code>。</li>
+      <li><strong>Preview</strong> — <code>render.py --preview</code>。</li>
+      <li><strong>Self-eval</strong> — 出力の境界・先頭末尾・中間サンプルを検査。最大 3 パス。</li>
+      <li><strong>Iterate + persist</strong> — 自然言語フィードバック、<code>project.md</code> 追記。再転写はしない。</li>
+    </ol>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> カット判断の要点</span>
+    <ul>
+      <li><strong>Audio-first</strong> — 候補は単語境界と沈黙ギャップ（≥400ms が最もクリーン）。</li>
+      <li><strong>Peaks を残す</strong> — 笑い・パンチライン・強調ビート。反応（笑い声）もビートの一部。</li>
+      <li><strong>Audio events</strong> — <code>(laughs)</code> 等をビート信号として扱う。</li>
+      <li>音声と映像を独立に理由付けしない。両トラックで成立するカットのみ。</li>
+    </ul>
+  </div>
+  <div class="ve-card" style="--i:2; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> EDL 形式（抜粋）</span>
+    <div class="ve-code-block">
+      <pre><code>{
+  "version": 1,
+  "sources": {"C0103": "/path/C0103.MP4"},
+  "ranges": [
+    {"source": "C0103", "start": 2.42, "end": 6.85,
+     "beat": "HOOK", "quote": "...", "reason": "..."}
+  ],
+  "grade": "warm_cinematic",
+  "overlays": [
+    {"file": "edit/animations/slot_1/render.mp4", "start_in_output": 0.0, "duration": 5.0}
+  ],
+  "subtitles": "edit/master.srt",
+  "total_duration_s": 87.4
+}</code></pre>
+    </div>
+  </div>
+
+  <section id="setup" class="sec-head">7 — セットアップ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 初回インストール</span>
+    <p><code>install.md</code> が手順の正。概要は以下。</p>
+    <ol>
+      <li>リポジトリ clone（安定パス例: <code>~/Developer/video-use</code>）</li>
+      <li>Python 依存 — <code>uv sync</code> または <code>pip install -e .</code></li>
+      <li><code>ffmpeg</code> / <code>ffprobe</code>（必須）、<code>yt-dlp</code>（任意）</li>
+      <li>エージェントの skills ディレクトリへ<strong>ディレクトリ全体</strong>を symlink</li>
+      <li>ElevenLabs API キーを <code>.env</code> に設定（Scribe 転写用）</li>
+    </ol>
+    <div class="ve-code-block">
+      <pre><code>git clone https://github.com/browser-use/video-use ~/Developer/video-use
+cd ~/Developer/video-use
+uv sync
+brew install ffmpeg
+ln -sfn ~/Developer/video-use ~/.claude/skills/video-use
+cp .env.example .env   # ELEVENLABS_API_KEY=...</code></pre>
+    </div>
+  </div>
+  <div class="ve-card ve-card--elevated" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> エージェントへのセットアッププロンプト</span>
+    <p>シェル権限のあるエージェントに貼り付けて自動セットアップさせる例（README.md より）:</p>
+    <div class="ve-code-block">
+      <pre><code>Set up https://github.com/browser-use/video-use for me.
+
+Read install.md first to install this repo, wire up ffmpeg, register the skill
+with whichever agent you're running under, and set up the ElevenLabs API key.
+Then read SKILL.md for daily usage, and always read helpers/ because that's
+where the editing scripts live.</code></pre>
+    </div>
+    <p style="margin-top:0.75rem">映像フォルダでエージェントを起動し、<em>「edit these into a launch video」</em> のように指示する。出力は常に <code>&lt;videos_dir&gt;/edit/final.mp4</code>。</p>
+  </div>
+
+  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/browser-use/video-use" target="_blank" rel="noopener">GitHub: browser-use/video-use</a> — 本体リポジトリ</li>
+      <li><a href="https://github.com/browser-use/browser-use" target="_blank" rel="noopener">browser-use</a> — 同一組織のブラウザ自律エージェント</li>
+      <li><a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">ElevenLabs API Keys</a> — Scribe 転写用</li>
+      <li><a href="https://github.com/heygen-com/hyperframes" target="_blank" rel="noopener">HyperFrames</a> — HTML/CSS 動画合成</li>
+      <li><a href="https://www.remotion.dev/" target="_blank" rel="noopener">Remotion</a> — React 動画合成</li>
+      <li><a href="https://www.manim.community/" target="_blank" rel="noopener">Manim</a> — 数式・図解アニメーション</li>
+      <li><a href="https://browser-use.com/bux" target="_blank" rel="noopener">Browser Use Box</a> — VPS / Telegram 常時稼働向け</li>
+    </ul>
+    <p style="margin-top:1rem; font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim)">出典: README.md · SKILL.md · install.md · helpers/</p>
+  </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#fff7ed',
+    primaryTextColor: '#1a1410',
+    primaryBorderColor: '#c2410c',
+    lineColor: '#c2410c',
+    secondaryColor: '#f3ece6',
+    tertiaryColor: '#faf7f5',
+    edgeLabelBackground: '#fffdfb',
+    fontSize: '14px'
+  }
+});
+
+(function() {
+  var zoom = 1;
+  var dx = 0;
+  var dy = 0;
+  var inner = document.getElementById('mermaidInner');
+  var viewport = document.getElementById('mermaidViewport');
+  if (!inner || !viewport) return;
+
+  var applyTransform = function() {
+    inner.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(' + zoom + ')';
+  };
+  var setZoom = function(z) {
+    zoom = Math.min(3, Math.max(0.4, z));
+    applyTransform();
+  };
+
+  document.getElementById('zoomIn').addEventListener('click', function() { setZoom(zoom + 0.2); });
+  document.getElementById('zoomOut').addEventListener('click', function() { setZoom(zoom - 0.2); });
+  document.getElementById('zoomReset').addEventListener('click', function() { zoom = 1; dx = 0; dy = 0; applyTransform(); });
+
+  viewport.addEventListener('wheel', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      setZoom(zoom - e.deltaY * 0.002);
+    }
+  }, { passive: false });
+
+  var dragging = false;
+  var lastX = 0;
+  var lastY = 0;
+  viewport.addEventListener('mousedown', function(e) {
+    dragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    e.preventDefault();
+  });
+  document.addEventListener('mouseup', function() { dragging = false; });
+  viewport.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    dx += e.clientX - lastX;
+    dy += e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    applyTransform();
+  });
+})();
+
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
