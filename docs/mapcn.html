@@ -112,6 +112,7 @@
     .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1.125rem; flex: 1; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.75; color: var(--code-text); white-space: pre-wrap; }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
@@ -250,13 +251,16 @@
       <div class="kpi-row">
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">1 file</span><span class="ve-kpi-card__label">コアの集約</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">shadcn</span><span class="ve-kpi-card__label">CLI 対応</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">11 +</span><span class="ve-kpi-card__label">コンポーネント数</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">4 blocks</span><span class="ve-kpi-card__label">デモブロック</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">13</span><span class="ve-kpi-card__label">コンポーネント数</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">7 blocks</span><span class="ve-kpi-card__label">デモブロック</span></div>
       </div>
       <p>Next.js 16 (App Router) + TypeScript 5 + Tailwind CSS 4 で構築されたドキュメントサイトも同梱。shadcn レジストリスキーマに準拠した <code>registry.json</code> を公開しており、<code>public/r/</code> にビルド済み JSON が配置される。</p>
     </div>
     <div class="ve-callout" style="--i:1">
       <strong>shadcn 哲学との一致</strong>: コンポーネントをパッケージとしてインストールするのではなく、<strong>ソースコードをプロジェクトにコピー</strong>する。<code>components/ui/map.tsx</code> として手元に置き、自由に改変できる。依存は <code>maplibre-gl</code> と <code>lucide-react</code> のみ。
+    </div>
+    <div class="ve-callout" style="--i:2; margin-top: 1rem;">
+      <strong>ベースマップ利用条件</strong>: デフォルトの Carto ベースマップ（OpenStreetMap 由来）を<strong>商用利用</strong>する場合は CARTO Enterprise ライセンスが必要。非商用は CARTO grantee 向け条件に従う。<code>styles</code> prop や <code>blank</code> prop で OpenStreetMap タイル・MapTiler 等へ差し替え可能。
     </div>
 
     <!-- 2. インストール -->
@@ -273,15 +277,16 @@ npx shadcn add https://mapcn.dev/r/map.json
       </div>
       <p>依存パッケージの <code>maplibre-gl</code> も自動でインストールされる（shadcn の <code>dependencies</code> フィールドから解決）。</p>
     </div>
-    <div class="ve-card ve-card--recessed" style="--i:1" style="margin-top: 1rem;">
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 1rem;">
       <span class="ve-section-label"><span class="ve-dot"></span> ビルドパイプライン（開発者向け）</span>
       <div class="ve-code-block">
         <pre><code>npm run dev              # 開発サーバー起動（Next.js）
 npm run build            # Next.js プロダクションビルド
 npm run registry:build   # public/r/ へレジストリ JSON を生成
+                         # → shadcn build -o ./public/r
                          # → fix-registry-imports.ts でパス書き換え</code></pre>
       </div>
-      <p><code>registry:build</code> は <code>npx shadcn build</code> を実行した後、<code>scripts/fix-registry-imports.ts</code> で <code>@/registry/map</code> → <code>@/components/ui/map</code> へパスを書き換える後処理を行う。</p>
+      <p><code>registry:build</code> は <code>npx shadcn build -o ./public/r</code> のあと、<code>scripts/fix-registry-imports.ts</code> で <code>@/registry/map</code> → <code>@/components/ui/map</code> へ import パスを書き換える。</p>
     </div>
 
     <!-- 3. アーキテクチャ -->
@@ -302,6 +307,8 @@ npm run registry:build   # public/r/ へレジストリ JSON を生成
           B --> C["MapMarker<br/>(Portal)"]
           B --> D["MapControls<br/>(ズーム/コンパス)"]
           B --> E["MapRoute<br/>(GeoJSON LineString)"]
+          B --> E2["MapArc<br/>(曲線アーク)"]
+          B --> E3["MapGeoJSON<br/>(GeoJSON レイヤー)"]
           B --> F["MapClusterLayer<br/>(ポイントクラスター)"]
           B --> G["MapPopup<br/>(独立ポップアップ)"]
           C --> C1["MarkerContent"]
@@ -314,6 +321,8 @@ npm run registry:build   # public/r/ へレジストリ JSON を生成
           style C fill:#0e7490,color:#fff,stroke:none
           style D fill:#155e75,color:#fff,stroke:none
           style E fill:#164e63,color:#fff,stroke:none
+          style E2 fill:#134e4a,color:#fff,stroke:none
+          style E3 fill:#115e59,color:#fff,stroke:none
           style F fill:#083344,color:#fff,stroke:none
           style G fill:#0c4a6e,color:#fff,stroke:none
           style C1 fill:#e2f3f7,color:#0369a1,stroke:#b3e0ec
@@ -348,6 +357,8 @@ npm run registry:build   # public/r/ へレジストリ JSON を生成
         <li><strong>Controlled / Uncontrolled 両対応</strong>: <code>viewport + onViewportChange</code> でコントロールドモード。<code>internalUpdateRef</code> フラグで無限ループを防止。</li>
         <li><strong>テーマ自動検出</strong>: <code>MutationObserver</code> で <code>document.documentElement</code> の class 変更を監視し、next-themes などと自動連携。</li>
         <li><strong>スタイルロード競合対策</strong>: <code>isStyleLoaded</code> を別フラグで管理し、100ms のバッファでレースコンディションを防止。</li>
+        <li><strong>blank ベースマップ</strong>: <code>blank</code> prop でタイルなし透明キャンバスを使い、choropleth やアークなどデータ可視化専用レイアウトを構築。</li>
+        <li><strong>MapGeoJSON / MapArc</strong>: GeoJSON ソース・レイヤーを宣言的に追加。アークは二次ベジェ曲線で日付変更線をまたぐ経路も短い方へ描画。</li>
       </ul>
     </div>
 
@@ -402,6 +413,14 @@ npm run registry:build   # public/r/ へレジストリ JSON を生成
         <div class="comp-name">MapClusterLayer</div>
         <div class="comp-desc">GeoJSON データ（URL または FeatureCollection）を受け取り、ポイントをクラスタリングして可視化。ジェネリクスでプロパティ型を保持。</div>
       </div>
+      <div class="comp-card" style="--i:11">
+        <div class="comp-name">MapArc</div>
+        <div class="comp-desc">2 点間を曲線アークで接続。<code>curvature</code> で曲率、<code>hoverPaint</code> でホバー強調。日付変更線をまたぐ経路は短い方へ描画。</div>
+      </div>
+      <div class="comp-card" style="--i:12">
+        <div class="comp-name">MapGeoJSON</div>
+        <div class="comp-desc">GeoJSON ソースと fill/line レイヤーを宣言的に追加。<code>blank</code> マップ上の choropleth やカスタムデータレイヤー向け。クリック・ホバーイベント対応。</div>
+      </div>
     </div>
 
     <div class="ve-card" style="--i:0; margin-top: 1.5rem;">
@@ -414,6 +433,7 @@ npm run registry:build   # public/r/ へレジストリ JSON を生成
           <tbody>
             <tr><td><code>theme</code></td><td><code>"light" | "dark"</code></td><td>テーマを強制指定。省略時はシステム設定を自動検出。</td></tr>
             <tr><td><code>styles</code></td><td><code>&#123; light?, dark? &#125;</code></td><td>カスタムタイルスタイル URL。デフォルトは Carto Positron / Dark Matter。</td></tr>
+            <tr><td><code>blank</code></td><td><code>boolean</code></td><td>タイルなし透明ベースマップ。<code>MapGeoJSON</code> / <code>MapArc</code> などデータ可視化向け。<code>styles</code> 指定時は無視。</td></tr>
             <tr><td><code>projection</code></td><td><code>ProjectionSpecification</code></td><td><code>&#123; type: "globe" &#125;</code> で 3D 地球儀モード。</td></tr>
             <tr><td><code>viewport</code></td><td><code>Partial&lt;MapViewport&gt;</code></td><td>コントロールドモード用ビューポート（center, zoom, bearing, pitch）。</td></tr>
             <tr><td><code>onViewportChange</code></td><td><code>(v: MapViewport) =&gt; void</code></td><td>ビューポート変更時のコールバック。</td></tr>
@@ -506,23 +526,38 @@ export function RouteMap() {
     <div class="block-grid" style="margin-top: 1rem;">
       <div class="block-card" style="--i:0">
         <div class="block-name">Analytics Map</div>
-        <div class="block-meta">analytics-map · iframe 970px</div>
-        <div class="block-desc">世界地図とアナリティクスダッシュボードを統合。Recharts との連携でリージョン別グラフを表示。<code>overview-card</code> + <code>breakdown-card</code>の 2 カードレイアウト。</div>
+        <div class="block-meta">analytics-map · iframe 940px</div>
+        <div class="block-desc">世界地図とリアルタイムアナリティクスダッシュボード。Recharts 連携でリージョン別グラフとデバイス統計を表示。<code>overview-card</code> + <code>breakdown-card</code> の 2 カードレイアウト。</div>
       </div>
       <div class="block-card" style="--i:1">
-        <div class="block-name">Logistics Network</div>
-        <div class="block-meta">logistics-network · iframe 800px</div>
-        <div class="block-desc">物流ルートマップ＋フィルタサイドバー。GeoJSON で描かれた輸送経路（弧）をインタラクティブに切り替えられる。</div>
+        <div class="block-name">Choropleth</div>
+        <div class="block-meta">choropleth · iframe 720px</div>
+        <div class="block-desc">国別メトリクスで色分けする世界 choropleth マップ。ホバーツールチップと凡例付き。<code>use-world-data</code> で GeoJSON を取得。</div>
       </div>
       <div class="block-card" style="--i:2">
-        <div class="block-name">Heatmap</div>
-        <div class="block-meta">heatmap</div>
-        <div class="block-desc">地震データの地球儀ヒートマップ。<code>projection: "globe"</code> で 3D 地球儀モードを使用。密度を色で可視化。</div>
+        <div class="block-name">Uptime Monitor</div>
+        <div class="block-meta">uptime-monitor · iframe 720px</div>
+        <div class="block-desc">ステータスページ風のエッジネットワークマップ。拠点ごとのヘルス・レイテンシ・アップタイムをライブ表示。サイドバーで詳細確認。</div>
       </div>
       <div class="block-card" style="--i:3">
+        <div class="block-name">Logistics Network</div>
+        <div class="block-meta">logistics-network · iframe 800px</div>
+        <div class="block-desc">国内物流ルートマップ＋統計サイドバー。GeoJSON の輸送経路（アーク）をフィルタで切り替え。</div>
+      </div>
+      <div class="block-card" style="--i:4">
+        <div class="block-name">Store Locator</div>
+        <div class="block-meta">store-locator · iframe 800px</div>
+        <div class="block-desc">検索可能な店舗リストとマップマーカーを双方向同期。サイドバーで店舗選択するとマップがフォーカス。</div>
+      </div>
+      <div class="block-card" style="--i:5">
+        <div class="block-name">Heatmap</div>
+        <div class="block-meta">heatmap · iframe 800px</div>
+        <div class="block-desc">地震データの地球儀ヒートマップ。<code>projection: "globe"</code> で 3D 地球儀モード。ズーム依存のスタイリングで密度を可視化。</div>
+      </div>
+      <div class="block-card" style="--i:6">
         <div class="block-name">Delivery Tracker</div>
-        <div class="block-meta">delivery-tracker · iframe 680px</div>
-        <div class="block-desc">配達経路トラッカー＋注文詳細パネル。リアルタイム追跡 UI のデモ実装。</div>
+        <div class="block-meta">delivery-tracker · iframe 720px</div>
+        <div class="block-desc">ライブ注文追跡。ルート進捗・配達員位置・注文詳細パネルを一体化したデモ実装。</div>
       </div>
     </div>
 
@@ -535,6 +570,7 @@ export function RouteMap() {
         <li><a href="https://mapcn.dev/r/map.json" target="_blank" rel="noopener">mapcn.dev/r/map.json</a> — shadcn add 用レジストリ JSON</li>
         <li><a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a> — レンダリングエンジン（MIT ライセンス）</li>
         <li><a href="https://ui.shadcn.com/" target="_blank" rel="noopener">shadcn/ui</a> — コンポーネント配布モデルの仕様元</li>
+        <li><a href="https://docs.carto.com/faqs/carto-basemaps" target="_blank" rel="noopener">CARTO Basemaps</a> — デフォルトタイルの利用条件</li>
       </ul>
     </div>
   </div>
