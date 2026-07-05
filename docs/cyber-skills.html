@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anthropic Cybersecurity Skills — AI エージェント向けサイバーセキュリティスキル集</title>
+  <meta name="description" content="734+ のサイバーセキュリティスキルを AI エージェント向けにまとめた agentskills.io 準拠のオープンソースコレクション。Claude Code・Cursor・GitHub Copilot 他 20+ プラットフォームで即使用可能。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Anthropic Cybersecurity Skills — AI エージェント向けサイバーセキュリティスキル集">
+  <meta property="og:description" content="734+ のサイバーセキュリティスキルを AI エージェント向けにまとめた agentskills.io 準拠のオープンソースコレクション。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/cyber-skills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Anthropic Cybersecurity Skills — AI エージェント向けサイバーセキュリティスキル集">
+  <meta name="twitter:description" content="734+ のサイバーセキュリティスキルを AI エージェント向けにまとめた agentskills.io 準拠のオープンソースコレクション。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + IBM Plex fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.002 220);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.96 0.003 220);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.96 0.003 220);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.912 0.005 220);
+      --input: oklch(0.912 0.005 220);
+      --ring: oklch(0.708 0 0);
+      /* teal / slate accent palette */
+      --chart-1: oklch(0.55 0.14 200);
+      --chart-2: oklch(0.42 0.10 225);
+      --chart-3: oklch(0.65 0.10 180);
+      --chart-4: oklch(0.72 0.13 160);
+      --chart-5: oklch(0.38 0.08 240);
+
+      --code-bg: oklch(0.96 0.003 220);
+      --code-text: oklch(0.3 0.10 220);
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.115 0.005 220);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.19 0.005 220);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.19 0.005 220);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(0.22 0.005 220);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.26 0.005 220);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.26 0.005 220);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.68 0.14 195);
+        --chart-2: oklch(0.58 0.12 220);
+        --chart-3: oklch(0.72 0.10 170);
+        --chart-4: oklch(0.78 0.13 155);
+        --chart-5: oklch(0.52 0.10 235);
+        --code-bg: oklch(0.13 0.005 220);
+        --code-text: oklch(0.75 0.10 195);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; flex: 1; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 80%, var(--chart-1) 20%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-weight: 700; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.55 0.14 200 / 0.12); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 70% 0%, oklch(0.55 0.14 200 / 0.07) 0%, transparent 55%),
+        radial-gradient(ellipse at 10% 100%, oklch(0.42 0.10 225 / 0.05) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 70% 0%, oklch(0.68 0.14 195 / 0.09) 0%, transparent 55%),
+          radial-gradient(ellipse at 10% 100%, oklch(0.52 0.10 235 / 0.07) 0%, transparent 50%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: color-mix(in oklch, var(--muted) 80%, var(--chart-1) 20%); padding: 2px 6px; border-radius: var(--radius-sm); color: var(--chart-2); }
+
+    /* KPI row */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Category badge */
+    .cat-badge {
+      display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem;
+      background: color-mix(in oklch, var(--muted) 70%, var(--chart-1) 30%);
+      color: var(--chart-2); padding: 1px 6px; border-radius: var(--radius-sm);
+      font-weight: 500;
+    }
+
+    /* Skill count pill */
+    .count-pill {
+      display: inline-block; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;
+      background: var(--chart-1); color: white; padding: 1px 8px;
+      border-radius: 999px; min-width: 2.5rem; text-align: center;
+    }
+    @media (prefers-color-scheme: dark) { .count-pill { color: oklch(0.115 0.005 220); } }
+
+    /* Disclosure flow */
+    .disclosure-flow { display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0; }
+    .disclosure-step {
+      display: flex; align-items: flex-start; gap: 1rem;
+      background: var(--muted); border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      border-left: 3px solid transparent;
+    }
+    .disclosure-step--1 { border-left-color: var(--chart-1); }
+    .disclosure-step--2 { border-left-color: var(--chart-3); }
+    .disclosure-step--3 { border-left-color: var(--chart-4); }
+    .step-num { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: var(--chart-1); flex-shrink: 0; padding-top: 2px; width: 1.5rem; }
+    .step-body { flex: 1; min-width: 0; }
+    .step-body strong { font-size: 0.875rem; display: block; margin-bottom: 0.25rem; }
+    .step-body p { font-size: 0.8125rem; color: var(--text-dim); margin: 0; }
+
+    /* Directory tree */
+    .dir-tree { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.9; color: var(--code-text); overflow-x: auto; }
+    .dir-tree .dir { color: var(--chart-1); font-weight: 500; }
+    .dir-tree .file { color: var(--text); }
+    .dir-tree .comment { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* Platform grid */
+    .platform-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.625rem; margin-top: 0.75rem; }
+    .platform-item {
+      background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 0.625rem 0.875rem; font-size: 0.8125rem; display: flex; flex-direction: column; gap: 0.2rem;
+    }
+    .platform-item__name { font-weight: 600; }
+    .platform-item__method { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--chart-1); }
+
+    /* Stagger animation */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#categories">カテゴリ一覧</a>
+    <a href="#mechanism">仕組み</a>
+    <a href="#anatomy">スキル構造</a>
+    <a href="#platforms">対応プラットフォーム</a>
+    <a href="#quickstart">クイックスタート</a>
+  </nav>
+
+  <div class="main">
+    <h1>Anthropic Cybersecurity Skills</h1>
+    <p class="subtitle">agentskills.io 準拠 · AI エージェント向けサイバーセキュリティスキルコレクション</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+      <p>
+        <strong>Anthropic Cybersecurity Skills</strong> は、サイバーセキュリティ領域の実践的なスキルを AI エージェント向けにパッケージ化したオープンソースコレクション。
+        <a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> オープン標準に準拠しており、
+        Claude Code・Cursor・GitHub Copilot・OpenAI Codex CLI など 26+ のプラットフォームで即座に利用できる。
+        ※ コミュニティ主導のプロジェクトであり、Anthropic PBC 公式とは無関係。
+      </p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">734+</div>
+          <div class="ve-kpi-card__label">Total Skills</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">24</div>
+          <div class="ve-kpi-card__label">Categories</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">26+</div>
+          <div class="ve-kpi-card__label">Platforms</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">Apache</div>
+          <div class="ve-kpi-card__label">2.0 License</div>
+        </div>
+      </div>
+      <p>
+        各スキルは <strong>YAML フロントマター + 本文 Markdown</strong> の構成で、エージェントがトークンを節約しながら必要なスキルだけを読み込める <em>プログレッシブ・ディスクロージャ</em> パターンを採用している。
+        MITRE ATT&amp;CK・NIST CSF・OWASP Top 10 へのマッピングも同梱。
+      </p>
+    </div>
+
+    <section id="categories" class="sec-head">2 — カテゴリ一覧</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 24 カテゴリ · 全スキル数</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>カテゴリ</th>
+              <th style="text-align:right">スキル数</th>
+              <th>代表スキル例</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Cloud Security</td><td style="text-align:right"><span class="count-pill">48</span></td><td>AWS S3 Bucket Audit, Azure AD Configuration, GCP Security Assessment</td></tr>
+            <tr><td>Threat Intelligence</td><td style="text-align:right"><span class="count-pill">43</span></td><td>APT Group Analysis, Campaign Attribution, Dark Web Monitoring</td></tr>
+            <tr><td>Web Application Security</td><td style="text-align:right"><span class="count-pill">41</span></td><td>HTTP Request Smuggling, XSS with Burp Suite, Web Cache Poisoning</td></tr>
+            <tr><td>Threat Hunting</td><td style="text-align:right"><span class="count-pill">35</span></td><td>Credential Dumping Detection, DNS Tunneling with Zeek, LOLBAS</td></tr>
+            <tr><td>Malware Analysis</td><td style="text-align:right"><span class="count-pill">34</span></td><td>Cobalt Strike Beacon Config, Ghidra Reverse Engineering, YARA</td></tr>
+            <tr><td>Digital Forensics</td><td style="text-align:right"><span class="count-pill">34</span></td><td>Disk Imaging with dd/dcfldd, Memory Forensics with Volatility3</td></tr>
+            <tr><td>SOC Operations</td><td style="text-align:right"><span class="count-pill">33</span></td><td>Windows Event Log Analysis, Splunk Detection Rules</td></tr>
+            <tr><td>Network Security</td><td style="text-align:right"><span class="count-pill">33</span></td><td>Wireshark Traffic Analysis, VLAN Segmentation, Suricata IDS</td></tr>
+            <tr><td>Identity &amp; Access Management</td><td style="text-align:right"><span class="count-pill">33</span></td><td>SAML SSO with Okta, Privileged Access Management, RBAC for Kubernetes</td></tr>
+            <tr><td>OT/ICS Security</td><td style="text-align:right"><span class="count-pill">28</span></td><td>SCADA Attack Detection, Modbus Anomaly Detection, Purdue Model</td></tr>
+            <tr><td>API Security</td><td style="text-align:right"><span class="count-pill">28</span></td><td>API Enumeration Detection, BOLA Exploitation, GraphQL Assessment</td></tr>
+            <tr><td>Container Security</td><td style="text-align:right"><span class="count-pill">26</span></td><td>Trivy Image Scanning, Falco Runtime Detection, Kubernetes Pod Security</td></tr>
+            <tr><td>Vulnerability Management</td><td style="text-align:right"><span class="count-pill">24</span></td><td>DefectDojo Dashboard, CVSS Scoring, Patch Management Workflow</td></tr>
+            <tr><td>Red Teaming</td><td style="text-align:right"><span class="count-pill">24</span></td><td>Sliver C2 Framework, BloodHound AD Analysis, Kerberoasting</td></tr>
+            <tr><td>Incident Response</td><td style="text-align:right"><span class="count-pill">24</span></td><td>Ransomware Response, Cloud Incident Containment</td></tr>
+            <tr><td>Penetration Testing</td><td style="text-align:right"><span class="count-pill">23</span></td><td>External Network Pentest, Kubernetes Pentest, AD Pentest</td></tr>
+            <tr><td>Zero Trust Architecture</td><td style="text-align:right"><span class="count-pill">17</span></td><td>HashiCorp Boundary, Zscaler ZTNA, BeyondCorp Access Model</td></tr>
+            <tr><td>Endpoint Security</td><td style="text-align:right"><span class="count-pill">16</span></td><td>CIS Benchmark Hardening, Windows Defender, Host-Based IDS</td></tr>
+            <tr><td>DevSecOps</td><td style="text-align:right"><span class="count-pill">16</span></td><td>GitLab CI Pipeline, Semgrep Custom SAST, Secret Scanning with Gitleaks</td></tr>
+            <tr><td>Phishing Defense</td><td style="text-align:right"><span class="count-pill">16</span></td><td>Email Header Analysis, GoPhish Simulation, DMARC/DKIM/SPF</td></tr>
+            <tr><td>Cryptography</td><td style="text-align:right"><span class="count-pill">13</span></td><td>TLS 1.3 Configuration, HSM Key Storage, OpenSSL CA</td></tr>
+            <tr><td>Mobile Security</td><td style="text-align:right"><span class="count-pill">12</span></td><td>iOS App Analysis with Objection, Android Reverse Engineering, Frida</td></tr>
+            <tr><td>Ransomware Defense</td><td style="text-align:right"><span class="count-pill">5</span></td><td>Ransomware Precursor Detection, Backup Strategy, Honeypot</td></tr>
+            <tr><td>Compliance &amp; Governance</td><td style="text-align:right"><span class="count-pill">5</span></td><td>GDPR Data Protection, ISO 27001 ISMS, PCI DSS Controls</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> フレームワークマッピング</span>
+      <p>
+        <code>mappings/</code> ディレクトリに <strong>MITRE ATT&amp;CK</strong>・<strong>NIST CSF</strong>・<strong>OWASP Top 10 (2025)</strong> の 3 フレームワークへのマッピングが収録されている。
+        Navigator レイヤー JSON (<code>attack-navigator-layer.json</code>) を MITRE ATT&amp;CK Navigator に直接インポートして、カバレッジを可視化できる。
+      </p>
+    </div>
+
+    <section id="mechanism" class="sec-head">3 — 仕組み</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> プログレッシブ・ディスクロージャ</span>
+      <p>
+        AI エージェントが 734+ のスキルをすべて読み込むとトークンコストが膨大になる。
+        このコレクションは <em>段階的開示</em> で解決している。
+        エージェントはまず軽量なフロントマター (~30–50 トークン) だけを読んで関連性を判断し、
+        一致したスキルだけ本文を読み込む。
+      </p>
+      <div class="disclosure-flow">
+        <div class="disclosure-step disclosure-step--1">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <strong>Discovery フェーズ（軽量）</strong>
+            <p>YAML フロントマターのみ読み込む。<code>name</code>・<code>description</code>・<code>domain</code>・<code>subdomain</code>・<code>tags</code> で関連性を判定。~30–50 トークン/スキル。</p>
+          </div>
+        </div>
+        <div class="disclosure-step disclosure-step--2">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <strong>Relevance 判定</strong>
+            <p>現在のタスクとスキルの <code>tags</code>・<code>subdomain</code> を照合。タスクが「メモリフォレンジック」なら <code>forensics, memory-analysis, volatility3</code> に一致するスキルを選択。</p>
+          </div>
+        </div>
+        <div class="disclosure-step disclosure-step--3">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <strong>Full Load（必要なスキルのみ）</strong>
+            <p>一致したスキルの本文（When to Use・Prerequisites・Workflow・Verification）を読み込む。不要なスキルのトークンは一切消費しない。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> フロントマター例</span>
+      <div class="ve-code-block">
+        <pre><code>---
+name: performing-memory-forensics-with-volatility3
+description: Analyze volatile memory dumps using Volatility 3 to extract
+  running processes, network connections, loaded modules, and evidence
+  of malicious activity.
+domain: cybersecurity
+subdomain: digital-forensics
+tags: [forensics, memory-forensics, volatility, ram-analysis,
+       malware-detection, incident-response]
+version: "1.0"
+author: mahipal
+license: Apache-2.0
+---</code></pre>
+      </div>
+      <p style="margin-top:.75rem; margin-bottom:0; font-size:.875rem; color:var(--text-dim)">
+        本文には <strong>When to Use</strong>（起動条件）・<strong>Prerequisites</strong>（必要ツール）・<strong>Workflow</strong>（ステップごとの手順 + コマンド例）・<strong>Verification</strong>（成功確認方法）が含まれる。
+      </p>
+    </div>
+
+    <section id="anatomy" class="sec-head">4 — スキル構造</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ディレクトリ構成</span>
+      <p>各スキルは <code>skills/{skill-name}/</code> 以下に配置され、一貫した構成を持つ。</p>
+      <div class="dir-tree">
+<span class="dir">skills/performing-memory-forensics-with-volatility3/</span>
+├── <span class="file">SKILL.md</span>            <span class="comment"># メインファイル (フロントマター + ワークフロー)</span>
+│   ├── Frontmatter     <span class="comment"># name, description, domain, subdomain, tags</span>
+│   ├── When to Use     <span class="comment"># エージェントへのトリガー条件</span>
+│   ├── Prerequisites   <span class="comment"># 必要なツールとアクセス権限</span>
+│   ├── Workflow        <span class="comment"># ステップごとの実行ガイド + コマンド例</span>
+│   └── Verification    <span class="comment"># 成功を確認する方法</span>
+├── <span class="dir">references/</span>
+│   ├── <span class="file">standards.md</span>    <span class="comment"># NIST, MITRE ATT&amp;CK, CVE 参照</span>
+│   └── <span class="file">workflows.md</span>    <span class="comment"># 深い技術手順の参照ドキュメント</span>
+├── <span class="dir">scripts/</span>
+│   └── <span class="file">process.py</span>      <span class="comment"># 実践者向けヘルパースクリプト</span>
+└── <span class="dir">assets/</span>
+    └── <span class="file">template.md</span>     <span class="comment"># チェックリスト・レポートテンプレート</span>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> フレームワークマッピングの配置</span>
+      <div class="dir-tree">
+<span class="dir">mappings/</span>
+├── <span class="dir">mitre-attack/</span>       <span class="comment"># MITRE ATT&amp;CK テクニックへのマッピング</span>
+├── <span class="dir">nist-csf/</span>           <span class="comment"># NIST Cybersecurity Framework マッピング</span>
+└── <span class="dir">owasp/</span>              <span class="comment"># OWASP Top 10 (2025) マッピング</span>
+<span class="file">attack-navigator-layer.json</span>  <span class="comment"># MITRE Navigator インポート用レイヤー</span>
+<span class="file">index.json</span>                   <span class="comment"># 全スキルのメタデータ索引</span>
+      </div>
+    </div>
+
+    <section id="platforms" class="sec-head">5 — 対応プラットフォーム</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 26+ プラットフォームで動作</span>
+      <p><code>agentskills.io</code> 標準、または構造化 Markdown を読めるツールであれば互換性がある。</p>
+      <div class="platform-grid">
+        <div class="platform-item"><div class="platform-item__name">Claude Code</div><div class="platform-item__method">/plugin でネイティブ読み込み</div></div>
+        <div class="platform-item"><div class="platform-item__name">Cursor</div><div class="platform-item__method">Project rules / docs 統合</div></div>
+        <div class="platform-item"><div class="platform-item__name">GitHub Copilot</div><div class="platform-item__method">.skills/ ディレクトリ</div></div>
+        <div class="platform-item"><div class="platform-item__name">OpenAI Codex CLI</div><div class="platform-item__method">ファイルベースのコンテキスト</div></div>
+        <div class="platform-item"><div class="platform-item__name">Gemini CLI</div><div class="platform-item__method">コンテキストファイル読み込み</div></div>
+        <div class="platform-item"><div class="platform-item__name">Amp</div><div class="platform-item__method">スキルディレクトリマウント</div></div>
+        <div class="platform-item"><div class="platform-item__name">Goose</div><div class="platform-item__method">プラグインベース</div></div>
+        <div class="platform-item"><div class="platform-item__name">Windsurf</div><div class="platform-item__method">プロジェクトファイルから</div></div>
+        <div class="platform-item"><div class="platform-item__name">Aider</div><div class="platform-item__method">Repository map 統合</div></div>
+        <div class="platform-item"><div class="platform-item__name">Continue</div><div class="platform-item__method">カスタムコンテキストプロバイダ</div></div>
+      </div>
+      <div class="ve-callout" style="margin-top:1rem">
+        <strong>共通条件:</strong> YAML フロントマターを含む <code>SKILL.md</code> ファイルが読めるエージェントであれば、agentskills.io 標準に依存せずとも動作する。
+      </div>
+    </div>
+
+    <section id="quickstart" class="sec-head">6 — クイックスタート</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 3 つのインストール方法</span>
+
+      <h3>Method 1 — npx skills（推奨）</h3>
+      <div class="ve-code-block">
+        <pre><code>npx skills add mukul975/Anthropic-Cybersecurity-Skills</code></pre>
+      </div>
+
+      <h3>Method 2 — Claude Code プラグイン</h3>
+      <div class="ve-code-block">
+        <pre><code>/plugin marketplace add mukul975/Anthropic-Cybersecurity-Skills</code></pre>
+      </div>
+
+      <h3>Method 3 — 手動クローン</h3>
+      <div class="ve-code-block">
+        <pre><code>git clone https://github.com/mukul975/Anthropic-Cybersecurity-Skills.git</code></pre>
+      </div>
+
+      <h3 style="margin-top:1.5rem">使い方の例（Claude Code）</h3>
+      <p>インストール後、エージェントへのプロンプトに含めるだけでスキルが自動的に参照される。</p>
+      <div class="ve-code-block">
+        <pre><code># メモリフォレンジックを実行してほしい場合
+"ランサムウェアに感染した可能性のある Windows マシンのメモリダンプを
+ Volatility3 で解析して、悪意あるプロセスを特定してください。"
+
+# エージェントは自動的に
+# performing-memory-forensics-with-volatility3 スキルを参照する</code></pre>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 参考リンク</span>
+      <ul>
+        <li><a href="https://github.com/mukul975/Anthropic-Cybersecurity-Skills" target="_blank" rel="noopener">GitHub: mukul975/Anthropic-Cybersecurity-Skills</a> — 本体リポジトリ</li>
+        <li><a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> — オープン標準の仕様</li>
+        <li><a href="https://attack.mitre.org" target="_blank" rel="noopener">MITRE ATT&amp;CK</a> — 脅威インテリジェンスフレームワーク</li>
+        <li><a href="https://owasp.org/www-project-top-ten/" target="_blank" rel="noopener">OWASP Top 10 (2025)</a> — Web アプリケーションセキュリティリスク</li>
+        <li><a href="https://www.nist.gov/cyberframework" target="_blank" rel="noopener">NIST Cybersecurity Framework</a> — セキュリティリスク管理フレームワーク</li>
+      </ul>
+    </div>
+  </div><!-- /.main -->
+</div><!-- /.wrap -->
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

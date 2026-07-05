@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>designlang — ライブ DOM からデザイン言語を抽出</title>
+  <meta name="description" content="designlang v12.23 — Playwright でライブ DOM からデザイン言語を抽出。site / studio / verify / grade など 17+ 成果物と MCP まで。npm: designlang（design-extract）の技術概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="designlang — ライブ DOM からデザイン言語を抽出">
+  <meta property="og:description" content="v12.23: 全ページ canonical 合成、ランタイムモーション、スタジオ編集、忠実度検証、レポートカードまで。design-extract（npm: designlang）の技術概要。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/design-extract.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="designlang — ライブ DOM からデザイン言語を抽出">
+  <meta name="twitter:description" content="designlang v12.23 — ライブ DOM からトークン・意図・voice・サイト全体の canonical システムまで抽出する design-extract の概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI — Blueprint + Geist) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.45 0.1 200);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.55 0.14 155);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Geist', system-ui, sans-serif;
+      --font-mono: 'Geist Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.62 0.14 248);
+        --chart-2: oklch(0.78 0.14 76);
+        --chart-3: oklch(0.7 0.1 200);
+        --chart-4: oklch(0.75 0.12 84);
+        --chart-5: oklch(0.7 0.1 155);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 14%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.38 0.12 248 / 0.07) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.5 0.12 248 / 0.12) 0%, transparent 50%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#pipeline">パイプライン</a>
+    <a href="#outputs">出力物</a>
+    <a href="#commands">サブコマンド</a>
+    <a href="#milestones">リリース</a>
+    <a href="#differentiators">差別化</a>
+    <a href="#ecosystem">周辺ツール</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>designlang</h1>
+  <p class="subtitle">npm: designlang v12.23.0 / GitHub: Manavarya09/design-extract — ライブ DOM から Design Language を抜き出す</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
+    <p><strong>designlang</strong>（ソースは <a href="https://github.com/Manavarya09/design-extract" target="_blank" rel="noopener">Manavarya09/design-extract</a>）は、Playwright のヘッドレス Chromium で任意の URL を開き、<strong>実際に計算された CSS</strong> から色・タイポ・間隔・影・ブレークポイント・モーション・アクセシビリティ指標などを集約し、<strong>17 種類以上</strong>の成果物（AI 向け Markdown、W3C DTCG トークン、Tailwind 設定、shadcn テーマ、Figma 変数、MCP メタ、など）として書き出す Node.js ツールだ。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">12.23</span><span class="ve-kpi-card__label">npm 版</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">CLI</span><span class="ve-kpi-card__label">designlang</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Browser</span><span class="ve-kpi-card__label">Playwright</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">17+</span><span class="ve-kpi-card__label">出力スロット</span></div>
+    </div>
+    <p>v10 以降は <strong>ページ意図</strong>・<strong>セクション役割</strong>・<strong>Material / 画像表現</strong> など「意味」レイヤを追加。v12 系では <strong>忠実度検証</strong>（<code>verify</code>）、<strong>ライブ編集スタジオ</strong>（<code>studio</code>）、<strong>ランタイムモーション</strong>（<code>--motion-runtime</code>）、<strong>サイト全体の canonical 合成</strong>（<code>site</code>）、<strong>レポートカード / バトル / リミックス / ブランドブック</strong> など、抽出後のワークフローまで一気通貫でカバーする。</p>
+  </div>
+
+  <div class="ve-callout" style="margin-top:1rem">
+    <strong>実行前提:</strong> Node 20+。依存に Playwright があり、<code>postinstall</code> で Chromium の取得を試みる。オフライン環境ではブラウザ取得に手を要することがある。npm パッケージ名は <code>designlang</code>、公開バイナリ名も <code>designlang</code>（実装は <code>bin/design-extract.js</code>）。
+  </div>
+
+  <section id="pipeline" class="sec-head">2 — パイプライン</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 処理の流れ（概念）</span>
+    <p>エントリ <code>extractDesignLanguage</code> は、まず <code>crawlPage</code> で（ライト/インタラクション用データを含め）<strong>生の計算スタイル</strong>と DOM シグナルを採取し、続く段階で <code>extractors/*</code> が色・タイポ・レイアウト・モーション・<code>page-intent</code> などのサブシステムに落とし込み、最後に <code>formatters/*</code> へ渡して各ファイル形式に整形される。</p>
+    <div class="pipeline" aria-label="パイプライン概略">
+      <span class="step">crawl（Playwright）</span>
+      <span class="arrow">→</span>
+      <span class="step">aggregate styles</span>
+      <span class="arrow">→</span>
+      <span class="step">extractors 群</span>
+      <span class="arrow">→</span>
+      <span class="step">design オブジェクト</span>
+      <span class="arrow">→</span>
+      <span class="step">formatters &amp; 書き出し</span>
+    </div>
+    <h3>抽出レイヤの例</h3>
+    <ul>
+      <li><strong>基礎:</strong> <code>colors</code> / <code>typography</code> / <code>spacing</code> / <code>shadows</code> / <code>borders</code> / <code>variables</code></li>
+      <li><strong>構造・挙動:</strong> <code>layout</code> / <code>breakpoints</code> / <code>components</code> + <code>component-clusters</code> / <code>interaction-states</code> / <code>motion</code></li>
+      <li><strong>意味づけ（v10 付近）:</strong> <code>page-intent</code> / <code>section-roles</code> / <code>material-language</code> / <code>imagery-style</code> / <code>component-library</code> / <code>voice</code></li>
+      <li><strong>運用系:</strong> <code>lint</code> / <code>drift</code> / <code>sync</code> / <code>watch</code> / <code>visual-diff</code> / <code>multibrand</code> — CLI サブコマンドから利用</li>
+    </ul>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 早い試し方</span>
+    <div class="ve-code-block">
+      <pre><code>npx designlang https://example.com
+npx designlang site stripe.com --max-pages 8    # 全ページ canonical 合成
+npx designlang studio                           # 最新抽出をライブ編集
+npx designlang verify stripe.com                # トークン再現の忠実度スコア
+npx designlang grade https://example.com --badge
+npx designlang https://example.com --full       # responsive + interactions + motion-runtime</code></pre>
+    </div>
+  </div>
+
+  <section id="outputs" class="sec-head">3 — 主な出力物</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ファイル指針</span>
+    <p>同一抽出につきプレフィックス（例: ドメイン名由来）付きの複数ファイルが一括で生成される。代表的な役割は次のとおり（README 記載のサマリに準拠）。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>成果物</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>*-design-language.md</code></td><td>LLM に食わせるための 19 セクション構成の設計要約</td></tr>
+          <tr><td><code>*-preview.html</code></td><td>スウォッチ・タイプスケール等のビジュアルレポート</td></tr>
+          <tr><td><code>*-design-tokens.json</code></td><td>W3C DTCG 形式（primitive + semantic + composite）</td></tr>
+          <tr><td><code>*-tailwind.config.js</code> / <code>*-shadcn-theme.css</code></td><td>Tailwind テーマ、shadcn/ui 向け CSS 変数</td></tr>
+          <tr><td><code>*-figma-variables.json</code></td><td>Figma Variables 流し込み（light + dark）</td></tr>
+          <tr><td><code>*-motion-tokens.json</code></td><td>持続時間・easing・spring。 <code>--motion-runtime</code> 時は choreography / scroll レシピも</td></tr>
+          <tr><td><code>*-anatomy.tsx</code></td><td>コンポーネント解剖に基づく型付き React スタブ</td></tr>
+          <tr><td><code>*-voice.json</code> / <code>*-prompts/</code></td><td>Brand voice、v0 / Lovable / Cursor / Claude Artifacts 向けプロンプト</td></tr>
+          <tr><td><code>*-mcp.json</code></td><td><code>designlang mcp</code> 向けディスク上メタ</td></tr>
+          <tr><td><code>*-grade.html</code> / <code>*-grade.svg</code></td><td>共有用 Design Report Card と README 用バッジ（<code>grade --badge</code>）</td></tr>
+          <tr><td><code>*-battle.html</code></td><td><code>battle</code> コマンドの head-to-head 比較カード</td></tr>
+          <tr><td><code>*-remix.&lt;vocab&gt;.html</code></td><td>6 語彙（brutalist / swiss / art-deco / cyberpunk / soft-ui / editorial）へのリスタイル</td></tr>
+          <tr><td><code>*-site-system.json</code> 他</td><td><code>site</code> コマンド: canonical トークン、coverage レポート、0–100 一貫性グレード</td></tr>
+          <tr><td><code>verify.html</code> / <code>verify.json</code></td><td><code>verify</code> コマンド: トークン再現の 0–100 忠実度スコア</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="commands" class="sec-head">4 — 主要サブコマンド（v12 系）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 抽出後のワークフロー</span>
+    <p>単一 URL 抽出（<code>designlang &lt;url&gt;</code>）に加え、README / CHANGELOG に載る v12 系サブコマンドの役割は次のとおり。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>site &lt;url&gt;</code></td><td>pricing / docs / blog 等の canonical ページを巡回し、coverage 選出で 1 つの site-wide システムに合成（v12.23）</td></tr>
+          <tr><td><code>studio</code></td><td>最新抽出をインスペクタ付きライブプレビューで編集。DTCG / CSS / Tailwind をエクスポート（v12.19）</td></tr>
+          <tr><td><code>verify &lt;url&gt;</code></td><td>抽出トークンのみでコンポーネントを再構築し pixel-diff。0–100 忠実度スコア（v12.18）</td></tr>
+          <tr><td><code>grade &lt;url&gt;</code></td><td>8 次元の Design Report Card（HTML / SVG バッジ）。ライブ: <code>designlang.app/badge/&lt;host&gt;.svg</code></td></tr>
+          <tr><td><code>battle &lt;a&gt; &lt;b&gt;</code></td><td>2 サイトの head-to-head 比較カード</td></tr>
+          <tr><td><code>remix &lt;url&gt; --as &lt;vocab&gt;</code></td><td>別語彙へのリスタイル（<code>--all</code> で 6 語彙一括）</td></tr>
+          <tr><td><code>pack / brand / theme-swap / pair</code></td><td>設計システム一式バンドル、13 章ブランドブック、OKLCH リカラー、2 サイト融合（7 軸）</td></tr>
+          <tr><td><code>clone / apply / sync / drift / lint / visual-diff</code></td><td>Next.js 雛形生成、フレームワーク自動適用、本番同期、CI 向けトークン監査</td></tr>
+          <tr><td><code>mcp</code></td><td>stdio MCP サーバー — トークン・領域・コンポーネントを MCP クライアントへ公開</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:1rem;margin-bottom:0"><code>--full</code> は screenshots + responsive + interactions + deep-interact + <code>--motion-runtime</code> を一括有効化。<code>--smart</code> は低信頼分類を Atlas Cloud / OpenAI / Anthropic で補正可能（API キー要）。</p>
+  </div>
+
+  <section id="milestones" class="sec-head">5 — リリースの要点</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> v12.23 — Whole-site</span>
+    <ul>
+      <li><strong><code>site</code></strong> — 各トークンをページ coverage で選出。OKLab で近似色をマージ。<code>*-site-coverage.md</code>（🟢 site-wide / 🟡 section / 🔴 page-local）と <code>*-site-consistency.md</code>（0–100 グレード）を出力。</li>
+      <li><strong>Claude プラグイン</strong> — マニフェストを現行版に同期。<code>/site</code>・<code>/studio</code>・<code>/verify</code> を追加しスラッシュコマンドは 11 本。</li>
+    </ul>
+  </div>
+  <div class="ve-card ve-card--elevated" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> v12.18–12.22 — 検証・モーション・スタジオ</span>
+    <ul>
+      <li><strong>verify</strong> — トークン再現の pixel-diff と per-token-family 損失 attribution。<code>--min</code> で CI ゲート。</li>
+      <li><strong>--motion-runtime</strong> — <code>document.getAnimations()</code> で実際の duration / stagger / scroll レシピを捕捉。Framer / GSAP emitter が推測ではなく観測値を使用。</li>
+      <li><strong>studio</strong> — CLI と Web <code>/studio</code> で同一エンジン。WCAG ライブ採点、ダークモード、URL 共有。</li>
+    </ul>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:2; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> v10 / v9 基盤（現行も継承）</span>
+    <ul>
+      <li><strong>v10 Intent</strong> — Page Intent（<code>landing</code> / <code>pricing</code> / <code>docs</code> 等）、Section Roles、Material / Imagery / UI ライブラリ推定、Prompt Pack。</li>
+      <li><strong>v9 Motion &amp; Ops</strong> — Motion Language、Component Anatomy v2、Brand Voice、<code>lint</code> / <code>drift</code> / <code>visual-diff</code> の CI 連携。</li>
+    </ul>
+  </div>
+
+  <section id="differentiators" class="sec-head">6 — 他ツールとの違い（抜粋）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> マーケット上の空き</span>
+    <p>README では、単純に色とフォントだけ出す層と差をつけるため、次のような <strong>構造寄り</strong>の能力が前面に出ている。</p>
+    <ul>
+      <li><strong>Layout System</strong> — グリッド/フレックス/コンテナ幅/ギャップ/整列のパターン採取。</li>
+      <li><strong>Responsive 4 ビューポイント</strong> — ブレーク間で <em>何が</em> 切り替わるか（表示/非表示、段数、フォントサイズ等）の差分を記述。</li>
+      <li><strong>Interaction States</strong> — ホバー/フォーカス等をプログラム的に採取してスタイル遷移を具体値で残す（<code>--interactions</code> / <code>--deep-interact</code>）。</li>
+      <li><strong>Runtime Motion</strong> — CSS 宣言だけでなく <code>getAnimations()</code> で実際に動く duration / stagger / scroll レシピを記録（<code>--motion-runtime</code>）。</li>
+      <li><strong>Whole-site canonical</strong> — ホームページ 1 枚ではなく <code>site</code> で coverage ベースの site-wide トークンを合成。</li>
+      <li><strong>Fidelity loop</strong> — <code>verify</code> が「抽出物で本物を再現できるか」をスコア化。弱い抽出は点数に反映される。</li>
+      <li><strong>Live → Repo</strong> — <code>sync</code> / <code>apply</code> / <code>clone</code> でデプロイ済みサイトから再現用アプリ・トークン更新まで接続。</li>
+      <li><strong>Grade / Battle / Remix</strong> — 品質レポート、競合比較、語彙変換まで同一 CLI から。</li>
+    </ul>
+  </div>
+
+  <section id="ecosystem" class="sec-head">7 — 周辺エコシステム</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 同梱・連携</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>枠</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>MCP</strong></td><td><code>designlang mcp --output-dir ./design-extract-output</code> — Cursor / Claude Code 等からトークン・領域・コンポーネントへアクセス</td></tr>
+          <tr><td><strong>Claude Code プラグイン</strong></td><td>11 スラッシュコマンド（<code>/extract</code> <code>/site</code> <code>/grade</code> <code>/battle</code> <code>/remix</code> <code>/pack</code> <code>/theme-swap</code> <code>/brand</code> <code>/pair</code> <code>/studio</code> <code>/verify</code>）。<code>/plugin marketplace add Manavarya09/design-extract</code></td></tr>
+          <tr><td><strong>Agent Skill</strong></td><td><code>npx skills add Manavarya09/design-extract</code> — Cursor 等 40+ エージェント向け（<code>/extract-design</code>）</td></tr>
+          <tr><td><strong>GitHub Action</strong></td><td><code>github-action/</code> — PR 上のトークン差分を可視化する design regression guard</td></tr>
+          <tr><td><strong>拡張</strong></td><td>VS Code、Chrome（MV3）、Raycast、Figma プラグイン、公開 Web（<code>designlang.manavaryasingh.com</code> の extractor / studio / gallery）</td></tr>
+          <tr><td><strong>Atlas Cloud</strong></td><td><code>--smart</code> 分類の OpenAI 互換ルート（<code>ATLASCLOUD_API_KEY</code>）。OpenAI / Anthropic キーも従来どおり</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+    <ul>
+      <li><a href="https://github.com/Manavarya09/design-extract" target="_blank" rel="noopener">GitHub: Manavarya09/design-extract</a></li>
+      <li><a href="https://www.npmjs.com/package/designlang" target="_blank" rel="noopener">npm: designlang</a></li>
+      <li><a href="https://designlang.manavaryasingh.com/" target="_blank" rel="noopener">公式 Web</a>（バッジ経由。README 記載のライブサイト）</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

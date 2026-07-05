@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ds4.c — DeepSeek V4 Flash 向けネイティブ推論エンジン</title>
+  <meta name="description" content="Metal 中心の単一モデル推論、公式ベクトル検証、ディスク KV キャッシュ、OpenAI / Anthropic 互換 HTTP API。antirez/ds4 の構成と使い方の技術概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="ds4.c — DeepSeek V4 Flash 向けネイティブ推論エンジン">
+  <meta property="og:description" content="Metal 中心の単一モデル推論、公式ベクトル検証、ディスク KV キャッシュ、OpenAI / Anthropic 互換 HTTP API。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/ds4.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="ds4.c — DeepSeek V4 Flash 向けネイティブ推論エンジン">
+  <meta name="twitter:description" content="Metal 中心の単一モデル推論、ディスク KV、互換 API の要点。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Georama:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Overpass+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: Georama, system-ui, sans-serif;
+      --font-mono: 'Overpass Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.55 0.14 195);
+        --chart-2: oklch(0.72 0.14 85);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 15%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-1) 12%, transparent) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-1) 18%, transparent) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">モジュール</a>
+    <a href="#model">モデルとビルド</a>
+    <a href="#cli-server">CLI とサーバー</a>
+    <a href="#disk-kv">ディスク KV</a>
+    <a href="#agents">エージェント連携</a>
+    <a href="#cautions">制約と注意</a>
+    <a href="#refs">出典</a>
+  </nav>
+
+  <div class="main">
+  <h1>ds4.c</h1>
+  <p class="subtitle">DeepSeek V4 Flash 専用のネイティブ推論エンジン（Metal 本番パス）</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
+    <p><strong>ds4.c</strong> は汎用 GGUF ランナーではなく、<strong>DeepSeek V4 Flash</strong> 向けにロード形式・量子化・Metal グラフ・KV 状態・HTTP API を一貫させた小さな推論エンジンである。本番は Metal グラフ実行で、<a href="https://github.com/ggml-org/llama.cpp" target="_blank" rel="noopener">llama.cpp</a> / GGML 由来の知見とカーネル・量子レイアウトを参照しつつ、当該モデル専用の読み込みと検証に絞っている。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">1M</span><span class="ve-kpi-card__label">コンテキスト上限（トークン）</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Metal</span><span class="ve-kpi-card__label">本番実行パス</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">KV</span><span class="ve-kpi-card__label">圧縮キャッシュ＋ディスク永続化</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">HTTP</span><span class="ve-kpi-card__label">OpenAI / Anthropic 互換</span></div>
+    </div>
+    <p>設計上の狙いは、公式実装と整合した logits の検証、長文・エージェント用途での KV 再利用、およびローカル環境（高メモリ Mac など）での実用性である。公開 GGUF はプロジェクト配布のものに限定され、任意ファイルはレイアウト不一致で動かない。</p>
+  </div>
+
+  <section id="architecture" class="sec-head">2 — モジュール構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> データの流れ</span>
+    <div class="pipeline">
+      <span class="step">GGUF mmap</span>
+      <span class="arrow">→</span>
+      <span class="step">トークナイザ</span>
+      <span class="arrow">→</span>
+      <span class="step">Metal グラフ</span>
+      <span class="arrow">→</span>
+      <span class="step">CLI / ds4-server</span>
+    </div>
+    <div class="ve-table-wrap" style="margin-top: 1rem;">
+      <table>
+        <thead>
+          <tr><th>ファイル</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>ds4.c</code></td><td>モデルロード、トークナイザ、CPU 参照、Metal スケジュール、セッション、ディスクキャッシュ直列化</td></tr>
+          <tr><td><code>ds4_cli.c</code></td><td>コマンドライン、linenoise REPL、対話トランスクリプト</td></tr>
+          <tr><td><code>ds4_server.c</code></td><td>OpenAI / Anthropic 互換 HTTP、ワーカーキュー、ストリーミング、ツール呼び出しマッピング、ディスク KV 方針</td></tr>
+          <tr><td><code>ds4_metal.m</code></td><td>Objective-C による Metal ランタイムとカーネルラッパ</td></tr>
+          <tr><td><code>metal/*.metal</code></td><td>演算カーネル（Attention、MoE、規約など）</td></tr>
+          <tr><td><code>tests/</code></td><td>単体・統合テスト、公式ベクトル</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="model" class="sec-head">3 — モデル取得とビルド</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 入手と既定パス</span>
+    <p>配布スクリプトは <a href="https://huggingface.co/antirez/deepseek-v4-gguf" target="_blank" rel="noopener">Hugging Face: antirez/deepseek-v4-gguf</a> から q2 / q4 を取得し、<code>./gguf/</code> に保存して <code>./ds4flash.gguf</code> を選択モデルへ向ける。<code>./download_model.sh mtp</code> で投機的デコード用 GGUF を追加できる（<code>--mtp</code> で有効化。現状は実験扱い）。</p>
+    <div class="ve-code-block"><pre><code>./download_model.sh q2   # 128 GB クラス向け
+./download_model.sh q4   # 256 GB 以上向け
+make</code></pre></div>
+    <p>既定のモデルパスは <code>./ds4flash.gguf</code>。別ファイルは <code>-m</code> で指定。<code>./ds4 --help</code> と <code>./ds4-server --help</code> に全フラグが載る。</p>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 2-bit 量子化の要点</span>
+    <p>ルーティング MoE 専家のみ非対称量子化（up/gate を <code>IQ2_XXS</code>、down を <code>Q2_K</code>）。共有エキスパートや投影・ルーティングは高ビットのままにし、品質とツール利用の安定性を優先している。</p>
+  </div>
+
+  <section id="cli-server" class="sec-head">4 — CLI と HTTP サーバー</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> CLI</span>
+    <p>ワンショットは <code>-p</code>。対話は <code>./ds4</code> のみ起動。対話モードはマルチターンで Metal KV を保持し、<code>/think</code>、<code>/nothink</code>、<code>/ctx N</code>、<code>/read FILE</code> などが使える。既定は thinking モード。</p>
+    <div class="ve-code-block"><pre><code>./ds4 -p "Explain Redis streams in one paragraph."
+./ds4-server --ctx 100000 --kv-disk-dir /tmp/ds4-kv --kv-disk-space-mb 8192</code></pre></div>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> サーバー API</span>
+    <p>推論は単一 Metal ワーカーに直列化され、同時リクエストはキュー待ちになる。主なエンドポイント:</p>
+    <ul>
+      <li><code>GET /v1/models</code>、<code>GET /v1/models/deepseek-v4-flash</code></li>
+      <li><code>POST /v1/chat/completions</code>（OpenAI 形式、ツール・ストリーミング対応）</li>
+      <li><code>POST /v1/completions</code></li>
+      <li><code>POST /v1/messages</code>（Anthropic 形式、thinking 制御）</li>
+    </ul>
+    <h3>参考スループット（README 掲載値）</h3>
+    <p>条件: Metal CLI、<code>--ctx 32768</code>、<code>--nothink</code>、貪欲、<code>-n 256</code>。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>機種</th><th>量子化</th><th>プロンプト</th><th>Prefill</th><th>生成</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>MacBook Pro M3 Max, 128 GB</td><td>q2</td><td>short</td><td>58.52 t/s</td><td>26.68 t/s</td></tr>
+          <tr><td>MacBook Pro M3 Max, 128 GB</td><td>q2</td><td>11709 tokens</td><td>250.11 t/s</td><td>21.47 t/s</td></tr>
+          <tr><td>Mac Studio M3 Ultra, 512 GB</td><td>q2</td><td>short</td><td>84.43 t/s</td><td>36.86 t/s</td></tr>
+          <tr><td>Mac Studio M3 Ultra, 512 GB</td><td>q4</td><td>short</td><td>78.95 t/s</td><td>35.50 t/s</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="disk-kv" class="sec-head">5 — ディスク KV キャッシュ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ステートレスクライアントとの相性</span>
+    <p>チャット API はステートレスが前提のため、クライアントは毎回長い会話全文を送りがちである。<code>ds4-server</code> はレンダ済みトークン列とキャッシュされたプレフィックスを照合し、共有プレフィックスを再計算から省く。メモリ上のチェックポイントが現在セッション、ディスク KV がセッション切替や再起動後の再開に効く。</p>
+    <div class="ve-code-block"><pre><code>./ds4-server --kv-disk-dir /tmp/ds4-kv --kv-disk-space-mb 8192</code></pre></div>
+    <p>キーは生テキストではなく、トークン ID 列の SHA1（各 ID を little-endian 32-bit としてハッシュ連鎖）。キャッシュファイル名は <code>&lt;sha1&gt;.kv</code>。本文は人間向け観測用で、ロード時の整合判定には使われない。</p>
+  </div>
+
+  <section id="agents" class="sec-head">6 — エージェント連携の要点</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ローカル HTTP を前提にした設定</span>
+    <p>OpenAI 互換クライアントでは <code>baseURL</code> を <code>http://127.0.0.1:8000/v1</code> に向け、サーバー起動時の <code>--ctx</code> 以下にクライアント側のコンテキスト上限を合わせる。Claude Code 利用時は Anthropic 互換エンドポイントへ <code>ANTHROPIC_BASE_URL</code> 等を向ける運用が README に例示されている。</p>
+    <div class="ve-callout">
+      <strong>Thinking モード:</strong> サーバー既定は thinking。<code>thinking: {"type":"disabled"}</code> や <code>think:false</code>、非 thinking エイリアスで直接回答に切り替えられる。<code>reasoning_effort=max</code> は Think Max だが、コンテキストが十分大きい場合に限るなどモデルカード推奨に従うフォールバックがある。
+    </div>
+  </div>
+
+  <section id="cautions" class="sec-head">7 — 制約と注意</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 運用上の境界</span>
+    <ul>
+      <li><strong>Metal のみ本番:</strong> CPU パスは参照・デバッグ用。大きな CPU 推論を macOS で走らせると、README が指摘するようにカーネル VM まわりの不具合でクラッシュする報告がある。</li>
+      <li><strong>単一ライブ KV:</strong> メモリ上は同時に一系統。別セッションへ切り替えると、旧チェックポイントをディスクに書いていないと再開で全プレフィックス再計算になる。</li>
+      <li><strong>巨大プロセスの並列:</strong> 複数の巨大モデルプロセスを同時に動かさない（インスタンスロック意図）。</li>
+      <li><strong>128 GB での ctx:</strong> q2 でもモデル占有が大きいため、100k〜300k トークン帯のコンテキスト設計が現実的、という README のガイダンスがある。</li>
+    </ul>
+  </div>
+
+  <section id="refs" class="sec-head">8 — 出典・リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 一次情報</span>
+    <ul>
+      <li><a href="https://github.com/antirez/ds4" target="_blank" rel="noopener">GitHub: antirez/ds4</a> — ソースと README</li>
+      <li><a href="https://huggingface.co/antirez/deepseek-v4-gguf" target="_blank" rel="noopener">Hugging Face: antirez/deepseek-v4-gguf</a> — 配布ウェイト</li>
+      <li><a href="https://github.com/ggml-org/llama.cpp" target="_blank" rel="noopener">llama.cpp</a> — 謝辞で明示される参照実装・エコシステム</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

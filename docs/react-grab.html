@@ -4,20 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>React Grab — コーディングエージェント用コンテキスト選択</title>
-  <meta name="description" content="画面上の要素を選んでコンテキストをコピーし、Cursor / Copilot 等を最大約3倍速・高精度にする React Grab の紹介。">
+  <meta name="description" content="画面上の UI 要素を選び、ソース位置とコンポーネントスタックをエージェントに渡す React Grab の構成・導入・プラグイン API の技術概要。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="React Grab — コーディングエージェント用コンテキスト選択">
-  <meta property="og:description" content="画面上の要素を選んでコンテキストをコピーし、Cursor / Copilot 等を最大約3倍速・高精度にする React Grab の紹介。">
+  <meta property="og:description" content="画面上の UI 要素を選び、ソース位置とコンポーネントスタックをエージェントに渡す React Grab の構成・導入・プラグイン API の技術概要。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/react-grab.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="React Grab — コーディングエージェント用コンテキスト選択">
-  <meta name="twitter:description" content="画面上の要素を選んでコンテキストをコピーし、Cursor / Copilot 等を最大約3倍速・高精度にする React Grab の紹介。">
+  <meta name="twitter:description" content="画面上の UI 要素を選び、ソース位置とコンポーネントスタックをエージェントに渡す React Grab の構成・導入・プラグイン API の技術概要。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     /* ============ THEME (Spell UI tokens + fonts) ============ */
     :root {
@@ -43,15 +43,15 @@
       --border: oklch(0.922 0 0);
       --input: oklch(0.922 0 0);
       --ring: oklch(0.708 0 0);
-      --chart-1: oklch(0.646 0.222 41.116);
-      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
       --chart-3: oklch(0.398 0.07 227.392);
       --chart-4: oklch(0.828 0.189 84.429);
       --chart-5: oklch(0.769 0.188 70.08);
       --code-bg: var(--muted);
       --code-text: #032f62;
-      --font-body: 'DM Sans', system-ui, sans-serif;
-      --font-mono: 'Fira Code', 'SF Mono', Consolas, monospace;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
       --bg: var(--background);
       --surface: var(--card);
       --surface2: var(--muted);
@@ -78,8 +78,8 @@
         --border: oklch(1 0 0 / 10%);
         --input: oklch(1 0 0 / 15%);
         --ring: oklch(0.556 0 0);
-        --chart-1: oklch(0.488 0.243 264.376);
-        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-1: oklch(0.55 0.14 200);
+        --chart-2: oklch(0.72 0.16 80);
         --chart-3: oklch(0.769 0.188 70.08);
         --chart-4: oklch(0.627 0.265 303.9);
         --chart-5: oklch(0.645 0.246 16.439);
@@ -113,33 +113,41 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
     .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
     .ve-table-wrap tbody tr:hover { background: var(--border); }
     .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
-    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-family: var(--font-mono); color: var(--chart-1); }
     .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
     .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
     .ve-callout strong { color: var(--foreground); font-weight: 600; }
-    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.45 0.12 200 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
 
     /* ============ Reset + base ============ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: var(--bg);
-      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.646 0.222 41.116 / 0.06) 0%, transparent 50%);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.45 0.12 200 / 0.07) 0%, transparent 50%);
       color: var(--text);
       font-family: var(--font-body);
       padding: 40px;
       min-height: 100vh;
     }
     @media (prefers-color-scheme: dark) {
-      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.488 0.243 264.376 / 0.08) 0%, transparent 50%); }
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.55 0.14 200 / 0.1) 0%, transparent 50%); }
     }
 
-    /* ============ Wrap + TOC (responsive nav) ============ */
+    /* ============ Wrap + TOC ============ */
     .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
     .main { min-width: 0; max-width: 72rem; }
     .toc {
@@ -168,24 +176,50 @@
       .sec-head { scroll-margin-top: 52px; }
     }
 
-    /* ============ Typography ============ */
     h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
     .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
     .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
     .sec-head:first-of-type { margin-top: 0; }
-    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    h3 { font-size: 1.0625rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
     p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
     ul { margin: 0 0 1rem; padding-left: 1.5rem; }
-    li { margin-bottom: 0.35rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
     a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
-    a:hover { color: var(--chart-3); }
-    .ve-section-label .ve-dot { background: var(--chart-1); }
+    a:hover { color: var(--chart-2); }
     .ve-code-block { margin: 1rem 0; }
     code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
 
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
     .kpi-row .ve-kpi-card { min-width: 0; }
     @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; color: var(--chart-2); margin-bottom: 0.35rem; }
+    .step-card__title { font-weight: 600; font-size: 0.875rem; margin-bottom: 0.35rem; }
+    .step-card__body { font-size: 0.8125rem; color: var(--muted-foreground); line-height: 1.55; }
+
+    /* ============ Mermaid ============ */
+    .mermaid-wrap {
+      position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg);
+      background: var(--card); overflow: hidden; margin: 1rem 0;
+    }
+    .mermaid-controls {
+      position: absolute; top: 8px; right: 10px; display: flex; gap: 4px; z-index: 10;
+    }
+    .mermaid-controls button {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      width: 26px; height: 26px; font-family: var(--font-mono); font-size: 13px; color: var(--text-dim);
+      cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s;
+    }
+    .mermaid-controls button:hover { background: var(--border); color: var(--text); }
+    .mermaid-viewport {
+      overflow: hidden; cursor: grab; padding: 1.5rem; display: flex; justify-content: center; min-height: 260px;
+    }
+    .mermaid-viewport:active { cursor: grabbing; }
+    .mermaid-inner { transform-origin: center top; }
+    .mermaid { min-width: 0; }
 
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
@@ -197,102 +231,378 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
-    <a href="#packages">パッケージ構成</a>
-    <a href="#usage">使い方</a>
-    <a href="#core-api">コア API</a>
+    <a href="#workflow">操作フロー</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#packages">パッケージ</a>
+    <a href="#install">導入</a>
+    <a href="#plugins">プラグイン</a>
+    <a href="#internals">内部設計</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
   <h1>React Grab</h1>
-  <p class="subtitle">画面上の要素を選んで、コンテキストをコーディングエージェントに渡す。Cursor / Copilot 等を最大約 3 倍速・高精度に。</p>
+  <p class="subtitle">aidenybai/react-grab · 開発中アプリ上で UI を選び、エージェント向けコンテキストをコピー</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
-  <div class="ve-card ve-card--elevated" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-    <p><strong>React Grab</strong> は、ウェブ画面上の UI 要素を「指定」し、そのコンテキスト（ファイル名・React コンポーネント名・HTML ソース）をクリップボードにコピーして、Cursor・Claude Code・Copilot などのコーディングエージェントに貼り付けるためのライブラリとエコシステム。ホバーして <strong>⌘C / Ctrl+C</strong> で要素を選ぶと、エージェント用のコンテキストが即コピーされ、エージェントの精度・速度向上（公式では最大約 3 倍）を狙う。</p>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
+    <p><strong>React Grab</strong> は、ブラウザ上の任意の UI 要素を指定し、その背後にある<strong>ソースファイル・行番号・React コンポーネントスタック</strong>をクリップボードにまとめてコピーするツール。Cursor・Claude Code・Copilot などのコーディングエージェントに貼り付けることで、「どのコンポーネントのどの行か」を明示したまま修正依頼できる。公式ベンチマークでは編集が<strong>約 2 倍速</strong>になり精度も上がるとしている。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">⌘C</span><span class="ve-kpi-card__label">ホットキー</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Solid</span><span class="ve-kpi-card__label">コア UI</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Plugin</span><span class="ve-kpi-card__label">拡張</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MCP</span><span class="ve-kpi-card__label">連携</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">⌘C</span><span class="ve-kpi-card__label">デフォルト操作</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Solid</span><span class="ve-kpi-card__label">オーバーレイ UI</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">bippy</span><span class="ve-kpi-card__label">Fiber / スタック</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MCP</span><span class="ve-kpi-card__label">エージェント連携</span></div>
     </div>
-    <p>コアは <code>packages/react-grab</code>（Solid.js ベースのオーバーレイ・選択ラベル・コンテキスト解決・コピー）。CLI（<code>grab</code>）と各 <code>provider-*</code> でエージェント・MCP・拡張とつなぐ構成。</p>
+    <p>ランタイムは <strong>開発環境のみ</strong>で読み込む想定。CLI（<code>grab</code>）が Next.js / Vite / TanStack Start / Webpack などを検出し、フレームワーク別の dev-only 設定を自動適用する。</p>
+  </div>
+  <div class="ve-callout" style="margin-top:1rem">
+    <strong>開発専用:</strong> 本番バンドルに含めない。Next.js では <code>NODE_ENV === "development"</code> のときだけ <code>react-grab</code> のスクリプトまたは dynamic import を有効にする。
   </div>
 
-  <section id="packages" class="sec-head">2 — パッケージ構成</section>
+  <section id="workflow" class="sec-head">2 — 操作フロー</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> モノレポ</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> 3 ステップ</span>
+    <div class="step-flow">
+      <div class="step-card">
+        <div class="step-card__num">STEP 1</div>
+        <div class="step-card__title">ホバー</div>
+        <div class="step-card__body">開発サーバー起動中のアプリ上で、修正したい要素の上にポインタを置く。オーバーレイが要素境界とコンポーネント名を表示する。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">STEP 2</div>
+        <div class="step-card__title">コピー</div>
+        <div class="step-card__body"><strong>⌘C</strong>（Mac）または <strong>Ctrl+C</strong>（Windows/Linux）。ホールド／トグルなどの有効化モードは <code>grab configure</code> で変更できる。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">STEP 3</div>
+        <div class="step-card__title">貼り付け</div>
+        <div class="step-card__body">エージェントのプロンプトに貼り付ける。HTML 断片・周辺ソース行・<code>in ComponentName (at path:line:col)</code> 形式のスタックが含まれる。</div>
+      </div>
+    </div>
+    <div class="ve-code-block">
+      <pre><code>&lt;a class="ml-auto inline-block text-sm" href="#"&gt;
+  Forgot your password?
+&lt;/a&gt;
+
+// components/login-form.tsx:46
+  45| &lt;div className="flex items-center"&gt;
+&gt; 46|   &lt;a className="ml-auto inline-block text-sm" href="#"&gt;
+  47|     Forgot your password?
+  48|   &lt;/a&gt;
+
+  in LoginForm (at components/login-form.tsx:46:19)</code></pre>
+    </div>
+  </div>
+
+  <section id="architecture" class="sec-head">3 — アーキテクチャ</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> モノレポ構成（pnpm + Turbo）</span>
+    <div class="mermaid-wrap">
+      <div class="mermaid-controls">
+        <button type="button" class="zoom-in" title="拡大">+</button>
+        <button type="button" class="zoom-out" title="縮小">−</button>
+        <button type="button" class="zoom-reset" title="リセット">⟳</button>
+      </div>
+      <div class="mermaid-viewport">
+        <div class="mermaid-inner">
+          <pre class="mermaid">
+flowchart TD
+  subgraph apps["apps/"]
+    Web["website / website-v2"]
+    Ext["web-extension"]
+    E2E["e2e-app"]
+    OS["openstory"]
+  end
+  subgraph pkgs["packages/"]
+    RG["react-grab\nコア・オーバーレイ"]
+    CLI["@react-grab/cli\ngrab init / configure"]
+    GrabPkg["grab\nnpm CLI エントリ"]
+    MCP["@react-grab/mcp\nMCP サーバー"]
+  end
+  Dev["開発者の React アプリ"]
+  Agent["コーディングエージェント"]
+
+  Dev -->|"dev import"| RG
+  CLI -->|"設定注入"| Dev
+  GrabPkg --> CLI
+  RG -->|"クリップボード"| Agent
+  MCP --> Agent
+  Ext --> RG
+  Web --> RG
+
+  classDef core fill:#ccfbf1,stroke:#0d9488,color:#134e4a,rx:6
+  classDef tool fill:#f0fdf4,stroke:#16a34a,color:#14532d,rx:6
+  classDef app fill:#f8fafc,stroke:#64748b,color:#334155,rx:6
+  class RG core
+  class CLI,GrabPkg,MCP tool
+  class Web,Ext,E2E,OS,Dev,Agent app
+          </pre>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> インタラクション状態（GrabState）</span>
+    <p><code>init()</code> 後、キーのホールドまたはトグルで <code>active</code> に入る。ホバー・クリック固定（frozen）・矩形ドラッグ選択・コピー中（copying）を <code>core/store.ts</code> の判別共用体で管理する。</p>
+    <div class="mermaid-wrap">
+      <div class="mermaid-controls">
+        <button type="button" class="zoom-in" title="拡大">+</button>
+        <button type="button" class="zoom-out" title="縮小">−</button>
+        <button type="button" class="zoom-reset" title="リセット">⟳</button>
+      </div>
+      <div class="mermaid-viewport">
+        <div class="mermaid-inner">
+          <pre class="mermaid">
+stateDiagram-v2
+  [*] --> idle
+  idle --> holding: キー押下
+  holding --> active: ホールド時間到達
+  holding --> idle: 早期リリース
+  idle --> active: トグル ON
+  state active {
+    [*] --> hovering
+    hovering --> frozen: クリック固定
+    frozen --> hovering: 解除
+    hovering --> dragging: 矩形選択
+    dragging --> hovering: 完了
+  }
+  active --> copying: コピー実行
+  copying --> active: ホールドモード継続
+  copying --> idle: トグルモード終了
+  active --> idle: 非活性化
+          </pre>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:2; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 初期化の要点</span>
+    <ul>
+      <li>ブラウザで <code>import</code> されると <code>init()</code> が走り、API が <code>window.__REACT_GRAB__</code> に露出する（SSR 時は同形の Noop API）。</li>
+      <li>オーバーレイ UI は Shadow DOM にマウントし、ホストは <code>pointer-events: none</code>（子 UI だけがイベントを受ける）。</li>
+      <li>レンダラー（Solid コンポーネント群）は dynamic import で遅延読み込みし、検出ロジックを先に立ち上げる。</li>
+      <li>コピー・コメント・エディタで開くはすべて<strong>プラグイン</strong>として登録され、コアはパイプラインだけを提供する。</li>
+    </ul>
+  </div>
+
+  <section id="packages" class="sec-head">4 — パッケージ構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> packages/</span>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>パッケージ</th><th>説明</th></tr>
+          <tr><th>npm 名</th><th>役割</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>react-grab</code></td><td>コアライブラリ。要素選択・コンテキスト取得・コピー・プラグイン API。Solid.js で UI/状態。</td></tr>
-          <tr><td><code>grab</code></td><td>CLI。<code>npx grab init</code> / <code>npx grab add mcp</code> でプロジェクトに導入。</td></tr>
-          <tr><td><code>@react-grab/cli</code></td><td>react-grab から利用する CLI 機能。</td></tr>
-          <tr><td><code>provider-cursor</code>, <code>provider-copilot</code> 等</td><td>各コーディングエージェント向け連携パッケージ。</td></tr>
-          <tr><td><code>mcp</code></td><td>MCP（Model Context Protocol）連携。</td></tr>
-          <tr><td><code>web-extension</code></td><td>ブラウザ拡張。</td></tr>
+          <tr><td><code>react-grab</code></td><td>コア。要素ハイライト・コンテキスト解決（bippy + source map）・コピー・プラグインレジストリ。Solid.js で UI/状態。</td></tr>
+          <tr><td><code>grab</code></td><td>公開 CLI パッケージ。<code>npx grab@latest init</code> のエントリ。</td></tr>
+          <tr><td><code>@react-grab/cli</code></td><td>CLI 実装。フレームワーク検出・設定ファイル変換・MCP インストール補助。</td></tr>
+          <tr><td><code>@react-grab/mcp</code></td><td>MCP サーバー / クライアント。<code>npx grab add mcp</code> でエージェントに接続。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>apps/（リポジトリ内）</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ディレクトリ</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>website</code> / <code>website-v2</code></td><td>マーケティングサイト・デモ</td></tr>
+          <tr><td><code>web-extension</code></td><td>ブラウザ拡張（任意サイトで Grab を使う）</td></tr>
+          <tr><td><code>e2e-app</code></td><td>Playwright E2E 用のサンプルアプリ</td></tr>
+          <tr><td><code>openstory</code></td><td>コンポーネントストーリー / デモ</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <section id="usage" class="sec-head">3 — 使い方</section>
+  <section id="install" class="sec-head">5 — 導入</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 導入</span>
-    <p>プロジェクトルート（<code>next.config.ts</code> や <code>vite.config.ts</code> がある場所）で:</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> CLI（推奨）</span>
+    <p>プロジェクトルート（<code>next.config.ts</code> や <code>vite.config.ts</code> がある階層）で:</p>
     <div class="ve-code-block">
-      <pre><code>npx -y grab@latest init</code></pre>
+      <pre><code>npx grab@latest init</code></pre>
     </div>
-    <p>MCP に接続する場合:</p>
+    <p>MCP 連携を追加する場合:</p>
     <div class="ve-code-block">
-      <pre><code>npx -y grab@latest add mcp</code></pre>
+      <pre><code>npx grab@latest add mcp</code></pre>
+    </div>
+    <p>有効化キーやホールド時間などは対話式またはフラグ付きで更新できる:</p>
+    <div class="ve-code-block">
+      <pre><code>npx grab@latest configure
+npx grab@latest configure --mode hold --hold-duration 500
+npx grab@latest init -k "Meta+K" -y</code></pre>
+    </div>
+    <div class="ve-table-wrap" style="margin-top:1rem">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>主なオプション</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>grab init</code></td><td><code>-y</code> 確認スキップ、<code>-k</code> 有効化キー、<code>-f</code> 上書き、<code>--skip-install</code></td></tr>
+          <tr><td><code>grab configure</code></td><td><code>--mode toggle|hold</code>、<code>--hold-duration</code>、<code>--context-lines</code>、<code>--cdn</code></td></tr>
+          <tr><td><code>grab add mcp</code></td><td>対応エージェント向け MCP 設定を追加</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
-  <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> 操作</span>
-    <p>開発サーバー起動後、画面上の任意の要素にホバーして <strong>⌘C</strong>（Mac）または <strong>Ctrl+C</strong>（Windows/Linux）を押すと、その要素のコンテキストがクリップボードにコピーされる。例:</p>
+  <div class="ve-card ve-card--recessed" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 手動導入（Vite の例）</span>
+    <p>CLI が使えない場合、エントリの先頭で開発時のみ import する:</p>
     <div class="ve-code-block">
-      <pre><code>&lt;a class="ml-auto inline-block text-sm" href="#"&gt;
-  Forgot your password?
-&lt;/a&gt;
-in LoginForm at components/login-form.tsx:46:19</code></pre>
+      <pre><code>if (import.meta.env.DEV) {
+  import("react-grab");
+}</code></pre>
     </div>
+    <p>Next.js App Router では <code>app/layout.tsx</code> に unpkg 経由の <code>&lt;Script src="//unpkg.com/react-grab/dist/index.global.js" /&gt;</code> を development 条件付きで入れる方法もある（詳細は公式 README）。</p>
   </div>
 
-  <section id="core-api" class="sec-head">4 — コア API</section>
+  <section id="plugins" class="sec-head">6 — プラグイン</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> エントリ</span>
-    <p><code>init(options?: Options): ReactGrabAPI</code> で初期化。ブラウザ外では Noop API が返る。<code>window.__REACT_GRAB__</code> に API が露出し、プラグイン登録はここから行う。</p>
-    <h3>主な API（ReactGrabAPI）</h3>
+    <span class="ve-section-label"><span class="ve-dot"></span> 登録と拡張点</span>
+    <p>コンテキストメニュー・ツールバー・ライフサイクルフック・テーマ上書きを <code>registerPlugin</code> / <code>unregisterPlugin</code> で追加する。組み込みプラグインは <strong>copy</strong>（デフォルトコピー）、<strong>comment</strong>（プロンプトモード）、<strong>open</strong>（エディタで開く）の 3 つ。</p>
+    <div class="ve-code-block">
+      <pre><code>import { registerPlugin, unregisterPlugin } from "react-grab";
+
+registerPlugin({
+  name: "my-plugin",
+  actions: [
+    {
+      id: "inspect",
+      label: "Inspect",
+      shortcut: "I",
+      onAction: (ctx) => console.dir(ctx.element),
+    },
+    {
+      id: "toggle-freeze",
+      label: "Freeze",
+      target: "toolbar",
+      onAction: () => toggleFreeze(),
+    },
+  ],
+  hooks: {
+    onElementSelect: (element) => {
+      console.log("Selected:", element.tagName);
+    },
+  },
+});</code></pre>
+    </div>
+    <p>コピー内容は <code>onBeforeCopy</code> → <code>transformSnippet</code> → <code>transformCopyContent</code> の reduce パイプラインを通過する。型定義は <code>Plugin</code> / <code>PluginHooks</code>（<code>packages/react-grab/src/types.ts</code>）。</p>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公開 API（抜粋）</span>
     <ul>
-      <li><code>activate</code> / <code>deactivate</code> / <code>toggle</code></li>
-      <li><code>copyElement(elements)</code> — 要素のコンテキストをコピー</li>
-      <li><code>getSource(element)</code> / <code>getStackContext(element)</code></li>
+      <li><code>init(options?) → ReactGrabAPI</code> — <code>activate</code> / <code>deactivate</code> / <code>toggle</code></li>
+      <li><code>copyElement(elements)</code>、<code>getSource(element)</code>、<code>getStackContext(element)</code></li>
       <li><code>registerPlugin</code> / <code>unregisterPlugin</code>、<code>setOptions</code>、<code>getState</code>、<code>dispose</code></li>
+      <li><code>react-grab/primitives</code> — <code>getElementContext</code>、<code>freeze</code> / <code>unfreeze</code>、<code>openFile</code>（カスタム選択 UI 向け）</li>
     </ul>
   </div>
-  <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> プリミティブ</span>
-    <p><code>react-grab/primitives</code> から <code>getElementContext</code>、<code>freeze</code> / <code>unfreeze</code>、<code>openFile</code>、型 <code>ReactGrabElementContext</code> を利用できる。自前の「要素選択 UI」を組みたいときに使用。</p>
+
+  <section id="internals" class="sec-head">7 — 内部設計</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ページの「静止」</span>
+    <p>オーバーレイ表示中は見た目が動かないよう、複数系統を同時に止める（いずれも React 内部へのパッチを含み、バージョン依存で脆い）。</p>
+    <ul>
+      <li><strong>React 更新</strong> — ディスパッチャをラップし、<code>useState</code> / <code>useReducer</code> 等の dispatch をバッファ。解除時に順序付きでリプレイ。</li>
+      <li><strong>アニメーション</strong> — CSS / WAAPI / SVG SMIL / GSAP を一時停止。解除時は <code>finish()</code> でジャンプを避ける。</li>
+      <li><strong>疑似状態</strong> — <code>:hover</code> / <code>:focus</code> の見た目をインラインスタイルで固定し、ポインタがオーバーレイに移っても色が変わらないようにする。</li>
+    </ul>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> ソース解決パイプライン</span>
+    <ol style="padding-left:1.5rem; margin:0">
+      <li style="margin-bottom:0.5rem">DOM → bippy で最寄りの React fiber</li>
+      <li style="margin-bottom:0.5rem">fiber → <code>getOwnerStack()</code>（React 19 は <code>_debugStack</code>、17–18 はフォールバック生成）</li>
+      <li style="margin-bottom:0.5rem">バンドル URL → source map で元ファイル・行へ</li>
+      <li style="margin-bottom:0.5rem">RSC の <code>rsc://</code> URL → Next.js の <code>/__nextjs_original-stack-frames</code> で実パスへ</li>
+      <li style="margin-bottom:0.5rem">表示名フィルタ（<code>InnerLayoutRouter</code> 等の内部名を除外）→ エディタ起動（Vite / Next の open-in-editor、失敗時は <code>vscode://</code> リダイレクト）</li>
+    </ol>
+  </div>
+  <div class="ve-callout" style="margin-top:1rem">
+    <strong>詳細:</strong> フリーズ実装・キーボードの <code>key</code> ゲッターパッチ・Canvas オーバーレイなどは、リポジトリ内の <code>packages/react-grab/docs/architecture.md</code> に長文でまとまっている。
   </div>
 
-  <section id="links" class="sec-head">5 — 参考リンク</section>
+  <section id="links" class="sec-head">8 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
     <ul>
-      <li><a href="https://react-grab.com" target="_blank" rel="noopener">react-grab.com</a> — デモ・サイト</li>
+      <li><a href="https://react-grab.com" target="_blank" rel="noopener">react-grab.com</a> — デモ・ドキュメント</li>
       <li><a href="https://github.com/aidenybai/react-grab" target="_blank" rel="noopener">GitHub: aidenybai/react-grab</a></li>
       <li><a href="https://www.npmjs.com/package/react-grab" target="_blank" rel="noopener">npm: react-grab</a></li>
+      <li><a href="https://benchmarks.react-grab.com/" target="_blank" rel="noopener">benchmarks.react-grab.com</a> — 速度・精度ベンチマーク</li>
     </ul>
   </div>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#ccfbf1',
+    primaryTextColor: '#134e4a',
+    primaryBorderColor: '#0d9488',
+    lineColor: '#0d9488',
+    secondaryColor: '#f0fdf4',
+    tertiaryColor: '#f8fafc',
+    edgeLabelBackground: '#ffffff',
+    fontSize: '14px'
+  }
+});
+
+(function() {
+  document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
+    var inner = wrap.querySelector('.mermaid-inner');
+    var viewport = wrap.querySelector('.mermaid-viewport');
+    if (!inner || !viewport) return;
+    var zoom = 1;
+    var dx = 0;
+    var dy = 0;
+    var applyTransform = function() {
+      inner.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(' + zoom + ')';
+    };
+    var setZoom = function(z) {
+      zoom = Math.min(3, Math.max(0.4, z));
+      applyTransform();
+    };
+    var btnIn = wrap.querySelector('.zoom-in');
+    var btnOut = wrap.querySelector('.zoom-out');
+    var btnReset = wrap.querySelector('.zoom-reset');
+    if (btnIn) btnIn.addEventListener('click', function() { setZoom(zoom + 0.2); });
+    if (btnOut) btnOut.addEventListener('click', function() { setZoom(zoom - 0.2); });
+    if (btnReset) btnReset.addEventListener('click', function() { zoom = 1; dx = 0; dy = 0; applyTransform(); });
+    viewport.addEventListener('wheel', function(e) {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        setZoom(zoom - e.deltaY * 0.002);
+      }
+    }, { passive: false });
+    var dragging = false;
+    var lastX = 0;
+    var lastY = 0;
+    viewport.addEventListener('mousedown', function(e) {
+      dragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      e.preventDefault();
+    });
+    document.addEventListener('mouseup', function() { dragging = false; });
+    viewport.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      dx += e.clientX - lastX;
+      dy += e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      applyTransform();
+    });
+  });
+})();
+
 (function() {
   var toc = document.getElementById('toc');
   if (!toc) return;
@@ -300,15 +610,14 @@ in LoginForm at components/login-form.tsx:46:19</code></pre>
   var sections = [];
   links.forEach(function(a) {
     var id = a.getAttribute('href').slice(1);
-        var el = document.getElementById(id);
+    var el = document.getElementById(id);
     if (el) sections.push({ link: a, head: el });
   });
   function updateActive() {
     var top = window.scrollY + 24;
     var current = sections[0] || null;
     sections.forEach(function(s) {
-      var rect = s.head.getBoundingClientRect();
-      var docTop = rect.top + window.scrollY;
+      var docTop = s.head.getBoundingClientRect().top + window.scrollY;
       if (docTop <= top) current = s;
     });
     sections.forEach(function(s) {

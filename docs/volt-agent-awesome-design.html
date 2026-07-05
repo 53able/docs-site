@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Awesome DESIGN.md — 実サイト由来の AI 向けデザインシステム集</title>
+  <meta name="description" content="VoltAgent/awesome-design-md の技術概要。73 件の DESIGN.md、Google Stitch 形式の 9 セクション構成、カテゴリ別コレクション、エージェントへの渡し方と getdesign.md 連携を整理。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Awesome DESIGN.md — 実サイト由来の AI 向けデザインシステム集">
+  <meta property="og:description" content="開発者向けサイトから抽出した DESIGN.md をコピーするだけで、AI エージェントが一貫した UI を生成できるコレクションの構造と使い方。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/volt-agent-awesome-design.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Awesome DESIGN.md — 実サイト由来の AI 向けデザインシステム集">
+  <meta name="twitter:description" content="73 件の DESIGN.md と preview カタログ。AGENTS.md と並べてデザイン言語をエージェントに渡す方法を解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + Bitter / emerald) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.98 0.012 145);
+      --foreground: oklch(0.16 0.03 155);
+      --card: oklch(1 0.006 145);
+      --card-foreground: oklch(0.16 0.03 155);
+      --popover: oklch(1 0.006 145);
+      --popover-foreground: oklch(0.16 0.03 155);
+      --primary: oklch(0.22 0.06 155);
+      --primary-foreground: oklch(0.98 0.012 145);
+      --secondary: oklch(0.94 0.02 145);
+      --secondary-foreground: oklch(0.22 0.06 155);
+      --muted: oklch(0.94 0.018 145);
+      --muted-foreground: oklch(0.48 0.03 155);
+      --accent: oklch(0.93 0.035 155);
+      --accent-foreground: oklch(0.18 0.05 155);
+      --destructive: oklch(0.55 0.18 25);
+      --border: oklch(0.87 0.02 145);
+      --input: oklch(0.87 0.02 145);
+      --ring: oklch(0.58 0.14 155);
+      --chart-1: oklch(0.55 0.16 155);
+      --chart-2: oklch(0.62 0.12 80);
+      --chart-3: oklch(0.42 0.08 230);
+      --chart-4: oklch(0.66 0.14 35);
+      --chart-5: oklch(0.48 0.1 200);
+      --code-bg: oklch(0.18 0.03 155);
+      --code-text: oklch(0.9 0.04 145);
+      --font-body: 'Bitter', Georgia, serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.12 0.025 155);
+        --foreground: oklch(0.93 0.02 145);
+        --card: oklch(0.17 0.03 155);
+        --card-foreground: oklch(0.93 0.02 145);
+        --popover: oklch(0.17 0.03 155);
+        --popover-foreground: oklch(0.93 0.02 145);
+        --primary: oklch(0.88 0.04 145);
+        --primary-foreground: oklch(0.14 0.03 155);
+        --secondary: oklch(0.22 0.03 155);
+        --secondary-foreground: oklch(0.93 0.02 145);
+        --muted: oklch(0.24 0.03 155);
+        --muted-foreground: oklch(0.72 0.025 145);
+        --accent: oklch(0.25 0.045 155);
+        --accent-foreground: oklch(0.95 0.02 145);
+        --destructive: oklch(0.62 0.18 25);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.68 0.14 155);
+        --chart-1: oklch(0.72 0.16 155);
+        --chart-2: oklch(0.74 0.14 80);
+        --chart-3: oklch(0.72 0.12 230);
+        --chart-4: oklch(0.73 0.14 35);
+        --chart-5: oklch(0.68 0.12 200);
+        --code-bg: #0a1210;
+        --code-text: #a8e6cf;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; font-family: var(--font-mono); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-family: var(--font-mono); color: var(--chart-1); }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 24% 0%, oklch(0.55 0.16 155 / 0.08) 0%, transparent 52%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 24% 0%, oklch(0.72 0.16 155 / 0.10) 0%, transparent 52%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.65; }
+    .sec-head { font-family: var(--font-mono); font-size: 1rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: -0.02em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .cat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.875rem; margin: 1rem 0; }
+    .cat-card { padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 5%); }
+    .cat-card strong { display: block; font-family: var(--font-mono); font-size: 0.82rem; margin-bottom: 0.35rem; color: var(--chart-1); }
+    .cat-card small { color: var(--text-dim); line-height: 1.5; display: block; font-size: 0.8125rem; }
+    @media (max-width: 760px) { .cat-grid { grid-template-columns: 1fr; } }
+
+    .mermaid-wrap { margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); display: flex; justify-content: center; overflow-x: auto; }
+    .mermaid { min-width: min(100%, 520px); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#design-md">DESIGN.md</a>
+    <a href="#structure">リポジトリ構造</a>
+    <a href="#sections">ファイル構成</a>
+    <a href="#categories">カテゴリ</a>
+    <a href="#usage">使い方</a>
+    <a href="#contribute">依頼と貢献</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>Awesome DESIGN.md</h1>
+  <p class="subtitle">VoltAgent/awesome-design-md — 開発者向けサイトから抽出した DESIGN.md を、AI コーディングエージェントが読めるプレーンテキストのデザインシステムとして公開するコレクション。</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <p><strong>Awesome DESIGN.md</strong> は、Stripe・Vercel・Notion など実在する開発者向けサイトのビジュアル言語を、<code>DESIGN.md</code> という単一 Markdown ファイルに落とし込んだカタログ。Figma エクスポートや JSON スキーマは不要で、プロジェクトルートにコピーするだけでエージェントが色・タイポ・コンポーネント規約を参照できる。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">73</span><span class="ve-kpi-card__label">DESIGN.md 件数</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">10</span><span class="ve-kpi-card__label">カテゴリ群</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">9</span><span class="ve-kpi-card__label">標準セクション</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+    </div>
+    <p>各エントリは公開サイトの CSS 値を分析した「インスパイア解釈」であり、トークン・パターン・ルールまで含む実装向けの記述を目指している。README では「build me a page that looks like this」と指示するだけで、表面だけでない UI 生成を狙うと説明されている。</p>
+  </div>
+
+  <section id="design-md" class="sec-head">2 — DESIGN.md とは</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> AGENTS.md との役割分担</span>
+    <p><a href="https://stitch.withgoogle.com/docs/design-md/overview/" target="_blank" rel="noopener">Google Stitch</a> が提唱するプレーンテキストのデザインシステム文書。LLM が最も読みやすい Markdown 形式のため、パーサや専用ツールなしでエージェントに渡せる。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ファイル</th><th>読者</th><th>定義する内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>AGENTS.md</code></td><td>コーディングエージェント</td><td>プロジェクトのビルド方法・規約・作業手順</td></tr>
+          <tr><td><code>DESIGN.md</code></td><td>デザインエージェント</td><td>見た目・雰囲気・コンポーネントのルール</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>フォーマット:</strong> 各ファイルは <a href="https://stitch.withgoogle.com/docs/design-md/specification/" target="_blank" rel="noopener">Stitch DESIGN.md 仕様</a> に沿い、分析結果として拡張セクション（Do's and Don'ts、Responsive、Agent Prompt Guide など）を含む。多くのエントリは先頭に YAML フロントマター（<code>colors</code> / <code>typography</code> など）を持つ。
+    </div>
+  </div>
+
+  <section id="structure" class="sec-head">3 — リポジトリ構造</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ディレクトリ</span>
+    <div class="ve-code-block">
+      <pre><code>awesome-design-md/
+├── README.md              # コレクション一覧・使い方
+├── CONTRIBUTING.md        # 既存ファイル改善の手順
+├── LICENSE
+├── .github/
+│   └── ISSUE_TEMPLATE/
+│       └── design-md-request.yml
+└── design-md/
+    ├── vercel/
+    │   ├── DESIGN.md
+    │   ├── README.md
+    │   ├── preview.html
+    │   └── preview-dark.html
+    ├── stripe/
+    │   └── …
+    └── …（73 サイト分）</code></pre>
+    </div>
+    <p>サイトごとに <code>design-md/&lt;slug&gt;/</code> ディレクトリが割り当てられる。スラッグはドメイン名ベース（例: <code>linear.app</code>、<code>nintendo-2001</code>）。公開配布は <a href="https://getdesign.md/" target="_blank" rel="noopener">getdesign.md</a> でも行われ、README の各リンクはそちらのパスを指す。</p>
+  </div>
+
+  <section id="sections" class="sec-head">4 — 各 DESIGN.md の中身</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 9 セクション</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>セクション</th><th>記録内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Visual Theme &amp; Atmosphere</td><td>ムード、密度、デザイン哲学</td></tr>
+          <tr><td>2</td><td>Color Palette &amp; Roles</td><td>セマンティック名・hex・役割</td></tr>
+          <tr><td>3</td><td>Typography Rules</td><td>フォントファミリと階層表</td></tr>
+          <tr><td>4</td><td>Component Stylings</td><td>ボタン・カード・入力・ナビと状態</td></tr>
+          <tr><td>5</td><td>Layout Principles</td><td>スペーシング・グリッド・余白方針</td></tr>
+          <tr><td>6</td><td>Depth &amp; Elevation</td><td>シャドウとサーフェス階層</td></tr>
+          <tr><td>7</td><td>Do's and Don'ts</td><td>ガードレールとアンチパターン</td></tr>
+          <tr><td>8</td><td>Responsive Behavior</td><td>ブレークポイント・タッチターゲット</td></tr>
+          <tr><td>9</td><td>Agent Prompt Guide</td><td>色クイックリファレンスとプロンプト例</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>付属ファイル</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ファイル</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>DESIGN.md</code></td><td>エージェントが読む本体</td></tr>
+          <tr><td><code>preview.html</code></td><td>色見本・タイプスケール・ボタン等のビジュアルカタログ（ライト）</td></tr>
+          <tr><td><code>preview-dark.html</code></td><td>同上（ダークサーフェス）</td></tr>
+          <tr><td><code>README.md</code></td><td>サイト名と一行説明（各ディレクトリ）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="categories" class="sec-head">5 — コレクションのカテゴリ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> README の分類</span>
+    <p>README の「Collection」は用途別に 10 群へ整理されている。件数は README 掲載分の概数。</p>
+    <div class="cat-grid">
+      <div class="cat-card"><strong>AI &amp; LLM Platforms</strong><small>Claude, Mistral, Ollama, VoltAgent, xAI など 12 件。エージェント・モデル提供者のダーク UI やエディトリアル調が多い。</small></div>
+      <div class="cat-card"><strong>Developer Tools &amp; IDEs</strong><small>Cursor, Vercel, Warp, Raycast など 7 件。開発者向けツールの精密なモノクロームやグラデーション。</small></div>
+      <div class="cat-card"><strong>Backend, Database &amp; DevOps</strong><small>Supabase, MongoDB, HashiCorp, Sentry など 8 件。技術ドキュメント調とダッシュボード密度。</small></div>
+      <div class="cat-card"><strong>Productivity &amp; SaaS</strong><small>Linear, Notion, Zapier, Mintlify など 7 件。業務 SaaS のミニマル UI。</small></div>
+      <div class="cat-card"><strong>Design &amp; Creative Tools</strong><small>Figma, Framer, Miro, Webflow など 6 件。クリエイティブツールの鮮やかなマルチカラー。</small></div>
+      <div class="cat-card"><strong>Fintech &amp; Crypto</strong><small>Stripe, Revolut, Binance, Wise など 7 件。信頼感とデータ密度のバランス。</small></div>
+      <div class="cat-card"><strong>E-commerce &amp; Retail</strong><small>Shopify, Nike, Airbnb, Starbucks など 5 件。写真主導・ブランドカラー強調。</small></div>
+      <div class="cat-card"><strong>Media &amp; Consumer Tech</strong><small>Apple, Spotify, NVIDIA, WIRED など 9 件。エディトリアルと製品訴求。</small></div>
+      <div class="cat-card"><strong>Automotive</strong><small>BMW, Ferrari, Tesla, Lamborghini など 7 件。シネマティックな黒背景とモニュメンタルタイポ。</small></div>
+      <div class="cat-card"><strong>Retro Web · DESIGN.md Nostalgia</strong><small>Dell (1996), Nintendo.com (2001) の 2 件。90 年代〜 Y2K の period-accurate ヴィンテージ UI。</small></div>
+    </div>
+  </div>
+
+  <section id="usage" class="sec-head">6 — エージェントへの渡し方</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 基本フロー</span>
+    <div class="mermaid-wrap">
+      <pre class="mermaid">
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#d4ede0', 'primaryTextColor': '#0f2a1f', 'primaryBorderColor': '#3d9970', 'lineColor': '#3d9970', 'fontSize': '14px'}}}%%
+flowchart TD
+  A[コレクションからサイトを選ぶ] --> B[DESIGN.md をプロジェクトルートへコピー]
+  B --> C[AGENTS.md やスキルで参照を明示]
+  C --> D[エージェントに UI 生成を依頼]
+  D --> E[preview.html でトークンを目視確認]
+      </pre>
+    </div>
+    <ol>
+      <li>目的のブランドに近い <code>design-md/&lt;slug&gt;/DESIGN.md</code> を選ぶ（または <a href="https://getdesign.md/" target="_blank" rel="noopener">getdesign.md</a> から取得）。</li>
+      <li>自分のリポジトリルートに <code>DESIGN.md</code> として配置する。</li>
+      <li>「この DESIGN.md に従ってページを作って」とエージェントへ指示する。セクション 9 の Agent Prompt Guide に例文がある。</li>
+      <li>必要なら <code>preview.html</code> / <code>preview-dark.html</code> をブラウザで開き、色とタイポの期待値を確認する。</li>
+    </ol>
+    <div class="ve-code-block">
+      <pre><code># 例: ルートに配置後の指示
+このリポジトリの DESIGN.md に従い、
+ランディングページのヒーローと機能セクションを実装して。</code></pre>
+    </div>
+  </div>
+
+  <section id="contribute" class="sec-head">7 — 依頼と貢献</section>
+  <div class="ve-card ve-card--recessed" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 新規サイトと改善</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>経路</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><a href="https://getdesign.md/request" target="_blank" rel="noopener">getdesign.md/request</a></td><td>特定サイトの DESIGN.md 生成を依頼。非公開・優先配送オプションあり。</td></tr>
+          <tr><td>GitHub Issue（<code>design-md-request</code> テンプレート）</td><td>URL・配送メール・優先度を記載してオープンリクエスト。</td></tr>
+          <tr><td>既存ファイルの PR</td><td>誤った hex・不足トークン・説明の改善は歓迎。ただし<strong>新規 DESIGN.md の PR は受け付けない</strong>（品質維持のため）。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>改善 PR では live サイトと照合し、トークン変更時は <code>preview.html</code> / <code>preview-dark.html</code> も更新する。着手前に Issue で変更内容を共有するよう CONTRIBUTING.md が求めている。</p>
+  </div>
+
+  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/VoltAgent/awesome-design-md" target="_blank" rel="noopener">GitHub: VoltAgent/awesome-design-md</a> — 本体リポジトリ</li>
+      <li><a href="https://getdesign.md/" target="_blank" rel="noopener">getdesign.md</a> — 公開配布とリクエスト窓口</li>
+      <li><a href="https://stitch.withgoogle.com/docs/design-md/overview/" target="_blank" rel="noopener">Google Stitch — DESIGN.md 概要</a></li>
+      <li><a href="https://stitch.withgoogle.com/docs/design-md/specification/" target="_blank" rel="noopener">Stitch DESIGN.md 仕様</a></li>
+      <li><a href="https://github.com/VoltAgent/voltagent" target="_blank" rel="noopener">VoltAgent</a> — 同一エコシステムの TypeScript AI エージェントフレームワーク</li>
+    </ul>
+    <div class="ve-callout">
+      <strong>免責:</strong> 各 DESIGN.md は公開サイトから抽出した分析であり、サイトのビジュアルアイデンティティの所有を主張するものではない。MIT ライセンスで「as is」提供される。
+    </div>
+  </div>
+  </div>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

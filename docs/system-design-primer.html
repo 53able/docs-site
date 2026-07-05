@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Design Primer — 大規模システム設計の学習地図</title>
+  <meta name="description" content="donnemartin/system-design-primer の日本語READMEをもとに、システム設計面接の進め方、設計トレードオフ、主要レイヤー、データストア、キャッシュ、通信、暗算メモを視覚化した解説ページ。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="System Design Primer — 大規模システム設計の学習地図">
+  <meta property="og:description" content="システム設計面接の4ステップ、CAP、主要レイヤー、データストア、キャッシュ、通信、暗算メモを一枚で見渡す。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/system-design-primer.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="System Design Primer — 大規模システム設計の学習地図">
+  <meta name="twitter:description" content="donnemartin/system-design-primer を、設計面接で使える視覚地図として再構成。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + editorial blueprint palette) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.011 84);
+      --foreground: oklch(0.18 0.035 250);
+      --card: oklch(0.998 0.005 84);
+      --card-foreground: oklch(0.18 0.035 250);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.18 0.035 250);
+      --primary: oklch(0.34 0.105 248);
+      --primary-foreground: oklch(0.985 0.011 84);
+      --secondary: oklch(0.94 0.025 84);
+      --secondary-foreground: oklch(0.24 0.045 248);
+      --muted: oklch(0.935 0.021 84);
+      --muted-foreground: oklch(0.43 0.035 248);
+      --accent: oklch(0.91 0.035 78);
+      --accent-foreground: oklch(0.24 0.045 248);
+      --destructive: oklch(0.55 0.19 25);
+      --border: oklch(0.82 0.026 84);
+      --input: oklch(0.82 0.026 84);
+      --ring: oklch(0.48 0.11 248);
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.52 0.10 154);
+      --chart-4: oklch(0.50 0.13 28);
+      --chart-5: oklch(0.48 0.075 230);
+      --code-bg: oklch(0.93 0.025 248);
+      --code-text: oklch(0.25 0.09 248);
+      --font-body: 'IBM Plex Sans JP', system-ui, sans-serif;
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.145 0.025 248);
+        --foreground: oklch(0.94 0.015 84);
+        --card: oklch(0.19 0.032 248);
+        --card-foreground: oklch(0.94 0.015 84);
+        --popover: oklch(0.19 0.032 248);
+        --popover-foreground: oklch(0.94 0.015 84);
+        --primary: oklch(0.78 0.12 76);
+        --primary-foreground: oklch(0.16 0.025 248);
+        --secondary: oklch(0.24 0.035 248);
+        --secondary-foreground: oklch(0.94 0.015 84);
+        --muted: oklch(0.25 0.035 248);
+        --muted-foreground: oklch(0.72 0.025 84);
+        --accent: oklch(0.26 0.04 248);
+        --accent-foreground: oklch(0.94 0.015 84);
+        --destructive: oklch(0.66 0.19 25);
+        --border: oklch(0.36 0.035 248);
+        --input: oklch(0.36 0.035 248);
+        --ring: oklch(0.78 0.12 76);
+        --chart-1: oklch(0.78 0.12 76);
+        --chart-2: oklch(0.68 0.12 248);
+        --chart-3: oklch(0.68 0.12 154);
+        --chart-4: oklch(0.66 0.15 28);
+        --chart-5: oklch(0.72 0.075 230);
+        --code-bg: oklch(0.12 0.025 248);
+        --code-text: oklch(0.86 0.09 76);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(21, 42, 82, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(21, 42, 82, 0.05); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-2) 12%);
+      box-shadow: 0 8px 34px rgba(21, 42, 82, 0.12);
+      border-color: color-mix(in oklch, var(--border) 54%, var(--chart-1) 46%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 86%, var(--chart-2) 14%);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.28);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.85rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 700; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 70%, var(--card) 30%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(21, 42, 82, 0.06); }
+    .ve-kpi-card__value { display: block; font-family: var(--font-display); font-size: 2.2rem; line-height: 1; letter-spacing: -0.02em; }
+    .ve-kpi-card__label { display: block; font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.42rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.86rem; line-height: 1.7; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 700; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.72rem; background: color-mix(in oklch, var(--chart-2) 14%, transparent); color: var(--foreground); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(color-mix(in oklch, var(--chart-1) 8%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in oklch, var(--chart-1) 8%, transparent) 1px, transparent 1px),
+        radial-gradient(ellipse at 18% 0%, color-mix(in oklch, var(--chart-2) 16%, transparent) 0%, transparent 42%),
+        radial-gradient(ellipse at 84% 22%, color-mix(in oklch, var(--chart-1) 9%, transparent) 0%, transparent 38%);
+      background-size: 36px 36px, 36px 36px, auto, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 220px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); background: color-mix(in oklch, var(--muted) 62%, transparent); }
+    @media (max-width: 1000px) {
+      body { padding: 24px; }
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-family: var(--font-display); font-size: clamp(2.8rem, 8vw, 6.2rem); font-weight: 400; line-height: 0.92; letter-spacing: -0.045em; margin-bottom: 1rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.94rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.6; max-width: 58rem; }
+    .sec-head { font-size: 1.12rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.02em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.35rem 0 0.75rem; }
+    p { font-size: 0.94rem; line-height: 1.72; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.35rem; }
+    li { margin-bottom: 0.38rem; line-height: 1.65; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.78rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    /* ============ Page-specific components ============ */
+    .hero-lead { font-size: 1.08rem; max-width: 58rem; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0 0; }
+    .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .three-col { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    .card-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.9rem; }
+    .mini-card { background: color-mix(in oklch, var(--muted) 62%, var(--card) 38%); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.95rem; min-width: 0; }
+    .mini-card strong { display: block; margin-bottom: 0.25rem; color: var(--foreground); }
+    .mini-card small { display: block; color: var(--text-dim); line-height: 1.55; }
+    .step-flow { counter-reset: step; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.9rem; }
+    .step-card { counter-increment: step; position: relative; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; min-width: 0; }
+    .step-card::before { content: counter(step, decimal-leading-zero); display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; margin-bottom: 0.75rem; border-radius: 999px; background: var(--primary); color: var(--primary-foreground); font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; }
+    .step-card h3 { margin: 0 0 0.45rem; font-size: 0.98rem; }
+    .step-card p { font-size: 0.84rem; color: var(--text-dim); margin-bottom: 0; }
+    .axis-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    .axis-card { border-top: 3px solid var(--chart-1); }
+    .axis-card:nth-child(2) { border-top-color: var(--chart-2); }
+    .axis-card:nth-child(3) { border-top-color: var(--chart-3); }
+    .cap-triangle { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin: 1rem 0; }
+    .cap-point { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem; text-align: center; }
+    .cap-point strong { display: block; color: var(--foreground); margin-bottom: 0.25rem; }
+    .cap-point small { color: var(--text-dim); line-height: 1.45; }
+    .path-flow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.55rem; align-items: stretch; }
+    .path-node { position: relative; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.75rem; min-width: 0; }
+    .path-node:not(:last-child)::after { content: ""; position: absolute; top: 50%; right: -0.42rem; width: 0.34rem; height: 1px; background: var(--chart-1); }
+    .path-node strong { display: block; font-family: var(--font-mono); font-size: 0.76rem; margin-bottom: 0.25rem; }
+    .path-node small { display: block; color: var(--text-dim); font-size: 0.72rem; line-height: 1.45; }
+    .badge { display: inline-flex; align-items: center; border-radius: 999px; border: 1px solid var(--border); padding: 0.12rem 0.45rem; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-dim); background: var(--muted); white-space: nowrap; }
+    .badge--gold { border-color: color-mix(in oklch, var(--chart-2) 54%, var(--border)); color: var(--foreground); background: color-mix(in oklch, var(--chart-2) 15%, var(--card)); }
+    .latency-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
+    .latency-item { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.75rem; }
+    .latency-item strong { display: block; font-family: var(--font-mono); font-size: 0.95rem; color: var(--foreground); }
+    .latency-item span { color: var(--text-dim); font-size: 0.78rem; }
+    .links-list { columns: 2; column-gap: 2rem; }
+    .links-list li { break-inside: avoid; }
+
+    @media (max-width: 980px) {
+      .kpi-row, .card-grid, .step-flow, .axis-grid, .path-flow, .latency-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .two-col, .three-col { grid-template-columns: 1fr; }
+      .path-node::after { display: none; }
+    }
+    @media (max-width: 640px) {
+      body { padding: 18px; }
+      .kpi-row, .card-grid, .step-flow, .axis-grid, .path-flow, .latency-list, .cap-triangle { grid-template-columns: 1fr; }
+      .links-list { columns: 1; }
+      .ve-card { padding: 1rem; }
+    }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card, .step-card, .mini-card, .path-node, .latency-item { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#study-path">学習パス</a>
+    <a href="#interview">面接4ステップ</a>
+    <a href="#tradeoffs">設計トレードオフ</a>
+    <a href="#request-path">リクエスト経路</a>
+    <a href="#data-layer">データ層</a>
+    <a href="#cache-async">キャッシュと非同期</a>
+    <a href="#protocols">通信</a>
+    <a href="#numbers">暗算メモ</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>System Design Primer</h1>
+    <p class="subtitle">donnemartin/system-design-primer の日本語READMEを、面接と実務の両方で使える「設計判断の地図」として再構成。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> What it is</span>
+      <p class="hero-lead"><strong>System Design Primer</strong> は、大規模システム設計の学習素材、設計トピック、面接課題、補助的な暗算メモを体系化したオープンソースの索引。単なる用語集ではなく、<strong>「何を聞くか」「どこを深掘るか」「どのトレードオフを説明するか」</strong>を組み立てるための教材になっている。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">interview steps</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">CAP</span><span class="ve-kpi-card__label">core tradeoff</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">SQL</span><span class="ve-kpi-card__label">or NoSQL</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">ns → ms</span><span class="ve-kpi-card__label">latency scale</span></div>
+      </div>
+    </div>
+
+    <section id="study-path" class="sec-head">2 — 学習パス</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Short / medium / long</span>
+      <p>README-ja.md の学習指針は「全部やれ」ではなく、持ち時間と経験に応じて幅・深さ・演習量を調整する考え方。まず全体を広く把握し、面接課題と実世界アーキテクチャで具体化していく。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>期間</th><th>学習範囲</th><th>演習量</th><th>狙い</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="badge">短期</span></td><td>システム設計トピックを広く読む</td><td>いくつかの課題</td><td>会話で詰まらない最低限の地図を作る</td></tr>
+            <tr><td><span class="badge badge--gold">中期</span></td><td>広く読み、重要領域をそれなりに深掘る</td><td>多くの課題</td><td>自分の回答と模範解答を比較できる状態にする</td></tr>
+            <tr><td><span class="badge">長期</span></td><td>トピック、企業ブログ、実世界アーキを深く追う</td><td>ほぼ全ての課題</td><td>設計選択の理由と失敗条件まで説明する</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="interview" class="sec-head">3 — システム設計面接の4ステップ</section>
+    <div class="step-flow">
+      <div class="step-card" style="--i:0">
+        <h3>使用例・制約・推計を聞く</h3>
+        <p>誰が使うか、機能、入力と出力、データ量、RPS、読み書き比率を質問で固める。</p>
+      </div>
+      <div class="step-card" style="--i:1">
+        <h3>高レベル設計を描く</h3>
+        <p>主要コンポーネントと接続をスケッチし、なぜその構成なのかを説明する。</p>
+      </div>
+      <div class="step-card" style="--i:2">
+        <h3>核となる部品を深掘る</h3>
+        <p>URL短縮ならハッシュ、衝突、SQL/NoSQL、スキーマ、APIなどを具体化する。</p>
+      </div>
+      <div class="step-card" style="--i:3">
+        <h3>ボトルネックとスケールを議論する</h3>
+        <p>ロードバランサー、水平スケール、キャッシュ、シャーディングとその副作用を扱う。</p>
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top: 1rem;">
+      <strong>面接の本質:</strong> Yes/No で答える試験ではなく、制約を聞き出して会話を設計する場。設計案だけでなく、捨てた選択肢とトレードオフを説明できると強い。
+    </div>
+
+    <section id="tradeoffs" class="sec-head">4 — 設計トレードオフ</section>
+    <div class="axis-grid">
+      <div class="ve-card axis-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Performance / Scale</span>
+        <p><strong>パフォーマンス問題</strong>は一人のユーザーにとって遅い状態。<strong>スケーラビリティ問題</strong>は一人では速いが、多数のリクエストで遅くなる状態。</p>
+      </div>
+      <div class="ve-card axis-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Latency / Throughput</span>
+        <p>レイテンシーは結果が返るまでの時間。スループットは単位時間あたりの処理数。通常は許容レイテンシー内で最大スループットを狙う。</p>
+      </div>
+      <div class="ve-card axis-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> Availability / Consistency</span>
+        <p>CAPでは、一貫性・可用性・分断耐性のうち同時保証できるのは二つまで。ネットワークは信頼できないため、実務ではCPかAPかを選ぶ。</p>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:3; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> CAP decision</span>
+      <div class="cap-triangle">
+        <div class="cap-point"><strong>Consistency</strong><small>全ての読み取りが最新の書き込み、またはエラーを受け取る</small></div>
+        <div class="cap-point"><strong>Availability</strong><small>最新とは限らなくても、全リクエストへレスポンスする</small></div>
+        <div class="cap-point"><strong>Partition tolerance</strong><small>ネットワーク分断や順不同があっても動作を続ける</small></div>
+      </div>
+      <p>アトミックな読み書きが重要ならCP。結果整合性や停止しないことが重要ならAP。ここでの選択が、データベース、キャッシュ、キュー、API設計の細部に波及する。</p>
+    </div>
+
+    <section id="request-path" class="sec-head">5 — リクエスト経路と構成要素</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Common web path</span>
+      <div class="path-flow">
+        <div class="path-node"><strong>DNS</strong><small>名前解決。結果整合性の代表例。</small></div>
+        <div class="path-node"><strong>CDN</strong><small>静的資産や一部レスポンスをエッジで返す。</small></div>
+        <div class="path-node"><strong>LB</strong><small>不健康なサーバーや過負荷を避ける。</small></div>
+        <div class="path-node"><strong>Reverse Proxy</strong><small>外部向け窓口、SSL終端、圧縮、キャッシュ。</small></div>
+        <div class="path-node"><strong>App Layer</strong><small>単一責任のサービス群とAPI。</small></div>
+        <div class="path-node"><strong>Cache / Queue</strong><small>ホットデータと重い処理を吸収。</small></div>
+        <div class="path-node"><strong>Database</strong><small>永続化、一貫性、クエリ、複製。</small></div>
+      </div>
+      <div class="two-col" style="margin-top: 1rem;">
+        <div class="mini-card">
+          <strong>Layer 4 LB</strong>
+          <small>IPアドレスやポートなど、トランスポート層の情報で振り分ける。柔軟性は低いが軽い。</small>
+        </div>
+        <div class="mini-card">
+          <strong>Layer 7 LB</strong>
+          <small>ヘッダー、メッセージ、Cookieなどを見て判断する。柔軟だが処理コストは増える。</small>
+        </div>
+      </div>
+    </div>
+
+    <section id="data-layer" class="sec-head">6 — データ層の選び方</section>
+    <div class="two-col">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> RDBMS scaling</span>
+        <p>SQL/RDBMSは構造化データ、厳格なスキーマ、リレーショナルデータ、複雑なJOIN、トランザクションに向く。スケール手段は読み書きの性質によって選ぶ。</p>
+        <div class="card-grid">
+          <div class="mini-card"><strong>Read replica</strong><small>読み取りをスレーブに逃がす</small></div>
+          <div class="mini-card"><strong>Multi-master</strong><small>可用性と書き込み先制御</small></div>
+          <div class="mini-card"><strong>Federation</strong><small>機能ごとにDBを分ける</small></div>
+          <div class="mini-card"><strong>Sharding</strong><small>データ断片を分散する</small></div>
+        </div>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> NoSQL families</span>
+        <p>NoSQLは正規化を弱め、アプリケーション側でJOINすることが多い。BASEは一貫性より可用性を優先する説明として使われる。</p>
+        <div class="card-grid">
+          <div class="mini-card"><strong>Key-value</strong><small>O(1)読み書き、キャッシュ向き</small></div>
+          <div class="mini-card"><strong>Document</strong><small>柔軟なオブジェクト表現</small></div>
+          <div class="mini-card"><strong>Wide column</strong><small>巨大データセットと高可用性</small></div>
+          <div class="mini-card"><strong>Graph</strong><small>複雑な関係性、SNS向き</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="ve-table-wrap" style="margin-top: 1rem;">
+      <table>
+        <thead>
+          <tr><th>選択</th><th>向く条件</th><th>注意点</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>SQL</strong></td><td>構造化データ、厳格なスキーマ、複雑なJOIN、トランザクション、成熟したエコシステム</td><td>水平分割や分散JOINでアプリケーションロジックが複雑になる</td></tr>
+          <tr><td><strong>NoSQL</strong></td><td>準構造化データ、柔軟なスキーマ、TB/PB級データ、高いIOPS、ログやクリックストリーム</td><td>ACIDより結果整合性を選ぶ場面が多く、整合性モデルを説明する必要がある</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section id="cache-async" class="sec-head">7 — キャッシュと非同期処理</section>
+    <div class="two-col">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Cache update patterns</span>
+        <p>キャッシュは読み込み時間とDB負荷を下げるが、真のデータとの整合性と更新タイミングが難所になる。</p>
+        <div class="ve-table-wrap">
+          <table>
+            <thead><tr><th>パターン</th><th>要点</th></tr></thead>
+            <tbody>
+              <tr><td>Cache aside</td><td>アプリがDBを読み、ミス時だけキャッシュへ追加</td></tr>
+              <tr><td>Write through</td><td>キャッシュが同期的にデータストアへ書く</td></tr>
+              <tr><td>Write behind</td><td>書き込みを非同期化して性能を上げるが、損失リスクあり</td></tr>
+              <tr><td>Refresh ahead</td><td>期限切れ前にホットな項目を更新する</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Queue as pressure valve</span>
+        <p>非同期ワークフローは、インラインで処理するとリクエスト時間を圧迫する重い処理を分離する。キューが膨らみすぎる場合はバックプレッシャーで制限し、必要ならHTTP 503と再試行を返す。</p>
+        <div class="mini-card">
+          <strong>Message queue</strong>
+          <small>ジョブをキューに渡し、ワーカーが処理する。ユーザー処理は止めない。</small>
+        </div>
+        <div class="mini-card" style="margin-top: 0.75rem;">
+          <strong>Task queue</strong>
+          <small>スケジュールや重いバックグラウンド処理を扱う。</small>
+        </div>
+      </div>
+    </div>
+    <div class="ve-code-block" aria-label="Cache aside example">
+      <pre><code>def get_user(self, user_id):
+    user = cache.get("user.{0}", user_id)
+    if user is None:
+        user = db.query("SELECT * FROM users WHERE user_id = {0}", user_id)
+        if user is not None:
+            key = "user.{0}".format(user_id)
+            cache.set(key, json.dumps(user))
+    return user</code></pre>
+    </div>
+
+    <section id="protocols" class="sec-head">8 — 通信の選び分け</section>
+    <div class="three-col">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> HTTP</span>
+        <p>自己完結したリクエスト・レスポンスのアプリケーション層プロトコル。中間にLB、キャッシュ、暗号化、圧縮を置きやすい。</p>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> TCP</span>
+        <p>順序と欠損なしを保証する接続型プロトコル。信頼性が必要で、時間制約が厳しくない処理に向く。</p>
+      </div>
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> UDP</span>
+        <p>保証を減らして低レイテンシーを狙う。VoIP、ビデオチャット、ストリーミング、リアルタイムゲーム向き。</p>
+      </div>
+    </div>
+    <div class="ve-table-wrap" style="margin-top: 1rem;">
+      <table>
+        <thead>
+          <tr><th>操作</th><th>RPCスタイル</th><th>RESTスタイル</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>サインアップ</td><td><code>POST /signup</code></td><td><code>POST /persons</code></td></tr>
+          <tr><td>Person読み込み</td><td><code>GET /readPerson?personid=1234</code></td><td><code>GET /persons/1234</code></td></tr>
+          <tr><td>アイテム更新</td><td><code>POST /modifyItem</code></td><td><code>PUT /items/456</code></td></tr>
+          <tr><td>アイテム削除</td><td><code>POST /removeItem</code></td><td><code>DELETE /items/456</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section id="numbers" class="sec-head">9 — 暗算メモ</section>
+    <div class="two-col">
+      <div class="ve-card ve-card--elevated" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Powers of two</span>
+        <div class="ve-table-wrap">
+          <table>
+            <thead><tr><th>乗数</th><th>厳密値</th><th>目安</th></tr></thead>
+            <tbody>
+              <tr><td>2^10</td><td>1,024</td><td>1 KB</td></tr>
+              <tr><td>2^20</td><td>1,048,576</td><td>1 MB</td></tr>
+              <tr><td>2^30</td><td>1,073,741,824</td><td>1 GB</td></tr>
+              <tr><td>2^40</td><td>1,099,511,627,776</td><td>1 TB</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Latency orders</span>
+        <div class="latency-list">
+          <div class="latency-item"><strong>0.5 ns</strong><span>L1 cache reference</span></div>
+          <div class="latency-item"><strong>100 ns</strong><span>Main memory reference</span></div>
+          <div class="latency-item"><strong>150 us</strong><span>Read 4 KB randomly from SSD</span></div>
+          <div class="latency-item"><strong>500 us</strong><span>Round trip within same datacenter</span></div>
+          <div class="latency-item"><strong>10 ms</strong><span>Disk seek</span></div>
+          <div class="latency-item"><strong>150 ms</strong><span>CA to Netherlands to CA</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top: 1rem;">
+      <strong>面接で使うコツ:</strong> 厳密な値よりオーダー感が重要。メモリ、SSD、ディスク、ネットワークの差を即座に説明できると、見積りとボトルネック議論が速くなる。
+    </div>
+
+    <section id="links" class="sec-head">10 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Sources</span>
+      <ul class="links-list">
+        <li><a href="https://github.com/donnemartin/system-design-primer" target="_blank" rel="noopener">GitHub: donnemartin/system-design-primer</a></li>
+        <li><a href="https://github.com/donnemartin/system-design-primer/blob/master/README-ja.md" target="_blank" rel="noopener">README-ja.md</a></li>
+        <li><a href="https://github.com/donnemartin/interactive-coding-challenges" target="_blank" rel="noopener">Interactive Coding Challenges</a></li>
+        <li><a href="https://www.youtube.com/watch?v=ZgdS0EUmn70" target="_blank" rel="noopener">Architecture / system design interview intro</a></li>
+        <li><a href="http://highscalability.com/blog/2011/1/26/google-pro-tip-use-back-of-the-envelope-calculations-to-choo.html" target="_blank" rel="noopener">Back-of-the-envelope calculations</a></li>
+        <li><a href="https://gist.github.com/jboner/2841832" target="_blank" rel="noopener">Latency numbers every programmer should know</a></li>
+        <li><a href="https://github.com/henryr/cap-faq" target="_blank" rel="noopener">CAP FAQ</a></li>
+        <li><a href="https://github.com/kilimchoi/engineering-blogs" target="_blank" rel="noopener">Engineering Blogs</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

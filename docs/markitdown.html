@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarkItDown — 多形式ドキュメントを Markdown へ変換</title>
+  <meta name="description" content="Microsoft の軽量 Python ユーティリティ。PDF・Office・HTML などを LLM 向け Markdown に変換。Magika による形式推定、プラグイン、MCP、Azure Document Intelligence 連携の概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="MarkItDown — 多形式ドキュメントを Markdown へ変換">
+  <meta property="og:description" content="Microsoft の軽量 Python ユーティリティ。PDF・Office・HTML などを LLM 向け Markdown に変換する。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/markitdown.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="MarkItDown — 多形式ドキュメントを Markdown へ変換">
+  <meta name="twitter:description" content="PDF・Office・HTML などを LLM 向け Markdown に変換する Python ツールの技術概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Catamaran:wght@400;500;600;700&family=PT+Mono&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) — teal accent ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Catamaran', system-ui, sans-serif;
+      --font-mono: 'PT Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.62 0.14 195);
+        --chart-2: oklch(0.72 0.12 85);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout--warn { border-left-color: var(--chart-2); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.45 0.12 200 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.62 0.14 195 / 0.1) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#formats">対応形式</a>
+    <a href="#install">インストール</a>
+    <a href="#pipeline">変換パイプライン</a>
+    <a href="#cli-python">CLI・API</a>
+    <a href="#azure">Azure 連携</a>
+    <a href="#packages">パッケージ構成</a>
+    <a href="#options-plugins">オプション・拡張</a>
+    <a href="#security">セキュリティ</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>MarkItDown</h1>
+  <p class="subtitle">Various files → Markdown（LLM・テキスト解析パイプライン向け）</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
+    <p><strong>MarkItDown</strong> は Microsoft が公開している軽量な Python ユーティリティで、PDF・Office・HTML・画像・音声など多様な入力を <strong>Markdown</strong> に揃えて出力する。人間向けの高忠実度変換よりも、<strong>見出し・リスト・表・リンクなどの構造を残しつつ LLM が扱いやすいテキスト</strong>を優先する設計（<a href="https://github.com/microsoft/markitdown" target="_blank" rel="noopener">microsoft/markitdown</a>）。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">3.10+</span><span class="ve-kpi-card__label">Python</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">CLI</span><span class="ve-kpi-card__label">stdin / -o</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">API</span><span class="ve-kpi-card__label">MarkItDown クラス</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MCP</span><span class="ve-kpi-card__label">markitdown-mcp</span></div>
+    </div>
+    <p>textract に近い「なんでもテキスト化」だが、出力は Markdown 中心。GPT 系モデルが Markdown を強く理解しているという前提に沿い、トークン効率も意識されている。</p>
+  </div>
+
+  <div class="ve-callout ve-callout--warn" style="margin-top:1rem">
+    <strong>Breaking（0.0.1 → 0.1.0 付近）:</strong> 依存は optional グループに整理（後述の <code>pip install 'markitdown[all]'</code> 推奨）。<code>convert_stream()</code> は <strong>バイナリの file-like のみ</strong>。<code>DocumentConverter</code> はパスではなく <strong>ストリームから読む</strong> インターフェイスに変更され、プラグイン実装者は要確認。
+  </div>
+
+  <section id="formats" class="sec-head">2 — 対応形式</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 入力</span>
+    <p>コアパッケージは PDF・PowerPoint・Word・Excel・画像（EXIF / OCR）・音声（EXIF / 文字起こし）・HTML・CSV/JSON/XML・ZIP（中身を列挙）・YouTube URL・EPub などを Markdown へ変換する。出力は LLM やテキスト解析パイプライン向けで、人間向けの高忠実度変換を最優先する設計ではない。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>カテゴリ</th><th>例</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ドキュメント</td><td>PDF, DOCX, PPTX, XLSX/XLS, EPub</td></tr>
+          <tr><td>ウェブ・テキスト</td><td>HTML, CSV, JSON, XML, RSS, Wikipedia</td></tr>
+          <tr><td>メディア</td><td>画像（メタデータ・OCR）, 音声（文字起こし）, YouTube</td></tr>
+          <tr><td>その他</td><td>ZIP（中身を順次変換）, Outlook MSG, Bing SERP</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="install" class="sec-head">3 — インストール</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 前提・導入</span>
+    <p>Python <strong>3.10 以上</strong>。仮想環境の利用を推奨。</p>
+    <div class="ve-code-block"><pre><code>python -m venv .venv
+source .venv/bin/activate
+pip install 'markitdown[all]'</code></pre></div>
+    <p>ソースから入れる場合:</p>
+    <div class="ve-code-block"><pre><code>git clone https://github.com/microsoft/markitdown.git
+cd markitdown
+pip install -e 'packages/markitdown[all]'</code></pre></div>
+    <h3>Docker</h3>
+    <div class="ve-code-block"><pre><code>docker build -t markitdown:latest .
+docker run --rm -i markitdown:latest &lt; ~/your-file.pdf &gt; output.md</code></pre></div>
+  </div>
+
+  <section id="pipeline" class="sec-head">4 — 変換パイプライン</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ざっくり流れ</span>
+    <p><code>MarkItDown.convert()</code> はローカルパス・URL・<code>requests.Response</code>・バイナリストリームを受け取り、内部で <strong>Magika</strong> 等による内容推定と <code>StreamInfo</code> の候補リストを作り、登録済み <code>DocumentConverter</code> を優先度順に試す。</p>
+    <div class="pipeline">
+      <span class="step">入力</span>
+      <span class="arrow">→</span>
+      <span class="step">StreamInfo 推定</span>
+      <span class="arrow">→</span>
+      <span class="step">コンバータ選択</span>
+      <span class="arrow">→</span>
+      <span class="step">Markdown 文字列</span>
+    </div>
+    <ul>
+      <li><strong>優先度:</strong> 具体的な拡張子・MIME 向けコンバータ（<code>PRIORITY_SPECIFIC_FILE_FORMAT</code>）が汎用（<code>PlainTextConverter</code> など）より先に試されるよう、<strong>後から登録したものほど優先</strong>というスタック順（コメントより: より専用なコンバータをリストの下側に）。</li>
+      <li><strong>Azure Document Intelligence:</strong> エンドポイントを渡した場合のみ <code>DocumentIntelligenceConverter</code> が追加登録され、PDF 等の処理に使える。</li>
+      <li><strong>プラグイン:</strong> <code>entry_points(group="markitdown.plugin")</code> で読み込み、<code>enable_plugins=True</code> で各プラグインがコンバータを登録。</li>
+    </ul>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> HTTP 取得時のヘッダ</span>
+    <p>デフォルトの <code>requests.Session</code> は <code>Accept: text/markdown, text/html;q=0.9, ...</code> を付与し、サーバが Markdown を返せる場合にそれを優先する（README の Cloudflare 記事リンク参照）。</p>
+  </div>
+
+  <section id="cli-python" class="sec-head">5 — CLI・Python API</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> CLI</span>
+    <div class="ve-code-block"><pre><code>markitdown path-to-file.pdf &gt; document.md
+markitdown path-to-file.pdf -o document.md
+cat path-to-file.pdf | markitdown</code></pre></div>
+    <p>プラグイン一覧: <code>markitdown --list-plugins</code>。有効化: <code>markitdown --use-plugins path-to-file.pdf</code>。</p>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Python（最小）</span>
+    <div class="ve-code-block"><pre><code>from markitdown import MarkItDown
+
+md = MarkItDown(enable_plugins=False)
+result = md.convert("test.xlsx")
+print(result.text_content)</code></pre></div>
+    <h3>LLM で画像説明（例: 画像・pptx）</h3>
+    <div class="ve-code-block"><pre><code>from markitdown import MarkItDown
+from openai import OpenAI
+
+client = OpenAI()
+md = MarkItDown(llm_client=client, llm_model="gpt-4o", llm_prompt="optional custom prompt")
+result = md.convert("example.jpg")
+print(result.text_content)</code></pre></div>
+  </div>
+
+  <section id="azure" class="sec-head">6 — Azure 連携</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Document Intelligence</span>
+    <p>スキャン PDF や複雑なレイアウト向け。CLI では <code>-d -e &lt;endpoint&gt;</code>、Python では <code>docintel_endpoint</code> を渡す。</p>
+    <div class="ve-code-block"><pre><code>from markitdown import MarkItDown
+
+md = MarkItDown(docintel_endpoint="&lt;document_intelligence_endpoint&gt;")
+result = md.convert("test.pdf")
+print(result.text_content)</code></pre></div>
+  </div>
+  <div class="ve-card ve-card--elevated" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Content Understanding</span>
+    <p>音声・動画、構造化フィールド（YAML front matter）、カスタムアナライザーなど、ビルトインや Document Intelligence では足りないケース向け。各 <code>convert()</code> は課金 API 呼び出しになり得る。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>能力</th><th>ビルトイン</th><th>Doc Intel</th><th>Content Understanding</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ドキュメント変換</td><td>オフライン・形式別</td><td>クラウドレイアウト</td><td>クラウド多モーダル</td></tr>
+          <tr><td>構造化フィールド</td><td>なし</td><td>本統合では未露出</td><td>YAML front matter</td></tr>
+          <tr><td>音声・動画</td><td>基本音声のみ</td><td>非対応</td><td>対応</td></tr>
+          <tr><td>コスト</td><td>ローカル計算</td><td>Azure 従量</td><td>Azure 従量</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-code-block"><pre><code>from markitdown import MarkItDown
+
+md = MarkItDown(cu_endpoint="&lt;content_understanding_endpoint&gt;")
+result = md.convert("report.pdf")   # documents
+result = md.convert("meeting.mp4")  # video
+print(result.markdown)</code></pre></div>
+    <p>Extra: <code>pip install 'markitdown[az-content-understanding]'</code>。CLI: <code>markitdown file.pdf --use-cu --cu-endpoint "&lt;endpoint&gt;"</code></p>
+  </div>
+
+  <section id="packages" class="sec-head">7 — モノレポ構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> packages/</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>パッケージ</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>markitdown</code></td><td>コアライブラリ・CLI</td></tr>
+          <tr><td><code>markitdown-mcp</code></td><td>MCP サーバ（Claude Desktop 等との連携）</td></tr>
+          <tr><td><code>markitdown-ocr</code></td><td>PDF/DOCX/PPTX/XLSX 内画像の OCR（LLM Vision 利用）</td></tr>
+          <tr><td><code>markitdown-sample-plugin</code></td><td>サードパーティプラグインのサンプル（<code>#markitdown-plugin</code> で検索）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="options-plugins" class="sec-head">8 — オプション依存・拡張</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> pip extras（抜粋）</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Extra</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>[all]</code></td><td>従来互換に近い「全部入り」</td></tr>
+          <tr><td><code>[pdf]</code> <code>[docx]</code> <code>[pptx]</code> <code>[xlsx]</code> <code>[xls]</code></td><td>各オフィス／PDF 系依存</td></tr>
+          <tr><td><code>[outlook]</code></td><td>Outlook メッセージ</td></tr>
+          <tr><td><code>[az-doc-intel]</code></td><td>Azure Document Intelligence</td></tr>
+          <tr><td><code>[az-content-understanding]</code></td><td>Azure Content Understanding</td></tr>
+          <tr><td><code>[audio-transcription]</code></td><td>wav/mp3 の文字起こし</td></tr>
+          <tr><td><code>[youtube-transcription]</code></td><td>YouTube 字幕取得</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>markitdown-ocr:</strong> 組み込み画像説明と同じ <code>llm_client</code> / <code>llm_model</code> パターン。クライアント未設定時は OCR はスキップされ通常コンバータにフォールバック。
+    </div>
+    <h3>Document Intelligence（CLI）</h3>
+    <div class="ve-code-block"><pre><code>markitdown path-to-file.pdf -o document.md -d -e "&lt;document_intelligence_endpoint&gt;"</code></pre></div>
+    <h3>markitdown-ocr プラグイン</h3>
+    <div class="ve-code-block"><pre><code>from markitdown import MarkItDown
+from openai import OpenAI
+
+md = MarkItDown(
+    enable_plugins=True,
+    llm_client=OpenAI(),
+    llm_model="gpt-4o",
+)
+result = md.convert("document_with_images.pdf")
+print(result.text_content)</code></pre></div>
+  </div>
+
+  <section id="security" class="sec-head">9 — セキュリティ</section>
+  <div class="ve-card ve-card--recessed" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 入力の扱い</span>
+    <p>MarkItDown は <code>open()</code> や <code>requests.get()</code> と同様、<strong>プロセスがアクセスできるリソースに I/O する</strong>。信頼できない入力をそのまま渡さないこと。</p>
+    <ul>
+      <li>サーバー側利用ではパス・URI スキーム・ネットワーク先を制限し、入力を検証する。</li>
+      <li>用途に合わせて最も狭い API を選ぶ: ローカルファイルのみなら <code>convert_local()</code>、HTTP は自前で <code>requests.get()</code> して <code>convert_response()</code>、最大制御なら <code>convert_stream()</code>。</li>
+      <li><code>convert()</code> はパス・URL・ストリームを広く受け付けるため、制御が必要な環境では避ける。</li>
+    </ul>
+  </div>
+
+  <section id="links" class="sec-head">10 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+    <ul>
+      <li><a href="https://github.com/microsoft/markitdown" target="_blank" rel="noopener">GitHub: microsoft/markitdown</a> — 本体・Issue・PR</li>
+      <li><a href="https://pypi.org/project/markitdown/" target="_blank" rel="noopener">PyPI: markitdown</a></li>
+      <li><a href="https://github.com/microsoft/markitdown/tree/main/packages/markitdown-mcp" target="_blank" rel="noopener">markitdown-mcp</a> — MCP パッケージ</li>
+      <li><a href="https://learn.microsoft.com/azure/ai-services/content-understanding/" target="_blank" rel="noopener">Azure Content Understanding</a></li>
+      <li><a href="https://learn.microsoft.com/azure/ai-services/document-intelligence/" target="_blank" rel="noopener">Azure Document Intelligence</a></li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

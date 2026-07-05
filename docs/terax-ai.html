@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terax（terax-ai）— AI ネイティブターミナル</title>
+  <meta name="description" content="Tauri 2 と React 19 製のオープンソース AI ターミナル。PTY・エディタ・エクスプローラ・BYOK の AI を一体にし、Rust が OS 境界を担当する構成の要点。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Terax（terax-ai）— AI ネイティブターミナル">
+  <meta property="og:description" content="Tauri 2 と React 19 製のオープンソース AI ターミナル。PTY・エディタ・エクスプローラ・BYOK の AI を一体にし、Rust が OS 境界を担当する構成の要点。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/terax-ai.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Terax（terax-ai）— AI ネイティブターミナル">
+  <meta name="twitter:description" content="Tauri 2 + React 19 の AI ターミナル。Rust が PTY・FS・キーチェーンを担当し、WebView は invoke 経由のみ OS に触れる。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.01 95);
+      --foreground: oklch(0.2 0.02 250);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.2 0.02 250);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.2 0.02 250);
+      --primary: oklch(0.22 0.03 250);
+      --primary-foreground: oklch(0.98 0 0);
+      --secondary: oklch(0.96 0.01 95);
+      --secondary-foreground: oklch(0.22 0.03 250);
+      --muted: oklch(0.94 0.015 95);
+      --muted-foreground: oklch(0.45 0.02 250);
+      --accent: oklch(0.94 0.02 200);
+      --accent-foreground: oklch(0.22 0.03 250);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.02 200);
+      --input: oklch(0.88 0.02 200);
+      --ring: oklch(0.55 0.08 200);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.62 0.14 75);
+      --chart-3: oklch(0.5 0.08 250);
+      --chart-4: oklch(0.75 0.12 150);
+      --chart-5: oklch(0.55 0.1 30);
+      --code-bg: var(--muted);
+      --code-text: #0c4a6e;
+      --font-body: 'Karla', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.02 250);
+        --foreground: oklch(0.96 0.01 95);
+        --card: oklch(0.2 0.03 250);
+        --card-foreground: oklch(0.96 0.01 95);
+        --popover: oklch(0.2 0.03 250);
+        --popover-foreground: oklch(0.96 0.01 95);
+        --primary: oklch(0.92 0.02 95);
+        --primary-foreground: oklch(0.18 0.03 250);
+        --secondary: oklch(0.24 0.03 250);
+        --secondary-foreground: oklch(0.96 0.01 95);
+        --muted: oklch(0.26 0.03 250);
+        --muted-foreground: oklch(0.72 0.04 95);
+        --accent: oklch(0.26 0.04 200);
+        --accent-foreground: oklch(0.96 0.01 95);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.55 0.1 200);
+        --chart-1: oklch(0.62 0.14 200);
+        --chart-2: oklch(0.78 0.14 85);
+        --chart-3: oklch(0.7 0.08 250);
+        --chart-4: oklch(0.65 0.12 150);
+        --chart-5: oklch(0.6 0.1 30);
+        --code-bg: oklch(0.16 0.02 250);
+        --code-text: #7dd3fc;
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout--warn { border-left-color: var(--chart-2); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 80% 50% at 20% -10%, oklch(0.45 0.12 200 / 0.08) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 100% 100%, oklch(0.62 0.14 75 / 0.06) 0%, transparent 45%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse 80% 50% at 20% -10%, oklch(0.62 0.14 200 / 0.12) 0%, transparent 55%),
+          radial-gradient(ellipse 60% 40% at 100% 100%, oklch(0.78 0.14 85 / 0.08) 0%, transparent 45%);
+      }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    .back { font-size: 0.8125rem; margin-bottom: 1rem; }
+    .back a { color: var(--chart-1); text-decoration: none; font-family: var(--font-mono); }
+    .back a:hover { text-decoration: underline; }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 0.75rem 0; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); border: 1px solid var(--border); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#stack">スタックと配布</a>
+    <a href="#boundary">OS 境界と Rust</a>
+    <a href="#frontend">フロント構成</a>
+    <a href="#ai">AI サブシステム</a>
+    <a href="#build">ビルドと出典</a>
+  </nav>
+
+  <div class="main">
+    <p class="back"><a href="../index.html">← 資料一覧</a></p>
+    <h1>Terax（crynta/terax-ai）</h1>
+    <p class="subtitle">Tauri 2 + React 19 の AI ネイティブターミナル（ADE）。WebView は <code>invoke</code> 越しにのみ OS に触れる。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
+      <p><strong>Terax</strong> は、マルチタブ端末・CodeMirror 6 エディタ・ファイルツリー・ローカル dev サーバ向けプレビュー・BYOK の AI サイドパネルを単一ウィンドウにまとめたデスクトップアプリ。バックエンドは Rust（<code>portable-pty</code>）で PTY を保持し、フロントは React 19 + TypeScript。テレメトリなし・API キーは OS キーチェーン保存が README の約束として明記されている。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Tauri 2</span><span class="ve-kpi-card__label">デスクトップシェル</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">React 19</span><span class="ve-kpi-card__label">UI レイヤ</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">BYOK</span><span class="ve-kpi-card__label">複数クラウド + LM Studio</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">~7 MB</span><span class="ve-kpi-card__label">README 記載の目安</span></div>
+      </div>
+      <p>プロジェクトルートの <code>TERAX.md</code> は、エージェント向けの長期メモと同時に「変更前に読むべきアーキテクチャ文書」として運用されている。</p>
+    </div>
+
+    <section id="stack" class="sec-head">2 — スタックと配布</section>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 技術一覧</span>
+      <p>README の Tech stack 一行に基づく。Vercel AI SDK v6・Tailwind v4・shadcn/ui・Zustand・xterm.js（WebGL）などが列挙されている。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>領域</th><th>主な依存</th><th>メモ</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>シェル</td><td>Tauri 2、Rust stable</td><td>バンドル ID は <code>app.crynta.terax</code>（TERAX.md）</td></tr>
+            <tr><td>端末</td><td>xterm.js、WebGL、portable-pty</td><td>バックグラウンドでタブ間ストリーミング継続</td></tr>
+            <tr><td>編集</td><td>CodeMirror 6</td><td>Vim、複数テーマ、インライン補完と AI diff</td></tr>
+            <tr><td>AI</td><td><code>@ai-sdk/*</code> 系</td><td>OpenAI / Anthropic / Google / Groq / xAI / Cerebras / 互換エンドポイント</td></tr>
+            <tr><td>パッケージ</td><td>pnpm</td><td>Node 20+ 前提（README）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout ve-callout--warn" style="margin-top:1rem">
+        <strong>Windows:</strong> コード署名がない間は SmartScreen が警告を出す。README は「More info → Run anyway」と案内している。
+      </div>
+      <div class="ve-callout" style="margin-top:0.75rem">
+        <strong>Linux:</strong> Arch は AUR の <code>terax-bin</code>。AppImage は FUSE 要件や Wayland 時の <code>WEBKIT_DISABLE_DMABUF_RENDERER=1</code> のヒントが README にある。
+      </div>
+    </div>
+
+    <section id="boundary" class="sec-head">3 — OS 境界と Rust</section>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> 2 プロセスモデル</span>
+      <p>Rust 側（<code>src-tauri/</code>）がファイルシステム・プロセス・シェル・シークレットを所有し、WebView からは Tauri の <code>invoke()</code> で登録コマンドにだけ届く。TERAX.md が列挙する代表コマンドは次のとおり。</p>
+      <div class="pipeline">
+        <span class="step">pty::*</span>
+        <span class="arrow">→</span>
+        <span class="step">fs::tree / file / mutate</span>
+        <span class="arrow">→</span>
+        <span class="step">fs::search / grep</span>
+        <span class="arrow">→</span>
+        <span class="step">shell_run_command</span>
+        <span class="arrow">→</span>
+        <span class="step">shell_session_* / shell_bg_*</span>
+        <span class="arrow">→</span>
+        <span class="step">secrets::*</span>
+      </div>
+      <ul>
+        <li><strong>PTY:</strong> 対話シェルは長寿命セッション。出力は Tauri の <code>Channel</code> でストリーム。</li>
+        <li><strong>ワンショットシェル:</strong> <code>shell_run_command</code> は AI ツール用。対話 PTY とは別経路（Unix は <code>$SHELL -lc</code>、Windows は PowerShell 経由）。</li>
+        <li><strong>シークレット:</strong> <code>keyring</code> クレート。サービス名は <code>terax-ai</code>。Linux はファイルフォールバックが cfg 付きで分岐。</li>
+        <li><strong>Windows ConPTY:</strong> 並行スポーンでパイプが詰まる問題への対策として <code>SPAWN_LOCK</code>。子プロセス木の孤児化防止に Job Object（TERAX.md の Known gotchas と関連）。</li>
+      </ul>
+      <h3>シェル統合（OSC）</h3>
+      <p>Unix は <code>ZDOTDIR</code> や <code>--rcfile</code> で注入スクリプトを載せ、OSC 7（cwd）と OSC 133（プロンプト境界・終了コード）をホストへ送る。Windows はユーザの <code>$PROFILE</code> の後に <code>prompt</code> をラップして同系のマーカを出す。</p>
+    </div>
+
+    <section id="frontend" class="sec-head">4 — フロント構成</section>
+    <div class="ve-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> モジュール境界</span>
+      <p>単一ウィンドウの React アプリ。タブはタグ付きユニオン（terminal / editor / preview / ai-diff など）で、切り替え時にアンマウントせず CSS で非表示にし、PTY と dev サーバのストリームを維持する設計（TERAX.md）。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>モジュール</th><th>責務の要約</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>terminal/</code></td><td>xterm セッション、OSC ハンドラ、テーマ</td></tr>
+            <tr><td><code>editor/</code></td><td>CodeMirror スタック、言語モード、Vim</td></tr>
+            <tr><td><code>explorer/</code></td><td>ツリー、ファジー検索、コンテキストアクション</td></tr>
+            <tr><td><code>tabs/</code></td><td><code>useTabs</code> と cwd 継承（<code>useWorkspaceCwd</code>）</td></tr>
+            <tr><td><code>ai/</code></td><td>エージェント、ツール、セッション、コンポーザー UI</td></tr>
+            <tr><td><code>settings/</code></td><td>tauri-plugin-store ベースの設定と別ウィンドウ</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top:1rem">
+        <strong>パス表現:</strong> フロントの正規形はスラッシュ。OSC 7 やエクスプローラ由来のパスは <code>.split(/[\\/]/)</code> で正規化し、Windows のドライブ表記も境界で揃える（TERAX.md の UI 規約）。
+      </div>
+    </div>
+
+    <section id="ai" class="sec-head">5 — AI サブシステム</section>
+    <div class="ve-card" style="--i:4">
+      <span class="ve-section-label"><span class="ve-dot"></span> BYOK とツール</span>
+      <p>プロバイダ一覧は <code>src/modules/ai/config.ts</code> の <code>PROVIDERS</code>。メインエージェントは <code>Experimental_Agent</code> とステップ上限、サブエージェントは専用ツール集合で起動。</p>
+      <ul>
+        <li><strong>セッション:</strong> <code>tauri-plugin-store</code> に会話とアクティブ ID を永続化。API キー切替時はメモリ上の Chat マップを破棄し、ディスク上のセッションは残す。</li>
+        <li><strong>ツール承認:</strong> ファイル書き換え・シェル実行などは <code>needsApproval: true</code>。AI SDK の承認応答フローと連動。</li>
+        <li><strong>ライブコンテキスト:</strong> アクティブ端末の cwd とバッファ末尾（約 300 行）を遅延取得するブリッジを <code>App.tsx</code> から注入。</li>
+        <li><strong>セキュリティ:</strong> <code>lib/security.ts</code> がパス拒否リストを持ち、読み書き双方に適用。バイパスしないこと。</li>
+      </ul>
+      <h3>設定フロー（README 要約）</h3>
+      <ol style="margin:0 0 1rem 1.25rem; font-size:0.9375rem; line-height:1.65;">
+        <li>Settings → AI を開く。</li>
+        <li>プロバイダを選び API キーを入力（ローカルは LM Studio エンドポイント）。</li>
+        <li>キーは <code>secrets_*</code> 経由でキーチェーンへ。ディスクや <code>localStorage</code> には置かない。</li>
+      </ol>
+    </div>
+
+    <section id="build" class="sec-head">6 — ビルドと出典</section>
+    <div class="ve-card ve-card--recessed" style="--i:5">
+      <span class="ve-section-label"><span class="ve-dot"></span> ローカル開発</span>
+      <p>README の手順をそのまま掲載する。</p>
+      <div class="ve-code-block"><pre><code>pnpm install
+pnpm tauri dev
+pnpm tauri build</code></pre></div>
+      <p>検証コマンド（README）:</p>
+      <div class="ve-code-block"><pre><code>pnpm exec tsc --noEmit
+cd src-tauri &amp;&amp; cargo clippy</code></pre></div>
+      <h3>一次情報</h3>
+      <ul>
+        <li><a href="https://github.com/crynta/terax-ai" target="_blank" rel="noopener">GitHub: crynta/terax-ai</a> — 本体リポジトリ</li>
+        <li>リポジトリ内の <code>README.md</code> — 機能一覧・スクリーンショット・プラットフォーム注意</li>
+        <li>リポジトリ内の <code>TERAX.md</code> — アーキテクチャ詳細と運用上の制約</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

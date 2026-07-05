@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claw Code — 公開 Rust claw CLI（ultraworkers/claw-code）</title>
+  <meta name="description" content="ultraworkers/claw-code の公開 Rust 実装 claw CLI。ソースビルド手順、crates.io の誤インストール回避、Rust ワークスペースとドキュメントマップ、エコシステム上の位置づけとロードマップを整理。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Claw Code — 公開 Rust claw CLI（ultraworkers/claw-code）">
+  <meta property="og:description" content="ultraworkers/claw-code の公開 Rust 実装 claw CLI。ソースビルド手順、crates.io の誤インストール回避、Rust ワークスペースとドキュメントマップ、エコシステム上の位置づけとロードマップを整理。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/claw-code.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Claw Code — 公開 Rust claw CLI（ultraworkers/claw-code）">
+  <meta name="twitter:description" content="ソースビルド手順、crates.io 注意、Rust ワークスペース、ドキュメントマップ、ロードマップ。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    /* ============ THEME (Spell UI tokens + Rust-iron palette) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      /* Rust-iron: burnt orange + dark slate */
+      --chart-1: oklch(0.61 0.20 28);    /* rust orange */
+      --chart-2: oklch(0.45 0.09 200);   /* iron slate */
+      --chart-3: oklch(0.72 0.16 50);    /* amber gold */
+      --chart-4: oklch(0.55 0.14 16);    /* deep rust */
+      --chart-5: oklch(0.40 0.08 220);   /* charcoal */
+      --code-bg: var(--muted);
+      --code-text: #7c2d12;
+      --font-body: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.72 0.20 28);
+        --chart-2: oklch(0.60 0.10 200);
+        --chart-3: oklch(0.80 0.17 50);
+        --chart-4: oklch(0.68 0.18 20);
+        --chart-5: oklch(0.55 0.08 220);
+        --code-bg: #1a0a00;
+        --code-text: #fdba74;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--text-dim); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-table-wrap tr:last-child td { border-bottom: none; }
+    .ve-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; line-height: 1; padding: 0.25rem 0.5rem; border-radius: 999px; }
+    .ve-badge--active { background: color-mix(in oklch, var(--chart-1) 15%, transparent); color: var(--chart-1); }
+    .ve-badge--done { background: oklch(0.72 0.16 145 / 15%); color: oklch(0.50 0.16 145); }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--text-dim); margin: 0.75rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Wrap + TOC layout ============ */
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--font-body); background: var(--bg); color: var(--text); line-height: 1.6; font-size: 0.9375rem; }
+    .wrap { display: grid; grid-template-columns: 14rem 1fr; gap: 0; min-height: 100vh; max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+    @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } }
+
+    .toc {
+      position: sticky;
+      top: 1.5rem;
+      height: fit-content;
+      max-height: calc(100vh - 3rem);
+      overflow-y: auto;
+      padding: 2rem 1rem 2rem 0;
+      font-size: 0.8125rem;
+    }
+    @media (max-width: 900px) { .toc { display: none; } }
+    .toc-title { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 0.75rem; padding-left: 0.75rem; }
+    .toc ul { list-style: none; margin: 0; padding: 0; }
+    .toc li { margin: 0; }
+    .toc a {
+      display: block;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.15s, background 0.15s;
+      line-height: 1.4;
+      border-left: 2px solid transparent;
+    }
+    .toc a:hover { color: var(--text); background: var(--muted); }
+    .toc a.active { color: var(--chart-1); border-left-color: var(--chart-1); font-weight: 600; background: color-mix(in oklch, var(--chart-1) 8%, transparent); }
+
+    .main { padding: 2.5rem 0 4rem 2rem; min-width: 0; }
+    @media (max-width: 900px) { .main { padding: 2rem 0; } }
+
+    /* ============ Header ============ */
+    .page-header { margin-bottom: 2.5rem; }
+    .page-header .breadcrumb { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; }
+    .page-header .breadcrumb a { color: var(--text-dim); text-decoration: none; }
+    .page-header .breadcrumb a:hover { color: var(--text); }
+    .page-title { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 0.5rem; line-height: 1.2; }
+    .page-subtitle { color: var(--text-dim); font-size: 0.9375rem; margin: 0; max-width: 48rem; }
+
+    /* ============ Section heads ============ */
+    .sec-head {
+      font-size: 1rem; font-weight: 700; letter-spacing: -0.01em;
+      padding: 0.4rem 0 0.4rem 0.75rem;
+      margin: 2.5rem 0 0.75rem;
+      border-left: 3px solid var(--chart-1);
+      color: var(--text);
+    }
+
+    /* ============ Content helpers ============ */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 560px) { .grid-3 { grid-template-columns: 1fr; } }
+
+    .ve-card h3 { margin: 0 0 0.5rem; font-size: 0.9375rem; font-weight: 700; }
+    .ve-card p { margin: 0 0 0.5rem; color: var(--text-dim); font-size: 0.875rem; }
+    .ve-card p:last-child { margin-bottom: 0; }
+    .ve-card ul { margin: 0.5rem 0 0; padding-left: 1.25rem; color: var(--text-dim); font-size: 0.875rem; }
+    .ve-card li { margin-bottom: 0.25rem; }
+    .ve-card strong { color: var(--text); }
+    .ve-card code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--code-bg); color: var(--code-text); padding: 0.15em 0.35em; border-radius: 3px; }
+
+    .pillar-icon { font-size: 1.75rem; margin-bottom: 0.5rem; }
+    .crate-tag { display: inline-block; font-family: var(--font-mono); font-size: 0.75rem; background: color-mix(in oklch, var(--chart-1) 10%, transparent); color: var(--chart-1); padding: 0.2rem 0.45rem; border-radius: 4px; font-weight: 600; }
+
+    .roadmap-phase { display: flex; gap: 0.75rem; align-items: flex-start; margin-bottom: 1rem; }
+    .roadmap-phase:last-child { margin-bottom: 0; }
+    .phase-num { flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; background: color-mix(in oklch, var(--chart-1) 15%, transparent); color: var(--chart-1); font-weight: 700; font-size: 0.875rem; display: flex; align-items: center; justify-content: center; }
+    .phase-body h4 { margin: 0 0 0.25rem; font-size: 0.875rem; font-weight: 700; }
+    .phase-body p { margin: 0; font-size: 0.8125rem; color: var(--text-dim); }
+
+    .cmd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.5rem; margin-top: 0.75rem; }
+    .cmd-item { font-family: var(--font-mono); font-size: 0.75rem; background: var(--code-bg); color: var(--code-text); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+
+    /* mermaid dark-mode fix */
+    @media (prefers-color-scheme: dark) {
+      .mermaid svg { background: transparent !important; }
+    }
+    .mermaid { margin: 0.5rem 0; overflow-x: auto; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <!-- TOC -->
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">目次</div>
+    <ul>
+      <li><a href="#overview">概要</a></li>
+      <li><a href="#install-traps">インストールの注意</a></li>
+      <li><a href="#philosophy">哲学</a></li>
+      <li><a href="#system">3層システム</a></li>
+      <li><a href="#workspace">Rust ワークスペース</a></li>
+      <li><a href="#cli">CLI / REPL</a></li>
+      <li><a href="#roadmap">ロードマップ</a></li>
+    </ul>
+  </nav>
+
+  <!-- Main content -->
+  <div class="main">
+    <header class="page-header">
+      <p class="breadcrumb"><a href="../index.html">資料一覧</a> / claw-code</p>
+      <h1 class="page-title">Claw Code</h1>
+      <p class="page-subtitle"><a href="https://github.com/ultraworkers/claw-code" target="_blank" rel="noopener" style="color:var(--chart-1);">ultraworkers/claw-code</a> で公開されている <code>claw</code> CLI の Rust 実装。正規のソースは <code>rust/</code> ワークスペース。Python の <code>src/</code> は参照・監査用のコンパニオン。</p>
+    </header>
+
+    <!-- 1. 概要 -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0; margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> What is Claw Code</span>
+      <div class="grid-2" style="gap:1.25rem; margin-top:0.25rem;">
+        <div>
+          <h3 style="margin:0 0 0.5rem;">公開 Rust CLI エージェントハーネス</h3>
+          <p><strong>Claw Code</strong> は <code>claw</code> CLI エージェントハーネスの公開 Rust 実装です。最初の手順は公式 <code>USAGE.md</code>。ビルド後は <code>claw doctor</code> を健診の起点にします。</p>
+          <p>設計思想や運用の枠組みは <code>PHILOSOPHY.md</code>、移植状況は <code>PARITY.md</code>、コンテナ運用は <code>docs/container.md</code> を参照してください。</p>
+        </div>
+        <div>
+          <div style="display:flex; flex-direction:column; gap:0.5rem;">
+            <div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem 0.75rem; border-radius:var(--radius-md); background:var(--muted); font-size:0.8125rem;">
+              <span style="font-size:1.1rem;">🦀</span>
+              <div><strong>Rust ワークスペース</strong><br><span style="color:var(--text-dim);"><code>rust/</code> 配下に CLI と複数クレート</span></div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem 0.75rem; border-radius:var(--radius-md); background:var(--muted); font-size:0.8125rem;">
+              <span style="font-size:1.1rem;">🔧</span>
+              <div><strong>バイナリ名:</strong> <code>claw</code><br><span style="color:var(--text-dim);">デフォルトモデル: claude-opus-4-6</span></div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem 0.75rem; border-radius:var(--radius-md); background:var(--muted); font-size:0.8125rem;">
+              <span style="font-size:1.1rem;">🚀</span>
+              <div><strong>UltraWorkers</strong> エコシステム<br><span style="color:var(--text-dim);">Discord チャンネルから操作可</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> リポジトリ構成</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>パス</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>rust/</code></td><td>正規 Rust ワークスペースと <code>claw</code> CLI バイナリ</td></tr>
+            <tr><td><code>USAGE.md</code></td><td>タスク指向の使い方ガイド（最初に読む）</td></tr>
+            <tr><td><code>PARITY.md</code></td><td>Rust 移植のパリティ状況とマイグレーションノート</td></tr>
+            <tr><td><code>ROADMAP.md</code></td><td>アクティブなロードマップとバックログ</td></tr>
+            <tr><td><code>PHILOSOPHY.md</code></td><td>プロジェクトの意図とシステム設計の考え方</td></tr>
+            <tr><td><code>src/ + tests/</code></td><td>Python/参照ワークスペース（メイン実行面ではない）</td></tr>
+            <tr><td><code>docs/container.md</code></td><td>コンテナファーストの build/run ワークフロー</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="install-traps" class="sec-head">2 — インストールの注意</section>
+    <div class="ve-card" style="--i:0; margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> crates.io とビルド方針</span>
+      <div class="ve-callout">
+        <strong>避ける:</strong> <code>cargo install claw-code</code> は使わない。crates.io の <code>claw-code</code> クレートは非推奨のスタブで、<code>claw-code-deprecated</code> 相当のバイナリしか置かず、本リポジトリの <code>claw</code> ではありません。
+      </div>
+      <p style="color:var(--text-dim); font-size:0.875rem; margin:0.5rem 0 0.75rem;">代わりに、<strong>このリポジトリからソースビルド</strong>するか、上流の <code>cargo install agent-code</code>（インストール名は <code>agent</code> / Windows は <code>agent.exe</code>）を公式 README の案内に従ってください。</p>
+      <div class="ve-callout" style="border-left-color: var(--chart-2);">
+        <strong>ACP / Zed:</strong> 現時点で ACP/Zed デーモン用のエントリポイントは同梱されていません。状態確認は <code>claw acp</code>（または <code>claw --acp</code>）。<code>claw acp serve</code> は発見用エイリアスに留まる点は <code>ROADMAP.md</code> 側の記述に従ってください。
+      </div>
+    </div>
+
+    <!-- 3. 哲学 -->
+    <section id="philosophy" class="sec-head">3 — 哲学</section>
+    <div class="ve-card ve-card--elevated" style="--i:0; margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 人間が方向を示し、claws が実行する</span>
+      <blockquote style="border-left:3px solid var(--chart-1); margin:0 0 1rem; padding:0.5rem 0 0.5rem 1rem; color:var(--text-dim); font-size:0.9375rem; font-style:italic;">
+        "The real thing worth studying is the <strong style="color:var(--text);">system that produced them</strong>: a clawhip-based coordination loop where humans give direction and autonomous claws execute the work."
+      </blockquote>
+      <div class="grid-2">
+        <div>
+          <h3>ボトルネックの変化</h3>
+          <p>エージェントシステムがコードベースを数時間で再構築できる今、希少資源は<strong>タイピング速度</strong>ではなくなった。</p>
+          <ul>
+            <li>アーキテクチャの明確さ</li>
+            <li>タスク分解</li>
+            <li>判断力・審美眼</li>
+            <li>何を作る価値があるかの確信</li>
+          </ul>
+        </div>
+        <div>
+          <h3>ヒューマンインターフェースは Discord</h3>
+          <p>tmux・Vim・SSH ではなく <strong>Discord チャンネル</strong>が本当のヒューマンインターフェース。</p>
+          <p>人はスマートフォンから一文を送り、その場を離れられる。claws がタスクを分解し、ロールを割り当て、コードを書き、テストし、完成すれば push する。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. 3層システム -->
+    <section id="system" class="sec-head">4 — 3層システム</section>
+    <div class="ve-card" style="--i:0; margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> アーキテクチャ概要</span>
+      <p style="color:var(--text-dim); font-size:0.8125rem; margin:0 0 0.75rem;">エコシステム上の位置づけの概略図。詳細は公式の <code>PHILOSOPHY.md</code> および各リポジトリの README を参照。</p>
+      <div class="mermaid">
+graph LR
+  Human["👤 Human\n(Discord / chat)"] -->|directive| OmX
+  subgraph Coord ["調整・実行レイヤー"]
+    OmX["OmX\noh-my-codex\nワークフローレイヤー"] -->|task execution| Claw["🦞 claw\nCLI エージェント"]
+    OmO["OmO\noh-my-openagent\nマルチエージェント調整"] -->|handoff| Claw
+    Claw -->|events| clawhip["clawhip\nイベント & 通知ルーター"]
+  end
+  clawhip -->|channel delivery| Discord["Discord\n結果通知"]
+  clawhip -->|git / PR events| GitHub["GitHub"]
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="ve-card" style="--i:1">
+        <div class="pillar-icon">⚙️</div>
+        <h3>OmX <span style="font-weight:400; color:var(--text-dim); font-size:0.8125rem;">oh-my-codex</span></h3>
+        <p><strong>ワークフローレイヤー</strong>。短い指示を構造化実行に変換する。</p>
+        <ul>
+          <li>計画キーワード</li>
+          <li>実行モード</li>
+          <li>永続的な検証ループ</li>
+          <li>並行マルチエージェントワークフロー</li>
+        </ul>
+      </div>
+      <div class="ve-card" style="--i:2">
+        <div class="pillar-icon">🔔</div>
+        <h3>clawhip</h3>
+        <p><strong>イベント & 通知ルーター</strong>。監視・配信をエージェントのコンテキストウィンドウの外に置く。</p>
+        <ul>
+          <li>git コミット</li>
+          <li>tmux セッション</li>
+          <li>GitHub issues / PR</li>
+          <li>エージェントライフサイクルイベント</li>
+        </ul>
+      </div>
+      <div class="ve-card" style="--i:3">
+        <div class="pillar-icon">🤝</div>
+        <h3>OmO <span style="font-weight:400; color:var(--text-dim); font-size:0.8125rem;">oh-my-openagent</span></h3>
+        <p><strong>マルチエージェント調整</strong>。計画・ハンドオフ・不一致の解消・検証ループを担う。</p>
+        <ul>
+          <li>Architect / Executor / Reviewer 間の調整</li>
+          <li>ループが収束する構造を提供</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 5. Rust ワークスペース -->
+    <section id="workspace" class="sec-head">5 — Rust ワークスペース</section>
+    <div class="ve-card" style="--i:0; margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> クイックスタート（README 準拠）</span>
+      <div class="ve-code-block">
+        <pre><code># 1. クローンしてビルド
+git clone https://github.com/ultraworkers/claw-code
+cd claw-code/rust
+cargo build --workspace
+
+# 2. API キー（Anthropic の API キー。Claude サブスクのログインではない）
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# 3. 健診
+./target/debug/claw doctor
+
+# 4. ワンショットプロンプト
+./target/debug/claw prompt "say hello"</code></pre>
+      </div>
+      <p style="color:var(--text-dim); font-size:0.8125rem; margin-top:0.75rem;">Windows PowerShell では <code>.\target\debug\claw.exe</code> を使う。詳細は公式 <code>USAGE.md</code> の Windows 節を参照。</p>
+      <div class="ve-callout" style="margin-top:1rem;">
+        <strong>認証:</strong> claw は <strong>API キー</strong>（<code>ANTHROPIC_API_KEY</code> や <code>OPENAI_API_KEY</code> など）を想定。Claude のサブスクリプションログインだけでは動かない旨は公式 README に記載があります。
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1; margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 9クレートの構成</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>クレート</th><th>責務</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="crate-tag">api</span></td><td>プロバイダクライアント・SSE ストリーミング・認証（API キー / OAuth）・コンテキストウィンドウプリフライト</td></tr>
+            <tr><td><span class="crate-tag">commands</span></td><td>スラッシュコマンド定義・パース・ヘルプテキスト生成・JSON/テキストレンダリング</td></tr>
+            <tr><td><span class="crate-tag">compat-harness</span></td><td>上流 TS ソースからツール/プロンプトマニフェストを抽出するハーネス</td></tr>
+            <tr><td><span class="crate-tag">mock-anthropic-service</span></td><td>決定論的な <code>/v1/messages</code> モック（CLI パリティテスト用）</td></tr>
+            <tr><td><span class="crate-tag">plugins</span></td><td>プラグインメタデータ・install/enable/disable/update フロー・フック統合</td></tr>
+            <tr><td><span class="crate-tag">runtime</span></td><td>ConversationRuntime・設定読み込み・セッション永続化・権限ポリシー・MCP クライアント</td></tr>
+            <tr><td><span class="crate-tag">rusty-claude-cli</span></td><td>REPL・ワンショットプロンプト・直接 CLI サブコマンド・ストリーミング表示・引数パース</td></tr>
+            <tr><td><span class="crate-tag">telemetry</span></td><td>セッショントレースイベントとテレメトリペイロード</td></tr>
+            <tr><td><span class="crate-tag">tools</span></td><td>ツール仕様 & 実行（Bash, Read/Write/Edit File, Glob, Grep, WebSearch, WebFetch, Agent, Todo...）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:2; margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 実装済み機能マトリクス</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>機能</th><th>状態</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Anthropic / OpenAI 互換プロバイダ + ストリーミング</td><td><span class="ve-badge ve-badge--done">✅ 完了</span></td></tr>
+            <tr><td>OAuth ログイン/ログアウト</td><td><span class="ve-badge ve-badge--done">✅ 完了</span></td></tr>
+            <tr><td>インタラクティブ REPL (rustyline)</td><td><span class="ve-badge ve-badge--done">✅ 完了</span></td></tr>
+            <tr><td>ツールシステム (bash, read, write, edit, grep, glob)</td><td><span class="ve-badge ve-badge--done">✅ 完了</span></td></tr>
+            <tr><td>Web ツール (search, fetch)</td><td><span class="ve-badge ve-badge--done">✅ 完了</span></td></tr>
+            <tr><td>サブエージェント / エージェントサーフェス</td><td><span class="ve-badge ve-badge--done">✅ 完了</span></td></tr>
+            <tr><td>セッション永続化 + レジューム</td><td><span class="ve-badge ve-badge--done">✅ 完了</span></td></tr>
+            <tr><td>MCP サーバーライフサイクル + 検査</td><td><span class="ve-badge ve-badge--done">✅ 完了</span></td></tr>
+            <tr><td>権限システム (read-only / workspace-write / danger-full-access)</td><td><span class="ve-badge ve-badge--done">✅ 完了</span></td></tr>
+            <tr><td>プラグイン管理サーフェス</td><td><span class="ve-badge ve-badge--done">✅ 完了</span></td></tr>
+            <tr><td>スキルインベントリ / インストール</td><td><span class="ve-badge ve-badge--done">✅ 完了</span></td></tr>
+            <tr><td>機械可読 JSON 出力 (全 CLI サーフェス)</td><td><span class="ve-badge ve-badge--done">✅ 完了</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 6. CLI / REPL -->
+    <section id="cli" class="sec-head">6 — CLI / REPL</section>
+    <div class="ve-card" style="--i:0; margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> モデルエイリアスと権限モード</span>
+      <div class="grid-2">
+        <div>
+          <p style="font-weight:600; font-size:0.8125rem; margin-bottom:0.5rem;">モデルエイリアス</p>
+          <div class="ve-table-wrap">
+            <table>
+              <thead><tr><th>エイリアス</th><th>解決先</th></tr></thead>
+              <tbody>
+                <tr><td><code>opus</code></td><td>claude-opus-4-6</td></tr>
+                <tr><td><code>sonnet</code></td><td>claude-sonnet-4-6</td></tr>
+                <tr><td><code>haiku</code></td><td>claude-haiku-4-5-20251213</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <p style="font-weight:600; font-size:0.8125rem; margin-bottom:0.5rem;">権限モード</p>
+          <div style="display:flex; flex-direction:column; gap:0.4rem;">
+            <div style="padding:0.5rem 0.75rem; border-radius:var(--radius-sm); background:oklch(0.72 0.16 145 / 10%); font-size:0.8125rem;"><code>read-only</code> — 読み取りのみ</div>
+            <div style="padding:0.5rem 0.75rem; border-radius:var(--radius-sm); background:oklch(0.72 0.16 50 / 10%); font-size:0.8125rem;"><code>workspace-write</code> — ワークスペース書き込み可</div>
+            <div style="padding:0.5rem 0.75rem; border-radius:var(--radius-sm); background:oklch(0.61 0.20 28 / 10%); font-size:0.8125rem;"><code>danger-full-access</code> — フルアクセス（デフォルト）</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1; margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> トップレベルコマンド</span>
+      <div class="cmd-grid">
+        <div class="cmd-item">prompt</div>
+        <div class="cmd-item">status</div>
+        <div class="cmd-item">sandbox</div>
+        <div class="cmd-item">doctor</div>
+        <div class="cmd-item">agents</div>
+        <div class="cmd-item">mcp</div>
+        <div class="cmd-item">skills</div>
+        <div class="cmd-item">system-prompt</div>
+        <div class="cmd-item">login / logout</div>
+        <div class="cmd-item">init</div>
+        <div class="cmd-item">bootstrap-plan</div>
+        <div class="cmd-item">dump-manifests</div>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:2; margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> REPL スラッシュコマンド（主要）</span>
+      <div class="grid-2" style="gap:1rem;">
+        <div>
+          <p style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); margin-bottom:0.5rem;">セッション / 可視性</p>
+          <div class="cmd-grid" style="grid-template-columns:repeat(auto-fill, minmax(7rem, 1fr));">
+            <div class="cmd-item">/help</div>
+            <div class="cmd-item">/status</div>
+            <div class="cmd-item">/cost</div>
+            <div class="cmd-item">/session</div>
+            <div class="cmd-item">/doctor</div>
+            <div class="cmd-item">/context</div>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); margin-bottom:0.5rem;">Git / ワークスペース</p>
+          <div class="cmd-grid" style="grid-template-columns:repeat(auto-fill, minmax(7rem, 1fr));">
+            <div class="cmd-item">/diff</div>
+            <div class="cmd-item">/commit</div>
+            <div class="cmd-item">/pr</div>
+            <div class="cmd-item">/branch</div>
+            <div class="cmd-item">/memory</div>
+            <div class="cmd-item">/hooks</div>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); margin-bottom:0.5rem;">エージェント / プラグイン</p>
+          <div class="cmd-grid" style="grid-template-columns:repeat(auto-fill, minmax(7rem, 1fr));">
+            <div class="cmd-item">/agents</div>
+            <div class="cmd-item">/subagent</div>
+            <div class="cmd-item">/skills</div>
+            <div class="cmd-item">/plugin</div>
+            <div class="cmd-item">/mcp</div>
+            <div class="cmd-item">/team</div>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); margin-bottom:0.5rem;">分析 / レビュー</p>
+          <div class="cmd-grid" style="grid-template-columns:repeat(auto-fill, minmax(7rem, 1fr));">
+            <div class="cmd-item">/review</div>
+            <div class="cmd-item">/insights</div>
+            <div class="cmd-item">/security-review</div>
+            <div class="cmd-item">/telemetry</div>
+            <div class="cmd-item">/cron</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:3; margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> セッション管理 & 設定ファイル</span>
+      <div class="grid-2">
+        <div>
+          <h3>セッション操作</h3>
+          <div class="ve-code-block">
+            <pre><code># セッション再開
+./target/debug/claw --resume latest
+./target/debug/claw --resume latest /status /diff
+
+# セッション保存先
+.claw/sessions/</code></pre>
+          </div>
+        </div>
+        <div>
+          <h3>設定ファイルの解決順序</h3>
+          <ol style="color:var(--text-dim); font-size:0.875rem; padding-left:1.25rem; margin:0.5rem 0 0;">
+            <li><code>~/.claw.json</code></li>
+            <li><code>~/.config/claw/settings.json</code></li>
+            <li><code>&lt;repo&gt;/.claw.json</code></li>
+            <li><code>&lt;repo&gt;/.claw/settings.json</code></li>
+            <li><code>&lt;repo&gt;/.claw/settings.local.json</code></li>
+          </ol>
+          <p style="font-size:0.8125rem; margin-top:0.5rem;">後のエントリが前のエントリを上書きします。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. ロードマップ -->
+    <section id="roadmap" class="sec-head">7 — ロードマップ</section>
+    <div class="ve-card" style="--i:0; margin-bottom:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> "Clawable" な実行ランタイムへ</span>
+      <p style="color:var(--text-dim); font-size:0.875rem; margin-bottom:1.25rem;">主要ユーザーは<strong>フック・プラグイン・セッション・チャンネルイベント経由で接続されたclaws</strong>。人間ファーストの端末の仮定を排除し、機械可読性を向上させる。</p>
+      <div class="roadmap-phase">
+        <div class="phase-num">1</div>
+        <div class="phase-body">
+          <h4>Reliable Worker Boot</h4>
+          <p>ワーカーの ready-handshake ライフサイクル、trust プロンプト自動解決、構造化セッション制御 API</p>
+        </div>
+      </div>
+      <div class="roadmap-phase">
+        <div class="phase-num">2</div>
+        <div class="phase-body">
+          <h4>Event-Native Clawhip Integration</h4>
+          <p>型付きレーンイベントスキーマ（<code>lane.started</code> 〜 <code>lane.failed</code>）、失敗タクソノミー、アクショナブルサマリー圧縮</p>
+        </div>
+      </div>
+      <div class="roadmap-phase">
+        <div class="phase-num">3</div>
+        <div class="phase-body">
+          <h4>Branch/Test Awareness &amp; Auto-Recovery</h4>
+          <p>ステールブランチ検出、一般的な失敗からの自動回復レシピ、グリーンレベルコントラクト</p>
+        </div>
+      </div>
+      <div class="roadmap-phase">
+        <div class="phase-num">4</div>
+        <div class="phase-body">
+          <h4>Claws-First Task Execution</h4>
+          <p>構造化タスクパケット形式、自律コーディング用ポリシーエンジン、claw ネイティブダッシュボード / レーンボード</p>
+        </div>
+      </div>
+      <div class="roadmap-phase">
+        <div class="phase-num">5</div>
+        <div class="phase-body">
+          <h4>Plugin &amp; MCP Lifecycle Maturity</h4>
+          <p>ファーストクラスのプラグイン/MCP ライフサイクルコントラクト、degraded-startup 構造化レポート、エンドツーエンドパリティ</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> MVP 成功基準</span>
+      <ul style="margin:0; padding-left:1.25rem; color:var(--text-dim); font-size:0.875rem;">
+        <li>claw がワーカーを起動し、準備完了を確実に知れる</li>
+        <li>claws がタスクを誤ってシェルに入力しなくなる</li>
+        <li>ステールブランチの失敗がデバッグ時間を無駄にする前に特定される</li>
+        <li>clawhip が機械的状態を報告する（tmux prose ではなく）</li>
+        <li>MCP/プラグインの起動失敗が分類・表面化される</li>
+        <li>コーディングレーンが人間の監視なしに一般的な起動・ブランチ問題から自己回復できる</li>
+      </ul>
+    </div>
+
+    <div style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border); display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+      <a href="https://github.com/ultraworkers/claw-code" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:0.4rem; font-size:0.8125rem; color:var(--chart-1); text-decoration:none; font-weight:600;">GitHub: ultraworkers/claw-code →</a>
+      <a href="https://discord.gg/5TUQKqFWd" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:0.4rem; font-size:0.8125rem; color:var(--text-dim); text-decoration:none;">UltraWorkers Discord</a>
+    </div>
+    <p style="margin-top:1rem; font-size:0.75rem; color:var(--text-dim); max-width:42rem;">本リポジトリは Claude Code の元ソースの所有を主張せず、<strong>Anthropic との非提携・非推奨</strong>である旨は公式 README に明記されています。</p>
+  </div><!-- /.main -->
+</div><!-- /.wrap -->
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

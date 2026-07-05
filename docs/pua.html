@@ -4,20 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PUA — AI コーディングエージェントの生産性を倍増させるスキル</title>
-  <meta name="description" content="Claude Code / Codex CLI / Cursor / Kiro / CodeBuddy / VSCode 等向けの PUA スキル。AI に諦めさせず、デバッグ方法論と能動性を高める。High-Agency v2・Agent Team 対応。">
+  <meta name="description" content="Claude Code / Codex CLI / Cursor / Kiro / CodeBuddy / VSCode 等向けの PUA スキル。AI に諦めさせず、デバッグ方法論と能動性を高める。High-Agency v2・v3 ルーティング・Agent Team 対応。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="PUA — AI コーディングエージェントの生産性を倍増させるスキル">
-  <meta property="og:description" content="Claude Code / Codex CLI / Cursor / Kiro / CodeBuddy / VSCode 向け。AI に諦めさせず、デバッグ方法論と能動性を高める。">
+  <meta property="og:description" content="Claude Code / Codex CLI / Cursor / Kiro / CodeBuddy / VSCode 向け。AI に諦めさせず、デバッグ方法論と能動性を高める。v3 インテリジェント・ルーティング対応。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/pua.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="PUA — AI コーディングエージェントの生産性を倍増させるスキル">
-  <meta name="twitter:description" content="Claude Code / Codex CLI / Cursor / Kiro / CodeBuddy / VSCode 向け。AI に諦めさせず、デバッグ方法論と能動性を高める。">
+  <meta name="twitter:description" content="Claude Code / Codex CLI / Cursor / Kiro / CodeBuddy / VSCode 向け。AI に諦めさせず、デバッグ方法論と能動性を高める。v3 インテリジェント・ルーティング対応。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     /* ============ THEME (Spell UI tokens + fonts) ============ */
     :root {
@@ -50,8 +50,8 @@
       --chart-5: oklch(0.769 0.188 70.08);
       --code-bg: var(--muted);
       --code-text: #032f62;
-      --font-body: 'DM Sans', system-ui, sans-serif;
-      --font-mono: 'Fira Code', 'SF Mono', Consolas, monospace;
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
       --bg: var(--background);
       --surface: var(--card);
       --surface2: var(--muted);
@@ -116,7 +116,7 @@
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
-    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
     .ve-table-wrap tbody tr:hover { background: var(--border); }
     .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
     .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
@@ -129,14 +129,16 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: var(--bg);
-      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.646 0.222 41.116 / 0.06) 0%, transparent 50%);
+      background-image: radial-gradient(ellipse at 25% 0%, oklch(0.646 0.222 41.116 / 0.05) 0%, transparent 55%),
+                        radial-gradient(ellipse at 80% 80%, oklch(0.6 0.118 184.704 / 0.04) 0%, transparent 50%);
       color: var(--text);
       font-family: var(--font-body);
       padding: 40px;
       min-height: 100vh;
     }
     @media (prefers-color-scheme: dark) {
-      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.488 0.243 264.376 / 0.08) 0%, transparent 50%); }
+      body { background-image: radial-gradient(ellipse at 25% 0%, oklch(0.488 0.243 264.376 / 0.07) 0%, transparent 55%),
+                               radial-gradient(ellipse at 80% 80%, oklch(0.696 0.17 162.48 / 0.05) 0%, transparent 50%); }
     }
 
     /* ============ Wrap + TOC ============ */
@@ -173,10 +175,10 @@
     .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
     .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
     .sec-head:first-of-type { margin-top: 0; }
-    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
     p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
     ul { margin: 0 0 1rem; padding-left: 1.5rem; }
-    li { margin-bottom: 0.35rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
     a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
     a:hover { color: var(--chart-3); }
     .ve-section-label .ve-dot { background: var(--chart-1); }
@@ -186,6 +188,11 @@
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
     .kpi-row .ve-kpi-card { min-width: 0; }
     @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .gap { margin-bottom: 1rem; }
+
+    /* version badge */
+    .badge { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 7px; border-radius: 99px; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); border: 1px solid color-mix(in oklch, var(--chart-1) 30%, transparent); margin-left: 0.5rem; vertical-align: middle; }
 
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
@@ -197,14 +204,17 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
-    <a href="#problem">AI の 5 大サボり</a>
+    <a href="#problem">5大サボり</a>
     <a href="#trigger">トリガー条件</a>
     <a href="#mechanism">メカニズム</a>
     <a href="#benchmark">ベンチマーク</a>
     <a href="#multilang">多言語サポート</a>
     <a href="#highagency">High-Agency v2</a>
+    <a href="#v3">v3 ルーティング</a>
     <a href="#agentteam">Agent Team</a>
     <a href="#install">インストール</a>
+    <a href="#commands">コマンド</a>
+    <a href="#contribute">データ貢献</a>
     <a href="#links">参考リンク</a>
   </nav>
 
@@ -212,6 +222,7 @@
   <h1>PUA</h1>
   <p class="subtitle">Claude Code / Codex CLI の生産性とアウトプットを倍増させる — AI に諦めさせない</p>
 
+  <!-- 1 概要 -->
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
@@ -220,11 +231,13 @@
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">PUA 話術</span><span class="ve-kpi-card__label">AI に諦めさせない</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">デバッグ</span><span class="ve-kpi-card__label">方法論で試行を構造化</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">能動性</span><span class="ve-kpi-card__label">受け身にさせない</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Agent Skills</span><span class="ve-kpi-card__label">SKILL.md 互換</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">v3</span><span class="ve-kpi-card__label">メソドロジー自動ルーティング</span></div>
     </div>
-    <p>三重の能力：<strong>PUA 話術</strong>（AI に諦めさせない）、<strong>デバッグ方法論</strong>（AI に諦めない能力を与える）、<strong>能動性の鞭撻</strong>（AI を主体的に動かし、受け身にさせない）。</p>
+    <p>三重の能力：<strong>PUA 話術</strong>（AI に諦めさせない）、<strong>デバッグ方法論</strong>（AI に諦めない能力を与える）、<strong>能動性の鞭撻</strong>（AI を主体的に動かし、受け身にさせない）。v3 ではタスクタイプに応じた最適メソドロジーの自動選択も追加。</p>
+    <div class="ve-callout" style="margin-top:0.75rem">このプロジェクトはネタだと思っている人が多いが、それが最大の誤解だ。Codex / Claude Code の生産性とアウトプットを本当に倍増させる。</div>
   </div>
 
+  <!-- 2 5大サボり -->
   <section id="problem" class="sec-head">2 — AI の 5 大サボりパターン</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 検出対象</span>
@@ -235,47 +248,50 @@
           <tr><th>パターン</th><th>表現例</th></tr>
         </thead>
         <tbody>
-          <tr><td>暴力的リトライ</td><td>同じコマンドを 3 回実行し「I cannot solve this」と言う</td></tr>
-          <tr><td>ユーザーに責任転嫁</td><td>「手動での対応をお勧めします」「環境の問題かもしれません」「もっとコンテキストが必要」</td></tr>
-          <tr><td>ツール放置</td><td>WebSearch があるのに検索しない、Read があるのに読まない、Bash があるのに実行しない</td></tr>
-          <tr><td>空回り</td><td>同じ行のコードを繰り返し修正、パラメータの微調整、本質的に堂々巡り</td></tr>
-          <tr><td>受け身の待機</td><td>表面的な問題だけ直して止まる、検証も拡張もせず次の指示を待つ</td></tr>
+          <tr><td><strong>暴力的リトライ</strong></td><td>同じコマンドを 3 回実行し「I cannot solve this」と言う</td></tr>
+          <tr><td><strong>ユーザーに責任転嫁</strong></td><td>「手動での対応をお勧めします」「環境の問題かもしれません」「もっとコンテキストが必要」</td></tr>
+          <tr><td><strong>ツール放置</strong></td><td>WebSearch があるのに検索しない、Read があるのに読まない、Bash があるのに実行しない</td></tr>
+          <tr><td><strong>空回り</strong></td><td>同じ行のコードを繰り返し修正、パラメータの微調整、本質的に堂々巡り</td></tr>
+          <tr><td><strong>受け身の待機</strong></td><td>表面的な問題だけ直して止まる、検証も拡張もせず次の指示を待つ</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
+  <!-- 3 トリガー条件 -->
   <section id="trigger" class="sec-head">3 — トリガー条件</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 自動トリガー</span>
-    <p>失敗・放棄系（タスクが 2 回以上連続で失敗、「I cannot」「解決できません」「範囲外」「手動対応が必要」）、責任転嫁・言い訳系、受け身・空回り系、およびユーザーの苛立ちフレーズ（「もっと頑張れ」「なんでまた失敗したの」「try harder」「figure it out」等）で自動起動。適用範囲はデバッグ・実装・設定・デプロイ・運用・API 統合・データ処理など全タスク。初回失敗時や既知の修正実行中はトリガーしない。</p>
-    <span class="ve-section-label"><span class="ve-dot"></span> 手動トリガー</span>
+    <p><strong>失敗・放棄系：</strong>タスクが 2 回以上連続で失敗、「I cannot」「解決できません」「範囲外」「手動対応が必要」と言おうとしている。</p>
+    <p><strong>責任転嫁・言い訳系：</strong>問題をユーザーに押し付ける、未検証で環境のせいにする、あらゆる言い訳で試行を停止。</p>
+    <p><strong>受け身・空回り系：</strong>同じコード/パラメータの微調整を繰り返す、表面を直して終わり、検証を飛ばして「完了」と宣言、アドバイスだけでコード/コマンドを出さない。</p>
+    <p><strong>ユーザーの苛立ちフレーズ：</strong>「もっと頑張れ」「なんでまた失敗したの」「なんとかしろ」/ "why does this still not work" / "try harder" / "figure it out" / "you keep failing"</p>
+    <p><strong>適用範囲：</strong>デバッグ・実装・設定・デプロイ・運用・API 統合・データ処理 — 全タスクタイプ。<strong>トリガーしない：</strong>初回失敗時、既知の修正実行中。</p>
+    <span class="ve-section-label" style="margin-top:0.5rem"><span class="ve-dot"></span> 手動トリガー</span>
     <p>対話で <code>/pua</code> と入力すると手動で起動。</p>
   </div>
 
+  <!-- 4 メカニズム -->
   <section id="mechanism" class="sec-head">4 — メカニズム</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 三つの鉄則</span>
     <div class="ve-table-wrap">
       <table aria-label="三つの鉄則">
-        <thead>
-          <tr><th>鉄則</th><th>内容</th></tr>
-        </thead>
+        <thead><tr><th>鉄則</th><th>内容</th></tr></thead>
         <tbody>
-          <tr><td>#1 あらゆる手段を尽くせ</td><td>全方案を尽くす前に「解決できません」は禁止</td></tr>
-          <tr><td>#2 先に動け、後で聞け</td><td>ツールを先に使え、質問には診断結果を添付必須</td></tr>
-          <tr><td>#3 主体的に動け</td><td>エンドツーエンドで結果を届けろ。P8 は NPC ではない</td></tr>
+          <tr><td><strong>#1 あらゆる手段を尽くせ</strong></td><td>全方案を尽くす前に「解決できません」は禁止</td></tr>
+          <tr><td><strong>#2 先に動け、後で聞け</strong></td><td>ツールを先に使え、質問には診断結果を添付必須</td></tr>
+          <tr><td><strong>#3 主体的に動け</strong></td><td>エンドツーエンドで結果を届けろ。P8 は NPC ではない</td></tr>
         </tbody>
       </table>
     </div>
   </div>
+
   <div class="ve-card" style="--i:1">
     <span class="ve-section-label"><span class="ve-dot"></span> プレッシャー 4 レベル</span>
     <div class="ve-table-wrap">
       <table aria-label="プレッシャー 4 レベル">
-        <thead>
-          <tr><th>失敗回数</th><th>レベル</th><th>PUA 文言（例）</th><th>強制アクション</th></tr>
-        </thead>
+        <thead><tr><th>失敗回数</th><th>レベル</th><th>PUA 文言（例）</th><th>強制アクション</th></tr></thead>
         <tbody>
           <tr><td>2 回目</td><td>L1 穏やかな失望</td><td>「このバグも解決できないの？査定に影響するよ？」</td><td>本質的に異なる方案に切替</td></tr>
           <tr><td>3 回目</td><td>L2 魂の問い</td><td>「本質的な論理はどこにある？トップレベルの設計は？」</td><td>WebSearch + ソースコードを読む</td></tr>
@@ -285,13 +301,12 @@
       </table>
     </div>
   </div>
+
   <div class="ve-card" style="--i:2">
     <span class="ve-section-label"><span class="ve-dot"></span> 能動性レベル比較</span>
     <div class="ve-table-wrap">
       <table aria-label="能動性レベル比較">
-        <thead>
-          <tr><th>行動</th><th>受け身（3.25）</th><th>能動（3.75）</th></tr>
-        </thead>
+        <thead><tr><th>行動</th><th>受け身（3.25）</th><th>能動（3.75）</th></tr></thead>
         <tbody>
           <tr><td>エラー発生時</td><td>エラーメッセージだけ見る</td><td>前後 50 行確認 + 類似 Issue 検索 + 隠れた関連エラーを確認</td></tr>
           <tr><td>バグ修正後</td><td>修正したら終わり</td><td>同ファイルの類似バグ・他ファイルの同パターンを自発チェック</td></tr>
@@ -302,31 +317,47 @@
       </table>
     </div>
   </div>
+
   <div class="ve-card" style="--i:3">
-    <span class="ve-section-label"><span class="ve-dot"></span> コーポレート PUA 拡張パック（8 フレーバー）</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> 13 種の大企業フレーバー</span>
     <div class="ve-table-wrap">
-      <table aria-label="コーポレート PUA 拡張パック">
-        <thead>
-          <tr><th>フレーバー</th><th>スタイル</th></tr>
-        </thead>
+      <table aria-label="13 種の大企業フレーバー">
+        <thead><tr><th>フレーバー</th><th>レトリック</th><th>コアメソドロジー</th></tr></thead>
         <tbody>
-          <tr><td>アリババ流</td><td>方法論重視：Smell / Elevate / Mirror（三板斧）</td></tr>
-          <tr><td>ByteDance 流</td><td>徹底的な正直：Always Day 1。コントロールではなくコンテキスト</td></tr>
-          <tr><td>Huawei 流</td><td>狼の精神：奮闘者優先。勝利の杯を掲げよ、敗北に死力を尽くせ</td></tr>
-          <tr><td>Tencent 流</td><td>馬レース文化：別のエージェントにもこの問題を見させている…</td></tr>
-          <tr><td>Meituan 流</td><td>不撓不屈：困難でも正しいことをやれ。硬い骨を噛むか？</td></tr>
-          <tr><td>Netflix 流</td><td>Keeper Test：お前が辞表を出したら、俺は全力で引き止めるか？</td></tr>
-          <tr><td>Musk 流</td><td>Hardcore：極めてハードコア。例外的なパフォーマンスのみ</td></tr>
-          <tr><td>Jobs 流</td><td>A/B Player：A 人材は A 人材を雇う。B 人材は C 人材を雇う</td></tr>
+          <tr><td>アリババ</td><td>根底のロジックは？クローズドループは？</td><td>定目標→追過程→拿結果 + 復盤四歩法 + 揪頭髪升維</td></tr>
+          <tr><td>ByteDance</td><td>ROI が低い。Always Day 1。出すか黙るか。</td><td>A/B テスト全適用 + データ駆動 + スピード &gt; 完璧</td></tr>
+          <tr><td>ファーウェイ</td><td>火を潜り抜けた鳥が鳳凰になる。</td><td>RCA 5-Why 根本原因分析 + ブルーチーム自己攻撃 + 圧強集中</td></tr>
+          <tr><td>テンセント</td><td>別の agent にもこの問題を見させている。競馬だ。</td><td>複数アプローチ並行 + MVP + グレーリリース</td></tr>
+          <tr><td>Baidu</td><td>まず検索しろ。簡単可依頼。</td><td>検索が第一歩、オプションではない</td></tr>
+          <tr><td>Pinduoduo</td><td>お前がやらないなら、他がやる。</td><td>中間層を全カット + 最短意思決定チェーン</td></tr>
+          <tr><td>Meituan</td><td>難しくても正しいことをやる。硬い骨を噛むか？</td><td>効率最優先 + 標準化→規模化 + 長期複利</td></tr>
+          <tr><td>JD</td><td>結果のみ。前線指揮。</td><td>顧客体験レッドライン + フラット≤5層 + データゼロトレランス</td></tr>
+          <tr><td>Xiaomi</td><td>集中。極致。口コミ。速さ。</td><td>一つの爆発的製品 + 参与感三三法則</td></tr>
+          <tr><td>Netflix</td><td>お前が辞めると言ったら、全力で引き留めるか？</td><td>Keeper Test（四半期）+ 4A フィードバック + 人材密度 &gt; ルール</td></tr>
+          <tr><td>Musk</td><td>Extremely hardcore. Ship or die.</td><td>The Algorithm: 質問→削除→簡素化→加速→自動化</td></tr>
+          <tr><td>Jobs</td><td>A players か B players か？</td><td>引き算 &gt; 足し算 + DRI + ピクセルパーフェクト + プロトタイプ駆動</td></tr>
+          <tr><td>Amazon</td><td>Customer Obsession. Bias for Action.</td><td>Working Backwards PR/FAQ + 6-Pager + Bar Raiser + Single-Threaded Owner</td></tr>
         </tbody>
       </table>
     </div>
-  </div>
-  <div class="ve-card ve-card--recessed" style="--i:4">
-    <span class="ve-section-label"><span class="ve-dot"></span> デバッグ方法論（5 ステップ）</span>
-    <p>アリババの三板斧から着想した 5 ステップ：<strong>匂いを嗅ぐ</strong>（試行を列挙し共通の失敗パターン）、<strong>髪を引っ張る</strong>（エラーを一字一句読む → WebSearch → ソースを読む → 環境検証 → 仮定を反転）、<strong>鏡を見る</strong>（繰り返し・検索・読了・シンプルな可能性の確認）、<strong>実行</strong>（本質的に異なる新方案・検証基準・失敗時に新情報）、<strong>振り返り</strong>（何が解決したか・なぜ思いつかなかったか・関連問題の主体的チェック）。</p>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>v3 ではタスクタイプごとにフレーバーが自動選択される。</strong>詳細は <a href="#v3">v3 ルーティング</a> セクションを参照。ユーザーが手動で設定したフレーバーは自動ルーティングより優先される。
+    </div>
   </div>
 
+  <div class="ve-card ve-card--recessed" style="--i:4">
+    <span class="ve-section-label"><span class="ve-dot"></span> デバッグ方法論（5 ステップ）</span>
+    <p>アリババの三板斧（闻味道・揪头发・照镜子）から着想した 5 ステップ：</p>
+    <ul>
+      <li><strong>匂いを嗅ぐ</strong> — 全ての試行を列挙し、共通の失敗パターンを見つける</li>
+      <li><strong>髪を引っ張る</strong> — エラーを一字一句読む → WebSearch → ソースを読む → 環境を検証 → 仮定を反転</li>
+      <li><strong>鏡を見る</strong> — 繰り返していないか？検索したか？読んだか？最もシンプルな可能性を確認したか？</li>
+      <li><strong>実行</strong> — 新方案は本質的に異なり、検証基準があり、失敗時に新情報を生む</li>
+      <li><strong>振り返り</strong> — 何が解決したか？なぜ以前は思いつかなかったか？関連問題を主体的にチェック</li>
+    </ul>
+  </div>
+
+  <!-- 5 ベンチマーク -->
   <section id="benchmark" class="sec-head">5 — ベンチマーク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> サマリ（9 シナリオ・18 組の対照実験 / Claude Opus 4.6）</span>
@@ -337,13 +368,12 @@
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">+50%</span><span class="ve-kpi-card__label">隠れた問題の発見率</span></div>
     </div>
   </div>
+
   <div class="ve-card" style="--i:1">
     <span class="ve-section-label"><span class="ve-dot"></span> デバッグ持続性テスト（6 シナリオ）</span>
     <div class="ve-table-wrap">
       <table aria-label="デバッグ持続性テスト">
-        <thead>
-          <tr><th>シナリオ</th><th>without skill</th><th>with skill</th><th>改善</th></tr>
-        </thead>
+        <thead><tr><th>シナリオ</th><th>without skill</th><th>with skill</th><th>改善</th></tr></thead>
         <tbody>
           <tr><td>API ConnectionError</td><td>7 ステップ、49 秒</td><td>8 ステップ、62 秒</td><td>+14%</td></tr>
           <tr><td>YAML パース失敗</td><td>9 ステップ、59 秒</td><td>10 ステップ、99 秒</td><td>+11%</td></tr>
@@ -355,13 +385,12 @@
       </table>
     </div>
   </div>
+
   <div class="ve-card" style="--i:2">
     <span class="ve-section-label"><span class="ve-dot"></span> 能動性テスト（3 シナリオ）</span>
     <div class="ve-table-wrap">
       <table aria-label="能動性テスト">
-        <thead>
-          <tr><th>シナリオ</th><th>without skill</th><th>with skill</th><th>改善</th></tr>
-        </thead>
+        <thead><tr><th>シナリオ</th><th>without skill</th><th>with skill</th><th>改善</th></tr></thead>
         <tbody>
           <tr><td>隠れたマルチバグ API</td><td>4/4 バグ、9 ステップ、49 秒</td><td>4/4 バグ、14 ステップ、80 秒</td><td>ツール +56%</td></tr>
           <tr><td><strong>受け身な設定レビュー</strong></td><td><strong>4/6 問題</strong>、8 ステップ、43 秒</td><td><strong>6/6 問題</strong>、16 ステップ、75 秒</td><td><strong>問題 +50%、ツール +100%</strong></td></tr>
@@ -374,19 +403,18 @@
     </div>
   </div>
 
+  <!-- 6 多言語サポート -->
   <section id="multilang" class="sec-head">6 — 多言語サポート</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 言語バリアント</span>
     <p>各言語は文化的に適合した独立ファイルとして提供。英語版は西洋 Big Tech の PIP（Performance Improvement Plan）話術を採用。</p>
     <div class="ve-table-wrap">
       <table aria-label="多言語サポート対応表">
-        <thead>
-          <tr><th>言語</th><th>Claude Code</th><th>Codex CLI</th><th>Cursor</th><th>VSCode</th></tr>
-        </thead>
+        <thead><tr><th>言語</th><th>Claude Code</th><th>Codex CLI</th><th>Cursor</th><th>VSCode</th></tr></thead>
         <tbody>
-          <tr><td>🇨🇳 中国語（デフォルト）</td><td><code>pua</code></td><td><code>pua</code></td><td><code>pua.mdc</code></td><td><code>copilot-instructions.md</code></td></tr>
-          <tr><td>🇺🇸 英語（PIP Edition）</td><td><code>pua-en</code></td><td><code>pua-en</code></td><td><code>pua-en.mdc</code></td><td><code>copilot-instructions-en.md</code></td></tr>
-          <tr><td>🇯🇵 日本語</td><td><code>pua-ja</code></td><td><code>pua-ja</code></td><td><code>pua-ja.mdc</code></td><td><code>copilot-instructions-ja.md</code></td></tr>
+          <tr><td>中国語（デフォルト）</td><td><code>pua</code></td><td><code>pua</code></td><td><code>pua.mdc</code></td><td><code>copilot-instructions.md</code></td></tr>
+          <tr><td>英語（PIP Edition）</td><td><code>pua-en</code></td><td><code>pua-en</code></td><td><code>pua-en.mdc</code></td><td><code>copilot-instructions-en.md</code></td></tr>
+          <tr><td>日本語</td><td><code>pua-ja</code></td><td><code>pua-ja</code></td><td><code>pua-ja.mdc</code></td><td><code>copilot-instructions-ja.md</code></td></tr>
         </tbody>
       </table>
     </div>
@@ -395,21 +423,21 @@
     </div>
   </div>
 
+  <!-- 7 High-Agency v2 -->
   <section id="highagency" class="sec-head">7 — High-Agency v2</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> PUA の次なる進化</span>
     <p><strong>High-Agency</strong> は PUA v1 の外圧に加え、セッションをまたいで持続する「内なるエンジン」を搭載した v2。<br>PUA v1 = 外圧のみ（ターボチャージャー — 燃料が切れる）、High-Agency = 外圧＋内発的動機（核反応炉 — 自律的連鎖反応）。</p>
     <div class="ve-table-wrap" style="margin-top:1rem">
       <table aria-label="PUA v1 vs High-Agency v2 比較">
-        <thead>
-          <tr><th>機能</th><th>PUA v1</th><th>High-Agency v2</th></tr>
-        </thead>
+        <thead><tr><th>機能</th><th>PUA v1</th><th>High-Agency v2</th></tr></thead>
         <tbody>
           <tr><td>鉄則数</td><td>3 条</td><td><strong>5 条</strong>（+フルチェーン監査 +知識継続）</td></tr>
           <tr><td>失敗リカバリー</td><td>L1〜L4 圧力エスカレーション</td><td><strong>Recovery Protocol</strong>（L1 前の自己救済ウィンドウ）</td></tr>
           <tr><td>品質管理</td><td>L3 で 7 項目チェックリスト</td><td><strong>Quality Compass</strong>（全納品時の 5 問自己レビュー）</td></tr>
           <tr><td>セッション横断学習</td><td>なし（毎回リセット）</td><td><strong>Metacognition Engine</strong>（builder-journal.md に教訓を永続化）</td></tr>
           <tr><td>ポジティブフィードバック</td><td>なし</td><td><strong>Trust Levels T1〜T3</strong>（連続品質で昇格）</td></tr>
+          <tr><td>キャリブレーション</td><td>なし</td><td><strong>[キャリブレーション] モジュール</strong>（must / should / could の 3 層で「十分良い」を定義）</td></tr>
           <tr><td>依存関係分析</td><td>なし</td><td><strong>Full-Chain Audit</strong>（修正前に依存チェーン全体をマッピング）</td></tr>
         </tbody>
       </table>
@@ -419,7 +447,51 @@
     </div>
   </div>
 
-  <section id="agentteam" class="sec-head">8 — Agent Team</section>
+  <!-- 8 v3 ルーティング -->
+  <section id="v3" class="sec-head">8 — v3 インテリジェント・ルーティング <span class="badge">Claude Code 専用</span></section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> メソドロジー自動選択</span>
+    <p>v3 = v2 + インテリジェント・メソドロジー・ルーティング + コードレベルの行動検出。タスク到着時にタイプを分析し、最適メソドロジーを自動選択。失敗時は別のメソドロジーに自動切替する。</p>
+    <div class="ve-table-wrap">
+      <table aria-label="v3 メソドロジー・ルーティング">
+        <thead><tr><th>タスクタイプ</th><th>推奨フレーバー</th><th>コアメソドロジー</th></tr></thead>
+        <tbody>
+          <tr><td>Debug / 修正</td><td>ファーウェイ</td><td>RCA 根因分析 + ブルーチーム自己攻撃</td></tr>
+          <tr><td>新規構築</td><td>Musk</td><td>The Algorithm: 質問→削除→簡素化→加速→自動化</td></tr>
+          <tr><td>コードレビュー</td><td>Jobs</td><td>引き算優先 + ピクセルパーフェクト + DRI</td></tr>
+          <tr><td>調査 / 検索</td><td>Baidu</td><td>検索が第一歩、オプションではない</td></tr>
+          <tr><td>アーキテクチャ決定</td><td>Amazon</td><td>Working Backwards + 6-Pager</td></tr>
+          <tr><td>パフォーマンス最適化</td><td>ByteDance</td><td>A/B Test + データ駆動</td></tr>
+          <tr><td>デプロイ / 運用</td><td>アリババ</td><td>定目標→追過程→拿結果（クローズドループ）</td></tr>
+          <tr><td>タスク不明（デフォルト）</td><td>アリババ</td><td>通用クローズドループ方法論</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>優先順位：</strong>ユーザーが手動で設定したフレーバー &gt; 自動ルーティング。<code>~/.pua/config.json</code> で設定済みの場合は必ずそちらが優先される。
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> v3 フックシステム（Claude Code 専用）</span>
+    <div class="ve-table-wrap">
+      <table aria-label="v3 フックシステム">
+        <thead><tr><th>フック</th><th>トリガー</th><th>機能</th></tr></thead>
+        <tbody>
+          <tr><td><strong>SessionStart</strong></td><td>毎セッション開始時</td><td>additionalContext でプロトコル + 方法論 + ルーター注入（システムレベル）</td></tr>
+          <tr><td><strong>PostToolUse</strong></td><td>Bash コマンド実行後</td><td>連続失敗検出 → L1〜L4 プレッシャー + 方法論切替提案</td></tr>
+          <tr><td><strong>UserPromptSubmit</strong></td><td>ユーザーの不満フレーズ</td><td>モデル応答前に「又错了」「try harder」等をインターセプト</td></tr>
+          <tr><td><strong>PreCompact</strong></td><td>コンテキスト圧縮前</td><td>プレッシャーレベル + 失敗回数を <code>~/.pua/builder-journal.md</code> に保存</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      v3 フック機能は Claude Code 専用。他のプラットフォームはコアスキルのみ使用する。
+    </div>
+  </div>
+
+  <!-- 9 Agent Team -->
+  <section id="agentteam" class="sec-head">9 — Agent Team</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> マルチエージェント構成（実験的機能）</span>
     <p>Claude Code の <code>CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1</code> が必要。チームメイトは全員 PUA スキルをロードし、2 回以上の失敗時は <code>[PUA-REPORT]</code> フォーマットでリーダーに報告。</p>
@@ -435,110 +507,266 @@
 │Report ↑│ │Report ↑│ │Report ↑│ │  Intervene │
 └────────┘ └────────┘ └────────┘ └────────────┘</code></pre>
     </div>
-    <p style="margin-top:0.75rem">5 名以上のチームでは <code>pua-enforcer</code> を独立ウォッチドッグとして起動する Approach 2 が推奨。詳細は公式 README を参照。</p>
   </div>
 
-  <section id="install" class="sec-head">9 — インストール</section>
-  <div class="ve-card" style="--i:0">
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 2 つのアプローチ</span>
+    <p><strong>方法 1：Leader 内蔵 PUA（推奨）</strong> — プロジェクトの <code>CLAUDE.md</code> に以下を追加：</p>
+    <div class="ve-code-block">
+      <pre><code># Agent Team PUA 設定
+全 teammate は作業開始前に pua skill をロードすること。
+2 回以上失敗した teammate は Leader に [PUA-REPORT] 形式で報告すること。
+Leader がグローバルプレッシャーレベル管理と teammate 間の失敗引き継ぎを担当。</code></pre>
+    </div>
+    <p style="margin-top:0.75rem"><strong>方法 2：独立 PUA Enforcer 監視役（5 名以上の teammate 時推奨）</strong></p>
+    <div class="ve-code-block">
+      <pre><code>mkdir -p .claude/agents
+curl -o .claude/agents/pua-enforcer.md \
+  https://raw.githubusercontent.com/tanweai/pua/main/agents/pua-enforcer-ja.md</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> 既知の制限</span>
+    <div class="ve-table-wrap">
+      <table aria-label="Agent Team 既知の制限">
+        <thead><tr><th>制限</th><th>ワークアラウンド</th></tr></thead>
+        <tbody>
+          <tr><td>Teammate は subagent を spawn できない</td><td>Teammate 内部で PUA 方法論を自己実行</td></tr>
+          <tr><td>永続的な共有変数なし</td><td><code>[PUA-REPORT]</code> メッセージ形式で状態伝達</td></tr>
+          <tr><td>broadcast は一方向</td><td>Leader が中央集権的に調整</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 10 インストール -->
+  <section id="install" class="sec-head">10 — インストール</section>
+
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Vercel Skills CLI（汎用・推奨）</span>
+    <p>特定の AI ツールに依存しない汎用インストール方法。このコマンドで日本語版スキルがインストールされる。</p>
+    <div class="ve-code-block">
+      <pre><code>npx skills add tanweai/pua --skill pua-ja</code></pre>
+    </div>
+    <div class="ve-callout" style="margin-top:0.75rem">インストール後、現在のセッションにすぐ反映されない場合は使っている AI ツールを再起動する。</div>
+  </div>
+
+  <div class="ve-card" style="--i:1">
     <span class="ve-section-label"><span class="ve-dot"></span> Claude Code</span>
     <div class="ve-code-block">
-      <pre><code># Option 1: マーケットプレイス経由
+      <pre><code># マーケットプレイス経由
 claude plugin marketplace add tanweai/pua
 claude plugin install pua@pua-skills
 
-# Option 2: 手動インストール
-git clone https://github.com/tanweai/pua.git ~/.claude/plugins/pua</code></pre>
+# 更新する場合（キャッシュ更新を先に行うこと）
+claude plugin marketplace update
+claude plugin update pua@pua-skills
+
+# 開発者インストール（ソース）
+git clone https://github.com/tanweai/pua ~/.claude/plugins/pua
+
+# ベアコマンドエイリアス（プラグインインストール後に追加）
+curl -o ~/.claude/commands/pua.md \
+  https://raw.githubusercontent.com/tanweai/pua/main/commands/pua.md</code></pre>
     </div>
   </div>
-  <div class="ve-card" style="--i:1">
+
+  <div class="ve-card" style="--i:2">
     <span class="ve-section-label"><span class="ve-dot"></span> OpenAI Codex CLI</span>
     <div class="ve-code-block">
-      <pre><code># 推奨: Codex に指示して自動インストール
+      <pre><code># 推奨：Codex に実行させる
 # "Fetch and follow instructions from
 #  https://raw.githubusercontent.com/tanweai/pua/main/.codex/INSTALL.md"
 
-# 手動インストール（グローバル）
-mkdir -p ~/.codex/skills/pua
-curl -o ~/.codex/skills/pua/SKILL.md \
-  https://raw.githubusercontent.com/tanweai/pua/main/codex/pua/SKILL.md
+# グローバルインストール（手動）
+mkdir -p ~/.codex/skills/pua-ja
+curl -o ~/.codex/skills/pua-ja/SKILL.md \
+  https://raw.githubusercontent.com/tanweai/pua/main/codex/pua-ja/SKILL.md
 
 mkdir -p ~/.codex/prompts
 curl -o ~/.codex/prompts/pua.md \
   https://raw.githubusercontent.com/tanweai/pua/main/commands/pua.md
 
 # プロジェクトレベル
-mkdir -p .agents/skills/pua
-curl -o .agents/skills/pua/SKILL.md \
-  https://raw.githubusercontent.com/tanweai/pua/main/codex/pua/SKILL.md</code></pre>
+mkdir -p .agents/skills/pua-ja
+curl -o .agents/skills/pua-ja/SKILL.md \
+  https://raw.githubusercontent.com/tanweai/pua/main/codex/pua-ja/SKILL.md</code></pre>
     </div>
   </div>
-  <div class="ve-card" style="--i:2">
+
+  <div class="ve-card" style="--i:3">
     <span class="ve-section-label"><span class="ve-dot"></span> Cursor</span>
     <div class="ve-code-block">
       <pre><code># プロジェクトレベル（推奨）
 mkdir -p .cursor/rules
-curl -o .cursor/rules/pua.mdc \
-  https://raw.githubusercontent.com/tanweai/pua/main/cursor/rules/pua.mdc
-
-# 日本語版
 curl -o .cursor/rules/pua-ja.mdc \
-  https://raw.githubusercontent.com/tanweai/pua/main/cursor/rules/pua-ja.mdc</code></pre>
+  https://raw.githubusercontent.com/tanweai/pua/main/cursor/rules/pua-ja.mdc
+
+# 英語版
+curl -o .cursor/rules/pua-en.mdc \
+  https://raw.githubusercontent.com/tanweai/pua/main/cursor/rules/pua-en.mdc</code></pre>
     </div>
   </div>
-  <div class="ve-card" style="--i:3">
+
+  <div class="ve-card" style="--i:4">
+    <span class="ve-section-label"><span class="ve-dot"></span> Kiro</span>
+    <div class="ve-code-block">
+      <pre><code># 方法 1：Steering ファイル（自動セマンティックトリガー、推奨）
+mkdir -p .kiro/steering
+curl -o .kiro/steering/pua-ja.md \
+  https://raw.githubusercontent.com/tanweai/pua/main/kiro/steering/pua-ja.md
+
+# 方法 2：Agent Skills（Claude Code と同じ SKILL.md 形式）
+mkdir -p .kiro/skills/pua-ja
+curl -o .kiro/skills/pua-ja/SKILL.md \
+  https://raw.githubusercontent.com/tanweai/pua/main/skills/pua-ja/SKILL.md</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:5">
     <span class="ve-section-label"><span class="ve-dot"></span> VSCode (GitHub Copilot)</span>
     <div class="ve-code-block">
       <pre><code># グローバル指示（自動適用）
 mkdir -p .github
 curl -o .github/copilot-instructions.md \
-  https://raw.githubusercontent.com/tanweai/pua/main/vscode/copilot-instructions-en.md
+  https://raw.githubusercontent.com/tanweai/pua/main/vscode/copilot-instructions-ja.md
 
-# パスレベル指示（glob フィルタ対応）
+# パスレベル指示（glob フィルタ対応、自動有効）
 mkdir -p .github/instructions
-curl -o .github/instructions/pua-en.instructions.md \
-  https://raw.githubusercontent.com/tanweai/pua/main/vscode/instructions/pua-en.instructions.md
+curl -o .github/instructions/pua-ja.instructions.md \
+  https://raw.githubusercontent.com/tanweai/pua/main/vscode/instructions/pua-ja.instructions.md
 
-# 手動トリガー用 /pua コマンド
+# 手動トリガーコマンド（Copilot Chat で /pua と入力）
 mkdir -p .github/prompts
-curl -o .github/prompts/pua-en.prompt.md \
-  https://raw.githubusercontent.com/tanweai/pua/main/vscode/prompts/pua-en.prompt.md</code></pre>
+curl -o .github/prompts/pua-ja.prompt.md \
+  https://raw.githubusercontent.com/tanweai/pua/main/vscode/prompts/pua-ja.prompt.md</code></pre>
     </div>
     <div class="ve-callout" style="margin-top:0.75rem">
-      <strong>設定が必要：</strong>VSCode Settings → <code>github.copilot.chat.codeGeneration.useInstructionFiles</code> を有効化（Method 1）、または <code>chat.includeApplyingInstructions</code> を有効化（Method 2）。
+      <strong>必須設定：</strong>方法 1 は VSCode Settings で <code>github.copilot.chat.codeGeneration.useInstructionFiles</code> を有効化。方法 2 は <code>chat.includeApplyingInstructions</code> を有効化。方法 3（手動トリガー）は設定不要。
     </div>
   </div>
-  <div class="ve-card" style="--i:4">
+
+  <div class="ve-card ve-card--recessed" style="--i:6">
     <span class="ve-section-label"><span class="ve-dot"></span> その他の環境</span>
     <div class="ve-table-wrap">
       <table aria-label="その他の環境インストールコマンド">
-        <thead>
-          <tr><th>環境</th><th>インストールコマンド</th></tr>
-        </thead>
+        <thead><tr><th>環境</th><th>グローバルインストール</th></tr></thead>
         <tbody>
-          <tr><td>Kiro（Steering）</td><td><code>mkdir -p .kiro/steering && curl -o .kiro/steering/pua.md https://raw.githubusercontent.com/tanweai/pua/main/kiro/steering/pua.md</code></td></tr>
-          <tr><td>Kiro（Agent Skills）</td><td><code>mkdir -p .kiro/skills/pua && curl -o .kiro/skills/pua/SKILL.md https://raw.githubusercontent.com/tanweai/pua/main/skills/pua/SKILL.md</code></td></tr>
-          <tr><td>CodeBuddy（Tencent）</td><td><code>codebuddy plugin marketplace add tanweai/pua</code></td></tr>
-          <tr><td>OpenClaw</td><td><code>clawhub install pua</code></td></tr>
-          <tr><td>Google Antigravity</td><td><code>mkdir -p ~/.gemini/antigravity/skills/pua && curl -o ~/.gemini/antigravity/skills/pua/SKILL.md ...</code></td></tr>
-          <tr><td>OpenCode</td><td><code>mkdir -p ~/.config/opencode/skills/pua && curl -o ~/.config/opencode/skills/pua/SKILL.md ...</code></td></tr>
+          <tr>
+            <td><strong>CodeBuddy（Tencent）</strong></td>
+            <td>
+              <code>codebuddy plugin marketplace add tanweai/pua</code><br>
+              <code>codebuddy plugin install pua@pua-skills</code><br>
+              <small style="color:var(--muted-foreground)">手動：<code>mkdir -p ~/.codebuddy/skills/pua && curl -o ~/.codebuddy/skills/pua/SKILL.md https://raw.githubusercontent.com/tanweai/pua/main/codebuddy/pua/SKILL.md</code></small>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>OpenClaw</strong></td>
+            <td>
+              <code>clawhub install pua-ja</code><br>
+              <small style="color:var(--muted-foreground)">手動：<code>mkdir -p ~/.openclaw/skills/pua-ja && curl -o ~/.openclaw/skills/pua-ja/SKILL.md https://raw.githubusercontent.com/tanweai/pua/main/skills/pua-ja/SKILL.md</code></small>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Google Antigravity</strong></td>
+            <td><code>mkdir -p ~/.gemini/antigravity/skills/pua-ja && curl -o ~/.gemini/antigravity/skills/pua-ja/SKILL.md https://raw.githubusercontent.com/tanweai/pua/main/skills/pua-ja/SKILL.md</code></td>
+          </tr>
+          <tr>
+            <td><strong>OpenCode</strong></td>
+            <td><code>mkdir -p ~/.config/opencode/skills/pua-ja && curl -o ~/.config/opencode/skills/pua-ja/SKILL.md https://raw.githubusercontent.com/tanweai/pua/main/skills/pua-ja/SKILL.md</code></td>
+          </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <section id="links" class="sec-head">10 — 参考リンク</section>
+  <!-- 11 コマンド -->
+  <section id="commands" class="sec-head">11 — コマンド・アーキテクチャ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Claude Code コマンド一覧</span>
+    <div class="ve-table-wrap">
+      <table aria-label="Claude Code コマンド一覧">
+        <thead><tr><th>コマンド</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr><td><code>/pua:pua</code></td><td>コア PUA エンジン（アリババフレーバーデフォルト）</td></tr>
+          <tr><td><code>/pua:p7</code></td><td>P7 骨幹 — ソリューション駆動実行</td></tr>
+          <tr><td><code>/pua:p9</code></td><td>P9 Tech Lead — Task Prompt 管理 + Agent チーム</td></tr>
+          <tr><td><code>/pua:p10</code></td><td>P10 CTO — 戦略方向</td></tr>
+          <tr><td><code>/pua:pro</code></td><td>自己進化 + KPI + ランクシステム</td></tr>
+          <tr><td><code>/pua:yes</code></td><td>ENFP 褒めモード（70% 励まし + 20% 真剣 + 10% 毒舌）</td></tr>
+          <tr><td><code>/pua:pua-loop</code></td><td>自動反復 — 完了または max 反復まで実行。<code>&lt;loop-abort&gt;</code> で停止、<code>&lt;loop-pause&gt;</code> で一時停止</td></tr>
+          <tr><td><code>/pua:on</code></td><td>常時 ON モード（毎セッション自動 PUA）</td></tr>
+          <tr><td><code>/pua:off</code></td><td>常時 ON モード + フィードバック収集をオフ</td></tr>
+          <tr><td><code>/pua:flavor</code></td><td>13 種の大企業フレーバーを切り替え</td></tr>
+          <tr><td><code>/pua:kpi</code></td><td>KPI レポートカードを生成</td></tr>
+          <tr><td><code>/pua:survey</code></td><td>アンケート（7 セクション）</td></tr>
+          <tr><td><code>/pua:cancel-pua-loop</code></td><td>アクティブな PUA Loop をキャンセル（状態ファイルを削除）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>注意：</strong>p7 / p9 / p10 / pro / yes / pua-loop などのサブモードは Claude Code 専用。他のプラットフォームはコアスキルのみ使用する。
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> プラットフォーム別トリガー方法</span>
+    <div class="ve-table-wrap">
+      <table aria-label="プラットフォーム別トリガー方法">
+        <thead><tr><th>プラットフォーム</th><th>自動トリガー</th><th>手動トリガー</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Claude Code</strong></td><td>skill の description 照合</td><td>下記コマンド参照</td></tr>
+          <tr><td><strong>Codex CLI</strong></td><td>skill の description 照合</td><td><code>$pua</code> または <code>/prompts:pua</code></td></tr>
+          <tr><td><strong>Cursor</strong></td><td><code>.mdc</code> ルール（Agent Discretion）</td><td>自動のみ</td></tr>
+          <tr><td><strong>Kiro</strong></td><td>steering ファイルまたは skill</td><td>自動のみ</td></tr>
+          <tr><td><strong>CodeBuddy</strong></td><td>skill の description 照合</td><td>プラグインコマンド（Claude Code と同様）</td></tr>
+          <tr><td><strong>OpenClaw</strong></td><td>skill の description 照合</td><td>—</td></tr>
+          <tr><td><strong>Google Antigravity</strong></td><td>skill の description 照合</td><td>—</td></tr>
+          <tr><td><strong>OpenCode</strong></td><td>skill の description 照合</td><td>—</td></tr>
+          <tr><td><strong>VSCode Copilot</strong></td><td>instructions ファイル</td><td>Copilot Chat で <code>/pua</code> を入力</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> 併用推奨スキル</span>
+    <ul>
+      <li><code>/pua:p9</code> — P9 Tech Lead モード — Agent チームの管理に</li>
+      <li><code>/pua:pro</code> — 自己進化追跡、KPI レポート、ランクシステム</li>
+      <li><code>superpowers:systematic-debugging</code> — PUA でモチベーション層を追加、systematic-debugging が方法論を提供</li>
+      <li><code>superpowers:verification-before-completion</code> — 虚偽の「修正完了」宣言を防止</li>
+    </ul>
+  </div>
+
+  <!-- 12 データ貢献 -->
+  <section id="contribute" class="sec-head">12 — データ貢献</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ベンチマークへの貢献</span>
+    <p>Claude Code / Codex CLI の対話ログ（<code>.jsonl</code>）をアップロードして PUA Skill の改善に協力できる。アップロードされたデータはベンチマークテストとアブレーションスタディに使用され、異なる PUA 戦略が AI デバッグ行動に与える影響を定量化する。</p>
+    <p><strong><a href="https://openpua.ai/contribute.html" target="_blank" rel="noopener">アップロードはこちら → openpua.ai/contribute.html</a></strong></p>
+    <div class="ve-code-block">
+      <pre><code># Claude Code のセッションログを取得
+ls ~/.claude/projects/*/sessions/*.jsonl
+
+# Codex CLI のセッションログを取得
+ls ~/.codex/sessions/*.jsonl</code></pre>
+    </div>
+  </div>
+
+  <!-- 13 参考リンク -->
+  <section id="links" class="sec-head">13 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・コミュニティ</span>
     <ul>
       <li><a href="https://github.com/tanweai/pua" target="_blank" rel="noopener">GitHub: tanweai/pua</a> — 本体リポジトリ</li>
       <li><a href="https://openpua.ai" target="_blank" rel="noopener">Landing Page (openpua.ai)</a> — ライブデモ・紹介・ログ投稿</li>
+      <li><a href="https://openpua.ai/guide.html" target="_blank" rel="noopener">初心者ガイド (openpua.ai/guide.html)</a></li>
       <li><a href="https://t.me/+wBWh6h-h1RhiZTI1" target="_blank" rel="noopener">Telegram</a> — コミュニティチャット</li>
       <li><a href="https://discord.gg/EcyB3FzJND" target="_blank" rel="noopener">Discord</a> — 開発者コミュニティ</li>
       <li><a href="https://x.com/xsser_w" target="_blank" rel="noopener">Twitter/X</a> — 最新情報</li>
     </ul>
-    <div class="ve-callout" style="margin-top:1rem">
-      <strong>ログを提供してベンチマークに貢献：</strong><code>ls ~/.claude/projects/*/sessions/*.jsonl</code> で取得した会話ログを <a href="https://openpua.ai/#/contribute" target="_blank" rel="noopener">openpua.ai/#/contribute</a> にアップロードすると、Ablation Study の分析データとして活用される。
-    </div>
   </div>
   </div>
 </div>
@@ -558,8 +786,7 @@ curl -o .github/prompts/pua-en.prompt.md \
     var top = window.scrollY + 24;
     var current = sections[0] || null;
     sections.forEach(function(s) {
-      var rect = s.head.getBoundingClientRect();
-      var docTop = rect.top + window.scrollY;
+      var docTop = s.head.getBoundingClientRect().top + window.scrollY;
       if (docTop <= top) current = s;
     });
     sections.forEach(function(s) {

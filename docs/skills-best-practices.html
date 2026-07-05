@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Skills Best Practices — プロ品質スキルの設計・検証ガイド</title>
+  <meta name="description" content="agentskills.io 仕様に準拠したプロ品質の Agent Skill を設計・検証するためのベストプラクティス集。ディレクトリ構成・フロントマター・プログレッシブ開示・LLM バリデーションを網羅。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Agent Skills Best Practices — プロ品質スキルの設計・検証ガイド">
+  <meta property="og:description" content="agentskills.io 仕様に準拠したプロ品質の Agent Skill を設計・検証するためのベストプラクティス集。ディレクトリ構成・フロントマター・プログレッシブ開示・LLM バリデーションを網羅。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/skills-best-practices.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Agent Skills Best Practices — プロ品質スキルの設計・検証ガイド">
+  <meta name="twitter:description" content="agentskills.io 仕様に準拠したプロ品質の Agent Skill を設計・検証するためのベストプラクティス集。ディレクトリ構成・フロントマター・プログレッシブ開示・LLM バリデーションを網羅。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============ THEME (Spell UI tokens) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 70% 0%, oklch(0.646 0.222 41.116 / 0.05) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 70% 0%, oklch(0.488 0.243 264.376 / 0.07) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 208px 1fr; gap: 0 52px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start;
+      padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none;
+        display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        background: var(--bg); border-bottom: 1px solid var(--border);
+        padding: 10px 0; margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 0.875rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .gap-stack { display: flex; flex-direction: column; gap: 0.875rem; }
+
+    /* KPI row */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Bad/Good compare */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem; }
+    @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-bad { border-left: 3px solid oklch(0.577 0.245 27.325); }
+    .compare-good { border-left: 3px solid oklch(0.6 0.118 184.704); }
+    .compare-label { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.375rem; }
+    .label-bad { color: oklch(0.577 0.245 27.325); }
+    .label-good { color: oklch(0.5 0.14 184.704); }
+
+    /* checklist indicator */
+    .check-pass { display: inline-block; background: oklch(0.5 0.14 184.704 / 0.12); color: oklch(0.4 0.14 184.704); border-radius: 3px; padding: 1px 7px; font-size: 0.6875rem; font-weight: 600; font-family: var(--font-mono); }
+    .check-fail { display: inline-block; background: oklch(0.577 0.245 27.325 / 0.1); color: oklch(0.5 0.22 27.325); border-radius: 3px; padding: 1px 7px; font-size: 0.6875rem; font-weight: 600; font-family: var(--font-mono); }
+
+    /* Mermaid container */
+    .mermaid-wrap { display: flex; justify-content: center; align-items: flex-start; padding: 1.25rem; overflow: hidden; position: relative; cursor: default; }
+    .mermaid-wrap.is-zoomed { cursor: grab; }
+    .mermaid-wrap.is-dragging { cursor: grabbing; }
+    .mermaid-canvas { transform-origin: center top; transition: transform 0.15s ease; }
+    .mermaid-wrap svg { max-width: 100%; height: auto; }
+    .mermaid-controls {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      z-index: 2;
+      display: inline-flex;
+      gap: 0.25rem;
+      padding: 0.25rem;
+      background: color-mix(in oklch, var(--card) 88%, transparent);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      backdrop-filter: blur(8px);
+    }
+    .mermaid-controls button {
+      width: 1.75rem;
+      height: 1.75rem;
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      background: var(--muted);
+      color: var(--foreground);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .mermaid-controls button:hover { background: var(--accent); }
+
+    /* Animations */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <!-- TOC -->
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#structure">ディレクトリ構成</a>
+    <a href="#frontmatter">フロントマター</a>
+    <a href="#context">コンテキスト管理</a>
+    <a href="#instructions">手順の書き方</a>
+    <a href="#scripts">スクリプト</a>
+    <a href="#validation">バリデーション</a>
+    <a href="#checklist">チェックリスト</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>Agent Skills Best Practices</h1>
+    <p class="subtitle">agentskills.io 仕様準拠 — プロ品質スキルの設計・検証・改善ガイド</p>
+
+    <!-- 1. 概要 -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> このガイドについて</span>
+      <p><strong>Agent Skills Best Practices</strong> は、<a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices" target="_blank" rel="noopener">Anthropic 公式ドキュメント</a>を凝縮した実践ガイドと、プロ品質スキルを生成するための <code>skill-creator</code> スキル本体を含むリポジトリ。スキルの設計から LLM を使ったバリデーションまでを体系化している。</p>
+      <div class="kpi-row" style="margin-top:1rem">
+        <div class="ve-kpi-card"><div class="ve-kpi-card__value">&lt;500</div><div class="ve-kpi-card__label">SKILL.md 行数上限</div></div>
+        <div class="ve-kpi-card"><div class="ve-kpi-card__value">1,024</div><div class="ve-kpi-card__label">description 文字数上限</div></div>
+        <div class="ve-kpi-card"><div class="ve-kpi-card__value">4</div><div class="ve-kpi-card__label">バリデーションフェーズ</div></div>
+        <div class="ve-kpi-card"><div class="ve-kpi-card__value">1深</div><div class="ve-kpi-card__label">サブディレクトリ上限</div></div>
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top:0.875rem">
+      <strong>スキルはエージェント向け、人間向けではない。</strong>
+      README.md や CHANGELOG.md は作らない。エージェントがすでに問題なくこなすタスクのための命令は省く。
+    </div>
+
+    <!-- 2. ディレクトリ構成 -->
+    <section id="structure" class="sec-head">2 — ディレクトリ構成</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 必須レイアウト</span>
+      <p>すべてのスキルは以下のディレクトリ構造に従う。サブフォルダのネストは 1 段のみ。</p>
+      <div class="ve-code-block">
+        <pre><code>skill-name/
+├── SKILL.md              # Required: メタデータ + コア手順（&lt;500 行）
+├── scripts/              # Python / Bash の小さな CLI
+├── references/           # API ドキュメント・スキーマ・チートシート
+└── assets/               # 出力テンプレート・JSON スキーマ・静的ファイル</code></pre>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1; margin-top:0.875rem">
+      <span class="ve-section-label"><span class="ve-dot"></span> 各フォルダの役割</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>フォルダ</th><th>用途</th><th>禁止事項</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>SKILL.md</code></td><td>高レベル手順・ナビゲーション。スキルの「脳」</td><td>500 行超、大きなスキーマのインライン記述</td></tr>
+            <tr><td><code>scripts/</code></td><td>決定論的タスク用の小さな CLI スクリプト</td><td>ライブラリコード・長期間使うロジック</td></tr>
+            <tr><td><code>references/</code></td><td>API ドキュメント・ドメイン固有ロジック・チートシート</td><td>ネストしたサブフォルダ（1 段のみ許可）</td></tr>
+            <tr><td><code>assets/</code></td><td>出力テンプレート・JSON スキーマ・画像</td><td>人間向けドキュメント（README など）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3. フロントマター -->
+    <section id="frontmatter" class="sec-head">3 — フロントマター最適化</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 発見可能性</span>
+      <p>エージェントがスキルをトリガーするかどうかは、<strong><code>name</code> と <code>description</code></strong> だけに基づいて判断する。この 2 フィールドの最適化が最重要。</p>
+      <div class="ve-code-block">
+        <pre><code>---
+name: angular-vite-migrator
+description: >
+  Migrates Angular CLI projects from Webpack to Vite and esbuild.
+  Use when updating builder configs or replacing webpack plugins.
+  Don't use for React/Vue projects or general Angular upgrades.
+---</code></pre>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1; margin-top:0.875rem">
+      <span class="ve-section-label"><span class="ve-dot"></span> ルール一覧</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>フィールド</th><th>制約</th><th>ポイント</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>name</code></td><td>1–64 文字、小文字・数字・単一ハイフンのみ</td><td>親ディレクトリ名と完全一致が必須</td></tr>
+            <tr><td><code>description</code></td><td>最大 1,024 文字</td><td>第三者的命令形（I/you 禁止）</td></tr>
+            <tr><td>トリガー</td><td>"Use when…" を明記</td><td>曖昧な記述は誤トリガーの原因に</td></tr>
+            <tr><td>ネガティブトリガー</td><td>"Don't use for…" を明記</td><td>類似スキルとの誤区別を防ぐ</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="compare-grid">
+        <div class="ve-card ve-card--recessed compare-bad">
+          <div class="compare-label label-bad">Bad — 曖昧すぎる</div>
+          <code>description: "React skills."</code>
+        </div>
+        <div class="ve-card ve-card--recessed compare-good">
+          <div class="compare-label label-good">Good — 明確なトリガー付き</div>
+          <code>description: "Creates React components with Tailwind. Use for UI logic. Don't use for Vue/Svelte."</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. コンテキスト管理 -->
+    <section id="context" class="sec-head">4 — コンテキスト管理（Progressive Disclosure）</section>
+    <div class="gap-stack">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> コンテキストウィンドウを守る</span>
+        <p>SKILL.md はナビゲーションと高レベル手順のみを持つ「脳」として機能する。詳細はサブディレクトリに移し、<strong>必要なときだけ読むよう指示（Just-in-Time Loading）</strong>する。</p>
+        <div class="ve-callout">
+          <strong>JiT ローディングの例:</strong> "See <code>references/auth-flow.md</code> for specific error codes" のように、エージェントがファイルを読むタイミングを SKILL.md から明示的に指示する。指示がなければエージェントは読まない。
+        </div>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> 削除すべきもの</span>
+        <ul>
+          <li><strong>人間向けドキュメント</strong> — README.md, CHANGELOG.md, INSTALLATION_GUIDE.md</li>
+          <li><strong>冗長な命令</strong> — エージェントが既に問題なくこなすタスクへの指示</li>
+          <li><strong>ライブラリコード</strong> — 長期運用するコードは標準 CLI ディレクトリへ</li>
+          <li><strong>ネストされたサブフォルダ</strong> — references/db/v1/schema.md のような 2 段以上のパス</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 5. 手順の書き方 -->
+    <section id="instructions" class="sec-head">5 — 手順の書き方</section>
+    <div class="gap-stack">
+      <div class="ve-card ve-card--elevated" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 第三者的命令形で書く</span>
+        <p>LLM 向けの命令は <strong>第三者的命令形</strong>（Third-Person Imperative）で記述する。</p>
+        <div class="compare-grid">
+          <div class="ve-card ve-card--recessed compare-bad">
+            <div class="compare-label label-bad">Bad</div>
+            <p style="font-size:0.875rem; margin:0">"I will extract the text…"<br>"You should extract…"</p>
+          </div>
+          <div class="ve-card ve-card--recessed compare-good">
+            <div class="compare-label label-good">Good</div>
+            <p style="font-size:0.875rem; margin:0">"Extract the text…"<br>"Run the build script…"</p>
+          </div>
+        </div>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> ステップ番号・テンプレート・用語の統一</span>
+        <ul>
+          <li><strong>ステップ番号付きで時系列に並べる</strong> — 分岐がある場合は「If … run X. Otherwise skip to Step 3.」のように明示</li>
+          <li><strong>具体的なテンプレートを用意</strong> — エージェントはパターンマッチングが得意。JSON 出力の説明より <code>assets/</code> にテンプレートファイルを置く</li>
+          <li><strong>用語を統一</strong> — Angular なら「html」でなく「template」など、ドメイン固有の正確な語を一貫して使う</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 6. スクリプト -->
+    <section id="scripts" class="sec-head">6 — スクリプトの活用</section>
+    <div class="gap-stack">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 決定論的タスクはスクリプトへ</span>
+        <p>複雑なパース・反復するボイラープレートを毎回 LLM に書かせない。<code>scripts/</code> にテスト済みスクリプトを配置し、エージェントに実行させる。</p>
+        <div class="ve-code-block">
+          <pre><code>## Step 1: メタデータのバリデーション
+python3 scripts/validate-metadata.py \
+  --name "skill-name" \
+  --description "Action-oriented description..."
+# 成功: SUCCESS: Metadata is valid and optimized for discovery.
+# 失敗: stderr に NAME ERROR / DESCRIPTION ERROR / STYLE WARNING</code></pre>
+        </div>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> スクリプト設計の原則</span>
+        <ul>
+          <li><strong>CLI として設計</strong> — 引数を受け取り、stdout/stderr で結果を返す</li>
+          <li><strong>詳細なエラーメッセージ</strong> — エージェントが自己修正できるよう「NAME ERROR: 'foo' is 65 chars」のように具体的に</li>
+          <li><strong>単一目的</strong> — 1 スクリプト 1 タスク。複雑なロジックは標準 CLI へ</li>
+          <li><strong>標準出力</strong> — stdout = 成功、stderr = 失敗。exit code を正しく使う</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 7. バリデーション -->
+    <section id="validation" class="sec-head">7 — バリデーションガイド</section>
+    <p>スキルの品質は LLM との協働でテストするのが最も効果的。以下の 4 フェーズで回帰を防ぐ。</p>
+
+    <!-- Mermaid フロー -->
+    <div class="ve-card" style="--i:0; padding:0; overflow:hidden; margin-bottom:1rem">
+      <div class="mermaid-wrap">
+        <div class="mermaid-controls" aria-label="図の拡大操作">
+          <button type="button" data-zoom="in" aria-label="拡大">+</button>
+          <button type="button" data-zoom="out" aria-label="縮小">−</button>
+          <button type="button" data-zoom="reset" aria-label="リセット">1×</button>
+        </div>
+        <div class="mermaid-canvas">
+        <pre class="mermaid">flowchart TD
+  A([スキル草稿完成]) --> B
+
+  subgraph B["Phase 1: Discovery Validation"]
+    B1["フロントマターを LLM に渡す"]
+    B2["正トリガー 3 例・誤トリガー 3 例の生成"]
+    B3["description の改善提案を受け取る"]
+    B1 --> B2 --> B3
+  end
+
+  subgraph C["Phase 2: Logic Validation"]
+    C1["SKILL.md 全文と DIR ツリーを LLM に渡す"]
+    C2["エージェントとして実行をシミュレート"]
+    C3["Execution Blocker（曖昧な指示）を特定"]
+    C1 --> C2 --> C3
+  end
+
+  subgraph D["Phase 3: Edge Case Testing"]
+    D1["QA テスター役に切り替え"]
+    D2["失敗状態・未サポート設定を攻撃的に洗い出す"]
+    D3["3〜5 問の質問リストを受け取り回答する"]
+    D1 --> D2 --> D3
+  end
+
+  subgraph E["Phase 4: Architecture Refinement"]
+    E1["回答を元に SKILL.md を書き直す"]
+    E2["Progressive Disclosure を強制適用"]
+    E3["Error Handling セクション追加"]
+    E1 --> E2 --> E3
+  end
+
+  B --> C --> D --> E --> F([デプロイ可能])
+
+  classDef phase fill:#f7f7f7,stroke:#e8e8e8,color:#1a1a1a
+  classDef terminal fill:#d97b2f,stroke:#d97b2f,color:#fff
+  class B,C,D,E phase
+  class A,F terminal</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="gap-stack">
+      <div class="ve-card" style="--i:1">
+        <h3>Phase 1: Discovery Validation</h3>
+        <p>YAML フロントマターだけを新規 LLM チャットに貼り、以下を確認:</p>
+        <ul>
+          <li>このスキルを確実にトリガーすべきプロンプト 3 例</li>
+          <li>似ているが <strong>トリガーすべきでない</strong>プロンプト 3 例</li>
+          <li>description が広すぎないか・最適化の提案</li>
+        </ul>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:2">
+        <h3>Phase 2: Logic Validation</h3>
+        <p>SKILL.md 全文 + ディレクトリツリーを渡し、「自律エージェントとして実行をシミュレートせよ」と指示。各ステップで <strong>Execution Blocker</strong>（推測・幻覚が必要な箇所）を特定させる。</p>
+        <div class="ve-code-block">
+          <pre><code>Act as an autonomous agent that has just triggered this skill.
+Simulate step-by-step. For each step:
+1. What exactly are you doing?
+2. Which file/script are you reading or running?
+3. Flag any Execution Blockers (lines where you must guess).</code></pre>
+        </div>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:3">
+        <h3>Phase 3: Edge Case Testing</h3>
+        <p>「QA テスター」として役割を切り替え、スキルを「壊す」ことを目標にした 3〜5 問の質問を生成させる。修正はまだ行わず、質問に回答するだけ。</p>
+        <div class="ve-code-block">
+          <pre><code>Switch roles. Act as a ruthless QA tester.
+Ask 3-5 specific questions about edge cases or missing fallbacks.
+Do NOT fix these issues yet. Just ask and wait for answers.</code></pre>
+        </div>
+      </div>
+      <div class="ve-card" style="--i:4">
+        <h3>Phase 4: Architecture Refinement</h3>
+        <p>回答を元に SKILL.md を書き直し、Progressive Disclosure を強制適用。大きなテンプレートや設定ファイルは <code>references/</code> / <code>assets/</code> に分離し、Error Handling セクションを追加。</p>
+      </div>
+    </div>
+
+    <!-- 8. チェックリスト -->
+    <section id="checklist" class="sec-head">8 — デプロイ前チェックリスト</section>
+    <div class="ve-card" style="--i:0">
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>カテゴリ</th><th>チェック項目</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td rowspan="5" style="font-weight:600; vertical-align:middle; white-space:nowrap">メタデータ</td>
+              <td><code>name</code> が 1–64 文字・小文字英数・単一ハイフンのみ</td>
+            </tr>
+            <tr><td><code>name</code> と親ディレクトリ名が完全一致</td></tr>
+            <tr><td><code>description</code> が 1,024 文字以内</td></tr>
+            <tr><td>"Use when…" と "Don't use for…" が明記されている</td></tr>
+            <tr><td>第三者的語調（I, me, my, you, your が未使用）</td></tr>
+            <tr>
+              <td rowspan="4" style="font-weight:600; vertical-align:middle; white-space:nowrap">構成</td>
+              <td><code>scripts/</code>, <code>references/</code>, <code>assets/</code> 以外のフォルダが存在しない</td>
+            </tr>
+            <tr><td>フォルダが 1 段のみ（ネストなし）</td></tr>
+            <tr><td>README.md 等の人間向けドキュメントがない</td></tr>
+            <tr><td>すべてのパスが相対パス + 前向きスラッシュ</td></tr>
+            <tr>
+              <td rowspan="5" style="font-weight:600; vertical-align:middle; white-space:nowrap">SKILL.md</td>
+              <td>500 行未満</td>
+            </tr>
+            <tr><td>命令形（Extract, Run, Validate 等）</td></tr>
+            <tr><td>番号付きで時系列に並んでいる</td></tr>
+            <tr><td>大きなスキーマ・テンプレートが <code>references/</code> / <code>assets/</code> に分離されている</td></tr>
+            <tr><td>ドメイン固有の用語が一貫して使われている</td></tr>
+            <tr>
+              <td rowspan="3" style="font-weight:600; vertical-align:middle; white-space:nowrap">スクリプト</td>
+              <td>引数付きの CLI として設計されている</td>
+            </tr>
+            <tr><td>stdout / stderr で明確なフィードバックを返す</td></tr>
+            <tr><td>単一目的（複雑なロジックは標準 CLI へ）</td></tr>
+            <tr>
+              <td rowspan="2" style="font-weight:600; vertical-align:middle; white-space:nowrap">エラー処理</td>
+              <td>Error Handling セクションが存在する</td>
+            </tr>
+            <tr><td>バリデーションスクリプトの実行ステップが含まれている</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 9. 参考リンク -->
+    <section id="links" class="sec-head">9 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices" target="_blank" rel="noopener">Anthropic — Agent Skills Best Practices（公式ドキュメント）</a></li>
+          <li><a href="https://github.com/mgechev/skills-best-practices" target="_blank" rel="noopener">GitHub: mgechev/skills-best-practices</a> — このガイドのソースリポジトリ</li>
+          <li><a href="https://github.com/mgechev/skillgrade" target="_blank" rel="noopener">GitHub: mgechev/skillgrade</a> — スキルの回帰テスト・評価ツール</li>
+        <li><a href="https://arxiv.org/abs/2602.12670" target="_blank" rel="noopener">SkillsBench（arxiv:2602.12670）</a> — スキル評価のベンチマーク</li>
+      </ul>
+    </div>
+  </div><!-- /.main -->
+</div><!-- /.wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: 'oklch(0.97 0 0)',
+    primaryTextColor: 'oklch(0.145 0 0)',
+    primaryBorderColor: 'oklch(0.922 0 0)',
+    lineColor: 'oklch(0.708 0 0)',
+    secondaryColor: 'oklch(0.97 0 0)',
+    tertiaryColor: 'oklch(0.97 0 0)',
+    fontSize: '13px',
+    fontFamily: "'IBM Plex Sans', system-ui, sans-serif"
+  }
+});
+</script>
+<script>
+(function() {
+  var wraps = document.querySelectorAll('.mermaid-wrap');
+  wraps.forEach(function(wrap) {
+    var canvas = wrap.querySelector('.mermaid-canvas');
+    var controls = wrap.querySelector('.mermaid-controls');
+    var scale = 1;
+    var offsetX = 0;
+    var offsetY = 0;
+    var startX = 0;
+    var startY = 0;
+    var isDragging = false;
+
+    function applyTransform() {
+      canvas.style.transform = 'translate(' + offsetX + 'px, ' + offsetY + 'px) scale(' + scale + ')';
+      wrap.classList.toggle('is-zoomed', scale > 1);
+    }
+
+    function clampScale(value) {
+      return Math.max(1, Math.min(2.2, value));
+    }
+
+    controls.addEventListener('click', function(event) {
+      var button = event.target.closest('button[data-zoom]');
+      if (!button) return;
+      var action = button.getAttribute('data-zoom');
+      if (action === 'in') scale = clampScale(scale + 0.2);
+      if (action === 'out') scale = clampScale(scale - 0.2);
+      if (action === 'reset') {
+        scale = 1;
+        offsetX = 0;
+        offsetY = 0;
+      }
+      if (scale === 1) {
+        offsetX = 0;
+        offsetY = 0;
+      }
+      applyTransform();
+    });
+
+    wrap.addEventListener('wheel', function(event) {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      scale = clampScale(scale + (event.deltaY < 0 ? 0.1 : -0.1));
+      if (scale === 1) {
+        offsetX = 0;
+        offsetY = 0;
+      }
+      applyTransform();
+    }, { passive: false });
+
+    wrap.addEventListener('pointerdown', function(event) {
+      if (scale === 1 || event.target.closest('.mermaid-controls')) return;
+      isDragging = true;
+      startX = event.clientX - offsetX;
+      startY = event.clientY - offsetY;
+      wrap.classList.add('is-dragging');
+      wrap.setPointerCapture(event.pointerId);
+    });
+
+    wrap.addEventListener('pointermove', function(event) {
+      if (!isDragging) return;
+      offsetX = event.clientX - startX;
+      offsetY = event.clientY - startY;
+      applyTransform();
+    });
+
+    wrap.addEventListener('pointerup', function(event) {
+      isDragging = false;
+      wrap.classList.remove('is-dragging');
+      if (wrap.hasPointerCapture(event.pointerId)) wrap.releasePointerCapture(event.pointerId);
+    });
+  });
+})();
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

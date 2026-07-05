@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Career-Ops — AI コーディング CLI 向け求職パイプライン</title>
+  <meta name="description" content="santifer/career-ops の概要。求人評価・ATS 向け CV 生成・ポータルスキャン・バッチ処理・トラッカー整合性と、AGENTS.md / modes によるエージェント運用。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Career-Ops — AI コーディング CLI 向け求職パイプライン">
+  <meta property="og:description" content="santifer/career-ops の概要。求人評価・CV 生成・ポータルスキャン・バッチ処理とデータ契約。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/career-ops.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Career-Ops — AI コーディング CLI 向け求職パイプライン">
+  <meta name="twitter:description" content="santifer/career-ops の概要。求人評価・CV 生成・ポータルスキャン・バッチ処理とデータ契約。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.012 85);
+      --foreground: oklch(0.22 0.04 45);
+      --card: oklch(1 0.006 85);
+      --card-foreground: oklch(0.22 0.04 45);
+      --popover: oklch(1 0.006 85);
+      --popover-foreground: oklch(0.22 0.04 45);
+      --primary: oklch(0.28 0.06 42);
+      --primary-foreground: oklch(0.99 0.012 85);
+      --secondary: oklch(0.95 0.02 85);
+      --secondary-foreground: oklch(0.28 0.06 42);
+      --muted: oklch(0.94 0.018 88);
+      --muted-foreground: oklch(0.48 0.04 50);
+      --accent: oklch(0.93 0.025 90);
+      --accent-foreground: oklch(0.26 0.05 42);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.025 80);
+      --input: oklch(0.88 0.025 80);
+      --ring: oklch(0.52 0.12 38);
+      --chart-1: oklch(0.52 0.14 38);
+      --chart-2: oklch(0.48 0.09 155);
+      --chart-3: oklch(0.42 0.06 42);
+      --chart-4: oklch(0.78 0.06 85);
+      --chart-5: oklch(0.58 0.1 72);
+      --code-bg: var(--muted);
+      --code-text: oklch(0.3 0.08 38);
+      --font-body: 'Source Sans 3', system-ui, sans-serif;
+      --font-display: 'Crimson Pro', Georgia, serif;
+      --font-mono: 'Source Code Pro', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.02 50);
+        --foreground: oklch(0.96 0.01 85);
+        --card: oklch(0.19 0.025 48);
+        --card-foreground: oklch(0.96 0.01 85);
+        --popover: oklch(0.19 0.025 48);
+        --popover-foreground: oklch(0.96 0.01 85);
+        --primary: oklch(0.92 0.02 85);
+        --primary-foreground: oklch(0.16 0.03 48);
+        --secondary: oklch(0.24 0.03 50);
+        --secondary-foreground: oklch(0.96 0.01 85);
+        --muted: oklch(0.26 0.03 52);
+        --muted-foreground: oklch(0.72 0.03 85);
+        --accent: oklch(0.24 0.035 52);
+        --accent-foreground: oklch(0.96 0.01 85);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.68 0.12 38);
+        --chart-1: oklch(0.72 0.14 42);
+        --chart-2: oklch(0.65 0.1 155);
+        --chart-3: oklch(0.58 0.08 42);
+        --chart-4: oklch(0.72 0.05 85);
+        --chart-5: oklch(0.68 0.1 72);
+        --code-bg: oklch(0.17 0.025 48);
+        --code-text: oklch(0.82 0.06 42);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); font-family: var(--font-mono); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.65; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 65%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.35rem; line-height: 1.15; font-weight: 700; color: var(--chart-1); font-family: var(--font-mono); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: color-mix(in oklch, var(--muted) 75%, var(--chart-2) 10%); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 80% 0%, oklch(0.52 0.14 38 / 0.07) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-family: var(--font-display); font-size: 2.25rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 700; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .badge-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .badge { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); }
+    .badge--accent { background: color-mix(in oklch, var(--chart-1) 12%, transparent); border-color: color-mix(in oklch, var(--chart-1) 45%, transparent); color: var(--chart-1); }
+
+    .mermaid-wrap { position: relative; overflow: hidden; border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--card); margin: 1rem 0; }
+    .mermaid-controls { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 10; }
+    .mermaid-controls button { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--card); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 14px; color: var(--text-dim); }
+    .mermaid-controls button:hover { background: var(--muted); color: var(--text); }
+    .mermaid-inner { overflow: auto; display: flex; justify-content: center; padding: 1.25rem; min-height: 120px; }
+    .mermaid { display: flex; justify-content: center; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="toc" id="toc">
+      <div class="toc-title">目次</div>
+      <a href="#overview">概要</a>
+      <a href="#architecture">システム構成</a>
+      <a href="#evaluation">評価フロー</a>
+      <a href="#features">主要機能</a>
+      <a href="#data-contract">データ契約</a>
+      <a href="#quickstart">クイックスタート</a>
+      <a href="#links">参照</a>
+    </nav>
+
+    <div class="main">
+      <h1>Career-Ops</h1>
+      <p class="subtitle">AI コーディング CLI 向け求職パイプライン — <a href="https://github.com/santifer/career-ops" target="_blank" rel="noopener">santifer/career-ops</a></p>
+
+      <section id="overview" class="sec-head">1 — 概要</section>
+      <div class="ve-card ve-card--hero" style="--i:0">
+        <div class="badge-row">
+          <span class="badge badge--accent">MIT</span>
+          <span class="badge">Claude Code / Gemini / OpenCode</span>
+          <span class="badge">Node.js + Go TUI</span>
+          <span class="badge">Playwright</span>
+        </div>
+        <p><strong>Career-Ops</strong> は、AI コーディング CLI（Claude Code、Gemini CLI、OpenCode など）を<strong>求職コマンドセンター</strong>に変えるオープンソースのパイプラインです。スプレッドシートでの手動管理の代わりに、求人評価・ATS 向け CV 生成・ポータルスキャン・バッチ処理・トラッカー整合性を一つのワークフローにまとめます。</p>
+        <p>キーワードマッチではなく、エージェントが CV と求人票を突き合わせて適合度を推論します。応募の自動送信は行わず、評価と推奨のあと<strong>最終判断は常に人間</strong>が下します。</p>
+        <div class="kpi-row">
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">740+</div>
+            <div class="ve-kpi-card__label">評価した求人（作者実績）</div>
+          </div>
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">100+</div>
+            <div class="ve-kpi-card__label">生成した CV</div>
+          </div>
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">A–F</div>
+            <div class="ve-kpi-card__label">6 ブロック評価</div>
+          </div>
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">4.0</div>
+            <div class="ve-kpi-card__label">未満の応募は非推奨</div>
+          </div>
+        </div>
+        <div class="ve-callout">
+          <strong>位置づけ:</strong> 「数を撃つ」ツールではなく、数百件の求人から時間を割く価値のある少数を見つける<strong>フィルター</strong>です。スコア 4.0/5 未満への応募は強く非推奨と README が明記しています。
+        </div>
+      </div>
+
+      <section id="architecture" class="sec-head">2 — システム構成</section>
+      <div class="ve-card ve-card--elevated" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 全体像</span>
+        <p>エージェントは <code>AGENTS.md</code> と <code>modes/*.md</code> を読み、単体評価・ポータルスキャン・バッチのいずれかに分岐します。出力はレポート・PDF・トラッカー TSV 経由で <code>data/applications.md</code> に集約されます。</p>
+        <div class="mermaid-wrap">
+          <div class="mermaid-controls">
+            <button type="button" data-zoom="out" aria-label="縮小">−</button>
+            <button type="button" data-zoom="reset" aria-label="リセット">⟲</button>
+            <button type="button" data-zoom="in" aria-label="拡大">+</button>
+          </div>
+          <div class="mermaid-inner">
+            <pre class="mermaid">%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#f5ebe4", "primaryTextColor": "#3d2c24", "primaryBorderColor": "#b85c38", "lineColor": "#b85c38", "secondaryColor": "#e8f0e8", "tertiaryColor": "#faf7f5", "fontFamily": "Source Sans 3, system-ui, sans-serif", "fontSize": "13px"}}}%%
+flowchart TD
+  CLI[AI コーディング CLI] --> AGENTS[AGENTS.md + modes]
+  AGENTS --> E1[単体評価 auto-pipeline]
+  AGENTS --> E2[ポータル scan]
+  AGENTS --> E3[バッチ batch-runner]
+  E1 --> OUT[レポート / PDF / TSV]
+  E2 --> PIPE[pipeline.md 受信箱]
+  E3 --> OUT
+  OUT --> APP[data/applications.md]</pre>
+          </div>
+        </div>
+        <h3>主要ディレクトリ</h3>
+        <div class="ve-code-block">
+          <pre><code>career-ops/
+├── AGENTS.md, CLAUDE.md     # エージェント指示（システム層）
+├── modes/                   # 評価・応募・面接などのモード定義
+├── data/applications.md     # 応募トラッカー（正本）
+├── data/pipeline.md         # 未処理 URL の受信箱
+├── reports/                 # 評価レポート {###}-{company}-{date}.md
+├── batch/                   # 並列バッチ（batch-runner.sh）
+├── dashboard/               # Go 製 TUI
+├── providers/               # Greenhouse / Ashby / Lever API
+├── templates/               # CV HTML・TeX・states.yml
+└── *.mjs                    # PDF 生成・マージ・整合性チェック</code></pre>
+        </div>
+      </div>
+
+      <section id="evaluation" class="sec-head">3 — 評価フロー（単一求人）</section>
+      <div class="ve-card" style="--i:0">
+        <p>求人 URL または JD テキストを入力すると、Playwright / WebFetch で JD を取得し、アーキタイプ分類のうえ 6 ブロック（A–F）で評価します。10 次元の重み付きスコア（1–5）の平均が最終スコアになります。</p>
+        <div class="ve-table-wrap">
+          <table>
+            <thead>
+              <tr><th>ブロック</th><th>内容</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>A</td><td>役割サマリー</td></tr>
+              <tr><td>B</td><td>CV マッチ（ギャップと緩和策）</td></tr>
+              <tr><td>C</td><td>レベル戦略</td></tr>
+              <tr><td>D</td><td>報酬調査（WebSearch）</td></tr>
+              <tr><td>E</td><td>CV パーソナライズ計画</td></tr>
+              <tr><td>F</td><td>面接準備（STAR+R ストーリー）</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>レポートヘッダには <strong>Legitimacy</strong>（掲載の信頼性ティア）も含まれます。PDF は <code>generate-pdf.mjs</code>（Playwright）で HTML テンプレートから生成し、トラッカー行は <code>merge-tracker.mjs</code> で <code>applications.md</code> にマージされます。</p>
+        <div class="mermaid-wrap">
+          <div class="mermaid-controls">
+            <button type="button" data-zoom="out" aria-label="縮小">−</button>
+            <button type="button" data-zoom="reset" aria-label="リセット">⟲</button>
+            <button type="button" data-zoom="in" aria-label="拡大">+</button>
+          </div>
+          <div class="mermaid-inner">
+            <pre class="mermaid">%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#f5ebe4", "primaryTextColor": "#3d2c24", "primaryBorderColor": "#5a8f6e", "lineColor": "#b85c38", "fontFamily": "Source Sans 3, system-ui, sans-serif", "fontSize": "13px"}}}%%
+flowchart LR
+  IN[URL / JD] --> EXT[抽出]
+  EXT --> CLS[アーキタイプ]
+  CLS --> EVAL[A–F 評価]
+  EVAL --> SC[10 次元スコア]
+  SC --> RPT[reports/*.md]
+  RPT --> PDF[PDF]
+  PDF --> TSV[tracker TSV]</pre>
+          </div>
+        </div>
+      </div>
+
+      <section id="features" class="sec-head">4 — 主要機能</section>
+      <div class="ve-card" style="--i:0">
+        <div class="ve-table-wrap">
+          <table>
+            <thead>
+              <tr><th>機能</th><th>説明</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>自動パイプライン</td><td>URL を貼ると評価・PDF・トラッカー記録まで一連で処理</td></tr>
+              <tr><td>面接ストーリーバンク</td><td>評価ごとに STAR+Reflection を蓄積（<code>interview-prep/story-bank.md</code>）</td></tr>
+              <tr><td>ATS 向け PDF</td><td>求人ごとにキーワードを注入した CV（Space Grotesk + DM Sans テンプレート）</td></tr>
+              <tr><td>ポータルスキャナー</td><td><code>scan.mjs</code> が Greenhouse / Ashby / Lever API を直接叩き LLM コストゼロで一覧取得</td></tr>
+              <tr><td>バッチ処理</td><td><code>batch/batch-runner.sh</code> が headless CLI ワーカーを並列起動</td></tr>
+              <tr><td>ダッシュボード TUI</td><td>Go 製。スコア・日付・ステータスでフィルタ・ソート</td></tr>
+              <tr><td>パイプライン整合性</td><td><code>merge-tracker</code> / <code>dedup-tracker</code> / <code>verify-pipeline</code> など</td></tr>
+              <tr><td>多言語モード</td><td><code>modes/ja</code>、<code>modes/de</code> などロケール別の応募フロー</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>対応 CLI（抜粋）</h3>
+        <p><a href="https://agentskills.io" target="_blank" rel="noopener">open agent skill standard</a> に従う CLI なら原則動作します。README では Claude Code、OpenCode、Gemini CLI を明示し、Codex は準備中と記載されています。スキル定義は <code>.agents/skills/career-ops/SKILL.md</code> にあります。</p>
+      </div>
+
+      <section id="data-contract" class="sec-head">5 — データ契約とカスタマイズ</section>
+      <div class="ve-card ve-card--recessed" style="--i:0">
+        <p><code>DATA_CONTRACT.md</code> と <code>AGENTS.md</code> は、ユーザーデータとシステムファイルを分離します。</p>
+        <div class="ve-table-wrap">
+          <table>
+            <thead>
+              <tr><th>層</th><th>例</th><th>更新</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>ユーザー層</td>
+                <td><code>cv.md</code>、<code>config/profile.yml</code>、<code>modes/_profile.md</code>、<code>portals.yml</code>、<code>data/*</code>、<code>reports/*</code></td>
+                <td>自動更新しない。カスタマイズはここへ</td>
+              </tr>
+              <tr>
+                <td>システム層</td>
+                <td><code>modes/_shared.md</code>、<code>AGENTS.md</code>、<code>*.mjs</code>、<code>templates/*</code>、<code>batch/*</code></td>
+                <td><code>update-system.mjs</code> で更新可能</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="ve-callout">
+          <strong>カスタマイズのルール:</strong> アーキタイプ・交渉スクリプト・好みなどユーザー固有の変更は <code>modes/_profile.md</code> または <code>config/profile.yml</code> に書く。<code>modes/_shared.md</code> をユーザー内容で上書きしない（システム更新で失われるため）。
+        </div>
+        <p>初回セッションでは <code>cv.md</code>、<code>profile.yml</code>、<code>_profile.md</code>、<code>portals.yml</code> の有無を静かに確認し、未設定ならオンボーディングに誘導する、と AGENTS.md が定めています。</p>
+      </div>
+
+      <section id="quickstart" class="sec-head">6 — クイックスタート</section>
+      <div class="ve-card" style="--i:0">
+        <div class="ve-code-block">
+          <pre><code>git clone https://github.com/santifer/career-ops.git
+cd career-ops && npm install
+npx playwright install chromium
+npm run doctor
+
+cp config/profile.example.yml config/profile.yml
+cp templates/portals.example.yml portals.yml
+# ルートに cv.md を用意
+
+claude   # または利用中の AI CLI
+# URL を貼る /career-ops で評価開始</code></pre>
+        </div>
+        <p>モード・アーキタイプ・スコア重みは、CLI 上で「バックエンド向けにアーキタイプを変えて」などと依頼すればエージェントが同じファイルを編集する設計です。詳細手順はリポジトリ内の <code>docs/SETUP.md</code> を参照してください。</p>
+        <h3>npm スクリプト（抜粋）</h3>
+        <ul>
+          <li><code>npm run doctor</code> — 前提条件の検証</li>
+          <li><code>npm run verify</code> — パイプライン健全性</li>
+          <li><code>npm run scan</code> — ポータルスキャン（API 直叩き）</li>
+          <li><code>npm run pdf</code> — PDF 生成</li>
+          <li><code>npm run update:check</code> — システム層の更新確認</li>
+        </ul>
+      </div>
+
+      <section id="links" class="sec-head">7 — 参照</section>
+      <div class="ve-card" style="--i:0">
+        <ul>
+          <li><a href="https://github.com/santifer/career-ops" target="_blank" rel="noopener">GitHub: santifer/career-ops</a></li>
+          <li><a href="https://github.com/santifer/career-ops/blob/main/README.ja.md" target="_blank" rel="noopener">README（日本語）</a></li>
+          <li><a href="https://github.com/santifer/career-ops/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener">ARCHITECTURE.md</a></li>
+          <li><a href="https://github.com/santifer/career-ops/blob/main/docs/SETUP.md" target="_blank" rel="noopener">SETUP.md</a></li>
+          <li><a href="https://santifer.io/career-ops-system" target="_blank" rel="noopener">ケーススタディ（作者）</a></li>
+          <li><a href="https://github.com/santifer/cv-santiago" target="_blank" rel="noopener">cv-santiago（ポートフォリオ）</a></li>
+          <li><a href="https://discord.gg/8pRpHETxa4" target="_blank" rel="noopener">Discord コミュニティ</a></li>
+        </ul>
+        <p style="margin-top:1rem;font-size:0.85rem;color:var(--text-dim);">ライセンス: MIT（package.json）。トレードマークは TRADEMARK.md を参照。</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
+    document.querySelectorAll('.mermaid').forEach(async (el) => {
+      const id = 'mmd-' + Math.random().toString(36).slice(2);
+      const { svg } = await mermaid.render(id, el.textContent);
+      el.innerHTML = svg;
+    });
+    document.querySelectorAll('.mermaid-wrap').forEach((wrap) => {
+      const inner = wrap.querySelector('.mermaid-inner');
+      let zoom = 1;
+      const INITIAL = 1;
+      wrap.querySelectorAll('[data-zoom]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const mode = btn.getAttribute('data-zoom');
+          if (mode === 'in') zoom = Math.min(zoom + 0.15, 2.5);
+          else if (mode === 'out') zoom = Math.max(zoom - 0.15, 0.5);
+          else zoom = INITIAL;
+          inner.style.transform = 'scale(' + zoom + ')';
+          inner.style.transformOrigin = 'center top';
+        });
+      });
+    });
+  </script>
+  <script>
+  (function() {
+    var toc = document.getElementById('toc');
+    if (!toc) return;
+    var links = toc.querySelectorAll('a[href^="#"]');
+    var sections = [];
+    links.forEach(function(a) {
+      var id = a.getAttribute('href').slice(1);
+      var el = document.getElementById(id);
+      if (el) sections.push({ link: a, head: el });
+    });
+    function updateActive() {
+      var top = window.scrollY + 24;
+      var current = sections[0] || null;
+      sections.forEach(function(s) {
+        var rect = s.head.getBoundingClientRect();
+        var docTop = rect.top + window.scrollY;
+        if (docTop <= top) current = s;
+      });
+      sections.forEach(function(s) {
+        s.link.classList.toggle('active', s === current);
+      });
+    }
+    window.addEventListener('scroll', updateActive, { passive: true });
+    updateActive();
+  })();
+  </script>
+</body>
+</html>

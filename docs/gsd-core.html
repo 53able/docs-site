@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gsd-core — GSD Core メタプロンプト・コンテキストエンジニアリング</title>
+  <meta name="description" content="open-gsd/gsd-core のフェーズループ、マルチエージェント、.planning/ 状態、インストーラーと gsd-tools を整理したビジュアル解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="gsd-core — GSD Core メタプロンプト・コンテキストエンジニアリング">
+  <meta property="og:description" content="Discuss→Plan→Execute→Verify→Ship のフェーズループと、複数 AI ランタイム向けインストーラーをまとめた open-gsd/gsd-core のビジュアル解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/gsd-core.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="gsd-core — GSD Core メタプロンプト・コンテキストエンジニアリング">
+  <meta name="twitter:description" content="フェーズループ、.planning/ 状態、commands/workflows/agents レイヤーを整理した open-gsd/gsd-core のビジュアル解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Red+Hat+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI — Manrope / slate-blue) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.008 250);
+      --foreground: oklch(0.17 0.03 255);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.17 0.03 255);
+      --muted: oklch(0.95 0.012 250);
+      --muted-foreground: oklch(0.46 0.04 255);
+      --accent: oklch(0.95 0.014 250);
+      --accent-foreground: oklch(0.18 0.03 255);
+      --border: oklch(0.88 0.02 250);
+      --ring: oklch(0.62 0.06 250);
+      --chart-1: oklch(0.52 0.12 250);
+      --chart-2: oklch(0.58 0.1 195);
+      --chart-3: oklch(0.65 0.11 85);
+      --chart-4: oklch(0.55 0.1 320);
+      --chart-5: oklch(0.5 0.08 155);
+      --code-bg: var(--muted);
+      --code-text: #1e3a5f;
+      --font-body: 'Manrope', system-ui, sans-serif;
+      --font-mono: 'Red Hat Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.11 0.02 255);
+        --foreground: oklch(0.96 0.01 250);
+        --card: oklch(0.16 0.022 255);
+        --card-foreground: oklch(0.96 0.01 250);
+        --muted: oklch(0.22 0.025 255);
+        --muted-foreground: oklch(0.68 0.04 250);
+        --accent: oklch(0.22 0.025 255);
+        --accent-foreground: oklch(0.96 0.01 250);
+        --border: oklch(1 0 0 / 10%);
+        --ring: oklch(0.5 0.05 250);
+        --chart-1: oklch(0.72 0.11 250);
+        --chart-2: oklch(0.7 0.09 195);
+        --chart-3: oklch(0.78 0.1 85);
+        --chart-4: oklch(0.68 0.09 320);
+        --chart-5: oklch(0.7 0.08 155);
+        --code-bg: #0d1520;
+        --code-text: #93c5fd;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    .ve-card--elevated { background: var(--accent); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 60%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(color-mix(in oklch, var(--chart-1) 6%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in oklch, var(--chart-1) 6%, transparent) 1px, transparent 1px),
+        radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-2) 12%, transparent) 0%, transparent 55%);
+      background-size: 40px 40px, 40px 40px, 100% 100%;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc { position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1; max-height: calc(100dvh - 48px); overflow-y: auto; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; }
+      body { padding: 24px; }
+      .toc { position: sticky; top: 0; z-index: 200; display: flex; gap: 4px; overflow-x: auto; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0; margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; padding: 6px 10px; }
+      .toc a.active { border-bottom-color: var(--chart-1); }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+    .badge-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .badge { display: inline-flex; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); }
+    .badge--accent { background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); border-color: color-mix(in oklch, var(--chart-1) 30%, transparent); }
+    .feature-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .feature-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; }
+    .feature-card strong { display: block; margin-bottom: 0.35rem; }
+    .feature-card p { font-size: 0.85rem; margin: 0; color: var(--text-dim); }
+    @media (max-width: 720px) { .feature-grid { grid-template-columns: 1fr; } }
+    .step-list { list-style: none; padding: 0; margin: 0.75rem 0 1rem; }
+    .step-list li { display: flex; gap: 0.875rem; align-items: flex-start; margin-bottom: 0.75rem; }
+    .step-num { flex-shrink: 0; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: color-mix(in oklch, var(--chart-1) 15%, transparent); color: var(--chart-1); font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 0.1rem; }
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+    .back { margin-top: 2.5rem; font-size: 0.8125rem; }
+    .back a { font-family: var(--font-mono); text-decoration: none; }
+    .back a:hover { text-decoration: underline; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#phase-loop">フェーズループ</a>
+    <a href="#install">インストール</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#layout">リポジトリ構成</a>
+    <a href="#commands">コマンド</a>
+    <a href="#development">開発</a>
+    <a href="#links">リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>gsd-core</h1>
+    <p class="subtitle">GSD Core — Git. Ship. Done.（メタプロンプト・コンテキストエンジニアリング・仕様駆動開発）</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> プロジェクト</span>
+      <div class="badge-row">
+        <span class="badge badge--accent">@opengsd/gsd-core</span>
+        <span class="badge">1.3.x-dev</span>
+        <span class="badge">MIT</span>
+        <span class="badge">Node 22+</span>
+      </div>
+      <p><strong>GSD Core</strong>（GitHub: <a href="https://github.com/open-gsd/gsd-core" target="_blank" rel="noopener">open-gsd/gsd-core</a>）は、Claude Code・OpenCode・Gemini CLI・Codex・Copilot・Cursor・Windsurf など複数の AI コーディングエージェント向けの、メタプロンプト・コンテキストエンジニアリング・仕様駆動開発のフレームワーク。コンテキスト窓が埋まるほど品質が落ちる <em>context rot</em> を避けるため、調査・計画・実行の重い処理を fresh context のサブエージェントに任せ、メインセッションを薄く保つ。</p>
+      <p>README のタグラインは <strong>Git. Ship. Done.</strong>。マイルストーン単位で Discuss → Plan → Execute → Verify → Ship のループを繰り返し、成果物はプロジェクト直下の <code>.planning/</code> に Markdown と JSON で残す。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">/gsd-*</span><span class="ve-kpi-card__label">スラッシュコマンド</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">.planning</span><span class="ve-kpi-card__label">プロジェクト状態</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">200k</span><span class="ve-kpi-card__label">エグゼキュータ文脈</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">gsd-tools</span><span class="ve-kpi-card__label">CLI 補助</span></div>
+      </div>
+    </div>
+
+    <div class="ve-callout">
+      <strong>gsd-pi との関係:</strong> <a href="gsd-pi.html">gsd-pi</a> は open-gsd 組織のローカルファースト CLI コーディングエージェント（<code>@opengsd/gsd-pi</code>）。GSD Core は複数ランタイムにインストールされるワークフロー・コマンド・フックのパッケージで、v1 系のメンテナンスラインとして README でも位置づけられている。
+    </div>
+
+    <section id="phase-loop" class="sec-head">2 — フェーズループと設計原則</section>
+    <div class="ve-card ve-card--elevated" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 5 ステップ（各フェーズ）</span>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">flowchart LR
+  D[Discuss] --> P[Plan]
+  P --> E[Execute]
+  E --> V[Verify]
+  V --> S[Ship]
+  S --> D2[次フェーズへ]</pre>
+      </div>
+      <ol class="step-list">
+        <li><span class="step-num">1</span><span><strong>Discuss</strong> — 実装方針（ライブラリ・エラー処理・境界）を計画前に <code>CONTEXT.md</code> へ記録。</span></li>
+        <li><span class="step-num">2</span><span><strong>Plan</strong> — 調査・分解・plan-checker。並列 wave 向けに <code>PLAN.md</code> を依存順に並べる。</span></li>
+        <li><span class="step-num">3</span><span><strong>Execute</strong> — 各エグゼキュータは fresh 200k 文脈で計画どおりにコミット。</span></li>
+        <li><span class="step-num">4</span><span><strong>Verify</strong> — 要件・決定・成果の突合。差分があれば修正プラン。</span></li>
+        <li><span class="step-num">5</span><span><strong>Ship</strong> — PR 作成とフェーズアーカイブ、<code>STATE.md</code> 更新。</span></li>
+      </ol>
+      <p>視覚 UI が絡むフェーズでは、Discuss と Plan の間に任意の <code>/gsd-ui-phase</code> で <code>UI-SPEC.md</code> を挟める（the-phase-loop ドキュメント）。</p>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card"><strong>Fresh context per agent</strong><p>オーケストレータが起動する各エージェントはクリーンな文脈。累積会話による劣化を防ぐ。</p></div>
+      <div class="feature-card"><strong>Thin orchestrators</strong><p><code>gsd-core/workflows/*.md</code> は重い処理をせず、init・spawn・状態更新に徹する。</p></div>
+      <div class="feature-card"><strong>File-based state</strong><p>DB なし。状態は <code>.planning/</code> の人間可読ファイル。git 共有も可能。</p></div>
+      <div class="feature-card"><strong>Absent = enabled</strong><p><code>config.json</code> でキー欠落は有効扱い。無効化は明示的に指定。</p></div>
+      <div class="feature-card"><strong>Defense in depth</strong><p>plan-checker、タスク単位コミット、実行後 verify、UAT まで多層。</p></div>
+      <div class="feature-card"><strong>マルチランタイム</strong><p>インストーラが Claude / Codex / Gemini 等へコマンド・スキル・フックを配布。</p></div>
+    </div>
+
+    <section id="install" class="sec-head">3 — インストールと初回プロジェクト</section>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> 推奨インストール</span>
+      <div class="ve-code-block"><pre><code>npx @opengsd/gsd-core@latest</code></pre></div>
+      <p>対話でランタイム（Claude Code、OpenCode、Gemini CLI、Kilo、Codex、Copilot、Cursor、Windsurf など）とグローバル／ローカルインストールを選ぶ。<strong>agents/</strong> や <strong>commands/</strong> を手でコピーしないこと — クロスランタイム互換のためインストーラ必須（README）。</p>
+      <p>初回プロジェクト:</p>
+      <div class="ve-code-block"><pre><code>/gsd-new-project
+/gsd-new-project --auto @prd.md</code></pre></div>
+      <p>生成物の例: <code>PROJECT.md</code>、<code>REQUIREMENTS.md</code>、<code>ROADMAP.md</code>、<code>STATE.md</code>、<code>config.json</code>、<code>research/</code>、<code>CLAUDE.md</code>（COMMANDS リファレンス）。</p>
+    </div>
+
+    <section id="architecture" class="sec-head">4 — アーキテクチャ</section>
+    <div class="ve-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> レイヤー（ARCHITECTURE.md 要約）</span>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">flowchart TB
+  U[User /gsd-command] --> CMD[commands/gsd/*.md]
+  CMD --> WF[gsd-core/workflows/*.md]
+  WF --> A1[Agent fresh context]
+  WF --> A2[Agent fresh context]
+  WF --> A3[Agent fresh context]
+  A1 --> CLI[gsd-tools.cjs]
+  A2 --> CLI
+  A3 --> CLI
+  CLI --> FS[".planning/ PROJECT ROADMAP STATE phases"]</pre>
+      </div>
+      <ul>
+        <li><strong>Command layer</strong> — ユーザー向けエントリ。YAML frontmatter + プロンプトでワークフローを起動。</li>
+        <li><strong>Workflow layer</strong> — 参照読み込み、エージェント spawn、状態遷移。</li>
+        <li><strong>CLI tools</strong> — <code>gsd-tools</code> の command families、routing hub、observability seams。</li>
+        <li><strong>File system</strong> — <code>.planning/</code> に永続メモリ（セッション跨ぎ・<code>/clear</code> 後も残る）。</li>
+      </ul>
+    </div>
+
+    <section id="layout" class="sec-head">5 — リポジトリ構成</section>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>パス</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td><code>commands/gsd/</code></td><td>スラッシュコマンド定義（ランタイムへインストール）</td></tr>
+          <tr><td><code>gsd-core/workflows/</code></td><td>オーケストレーション Markdown</td></tr>
+          <tr><td><code>gsd-core/bin/</code></td><td><code>gsd-tools.cjs</code> とビルド済み lib</td></tr>
+          <tr><td><code>agents/</code></td><td>エージェント定義（インストール経由で配置）</td></tr>
+          <tr><td><code>hooks/</code></td><td>ランタイムフック（ビルドスクリプトあり）</td></tr>
+          <tr><td><code>bin/install.js</code></td><td>npm <code>gsd-core</code> インストーラエントリ</td></tr>
+          <tr><td><code>docs/</code></td><td>チュートリアル・How-to・COMMANDS・ARCHITECTURE 等</td></tr>
+          <tr><td><code>scripts/</code></td><td>ビルド・lint・テスト・changeset</td></tr>
+          <tr><td><code>tests/</code></td><td>unit / integration / install / security / slow スイート</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section id="commands" class="sec-head">6 — コマンド（抜粋）</section>
+    <p>ランタイムごとに表記が異なる: Claude / Copilot 等は <code>/gsd-command-name</code>、Gemini は <code>/gsd:command-name</code>、Codex は <code>$gsd-command-name</code>（COMMANDS.md）。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>名前空間ルータ（v1.40+）</th><th>ルーティング先</th></tr></thead>
+        <tbody>
+          <tr><td><code>/gsd-workflow</code></td><td>discuss / plan / execute / verify / phase / progress</td></tr>
+          <tr><td><code>/gsd-project</code></td><td>マイルストーン、監査、サマリー</td></tr>
+          <tr><td><code>/gsd-quality</code></td><td>code review、debug、audit、security、eval、ui</td></tr>
+          <tr><td><code>/gsd-context</code></td><td>map、graphify、docs、learnings</td></tr>
+          <tr><td><code>/gsd-manage</code></td><td>config、workspace、workstreams、ship、inbox 等</td></tr>
+          <tr><td><code>/gsd-ideate</code></td><td>explore、sketch、spike、spec、capture</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>コアコマンド</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>/gsd-new-project</code></td><td>新規プロジェクト初期化（<code>--auto @file</code> で PRD 抽出）</td></tr>
+          <tr><td><code>/gsd-workspace</code></td><td>隔離ワークスペースの作成・一覧・削除</td></tr>
+          <tr><td><code>/gsd-plan-phase</code> 等</td><td>フェーズ単位の plan / execute / verify（具体名は COMMANDS 参照）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>公式ドキュメント索引: <a href="https://github.com/open-gsd/gsd-core/tree/main/docs" target="_blank" rel="noopener">open-gsd/gsd-core/docs</a>（チュートリアル・How-to・Explanation）。</p>
+
+    <section id="development" class="sec-head">7 — 開発</section>
+    <div class="ve-card ve-card--recessed" style="--i:4">
+      <div class="ve-code-block"><pre><code>npm install
+npm run build
+npm test
+
+# スイート例
+npm run test:unit
+npm run test:integration
+npm run test:install
+npm run lint</code></pre></div>
+      <p>package.json では Node <code>&gt;=22</code>、npm <code>&gt;=10</code>。公開バイナリは <code>gsd-core</code>（インストーラ）と <code>gsd-tools</code>。カバレッジ目標は lib 向けに lines 70%（<code>test:coverage</code>）。</p>
+    </div>
+
+    <section id="links" class="sec-head">8 — リンク</section>
+    <div class="ve-card" style="--i:5">
+      <ul>
+        <li><a href="https://github.com/open-gsd/gsd-core" target="_blank" rel="noopener">open-gsd/gsd-core</a> — ソースリポジトリ</li>
+        <li><a href="https://www.npmjs.com/package/@opengsd/gsd-core" target="_blank" rel="noopener">@opengsd/gsd-core</a> — npm パッケージ</li>
+        <li><a href="https://github.com/open-gsd/gsd-core/blob/main/docs/tutorials/your-first-project.md" target="_blank" rel="noopener">Your first project</a> — チュートリアル</li>
+        <li><a href="https://github.com/open-gsd/gsd-core/blob/main/docs/explanation/context-engineering.md" target="_blank" rel="noopener">Context engineering</a> — 設計の背景</li>
+        <li><a href="https://discord.gg/mYgfVNfA2r" target="_blank" rel="noopener">Discord</a> — コミュニティ</li>
+        <li><a href="gsd-pi.html">gsd-pi ビジュアル解説（本サイト）</a> — ローカルファーストエージェント</li>
+      </ul>
+      <p class="back"><a href="../index.html">← 資料一覧に戻る</a></p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
+</script>
+<script>
+(function () {
+  const toc = document.getElementById('toc');
+  if (!toc) return;
+  const links = Array.from(toc.querySelectorAll('a[href^="#"]'));
+  const sections = links.map(function (link) {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    return el ? { id: id, el: el, link: link } : null;
+  }).filter(Boolean);
+
+  const setActive = function (current) {
+    sections.forEach(function (s) {
+      s.link.classList.toggle('active', s === current);
+    });
+    if (current && window.innerWidth <= 1000) {
+      current.link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  };
+
+  const observer = new IntersectionObserver(function (entries) {
+    const visible = entries
+      .filter(function (entry) { return entry.isIntersecting; })
+      .map(function (entry) {
+        return sections.find(function (s) { return s.el === entry.target; });
+      })
+      .filter(Boolean);
+    if (visible.length > 0) setActive(visible[0]);
+  }, { rootMargin: '-10% 0px -80% 0px' });
+
+  sections.forEach(function (s) { observer.observe(s.el); });
+
+  links.forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      const current = sections.find(function (s) { return s.id === id; });
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', '#' + id);
+        if (current) setActive(current);
+      }
+    });
+  });
+
+  if (sections.length > 0) setActive(sections[0]);
+})();
+</script>
+</body>
+</html>

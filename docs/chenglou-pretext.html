@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>chenglou/pretext — リポジトリ構成と検証パイプライン</title>
+  <meta name="description" content="GitHub の chenglou/pretext リポジトリにおけるソース配置、Bun ベースの開発コマンド、ブラウザ精度スイープ、コーパス検証、デモ静的サイトの入口を整理した資料。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="chenglou/pretext — リポジトリ構成と検証パイプライン">
+  <meta property="og:description" content="GitHub の chenglou/pretext リポジトリにおけるソース配置、Bun ベースの開発コマンド、ブラウザ精度スイープ、コーパス検証、デモ静的サイトの入口を整理した資料。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/chenglou-pretext.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="chenglou/pretext — リポジトリ構成と検証パイプライン">
+  <meta name="twitter:description" content="GitHub の chenglou/pretext リポジトリにおけるソース配置、Bun ベースの開発コマンド、ブラウザ精度スイープ、コーパス検証、デモ静的サイトの入口を整理した資料。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Azeret+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.008 85);
+      --foreground: oklch(0.22 0.02 35);
+      --card: oklch(1 0.01 85);
+      --card-foreground: oklch(0.22 0.02 35);
+      --popover: oklch(1 0.01 85);
+      --popover-foreground: oklch(0.22 0.02 35);
+      --primary: oklch(0.28 0.04 35);
+      --primary-foreground: oklch(0.98 0.01 85);
+      --secondary: oklch(0.96 0.02 85);
+      --secondary-foreground: oklch(0.28 0.04 35);
+      --muted: oklch(0.94 0.02 90);
+      --muted-foreground: oklch(0.48 0.03 40);
+      --accent: oklch(0.94 0.03 75);
+      --accent-foreground: oklch(0.28 0.04 35);
+      --destructive: oklch(0.55 0.2 25);
+      --border: oklch(0.88 0.02 80);
+      --input: oklch(0.88 0.02 80);
+      --ring: oklch(0.55 0.16 42);
+      --chart-1: oklch(0.55 0.16 42);
+      --chart-2: oklch(0.52 0.12 155);
+      --chart-3: oklch(0.62 0.14 48);
+      --chart-4: oklch(0.72 0.1 75);
+      --chart-5: oklch(0.45 0.08 200);
+      --code-bg: oklch(0.96 0.02 90);
+      --code-text: oklch(0.32 0.08 42);
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.015 35);
+        --foreground: oklch(0.95 0.02 85);
+        --card: oklch(0.19 0.02 38);
+        --card-foreground: oklch(0.95 0.02 85);
+        --popover: oklch(0.19 0.02 38);
+        --popover-foreground: oklch(0.95 0.02 85);
+        --primary: oklch(0.92 0.03 85);
+        --primary-foreground: oklch(0.18 0.02 35);
+        --secondary: oklch(0.24 0.02 40);
+        --secondary-foreground: oklch(0.95 0.02 85);
+        --muted: oklch(0.26 0.02 42);
+        --muted-foreground: oklch(0.68 0.04 75);
+        --accent: oklch(0.26 0.03 50);
+        --accent-foreground: oklch(0.95 0.02 85);
+        --destructive: oklch(0.62 0.18 22);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.68 0.14 48);
+        --chart-1: oklch(0.72 0.14 48);
+        --chart-2: oklch(0.65 0.12 155);
+        --chart-3: oklch(0.78 0.12 55);
+        --chart-4: oklch(0.55 0.1 42);
+        --chart-5: oklch(0.6 0.08 200);
+        --code-bg: oklch(0.2 0.02 40);
+        --code-text: oklch(0.82 0.1 70);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 85%, var(--chart-1) 15%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block__lang { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--chart-1); padding: 0.5rem 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.5rem 1rem 0.875rem; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.65; color: var(--code-text); white-space: pre; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: oklch(from var(--chart-1) l c h / 0.06); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.5rem; line-height: 1.1; font-weight: 700; color: var(--chart-1); font-family: var(--font-mono); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 0.75rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 20% 0%, oklch(0.55 0.14 42 / 0.08) 0%, transparent 50%),
+        linear-gradient(180deg, oklch(0.94 0.02 85 / 0.6) 0%, transparent 45%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 20% 0%, oklch(0.65 0.14 48 / 0.12) 0%, transparent 50%),
+          linear-gradient(180deg, oklch(0.2 0.02 40 / 0.5) 0%, transparent 45%);
+      }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); background: oklch(from var(--chart-1) l c h / 0.08); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); color: var(--foreground); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0.25rem 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--code-bg); color: var(--code-text); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">目次</div>
+    <a href="#intro">1 — 概要</a>
+    <a href="#layout">2 — ディレクトリ役割</a>
+    <a href="#workflow">3 — 開発コマンド</a>
+    <a href="#accuracy">4 — 精度・ベンチ</a>
+    <a href="#corpus">5 — コーパス</a>
+    <a href="#pages">6 — デモとレポート</a>
+    <a href="#api-doc">7 — npm API の参照先</a>
+    <a href="#links">8 — リンク</a>
+  </nav>
+  <div class="main">
+    <h1>chenglou/pretext リポジトリ</h1>
+    <p class="subtitle">構成・検証パイプライン・デモ入口の地図（npm パッケージ <code>@chenglou/pretext</code> の公開元）</p>
+
+    <section id="intro" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> この資料の範囲</span>
+      <p>本ページは <a href="https://github.com/chenglou/pretext" target="_blank" rel="noopener">GitHub の chenglou/pretext</a> を<strong>モノレポとして</strong>読むためのナビです。<code>prepare</code> / <code>layout</code> などパッケージ API の正はリポジトリの <a href="https://github.com/chenglou/pretext/blob/main/README.md" target="_blank" rel="noopener">README.md</a> と <a href="https://www.npmjs.com/package/@chenglou/pretext" target="_blank" rel="noopener">npm パッケージページ</a>に置き、ここでは <code>src/</code> 周辺の責務、Bun スクリプト、チェックイン済み JSON スナップショット、静的デモの URL パスを整理します。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">Bun</div>
+          <div class="ve-kpi-card__label">ランタイム・パッケージマネージャ</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">Canvas</div>
+          <div class="ve-kpi-card__label">計測のグラウンドトゥルース</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">JSON</div>
+          <div class="ve-kpi-card__label">精度・ベンチの退避先</div>
+        </div>
+      </div>
+    </div>
+
+    <section id="layout" class="sec-head">2 — ディレクトリ役割</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 主要ツリー</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>パス</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>src/</code></td><td>コア実装（<code>layout.ts</code>、<code>line-break.ts</code>、<code>measurement.ts</code>、<code>bidi.ts</code> など）。パッケージのエクスポート元。</td></tr>
+            <tr><td><code>pages/</code></td><td>ローカル開発サーバが配信する HTML/TS エントリ。精度ページ・ベンチ・コーパス UI、<code>demos/</code> 配下のインタラクティブ例。</td></tr>
+            <tr><td><code>scripts/</code></td><td>ブラウザ自動化によるスイープ、スナップショット更新、コーパス診断、パッケージスモークテスト等の CLI。</td></tr>
+            <tr><td><code>accuracy/</code></td><td>ブラウザ別の広幅スイープ結果（Chrome / Firefox / Safari）と <code>letter-spacing</code> 系のコンパクト Oracle。</td></tr>
+            <tr><td><code>benchmarks/</code></td><td>パフォーマンス検査のメディアン結果（主に Chrome、Safari は参考）。</td></tr>
+            <tr><td><code>corpora/</code></td><td>多言語・混在スクリプトの長文サンプル、<code>step10</code> スイープ JSON、ダッシュボード用集計。</td></tr>
+            <tr><td><code>status/</code></td><td><code>dashboard.json</code> — 精度・ベンチ・コーパス入力のマシン可読サマリ。</td></tr>
+            <tr><td><code>shared/</code></td><td>フロント共通の小さなユーティリティ（例: ナビ状態）。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="workflow" class="sec-head">3 — 開発コマンド</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 日次で触るもの</span>
+      <p><code>README.md</code> と <code>DEVELOPMENT.md</code> に揃えた要約。詳細オプションは upstream のドキュメントを参照。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>コマンド</th><th>内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>bun install</code></td><td>初回セットアップ。</td></tr>
+            <tr><td><code>bun start</code></td><td>ローカルページサーバ（既定でポート 3000 付近）。<code>/demos/index</code> などを開く。</td></tr>
+            <tr><td><code>bun run check</code></td><td>型検査 + Lint。</td></tr>
+            <tr><td><code>bun test</code></td><td>小さめの不変条件テスト。</td></tr>
+            <tr><td><code>bun run build:package</code></td><td>npm 向け <code>dist/</code> を生成。</td></tr>
+            <tr><td><code>bun run site:build</code></td><td>静的デモサイトを <code>site/</code> にビルド。</td></tr>
+            <tr><td><code>bun run generate:bidi-data</code></td><td>簡略化 Unicode bidi レンジの再生成。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>ブラウザ検証系（抜粋）</h3>
+      <div class="ve-code-block">
+        <div class="ve-code-block__lang">shell</div>
+        <pre><code>bun run accuracy-check
+bun run benchmark-check
+bun run corpus-sweep
+bun run corpus-status</code></pre>
+      </div>
+      <p>ブラウザターゲット別に <code>:safari</code> / <code>:firefox</code> サフィックスが付くタスクが並ぶ。スナップショット更新は <code>accuracy-snapshot</code> 系や <code>letter-spacing-snapshot</code> など名前に <code>snapshot</code> が付いたスクリプトで行う。</p>
+    </div>
+
+    <section id="accuracy" class="sec-head">4 — 精度・ベンチマーク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> チェックイン JSON</span>
+      <p><code>STATUS.md</code> によれば、精度スイープは「フォント × サイズ × 幅 × テキスト集合」の行列をブラウザで走らせた結果を JSON に固定している。公開の <code>/accuracy</code> ページは<strong>回帰ゲート</strong>寄りで、日々の意思決定の主指標ではない、という位置づけ。</p>
+      <div class="ve-callout">
+        <strong>ベンチ:</strong> チェックイン値は 3 回冷起動チェックの中央値。ローカル単発のページ数値とはズレうるため、ホットパス変更時は <code>src/analysis.ts</code> / <code>measurement.ts</code> / <code>line-break.ts</code> / <code>layout.ts</code> / <code>bidi.ts</code> または <code>pages/benchmark.ts</code> を触ったらスナップショット更新手順を踏む、と upstream が案内している。
+      </div>
+    </div>
+
+    <section id="corpus" class="sec-head">5 — コーパス</section>
+    <div class="ve-card ve-card--recessed" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 長文とスイープ</span>
+      <p><code>corpora/</code> には言語横断のテキストファイルと、Chrome/Safari の <code>step=10</code> 幅スイープ結果、<code>dashboard.json</code> などが置かれる。<code>corpus-check</code> で単一コーパスを狭い幅集合で診断し、<code>corpus-taxonomy</code> で不一致フィールドをバケツ分けする、といった運用が <code>DEVELOPMENT.md</code> に列挙されている。</p>
+    </div>
+
+    <section id="pages" class="sec-head">6 — デモとレポート</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 覚えておく URL</span>
+      <p>ローカルサーバ上のパス（<code>DEVELOPMENT.md</code> より）。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>パス</th><th>内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>/demos/index</code></td><td>デモ一覧。</td></tr>
+            <tr><td><code>/demos/dynamic-layout</code></td><td>可変幅フローなど手動レイアウトの厚めの例。</td></tr>
+            <tr><td><code>/demos/markdown-chat</code></td><td>チャット風 UI のサンプル。</td></tr>
+            <tr><td><code>/accuracy</code></td><td>ブラウザ精度レポート。</td></tr>
+            <tr><td><code>/benchmark</code></td><td>ベンチマーク表示。</td></tr>
+            <tr><td><code>/corpus</code></td><td>コーパス向け UI。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>ホスト済みのライブデモは <a href="https://chenglou.me/pretext/" target="_blank" rel="noopener">chenglou.me/pretext</a> とコミュニティの <a href="https://somnai-dreams.github.io/pretext-demos" target="_blank" rel="noopener">pretext-demos</a> も参照。</p>
+    </div>
+
+    <section id="api-doc" class="sec-head">7 — npm API の参照先</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 利用者向けドキュメント</span>
+      <p>型付き API、コード例、注意事項（<code>system-ui</code> や Canvas 前提など）は upstream の README が一次情報。パッケージのバージョンと依存は npm を参照。</p>
+      <ul>
+        <li><a href="https://github.com/chenglou/pretext/blob/main/README.md" target="_blank" rel="noopener">README.md（GitHub）</a> — API 節・インストール・デモ導線</li>
+        <li><a href="https://www.npmjs.com/package/@chenglou/pretext" target="_blank" rel="noopener">@chenglou/pretext（npm）</a> — 公開バンドルと README ミラー</li>
+      </ul>
+      <p><strong>本ページ</strong>はリポジトリの<strong>運用・検証・ツリー</strong>に限定する。コードを触る前の着地先として使う。</p>
+    </div>
+
+    <section id="links" class="sec-head">8 — リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/chenglou/pretext" target="_blank" rel="noopener">GitHub: chenglou/pretext</a></li>
+        <li><a href="https://github.com/chenglou/pretext/blob/main/DEVELOPMENT.md" target="_blank" rel="noopener">DEVELOPMENT.md</a>（コマンド一覧の正）</li>
+        <li><a href="https://www.npmjs.com/package/@chenglou/pretext" target="_blank" rel="noopener">npm: @chenglou/pretext</a></li>
+        <li><a href="https://github.com/chenglou/text-layout" target="_blank" rel="noopener">chenglou/text-layout</a>（設計の源流）</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

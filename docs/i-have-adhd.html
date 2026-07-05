@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>i-have-adhd — Claude Code 向け ADHD フレンドリー出力スキル</title>
+  <meta name="description" content="ayghri/i-have-adhd の技術概要。Claude Code プラグインとして /i-have-adhd で応答を action-first・番号付き手順・状態の再提示に整形する 10 ルールと、3 つのインストール経路。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="i-have-adhd — Claude Code 向け ADHD フレンドリー出力スキル">
+  <meta property="og:description" content="フックなし・Markdown 1 枚のスキルで、Claude Code の応答を「最初の行が次のアクション」に揃える。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/i-have-adhd.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="i-have-adhd — Claude Code 向け ADHD フレンドリー出力スキル">
+  <meta name="twitter:description" content="10 ルール・スラッシュコマンド・3 つの導入経路の整理。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600;7..72,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.008 200);
+      --foreground: oklch(0.2 0.03 230);
+      --card: oklch(0.995 0.006 200);
+      --card-foreground: oklch(0.2 0.03 230);
+      --popover: oklch(0.995 0.006 200);
+      --popover-foreground: oklch(0.2 0.03 230);
+      --primary: oklch(0.28 0.06 230);
+      --primary-foreground: oklch(0.98 0.01 200);
+      --secondary: oklch(0.93 0.025 200);
+      --secondary-foreground: oklch(0.26 0.05 230);
+      --muted: oklch(0.92 0.02 200);
+      --muted-foreground: oklch(0.46 0.04 230);
+      --accent: oklch(0.94 0.03 200);
+      --accent-foreground: oklch(0.26 0.05 230);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.86 0.025 200);
+      --input: oklch(0.86 0.025 200);
+      --ring: oklch(0.55 0.1 200);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.38 0.08 230);
+      --chart-4: oklch(0.72 0.12 155);
+      --chart-5: oklch(0.58 0.1 72);
+      --code-bg: var(--muted);
+      --code-text: #0c4a6e;
+      --font-body: 'Literata', Georgia, 'Times New Roman', serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.02 230);
+        --foreground: oklch(0.95 0.02 200);
+        --card: oklch(0.18 0.025 230);
+        --card-foreground: oklch(0.95 0.02 200);
+        --popover: oklch(0.18 0.025 230);
+        --popover-foreground: oklch(0.95 0.02 200);
+        --primary: oklch(0.88 0.04 200);
+        --primary-foreground: oklch(0.15 0.03 230);
+        --secondary: oklch(0.25 0.03 230);
+        --secondary-foreground: oklch(0.95 0.02 200);
+        --muted: oklch(0.27 0.03 230);
+        --muted-foreground: oklch(0.72 0.04 200);
+        --accent: oklch(0.27 0.03 230);
+        --accent-foreground: oklch(0.95 0.02 200);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.58 0.1 200);
+        --chart-1: oklch(0.72 0.14 200);
+        --chart-2: oklch(0.78 0.14 80);
+        --chart-3: oklch(0.68 0.1 230);
+        --chart-4: oklch(0.75 0.12 155);
+        --chart-5: oklch(0.7 0.1 72);
+        --code-bg: oklch(0.16 0.02 230);
+        --code-text: #7dd3fc;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 82%, var(--chart-1) 18%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.65; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--border) 45%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-weight: 700; font-family: var(--font-mono); color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 14%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.45 0.12 200 / 0.08) 0%, transparent 52%);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-weight: 400;
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.72 0.14 200 / 0.12) 0%, transparent 52%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); font-weight: 400; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; font-weight: 400; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 900px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 800px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card { border-radius: var(--radius-lg); padding: 1rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; border: 1px solid var(--border); }
+    .compare-card--bad { background: color-mix(in oklch, var(--destructive) 8%, var(--card)); border-color: color-mix(in oklch, var(--destructive) 25%, var(--border)); }
+    .compare-card--good { background: color-mix(in oklch, var(--chart-4) 12%, var(--card)); border-color: color-mix(in oklch, var(--chart-4) 35%, var(--border)); }
+    .compare-label { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+    .compare-card--bad .compare-label { color: var(--destructive); }
+    .compare-card--good .compare-label { color: var(--chart-4); }
+    .compare-quote { font-style: italic; color: var(--muted-foreground); margin-bottom: 0.5rem; }
+    .compare-note { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-dim); }
+
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; overflow-x: auto; margin: 1rem 0; display: flex; justify-content: center; }
+    .mermaid { font-family: var(--font-mono) !important; }
+
+    .badge--good, .badge--bad {
+      display: inline-block; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 6px; border-radius: 4px;
+    }
+    .badge--good { background: color-mix(in oklch, var(--chart-4) 18%, transparent); color: var(--chart-4); }
+    .badge--bad { background: color-mix(in oklch, var(--destructive) 12%, transparent); color: var(--destructive); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="ページ内目次">
+    <div class="toc-title">Contents</div>
+    <a href="#overview">概要</a>
+    <a href="#problem">解決する摩擦</a>
+    <a href="#architecture">構成と動作</a>
+    <a href="#rules">10 のルール</a>
+    <a href="#compare">応答の比較</a>
+    <a href="#install">インストール</a>
+    <a href="#tuning">カスタマイズ</a>
+    <a href="#faq">FAQ</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <h1 id="overview">i-have-adhd</h1>
+      <p class="subtitle">ayghri/i-have-adhd — Claude Code 向け ADHD フレンドリー出力スキル（MIT）</p>
+      <p>ソースは <a href="https://github.com/ayghri/i-have-adhd" target="_blank" rel="noopener">GitHub: ayghri/i-have-adhd</a>。<code>/i-have-adhd</code> を実行すると、以降のセッション応答が <strong>action-first</strong>（最初の行がコマンド・パス・スニペット）、<strong>番号付き手順</strong>、<strong>ターンごとの状態再提示</strong>に揃う。フックやバックグラウンド処理は使わず、Markdown のスキル定義だけで動く。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">10</div>
+          <div class="ve-kpi-card__label">出力ルール</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">0</div>
+          <div class="ve-kpi-card__label">フック / 常駐</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">3</div>
+          <div class="ve-kpi-card__label">導入経路</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">MIT</div>
+          <div class="ve-kpi-card__label">ライセンス</div>
+        </div>
+      </div>
+    </div>
+
+    <section id="problem" class="sec-head">解決する摩擦</section>
+    <p>Claude Code の通常応答は、前置き・脱線・締めの定型句が混ざりやすい。ADHD の診断の有無に関わらず、「答えの前に 3 段落」は作業開始の摩擦になる。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>症状</th><th>スキル側の対策</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>前置きで本題が遅れる</td><td>1 行目を実行可能なアクションに固定（ルール 1・10）</td></tr>
+          <tr><td>手順が 1 段落に潰れる</td><td>複数ステップは番号リスト、1 ステップ 1 アクション（ルール 2）</td></tr>
+          <tr><td>ターン間で進捗を忘れる</td><td>「Step 3 of 5 done」のように状態を毎回再提示（ルール 5）</td></tr>
+          <tr><td>脱線で最初の課題が消える</td><td>副題は別質問として保留（ルール 4）</td></tr>
+          <tr><td>完了が埋もれる</td><td>何が動くようになったかを明示（ルール 7）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>「短くする」だけではない:</strong> ルールは <em>The Adult ADHD Tool Kit</em>（Ramsay &amp; Rostain）の戦略を、LLM の<strong>応答形状</strong>向けに写像したもの。診断は不要で、「 preamble を探すスクロール」が苦痛なら対象ユーザー。
+    </div>
+
+    <section id="architecture" class="sec-head">構成と動作</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> リポジトリ構成</span>
+      <div class="ve-code-block"><pre><code>i-have-adhd/
+├── .claude-plugin/
+│   ├── plugin.json          # プラグイン宣言
+│   └── marketplace.json     # marketplace add 用
+├── commands/
+│   └── i-have-adhd.md       # /i-have-adhd スラッシュコマンド
+└── skills/
+    └── i-have-adhd/
+        └── SKILL.md         # 10 ルール本体</code></pre></div>
+    </div>
+    <div class="mermaid-wrap">
+      <pre class="mermaid">flowchart TD
+  U["ユーザー: /i-have-adhd"] --> C["commands/i-have-adhd.md"]
+  C --> S["skills/i-have-adhd/SKILL.md を読み込み"]
+  S --> F["frontmatter description で適用タイミングを指定"]
+  F --> R["以降の応答を 10 ルールで整形"]
+  R --> X["stop adhd mode / normal mode で解除"]
+    </pre>
+    </div>
+    <ol>
+      <li>スラッシュコマンドが <code>SKILL.md</code> の有効化を指示する。</li>
+      <li>frontmatter の <code>description</code> が「いつルールを適用するか」をモデルに伝える（カジュアルな会話も含む）。</li>
+      <li>本文が「どう書くか」を 10 条で定義する。</li>
+      <li>セッション中は有効。 <code>stop adhd mode</code> または <code>normal mode</code> で解除。</li>
+    </ol>
+
+    <section id="rules" class="sec-head">10 のルール</section>
+    <p><code>skills/i-have-adhd/SKILL.md</code> が正。以下は README の要約。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>ルール</th><th>意図</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>次のアクションを先頭に</td><td>「分かった」と「やった」の間の摩擦を減らす</td></tr>
+          <tr><td>2</td><td>多段タスクは番号付き</td><td>1 ステップ 1 境界。1 行に「それから」が 2 回入らない</td></tr>
+          <tr><td>3</td><td>末尾は 1 つの具体アクション</td><td>2 分以内にできる次の一手</td></tr>
+          <tr><td>4</td><td>脱線を抑制</td><td>副題は別質問として提示</td></tr>
+          <tr><td>5</td><td>毎ターン状態を再提示</td><td>作業記憶外の進捗を画面に戻す</td></tr>
+          <tr><td>6</td><td>時間見積もりは具体単位</td><td>「少し」より「15 分」</td></tr>
+          <tr><td>7</td><td>完了を可視化</td><td>何が動くようになったかを前面に</td></tr>
+          <tr><td>8</td><td>エラーは事実ベース</td><td>「Uh oh」禁止。原因と修正を並記</td></tr>
+          <tr><td>9</td><td>リストは 5 件まで</td><td>超えたら now/later や must/nice で分割</td></tr>
+          <tr><td>10</td><td> preamble / recap / closer 禁止</td><td>「Great question」「Hope this helps!」等を排除</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>例外（ルールを緩める条件）</h3>
+    <ul>
+      <li>ユーザーが explain / walk me through を要求 → 長文 OK。ただし preamble と closer は禁止、見出しでスキム可能に。</li>
+      <li>破壊的操作の直前 → 確認を優先（安全 &gt; 簡潔）。</li>
+      <li>3 ターン連続でデバッグ失敗 → コード修正ループを止め、仮説を 1 つ質問。</li>
+      <li>要求が本当に曖昧 → 短い確認質問 1 つ。</li>
+    </ul>
+    <h3>送信前チェック（Pre-send）</h3>
+    <p>SKILL.md 末尾のチェックリスト: 冒頭の「これから〜します」、末尾の「他に？」、by the way サイドバー、情報ゼロの hedging を削除。最初と最後の行だけ読んでも (a) 次に何をするか (b) 何が起きたかが分かるか確認する。</p>
+
+    <section id="compare" class="sec-head">応答の比較</section>
+    <div class="compare-grid">
+      <div class="compare-card compare-card--bad">
+        <div class="compare-label">通常の Claude Code</div>
+        <p class="compare-quote">Great question! Let's think about this. Your auth flow has a few moving pieces… By the way, your dependency is also out of date… Let me know if you want to dig deeper!</p>
+        <p class="compare-note">「どこを触ればいいか」が後ろに埋もれる</p>
+      </div>
+      <div class="compare-card compare-card--good">
+        <div class="compare-label">i-have-adhd 適用後</div>
+        <p class="compare-quote">Run <code>npm install jsonwebtoken@latest</code>, then edit <code>src/auth.ts:42</code>.</p>
+        <ol style="margin: 0.5rem 0 0.5rem 1rem; font-size: 0.8125rem;">
+          <li>Open <code>src/auth.ts</code></li>
+          <li>Replace <code>verifyToken</code> (lines 42–58)</li>
+          <li>Run <code>npm test -- auth.spec.ts</code></li>
+        </ol>
+        <p class="compare-note">Next: paste the first failing line if any test fails.</p>
+      </div>
+    </div>
+    <div class="compare-grid">
+      <div class="compare-card compare-card--bad">
+        <div class="compare-label">完了報告（通常）</div>
+        <p class="compare-quote">I've made some changes to the auth flow. Among other things… Hope this helps!</p>
+      </div>
+      <div class="compare-card compare-card--good">
+        <div class="compare-label">完了報告（適用後）</div>
+        <p class="compare-quote">Step 3 of 5 done: middleware updated.<br>Login now works with magic links. Try: <code>npm run dev</code>, open <code>/login</code>.<br>Next: backfill the <code>last_login</code> column. Run the script?</p>
+      </div>
+    </div>
+
+    <section id="install" class="sec-head">インストール</section>
+    <p>対象は <strong>Claude Code のみ</strong>。詳細は <a href="https://github.com/ayghri/i-have-adhd/blob/main/INSTALL.md" target="_blank" rel="noopener">INSTALL.md</a>。</p>
+
+    <div class="ve-card ve-card--elevated" style="--i:1">
+      <h3>1. ローカルプラグイン（推奨）</h3>
+      <div class="ve-code-block"><pre><code>git clone https://github.com/ayghri/i-have-adhd ~/i-have-adhd
+claude plugin marketplace add ~/i-have-adhd
+claude plugin install i-have-adhd@i-have-adhd</code></pre></div>
+      <p>検証: <code>claude plugin list</code> に <code>i-have-adhd</code> が enabled で出る。セッションで <code>/i-have-adhd</code> を実行。</p>
+    </div>
+
+    <div class="ve-card" style="--i:2">
+      <h3>2. プロジェクト単位（marketplace なし）</h3>
+      <div class="ve-code-block"><pre><code>mkdir -p .claude/skills/i-have-adhd
+cp skills/i-have-adhd/SKILL.md .claude/skills/i-have-adhd/SKILL.md
+mkdir -p .claude/commands
+cp commands/i-have-adhd.md .claude/commands/i-have-adhd.md</code></pre></div>
+      <p>作業ディレクトリの <code>.claude/skills/</code> と <code>.claude/commands/</code> を自動検出。そのリポジトリ内だけ有効。</p>
+    </div>
+
+    <div class="ve-card" style="--i:3">
+      <h3>3. ユーザー全体（全プロジェクト）</h3>
+      <div class="ve-code-block"><pre><code>bash install-user.sh</code></pre></div>
+      <p>リポジトリルートで実行。<code>~/.claude/skills/i-have-adhd/SKILL.md</code> と <code>~/.claude/commands/i-have-adhd.md</code> にコピー。<code>$CLAUDE_CONFIG_DIR</code> があればそちらを優先。再実行は上書きで安全。</p>
+    </div>
+
+    <div class="ve-callout">
+      <strong>常時 ON（任意）:</strong> <code>~/.claude/CLAUDE.md</code> に出力スタイルの指示を追記すれば、毎セッション最初からルール適用可能（<code>/i-have-adhd</code> 不要）。INSTALL.md の Always-on 節を参照。
+    </div>
+
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>経路</th><th>スコープ</th><th>切り替え</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>プラグイン</td><td>マシン全体（marketplace 経由）</td><td><code>/i-have-adhd</code> で ON、stop/normal で OFF</td></tr>
+          <tr><td>プロジェクト skill</td><td>その repo のみ</td><td>同上</td></tr>
+          <tr><td>ユーザー skill</td><td>全プロジェクト</td><td>同上（セッションごとに opt-in）</td></tr>
+          <tr><td>CLAUDE.md 追記</td><td>設定に依存</td><td>常時。OFF にするには記述を削除</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section id="tuning" class="sec-head">カスタマイズ</section>
+    <div class="ve-card" style="--i:0">
+      <p>編集対象は <code>skills/i-have-adhd/SKILL.md</code> のみ。変更は次回 <code>/i-have-adhd</code> 実行時に反映（反映されない場合は Claude Code 再起動）。</p>
+      <ul>
+        <li><strong>frontmatter <code>description</code></strong> — モデルが「いつスキルを発火するか」を読む。広すぎるとノイズ、狭すぎると取りこぼし。</li>
+        <li><strong>本文 Rules</strong> — 追加・削除・文言調整は自由。10 条は出発点。</li>
+        <li><strong>Pre-send check</strong> — モデルが自己検査する最終ゲート。厳しさを上げたいときはここを厚くする。</li>
+      </ul>
+    </div>
+
+    <section id="faq" class="sec-head">FAQ</section>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>質問</th><th>回答</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ただの「簡潔モード」？</td><td>いいえ。10 条は読み方・着手・ドーパミン配分まで含む形状指定。短さ ≠ action-first。</td></tr>
+          <tr><td>長い説明は壊れる？</td><td>explain 要求時は長文可。preamble/closer 禁止と見出し構造は維持。</td></tr>
+          <tr><td><code>/i-have-adhd</code> なしで使える？</td><td><code>CLAUDE.md</code> 追記で常時化可能（INSTALL.md）。</td></tr>
+          <tr><td>プラグイン vs CLAUDE.md</td><td>プラグインはセッション単位 ON/OFF と共有に向く。CLAUDE.md は常時適用向け。</td></tr>
+          <tr><td>ADHD 診断は必要？</td><td>不要。preamble 探しのスクロールが負担なら対象。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section id="links" class="sec-head">参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/ayghri/i-have-adhd" target="_blank" rel="noopener">GitHub: ayghri/i-have-adhd</a> — 本体リポジトリ</li>
+        <li><a href="https://github.com/ayghri/i-have-adhd/blob/main/README.md" target="_blank" rel="noopener">README.md</a> — ピッチ・Before/After・10 ルール</li>
+        <li><a href="https://github.com/ayghri/i-have-adhd/blob/main/INSTALL.md" target="_blank" rel="noopener">INSTALL.md</a> — 3 経路・トラブルシュート・アンインストール</li>
+        <li><a href="https://github.com/ayghri/i-have-adhd/blob/main/skills/i-have-adhd/SKILL.md" target="_blank" rel="noopener">skills/i-have-adhd/SKILL.md</a> — ルール全文と Pre-send check</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: 'oklch(0.92 0.03 200)',
+      primaryTextColor: 'oklch(0.2 0.03 230)',
+      primaryBorderColor: 'oklch(0.55 0.1 200)',
+      lineColor: 'oklch(0.45 0.12 200)',
+      fontSize: '14px'
+    }
+  });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

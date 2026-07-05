@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CC Gateway — Claude Code テレメトリ制御リバースプロキシ</title>
+  <meta name="description" content="Claude Code と Anthropic API の間に置くリバースプロキシ。640 以上のテレメトリイベント・40 以上のデバイス指紋を単一の正規プロファイルに正規化し、マルチデバイス利用時のアカウント BANリスクを低減する。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="CC Gateway — Claude Code テレメトリ制御リバースプロキシ">
+  <meta property="og:description" content="Claude Code と Anthropic API の間に置くリバースプロキシ。640 以上のテレメトリイベント・40 以上のデバイス指紋を単一の正規プロファイルに正規化する。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/cc-gateway.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CC Gateway — Claude Code テレメトリ制御リバースプロキシ">
+  <meta name="twitter:description" content="Claude Code のテレメトリ・デバイス指紋を正規化するリバースプロキシ。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    /* ============ Spell UI tokens ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+
+      --background: oklch(0.985 0.004 248);
+      --foreground: oklch(0.13 0.02 248);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.13 0.02 248);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.13 0.02 248);
+      --primary: oklch(0.25 0.06 248);
+      --primary-foreground: oklch(0.98 0 0);
+      --secondary: oklch(0.95 0.008 248);
+      --secondary-foreground: oklch(0.25 0.06 248);
+      --muted: oklch(0.94 0.006 248);
+      --muted-foreground: oklch(0.52 0.04 248);
+      --accent: oklch(0.94 0.006 248);
+      --accent-foreground: oklch(0.25 0.06 248);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.01 248);
+      --input: oklch(0.88 0.01 248);
+      --ring: oklch(0.60 0.06 248);
+
+      /* Blueprint palette: deep blue + gold */
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.55 0.09 200);
+      --chart-4: oklch(0.65 0.12 155);
+      --chart-5: oklch(0.50 0.08 30);
+
+      --code-bg: oklch(0.96 0.006 248);
+      --code-text: oklch(0.25 0.06 248);
+
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.10 0.015 248);
+        --foreground: oklch(0.94 0.008 248);
+        --card: oklch(0.15 0.018 248);
+        --card-foreground: oklch(0.94 0.008 248);
+        --popover: oklch(0.15 0.018 248);
+        --popover-foreground: oklch(0.94 0.008 248);
+        --primary: oklch(0.80 0.08 248);
+        --primary-foreground: oklch(0.10 0.015 248);
+        --secondary: oklch(0.20 0.02 248);
+        --secondary-foreground: oklch(0.94 0.008 248);
+        --muted: oklch(0.22 0.02 248);
+        --muted-foreground: oklch(0.62 0.05 248);
+        --accent: oklch(0.22 0.02 248);
+        --accent-foreground: oklch(0.94 0.008 248);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.50 0.06 248);
+
+        --chart-1: oklch(0.65 0.16 248);
+        --chart-2: oklch(0.78 0.18 76);
+        --chart-3: oklch(0.60 0.10 200);
+        --chart-4: oklch(0.70 0.13 155);
+        --chart-5: oklch(0.65 0.12 30);
+
+        --code-bg: oklch(0.12 0.015 248);
+        --code-text: oklch(0.82 0.08 200);
+      }
+    }
+
+    /* ============ Spell UI static components ============ */
+    .ve-card {
+      background: var(--card);
+      color: var(--card-foreground);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+    }
+    .ve-card--elevated {
+      background: var(--accent);
+      color: var(--accent-foreground);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .ve-card--recessed {
+      background: var(--muted);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+
+    .ve-section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+      color: var(--muted-foreground);
+    }
+    .ve-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--chart-1);
+    }
+
+    .ve-code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .ve-code-block pre {
+      margin: 0;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+    }
+    .ve-code-block code {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--code-text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .ve-table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius-md);
+    }
+    .ve-table-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    .ve-table-wrap th {
+      background: var(--muted);
+      color: var(--muted-foreground);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.6rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .ve-table-wrap td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+    .ve-table-wrap tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tr:nth-child(even) td { background: oklch(0 0 0 / 0.015); }
+
+    .ve-callout {
+      border-left: 3px solid var(--chart-2);
+      background: color-mix(in oklch, var(--muted) 85%, var(--chart-2) 15%);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      line-height: 1.6;
+    }
+
+    /* ============ Page layout ============ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--background);
+      background-image: radial-gradient(ellipse at 70% -10%, oklch(0.38 0.12 248 / 0.07) 0%, transparent 50%),
+                        radial-gradient(ellipse at 20% 80%, oklch(0.72 0.17 76 / 0.05) 0%, transparent 45%);
+      color: var(--foreground);
+      font-family: var(--font-body);
+      line-height: 1.65;
+      padding: 2rem 1.5rem;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image: radial-gradient(ellipse at 70% -10%, oklch(0.65 0.16 248 / 0.08) 0%, transparent 50%),
+                          radial-gradient(ellipse at 20% 80%, oklch(0.78 0.18 76 / 0.05) 0%, transparent 45%);
+      }
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; min-width: 0; }
+
+    /* Hero */
+    .hero { margin-bottom: 2.5rem; }
+    .hero .ve-card--hero { padding: 2rem 1.75rem; }
+    .hero-eyebrow {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--chart-1);
+      margin-bottom: 0.5rem;
+      font-family: var(--font-mono);
+    }
+    .hero h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.75rem;
+      color: var(--foreground);
+    }
+    .hero .lead {
+      font-size: 1rem;
+      color: var(--muted-foreground);
+      line-height: 1.65;
+      max-width: 62ch;
+      margin-bottom: 1.25rem;
+    }
+    .kpi-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1.25rem;
+    }
+    .ve-kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.875rem 1.1rem;
+      min-width: 130px;
+    }
+    .ve-kpi-card__value {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--chart-1);
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+    .ve-kpi-card__label {
+      font-size: 0.72rem;
+      color: var(--muted-foreground);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Two-column wrap */
+    .wrap {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 2.5rem;
+      align-items: start;
+    }
+    @media (max-width: 720px) {
+      .wrap { grid-template-columns: 1fr; gap: 1.5rem; }
+    }
+
+    /* TOC */
+    .toc {
+      position: sticky;
+      top: 1.5rem;
+      font-size: 0.82rem;
+    }
+    .toc-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted-foreground);
+      margin-bottom: 0.75rem;
+    }
+    .toc ul { list-style: none; display: flex; flex-direction: column; gap: 0.15rem; }
+    .toc a {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.6rem;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--muted-foreground);
+      transition: color 0.15s, background 0.15s;
+      font-weight: 500;
+    }
+    .toc a::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+      opacity: 0.4;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    .toc a:hover { color: var(--foreground); background: var(--muted); }
+    .toc a.active {
+      color: var(--chart-1);
+      background: color-mix(in oklch, var(--muted) 60%, var(--chart-1) 40%);
+      font-weight: 600;
+    }
+    .toc a.active::before { opacity: 1; background: var(--chart-1); }
+
+    @media (max-width: 720px) {
+      .toc {
+        position: static;
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 0.5rem;
+      }
+      .toc ul { flex-direction: row; gap: 0.25rem; }
+    }
+
+    /* Main content */
+    .main { min-width: 0; display: flex; flex-direction: column; gap: 1.75rem; }
+
+    /* Section headers */
+    .sec-head {
+      font-size: 1.125rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      color: var(--foreground);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: -0.5rem;
+      scroll-margin-top: 1.5rem;
+    }
+    .sec-head::before {
+      content: attr(data-num);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--chart-1);
+      background: color-mix(in oklch, var(--muted) 60%, var(--chart-1) 40%);
+      border: 1px solid color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%);
+      border-radius: var(--radius-sm);
+      padding: 0.15rem 0.45rem;
+      line-height: 1.4;
+    }
+
+    /* Stagger animation */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .ve-card[style*="--i"] {
+      animation: fadeUp 0.35s ease both;
+      animation-delay: calc(var(--i, 0) * 60ms);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ve-card[style*="--i"] { animation: none; }
+    }
+
+    /* Content utilities */
+    h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: var(--foreground);
+    }
+    h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin: 1rem 0 0.5rem;
+      color: var(--foreground);
+    }
+    p { font-size: 0.9375rem; line-height: 1.7; color: var(--card-foreground); }
+    p + p { margin-top: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; }
+    li { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.2rem; }
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.82em;
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 0.1em 0.35em;
+      border-radius: 3px;
+    }
+    strong { font-weight: 600; }
+    a { color: var(--chart-1); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .gap-sm { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    /* Step flow */
+    .step-flow {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.875rem;
+      list-style: none;
+      padding: 0;
+    }
+    .step-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.1rem;
+    }
+    .step-card__num {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--chart-1);
+      background: color-mix(in oklch, var(--muted) 50%, var(--chart-1) 50%);
+      border-radius: 3px;
+      padding: 0.1rem 0.4rem;
+      display: inline-block;
+      margin-bottom: 0.5rem;
+    }
+    .step-card__title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--card-foreground);
+      margin-bottom: 0.35rem;
+    }
+    .step-card__body {
+      font-size: 0.82rem;
+      color: var(--muted-foreground);
+      line-height: 1.55;
+    }
+
+    /* Mermaid wrapper */
+    .mermaid-wrap {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--code-bg);
+    }
+    .mermaid-wrap .mermaid {
+      display: flex;
+      justify-content: center;
+      padding: 1.25rem;
+    }
+    .mermaid-wrap svg { max-width: 100%; height: auto; }
+
+    /* Defense in depth table badge */
+    .badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 500;
+      padding: 0.1rem 0.45rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .badge--layer {
+      background: color-mix(in oklch, var(--muted) 50%, var(--chart-1) 50%);
+      color: var(--chart-1);
+      border: 1px solid color-mix(in oklch, var(--border) 40%, var(--chart-1) 60%);
+    }
+
+    /* Rewrite layer category cell */
+    .layer-cat {
+      font-weight: 600;
+      font-size: 0.82rem;
+      color: var(--chart-1);
+    }
+    td > code { word-break: break-all; }
+
+    /* Alpha warning callout */
+    .callout-alpha {
+      border-left: 3px solid var(--chart-2);
+      background: color-mix(in oklch, var(--muted) 80%, var(--chart-2) 20%);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 0.6rem 1rem;
+      font-size: 0.82rem;
+      color: var(--card-foreground);
+      margin-bottom: 0.75rem;
+    }
+    .callout-alpha strong { color: var(--chart-2); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- ===== HERO ===== -->
+    <header class="hero">
+      <div class="ve-card ve-card--hero">
+        <p class="hero-eyebrow">Reverse Proxy · Privacy · Claude Code</p>
+        <h1>CC Gateway</h1>
+        <p class="lead">Claude Code と Anthropic API の間に置くリバースプロキシ。デバイス指紋・環境情報・テレメトリを単一の正規プロファイルに正規化し、マルチデバイス利用時のアカウントリスクを制御する。</p>
+        <div class="kpi-row">
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">640+</div>
+            <div class="ve-kpi-card__label">テレメトリイベント型</div>
+          </div>
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">40+</div>
+            <div class="ve-kpi-card__label">環境指紋ディメンション</div>
+          </div>
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">~85%</div>
+            <div class="ve-kpi-card__label">プロンプトキャッシュ削減</div>
+          </div>
+          <div class="ve-kpi-card">
+            <div class="ve-kpi-card__value">v0.2</div>
+            <div class="ve-kpi-card__label">alpha / Node 22+</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== MAIN LAYOUT ===== -->
+    <div class="wrap">
+      <!-- TOC -->
+      <nav class="toc" aria-label="目次" id="toc">
+        <p class="toc-label">目次</p>
+        <ul>
+          <li><a href="#why">なぜ必要か</a></li>
+          <li><a href="#arch">アーキテクチャ</a></li>
+          <li><a href="#rewrite">リライト対象</a></li>
+          <li><a href="#quickstart">クイックスタート</a></li>
+          <li><a href="#oauth">OAuth ライフサイクル</a></li>
+          <li><a href="#deploy">デプロイメント</a></li>
+          <li><a href="#caveats">注意事項</a></li>
+        </ul>
+      </nav>
+
+      <!-- Content -->
+      <div class="main">
+
+        <!-- 1. WHY -->
+        <h2 id="why" class="sec-head" data-num="01">なぜ必要か</h2>
+        <div class="ve-card" style="--i:0">
+          <span class="ve-section-label"><span class="ve-dot"></span> 背景</span>
+          <p>Claude Code は API リクエストごとに <strong>640 以上のテレメトリイベント</strong>を 3 並列チャンネルで送信し、<strong>40 以上の環境ディメンション</strong>でデバイスを識別する。5 秒ごとに device ID・メール・OS バージョン・シェル種別・CPU アーキテクチャ・物理 RAM をベンダーへ送り続けている。</p>
+          <p>複数マシンでログインすると、それぞれが異なる永続 ID を持つ。公式にはデバイスを管理する手段がなく、アカウント停止のリスクがある。</p>
+          <h3>CC Gateway が解決すること</h3>
+          <p>CC Gateway はリバースプロキシとして Claude Code と Anthropic API の間に入り、デバイス ID・環境フィンガープリント・プロセスメトリクスをすべて <strong>単一の正規プロファイル</strong>に正規化する。Anthropic からは「1 人の人間が 1 台のマシンから利用している」ように見える。</p>
+          <div class="ve-callout" style="margin-top:1rem">
+            <strong>免責：</strong>本プロジェクトは教育・調査目的のみ。アカウントの共有・レート制限の回避・ToS 違反への利用は禁止。
+          </div>
+        </div>
+
+        <!-- 2. ARCHITECTURE -->
+        <h2 id="arch" class="sec-head" data-num="02">アーキテクチャ</h2>
+        <div class="ve-card" style="--i:1">
+          <span class="ve-section-label"><span class="ve-dot"></span> リクエストフロー</span>
+          <div class="mermaid-wrap" style="margin: 0.75rem 0;">
+            <div class="mermaid">
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#e8eef8", "primaryTextColor": "#1a2540", "primaryBorderColor": "#6b87c7", "lineColor": "#6b87c7", "secondaryColor": "#f0f3fa", "tertiaryColor": "#faf5e8", "fontFamily": "Plus Jakarta Sans, system-ui, sans-serif", "fontSize": "14px"}}}%%
+flowchart TD
+    CC1["cc-alice\n(launcher)"] --> GW
+    CC2["cc-bob\n(launcher)"] --> GW
+    CC3["cc-admin\n(launcher)"] --> GW
+
+    GW["CC Gateway\n:8443"]
+
+    GW --> AUTH["Auth\nclient token → name"]
+    AUTH --> RW["Rewriter\nbody + headers"]
+    RW --> OA["OAuth\ninject real token"]
+    OA --> API["api.anthropic.com"]
+
+    GW --> REFRESH["platform.claude.com\n(token refresh only)"]
+
+    classDef client fill:#e8f4f0,stroke:#4a8f7a,color:#1a3a2f
+    classDef gateway fill:#e8eef8,stroke:#4a6fa8,color:#1a2a4a
+    classDef inner fill:#f0f3fa,stroke:#6b87c7,color:#2a3a5a
+    classDef external fill:#fdfcf5,stroke:#b89a4a,color:#3a2a00
+    classDef oauth fill:#faf5e8,stroke:#c8a840,color:#3a2a00
+
+    class CC1,CC2,CC3 client
+    class GW gateway
+    class AUTH,RW,OA inner
+    class API external
+    class REFRESH oauth
+            </div>
+          </div>
+          <h3>Defence in depth（3 層）</h3>
+          <div class="ve-table-wrap">
+            <table>
+              <thead>
+                <tr><th>層</th><th>仕組み</th><th>防ぐもの</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge badge--layer">Launcher env vars</span></td>
+                  <td><code>ANTHROPIC_BASE_URL</code> + <code>DISABLE_NONESSENTIAL</code> + <code>ATTRIBUTION_HEADER=false</code></td>
+                  <td>CC が自発的にゲートウェイへルーティング、サイドチャネル無効化、billing ハッシュ省略</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge--layer">Clash（任意）</span></td>
+                  <td>ドメインベース REJECT ルール</td>
+                  <td>将来の新エンドポイントや偶発的な直接接続をブロック</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge--layer">Gateway</span></td>
+                  <td>Body + header + prompt rewriting</td>
+                  <td>40 以上の指紋ディメンションをすべて正規化</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. REWRITE -->
+        <h2 id="rewrite" class="sec-head" data-num="03">リライト対象</h2>
+        <div class="ve-card" style="--i:0">
+          <span class="ve-section-label"><span class="ve-dot"></span> 7 層のリライトパイプライン</span>
+          <p style="margin-bottom:1rem">各リクエストは <code>src/rewriter.ts</code> を通過し、以下のフィールドを正規プロファイルに差し替える。</p>
+          <div class="ve-table-wrap">
+            <table>
+              <thead>
+                <tr><th>カテゴリ</th><th>フィールド</th><th>処理</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="layer-cat">Identity</td>
+                  <td><code>metadata.user_id</code> 内の <code>device_id</code></td>
+                  <td>→ 正規 device ID</td>
+                </tr>
+                <tr>
+                  <td class="layer-cat"></td>
+                  <td><code>email</code></td>
+                  <td>→ 正規メールアドレス</td>
+                </tr>
+                <tr>
+                  <td class="layer-cat">Environment</td>
+                  <td><code>env</code> オブジェクト（40+ フィールド）</td>
+                  <td>→ オブジェクト丸ごと置換。platform・arch・node_version・terminal・runtimes・CI フラグ等</td>
+                </tr>
+                <tr>
+                  <td class="layer-cat">Process</td>
+                  <td><code>constrainedMemory</code>（物理 RAM）</td>
+                  <td>→ 正規値に固定</td>
+                </tr>
+                <tr>
+                  <td class="layer-cat"></td>
+                  <td><code>rss</code>, <code>heapTotal</code>, <code>heapUsed</code></td>
+                  <td>→ 現実的な範囲内でランダム化</td>
+                </tr>
+                <tr>
+                  <td class="layer-cat">Headers</td>
+                  <td><code>User-Agent</code></td>
+                  <td>→ 正規 CC バージョン文字列</td>
+                </tr>
+                <tr>
+                  <td class="layer-cat"></td>
+                  <td><code>x-api-key</code></td>
+                  <td>→ ゲートウェイが管理する本物の OAuth トークンを注入</td>
+                </tr>
+                <tr>
+                  <td class="layer-cat"></td>
+                  <td><code>x-anthropic-billing-header</code></td>
+                  <td>→ 完全削除（セッション間プロンプトキャッシュ共有を実現）</td>
+                </tr>
+                <tr>
+                  <td class="layer-cat">Prompt text</td>
+                  <td><code>&lt;env&gt;</code> ブロック内の Platform / Shell / OS Version</td>
+                  <td>→ 正規値に書き換え</td>
+                </tr>
+                <tr>
+                  <td class="layer-cat"></td>
+                  <td>Working directory</td>
+                  <td>→ 正規パスに書き換え</td>
+                </tr>
+                <tr>
+                  <td class="layer-cat"></td>
+                  <td><code>/Users/xxx/</code>, <code>/home/xxx/</code></td>
+                  <td>→ 正規ホームプレフィックスに置換</td>
+                </tr>
+                <tr>
+                  <td class="layer-cat">Billing</td>
+                  <td><code>x-anthropic-billing-header</code> system ブロック</td>
+                  <td>→ system prompt から削除</td>
+                </tr>
+                <tr>
+                  <td class="layer-cat">Leak fields</td>
+                  <td><code>baseUrl</code>（ANTHROPIC_BASE_URL）</td>
+                  <td>→ analytics イベントから削除</td>
+                </tr>
+                <tr>
+                  <td class="layer-cat"></td>
+                  <td><code>gateway</code>（プロバイダ検出）</td>
+                  <td>→ 削除</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="ve-callout" style="margin-top:1rem">
+            <strong>billing header 戦略：</strong><code>x-anthropic-billing-header</code> を完全削除することで、公式の <code>CLAUDE_CODE_ATTRIBUTION_HEADER=false</code> env var と同等の効果を得る。これによりセッション間のプロンプトキャッシュが共有され、システムプロンプトコストを約 85% 削減できる。
+          </div>
+        </div>
+
+        <!-- 4. QUICKSTART -->
+        <h2 id="quickstart" class="sec-head" data-num="04">クイックスタート</h2>
+        <div class="ve-card" style="--i:0">
+          <div class="callout-alpha"><strong>Alpha：</strong>非プライマリアカウントで試験してから本番利用すること。Node.js 22+ 必須。</div>
+          <span class="ve-section-label"><span class="ve-dot"></span> 管理者セットアップ（1 コマンド）</span>
+          <div class="ve-code-block">
+            <pre><code>git clone https://github.com/motiful/cc-gateway.git
+cd cc-gateway
+npm install
+bash scripts/quick-setup.sh</code></pre>
+          </div>
+          <ol class="step-flow" style="margin-top:1rem; list-style:none; padding:0;">
+            <li class="step-card">
+              <span class="step-card__num">STEP 1</span>
+              <div class="step-card__title">資格情報抽出</div>
+              <div class="step-card__body">macOS Keychain からアクセストークン・リフレッシュトークン・有効期限を取得</div>
+            </li>
+            <li class="step-card">
+              <span class="step-card__num">STEP 2</span>
+              <div class="step-card__title">正規 ID 生成</div>
+              <div class="step-card__body">正規デバイス ID とクライアントトークンを生成して <code>config.yaml</code> に書き込む</div>
+            </li>
+            <li class="step-card">
+              <span class="step-card__num">STEP 3</span>
+              <div class="step-card__title">ランチャー生成</div>
+              <div class="step-card__body"><code>./clients/cc-&lt;hostname&gt;</code> を生成。ブラウザ OAuth 不要</div>
+            </li>
+            <li class="step-card">
+              <span class="step-card__num">STEP 4</span>
+              <div class="step-card__title">ゲートウェイ起動</div>
+              <div class="step-card__body"><code>http://localhost:8443</code> で起動完了。既存トークンを即時利用</div>
+            </li>
+          </ol>
+          <h3 style="margin-top:1.25rem">クライアントを使う</h3>
+          <div class="ve-code-block">
+            <pre><code>./clients/cc-&lt;hostname&gt;   # ゲートウェイ経由で Claude Code 起動</code></pre>
+          </div>
+          <h3 style="margin-top:1rem">複数クライアントの追加</h3>
+          <div class="ve-code-block">
+            <pre><code># 管理者がクライアントごとにランチャーを生成（送付するだけ）
+bash scripts/add-client.sh alice
+bash scripts/add-client.sh bob
+
+# 受け取った側
+chmod +x cc-alice
+./cc-alice install    # 'ccg' コマンドとしてインストール
+ccg                   # Claude Code 起動</code></pre>
+          </div>
+          <h3 style="margin-top:1rem">全コマンド</h3>
+          <div class="ve-table-wrap" style="margin-top:0.5rem">
+            <table>
+              <thead><tr><th>コマンド</th><th>説明</th></tr></thead>
+              <tbody>
+                <tr><td><code>ccg</code></td><td>ゲートウェイ経由で Claude Code 起動</td></tr>
+                <tr><td><code>ccg install</code></td><td>'ccg' システムコマンドとしてインストール</td></tr>
+                <tr><td><code>ccg uninstall</code></td><td>'ccg' を削除してクリーンアップ</td></tr>
+                <tr><td><code>ccg hijack</code></td><td>'claude' コマンドも ccg 経由にエイリアス</td></tr>
+                <tr><td><code>ccg release</code></td><td>'claude' をネイティブに戻す</td></tr>
+                <tr><td><code>ccg native [args]</code></td><td>ゲートウェイをバイパスして native claude を実行</td></tr>
+                <tr><td><code>ccg status</code></td><td>ゲートウェイ接続と hijack 状態を表示</td></tr>
+                <tr><td><code>ccg help</code></td><td>ヘルプ表示</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 5. OAUTH -->
+        <h2 id="oauth" class="sec-head" data-num="05">OAuth ライフサイクル</h2>
+        <div class="ve-card" style="--i:0">
+          <span class="ve-section-label"><span class="ve-dot"></span> トークン管理フロー</span>
+          <div class="mermaid-wrap" style="margin: 0.75rem 0;">
+            <div class="mermaid">
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#e8eef8", "primaryTextColor": "#1a2540", "primaryBorderColor": "#6b87c7", "lineColor": "#6b87c7", "fontFamily": "Plus Jakarta Sans, system-ui, sans-serif", "fontSize": "13px", "actorBkg": "#e8eef8", "actorBorder": "#4a6fa8", "activationBkgColor": "#f0f3fa", "activationBorderColor": "#4a6fa8", "noteBkgColor": "#faf5e8", "noteBorderColor": "#c8a840"}}}%%
+sequenceDiagram
+    participant GW as CC Gateway
+    participant KC as macOS Keychain
+    participant PC as platform.claude.com
+    participant API as api.anthropic.com
+
+    Note over GW: 起動時
+    GW->>KC: アクセストークン読み取り
+    KC-->>GW: access_token + expires_at
+    Note over GW: 有効なら即時利用（ネット通信なし）
+
+    Note over GW: 有効期限 5 分前
+    GW->>PC: refresh_token でリフレッシュ
+    PC-->>GW: 新しい access_token
+
+    Note over GW: クライアントリクエスト時
+    GW->>GW: クライアントトークン認証
+    GW->>GW: body + header 書き換え
+    GW->>API: OAuth token 注入して転送
+    API-->>GW: レスポンス（SSE passthrough）
+            </div>
+          </div>
+          <div class="gap-sm" style="margin-top:1rem">
+            <div class="ve-card ve-card--recessed" style="--i:0; padding:0.875rem 1rem;">
+              <strong>即時起動</strong> — Keychain に有効なアクセストークンがあればネットワーク通信なしで起動。
+            </div>
+            <div class="ve-card ve-card--recessed" style="--i:1; padding:0.875rem 1rem;">
+              <strong>自動リフレッシュ</strong> — 有効期限の 5 分前にバックグラウンドでサイレントリフレッシュ。リフレッシュトークンも自動ローテーション。
+            </div>
+            <div class="ve-card ve-card--recessed" style="--i:2; padding:0.875rem 1rem;">
+              <strong>失敗リカバリ</strong> — リフレッシュ失敗時は 30 秒おきにリトライ。リフレッシュトークン自体の失効（数ヶ月）時のみ <code>extract-token.sh</code> の再実行が必要。
+            </div>
+            <div class="ve-card ve-card--recessed" style="--i:3; padding:0.875rem 1rem;">
+              <strong>クライアント分離</strong> — クライアントは <code>platform.claude.com</code> に一切接触しない。リアル OAuth トークンはゲートウェイが一元管理し、クライアントには見えない。
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. DEPLOYMENT -->
+        <h2 id="deploy" class="sec-head" data-num="06">デプロイメント</h2>
+        <div class="ve-card" style="--i:0">
+          <span class="ve-section-label"><span class="ve-dot"></span> 3 つのデプロイ方式</span>
+          <div class="gap-sm">
+            <div class="ve-card ve-card--elevated" style="--i:0">
+              <strong>ローカル（開発）</strong>
+              <div class="ve-code-block" style="margin-top:0.5rem">
+                <pre><code>npm run dev    # tsx watch, 自動リロード</code></pre>
+              </div>
+            </div>
+            <div class="ve-card ve-card--elevated" style="--i:1">
+              <strong>Docker（本番）</strong>
+              <div class="ve-code-block" style="margin-top:0.5rem">
+                <pre><code>bash scripts/admin-setup.sh</code></pre>
+              </div>
+              <p style="margin-top:0.5rem; font-size:0.875rem; color:var(--muted-foreground)">インタラクティブスクリプトが資格情報抽出 → config 生成 → Docker ビルド → 起動まで一括実行。</p>
+            </div>
+            <div class="ve-card ve-card--elevated" style="--i:2">
+              <strong>マルチマシン</strong>
+              <div class="ve-code-block" style="margin-top:0.5rem">
+                <pre><code>Mac-A ──┐
+Mac-B ──┼──→ gateway-server:8443 ──→ api.anthropic.com
+Mac-C ──┘</code></pre>
+              </div>
+              <p style="margin-top:0.5rem; font-size:0.875rem; color:var(--muted-foreground)">
+                管理者マシンも含め <strong>全マシンがゲートウェイ経由</strong>で接続すること。管理者が直接接続すると、2 つ目のデバイス指紋が Anthropic に見える。
+              </p>
+              <p style="margin-top:0.5rem; font-size:0.875rem; color:var(--muted-foreground)">
+                <strong>Tailscale 利用時</strong>：メッシュ内のどのマシンでも稼働可能。TLS・パブリック IP・ポート開放不要（Tailscale がトンネルを暗号化）。
+              </p>
+            </div>
+          </div>
+          <h3 style="margin-top:1.25rem">TLS 設定（リモートデプロイ時）</h3>
+          <div class="ve-code-block">
+            <pre><code>mkdir certs
+openssl req -x509 -newkey rsa:2048 \
+  -keyout certs/key.pem -out certs/cert.pem \
+  -days 365 -nodes -subj "/CN=cc-gateway"
+
+# config.yaml の tls セクションをアンコメントし、
+# クライアントランチャーにサーバーアドレスを指定して生成
+bash scripts/add-client.sh alice "" &lt;gateway-ip&gt;:8443 https</code></pre>
+          </div>
+        </div>
+
+        <!-- 7. CAVEATS -->
+        <h2 id="caveats" class="sec-head" data-num="07">注意事項</h2>
+        <div class="ve-card" style="--i:0">
+          <span class="ve-section-label"><span class="ve-dot"></span> 既知の制限</span>
+          <div class="gap-sm">
+            <div class="ve-callout">
+              <strong>MCP サーバー：</strong><code>mcp-proxy.anthropic.com</code> はハードコードされており <code>ANTHROPIC_BASE_URL</code> に従わない。公式 MCP サーバーを使うクライアントのリクエストはゲートウェイを迂回する。Clash で当該ドメインをブロックすることで防げる。
+            </div>
+            <div class="ve-callout">
+              <strong>CC アップデート：</strong>新しい Claude Code バージョンで新しいテレメトリフィールドやエンドポイントが追加される可能性がある。アップグレード後は Clash の REJECT ログで予期しない接続試行を監視すること。
+            </div>
+            <div class="ve-callout">
+              <strong>トークンライフサイクル：</strong>ゲートウェイは OAuth アクセストークンを自動リフレッシュする。リフレッシュトークン自体が失効した場合（まれ）、管理者マシンで <code>extract-token.sh</code> を再実行する必要がある。
+            </div>
+          </div>
+          <h3 style="margin-top:1.25rem">Clash オプショナルルール</h3>
+          <p style="margin-bottom:0.75rem; font-size:0.875rem">ネットワーク層の安全弁として任意で設定可能。</p>
+          <div class="ve-code-block">
+            <pre><code>rules:
+  - DOMAIN,gateway.your-domain.com,DIRECT    # ゲートウェイを許可
+  - DOMAIN-SUFFIX,anthropic.com,REJECT        # 直接 API 接続をブロック
+  - DOMAIN-SUFFIX,claude.com,REJECT           # OAuth をブロック
+  - DOMAIN-SUFFIX,claude.ai,REJECT            # OAuth をブロック
+  - DOMAIN-SUFFIX,datadoghq.com,REJECT        # テレメトリをブロック</code></pre>
+          </div>
+          <h3 style="margin-top:1.25rem">ヘルスチェック・検証エンドポイント</h3>
+          <div class="ve-table-wrap" style="margin-top:0.5rem">
+            <table>
+              <thead><tr><th>エンドポイント</th><th>認証</th><th>説明</th></tr></thead>
+              <tbody>
+                <tr><td><code>GET /_health</code></td><td>不要</td><td>OAuth 状態・正規 device ID・クライアント一覧を返す</td></tr>
+                <tr><td><code>GET /_verify</code></td><td>必要</td><td>サンプルリクエストのリライト結果を before/after で表示</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="ve-callout" style="margin-top:1rem">
+            <strong>参考リソース：</strong>
+            <a href="https://github.com/motiful/cc-gateway" target="_blank" rel="noopener">GitHub: motiful/cc-gateway</a> —
+            <a href="https://bytedance.larkoffice.com/docx/E2JudVzf7oCNfhxyxaQcZIW1n0g" target="_blank" rel="noopener">Claude Code テレメトリ深度調査報告</a> —
+            <a href="https://github.com/motiful/cc-cache-audit" target="_blank" rel="noopener">cc-cache-audit（billing header 検証）</a>
+          </div>
+        </div>
+
+      </div><!-- .main -->
+    </div><!-- .wrap -->
+  </div><!-- .container -->
+
+  <script>
+    // Mermaid init
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+    });
+  </script>
+  <script>
+    // Scroll Spy (defuddle.html パターン)
+    (function() {
+      var toc = document.getElementById('toc');
+      if (!toc) return;
+      var links = toc.querySelectorAll('a[href^="#"]');
+      var sections = [];
+      links.forEach(function(a) {
+        var id = a.getAttribute('href').slice(1);
+        var el = document.getElementById(id);
+        if (el) sections.push({ link: a, head: el });
+      });
+      function updateActive() {
+        var top = window.scrollY + 24;
+        var current = sections[0] || null;
+        sections.forEach(function(s) {
+          var rect = s.head.getBoundingClientRect();
+          var docTop = rect.top + window.scrollY;
+          if (docTop <= top) current = s;
+        });
+        sections.forEach(function(s) {
+          s.link.classList.toggle('active', s === current);
+        });
+      }
+      window.addEventListener('scroll', updateActive, { passive: true });
+      updateActive();
+    })();
+  </script>
+</body>
+</html>

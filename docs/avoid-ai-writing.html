@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>avoid-ai-writing — AI 文体を除去する監査・リライトスキル</title>
+  <meta name="description" content="AI が書いた文章の癖（AI-ism）を検出・除去する agentskills.io 対応スキル。36 パターン・109 語彙エントリ・コンテキストプロファイル・2 モード対応。Claude Code / OpenClaw / Cursor 対応。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="avoid-ai-writing — AI 文体を除去する監査・リライトスキル">
+  <meta property="og:description" content="AI が書いた文章の癖（AI-ism）を検出・除去する agentskills.io 対応スキル。36 パターン・109 語彙エントリ。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/avoid-ai-writing.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="avoid-ai-writing — AI 文体を除去する監査・リライトスキル">
+  <meta name="twitter:description" content="AI が書いた文章の癖（AI-ism）を検出・除去する agentskills.io 対応スキル。36 パターン・109 語彙エントリ。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens — rose/cranberry editorial) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+
+      --background: oklch(0.995 0.003 15);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.37 0.17 15);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.972 0.003 15);
+      --muted-foreground: oklch(0.52 0.04 15);
+      --accent: oklch(0.972 0.003 15);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.91 0.006 15);
+      --input: oklch(0.91 0.006 15);
+      --ring: oklch(0.708 0 0);
+
+      /* Rose/cranberry accent palette */
+      --chart-1: oklch(0.52 0.22 15);   /* rose-700 */
+      --chart-2: oklch(0.37 0.17 15);   /* rose-900 */
+      --chart-3: oklch(0.65 0.18 15);   /* rose-500 */
+      --chart-4: oklch(0.75 0.12 40);   /* warm amber */
+      --chart-5: oklch(0.45 0.09 200);  /* slate for P0/credibility */
+
+      --code-bg: oklch(0.97 0.003 15);
+      --code-text: oklch(0.37 0.17 15);
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.12 0.008 15);
+        --foreground: oklch(0.96 0 0);
+        --card: oklch(0.18 0.008 15);
+        --card-foreground: oklch(0.96 0 0);
+        --popover: oklch(0.18 0.008 15);
+        --popover-foreground: oklch(0.96 0 0);
+        --primary: oklch(0.82 0.12 15);
+        --primary-foreground: oklch(0.18 0.008 15);
+        --secondary: oklch(0.24 0.008 15);
+        --secondary-foreground: oklch(0.96 0 0);
+        --muted: oklch(0.26 0.008 15);
+        --muted-foreground: oklch(0.65 0.04 15);
+        --accent: oklch(0.26 0.008 15);
+        --accent-foreground: oklch(0.96 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+
+        --chart-1: oklch(0.68 0.19 15);
+        --chart-2: oklch(0.52 0.22 15);
+        --chart-3: oklch(0.78 0.14 15);
+        --chart-4: oklch(0.82 0.14 40);
+        --chart-5: oklch(0.65 0.09 200);
+
+        --code-bg: oklch(0.14 0.01 15);
+        --code-text: oklch(0.78 0.14 15);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.75rem 1rem; border-bottom: 2px solid var(--border); color: var(--muted-foreground); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .ve-table-wrap td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 60%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; font-weight: 700; line-height: 1.1; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 60% 0%, oklch(0.52 0.22 15 / 0.05) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 60% 0%, oklch(0.68 0.19 15 / 0.07) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--chart-1); border-left-color: var(--chart-1); font-weight: 500; }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); color: var(--chart-1); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--foreground); }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: color-mix(in oklch, var(--chart-1) 10%, var(--muted)); color: var(--chart-2); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.875rem; margin-bottom: 1.5rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 900px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 580px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Before/After demo ============ */
+    .demo-split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 700px) { .demo-split { grid-template-columns: 1fr; } }
+    .demo-block { border-radius: var(--radius-lg); padding: 1rem 1.25rem; font-size: 0.875rem; line-height: 1.65; }
+    .demo-block--before { background: color-mix(in oklch, var(--muted) 80%, var(--chart-1) 4%); border: 1px solid color-mix(in oklch, var(--border) 60%, var(--chart-1) 30%); }
+    .demo-block--after { background: color-mix(in oklch, var(--muted) 80%, oklch(0.55 0.15 145) 4%); border: 1px solid color-mix(in oklch, var(--border) 60%, oklch(0.55 0.15 145) 30%); }
+    .demo-label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.625rem; }
+    .demo-label--before { color: var(--chart-1); }
+    .demo-label--after { color: oklch(0.45 0.14 145); }
+    @media (prefers-color-scheme: dark) {
+      .demo-label--after { color: oklch(0.65 0.14 145); }
+    }
+
+    /* ============ Pattern groups ============ */
+    .pattern-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .pattern-grid { grid-template-columns: 1fr; } }
+    .pattern-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.875rem 1rem; }
+    .pattern-card:hover { border-color: color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%); }
+    .pattern-name { font-weight: 600; font-size: 0.875rem; margin-bottom: 0.375rem; color: var(--foreground); }
+    .pattern-example { font-size: 0.78rem; color: var(--muted-foreground); line-height: 1.5; }
+    .pattern-example .bad { color: var(--chart-1); font-family: var(--font-mono); font-size: 0.72rem; background: color-mix(in oklch, var(--chart-1) 8%, transparent); padding: 1px 4px; border-radius: 3px; }
+    .pattern-example .good { color: oklch(0.45 0.14 145); font-family: var(--font-mono); font-size: 0.72rem; background: color-mix(in oklch, oklch(0.55 0.15 145) 8%, transparent); padding: 1px 4px; border-radius: 3px; }
+    @media (prefers-color-scheme: dark) {
+      .pattern-example .good { color: oklch(0.65 0.14 145); }
+    }
+
+    /* ============ Mode comparison ============ */
+    .mode-split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .mode-split { grid-template-columns: 1fr; } }
+    .mode-card { border-radius: var(--radius-lg); padding: 1.25rem; border: 1px solid var(--border); }
+    .mode-card--rewrite { background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 5%); border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 30%); }
+    .mode-card--detect { background: color-mix(in oklch, var(--card) 90%, var(--chart-4) 5%); border-color: color-mix(in oklch, var(--border) 60%, var(--chart-4) 30%); }
+    .mode-badge { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 2px 8px; border-radius: var(--radius-sm); margin-bottom: 0.75rem; }
+    .mode-badge--rewrite { background: color-mix(in oklch, var(--chart-1) 15%, transparent); color: var(--chart-1); }
+    .mode-badge--detect { background: color-mix(in oklch, var(--chart-4) 15%, transparent); color: var(--chart-2); }
+    @media (prefers-color-scheme: dark) {
+      .mode-badge--detect { color: var(--chart-4); }
+    }
+    .mode-title { font-weight: 700; font-size: 1.125rem; margin-bottom: 0.5rem; }
+    .mode-desc { font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); margin-bottom: 0.75rem; }
+    .mode-triggers { font-size: 0.78rem; font-family: var(--font-mono); color: var(--muted-foreground); line-height: 1.6; }
+
+    /* ============ Severity badges ============ */
+    .sev-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 620px) { .sev-grid { grid-template-columns: 1fr; } }
+    .sev-card { border-radius: var(--radius-lg); padding: 1.125rem; border: 1px solid var(--border); }
+    .sev-p0 { background: color-mix(in oklch, var(--card) 85%, oklch(0.52 0.22 15) 8%); border-color: color-mix(in oklch, var(--border) 40%, oklch(0.52 0.22 15) 40%); }
+    .sev-p1 { background: color-mix(in oklch, var(--card) 85%, oklch(0.75 0.12 40) 8%); border-color: color-mix(in oklch, var(--border) 50%, oklch(0.75 0.12 40) 30%); }
+    .sev-p2 { background: var(--muted); }
+    .sev-badge { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-sm); margin-bottom: 0.625rem; }
+    .sev-badge--p0 { background: color-mix(in oklch, oklch(0.52 0.22 15) 15%, transparent); color: oklch(0.37 0.17 15); }
+    .sev-badge--p1 { background: color-mix(in oklch, oklch(0.75 0.12 40) 20%, transparent); color: oklch(0.5 0.14 40); }
+    .sev-badge--p2 { background: var(--border); color: var(--muted-foreground); }
+    @media (prefers-color-scheme: dark) {
+      .sev-badge--p0 { color: oklch(0.75 0.19 15); }
+      .sev-badge--p1 { color: oklch(0.82 0.14 40); }
+    }
+    .sev-title { font-weight: 700; font-size: 0.9375rem; margin-bottom: 0.375rem; }
+    .sev-sub { font-size: 0.78rem; color: var(--muted-foreground); margin-bottom: 0.625rem; }
+
+    /* ============ Tier label ============ */
+    .tier-badge { display: inline-block; font-family: var(--font-mono); font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 1px 7px; border-radius: var(--radius-sm); vertical-align: middle; }
+    .tier1 { background: color-mix(in oklch, var(--chart-1) 15%, transparent); color: var(--chart-1); }
+    .tier2 { background: color-mix(in oklch, var(--chart-4) 18%, transparent); color: oklch(0.5 0.14 40); }
+    .tier3 { background: var(--border); color: var(--muted-foreground); }
+    @media (prefers-color-scheme: dark) {
+      .tier2 { color: var(--chart-4); }
+      .tier3 { color: var(--muted-foreground); }
+    }
+
+    /* ============ Collapsible ============ */
+    details { border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 0.75rem; overflow: hidden; }
+    summary { background: var(--muted); padding: 0.875rem 1.125rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: '+'; font-family: var(--font-mono); font-size: 1rem; font-weight: 400; color: var(--muted-foreground); transition: transform 0.2s; flex-shrink: 0; }
+    details[open] summary::after { content: '−'; }
+    details > *:not(summary) { padding: 0; }
+
+    /* ============ Install steps ============ */
+    .install-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .install-grid { grid-template-columns: 1fr; } }
+    .install-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem 1.25rem; }
+    .install-title { font-weight: 700; font-size: 0.9375rem; margin-bottom: 0.875rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .install-step { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start; font-size: 0.875rem; }
+    .install-step-num { flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: var(--chart-1); color: white; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+
+    /* ============ Group header ============ */
+    .group-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-foreground); margin: 1.5rem 0 0.75rem; padding-bottom: 0.375rem; border-bottom: 1px solid var(--border); width: 100%; }
+    .group-count { background: var(--chart-1); color: white; font-size: 0.5625rem; padding: 1px 5px; border-radius: 10px; font-weight: 700; }
+
+    /* ============ Profile matrix ============ */
+    .profile-scroll { overflow-x: auto; }
+    .profile-scroll table { min-width: 640px; }
+
+    /* ============ Animation ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.3s ease-out both; animation-delay: calc(var(--i, 0) * 0.04s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+
+    /* ============ Misc ============ */
+    .tag-row { display: flex; flex-wrap: wrap; gap: 0.375rem; margin: 0.75rem 0; }
+    .tag { font-family: var(--font-mono); font-size: 0.6875rem; padding: 3px 8px; border-radius: var(--radius-sm); background: var(--muted); border: 1px solid var(--border); color: var(--muted-foreground); }
+    strong { font-weight: 600; }
+    .mb1 { margin-bottom: 1rem; }
+    .mt1 { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#modes">2 つのモード</a>
+    <a href="#severity">重症度ティア</a>
+    <a href="#patterns">36 パターン</a>
+    <a href="#vocabulary">語彙テーブル</a>
+    <a href="#profiles">コンテキスト</a>
+    <a href="#install">インストール</a>
+  </nav>
+
+  <div class="main">
+    <h1>avoid-ai-writing</h1>
+    <p class="subtitle">v3.3.1 · MIT · agentskills.io · Conor Bronsdon</p>
+
+    <!-- ===== OVERVIEW ===== -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+      <p>AI が書いた文章には、人間が書かないような一定の癖（<strong>AI-ism</strong>）がある。<strong>avoid-ai-writing</strong> は、それらを検出・除去するための <a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> 対応スキル。Claude Code・OpenClaw・Cursor など、SKILL.md を読めるエージェントならどこでも使える。</p>
+      <p>ワンショットの「もっと自然に直して」プロンプトとは違う。36 パターン・109 語彙エントリを構造化されたルールとして持ち、2 パス検出で第 1 パスを生き残ったパターンまで検出する。</p>
+      <div class="kpi-row mt1">
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">36</div>
+          <div class="ve-kpi-card__label">パターン</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">109</div>
+          <div class="ve-kpi-card__label">語彙エントリ</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">3</div>
+          <div class="ve-kpi-card__label">語彙ティア</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">2</div>
+          <div class="ve-kpi-card__label">動作モード</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">6</div>
+          <div class="ve-kpi-card__label">コンテキスト</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> クイックデモ</span>
+      <div class="demo-split">
+        <div class="demo-block demo-block--before">
+          <div class="demo-label demo-label--before">Before — AI が書いた</div>
+          Certainly! Acme Analytics, a <strong>vibrant startup nestled</strong> in the heart of Boulder's <strong>thriving tech ecosystem</strong>, has secured $40M in Series B funding — <strong>marking a watershed moment</strong> for the observability landscape. The platform <strong>serves as a unified hub</strong>, <strong>featuring</strong> real-time dashboards, <strong>boasting</strong> sub-second queries, and presenting a <strong>seamless integration layer</strong>. Moreover, <strong>experts believe</strong> Acme is <strong>poised to disrupt</strong> the market. In conclusion, <strong>the future looks bright!</strong>
+        </div>
+        <div class="demo-block demo-block--after">
+          <div class="demo-label demo-label--after">After — スキル適用後</div>
+          Acme Analytics raised a $40M Series B led by Sequoia. The Boulder-based startup makes an observability platform that runs queries in under a second and plugs into existing monitoring stacks without custom integration work.
+        </div>
+      </div>
+      <p style="font-size: 0.8125rem; color: var(--muted-foreground); margin-bottom: 0;">検出した問題: チャットボット語 (Certainly!)・販促語 (vibrant, nestled, thriving)・重要性インフレ (watershed moment)・コピュラ回避 (serves as, featuring, boasting)・語彙置換 4 語・曖昧な帰属 (experts believe)・フィラー (Moreover)・ありふれた結論 (the future looks bright) など計 15 以上</p>
+    </div>
+
+    <div class="ve-callout mt1">
+      <strong>なぜ語彙だけ直しても足りないか:</strong> Pangram Labs (28M 人間ドキュメントで訓練した分類器) の研究によると、AI 検出ツールは<strong>語彙より構造的な一様性</strong>を高く重み付けする。文長・段落長・リズムを変えなければ、Tier 1 語彙を全部置換しても AI 生成と判定され続ける。
+    </div>
+
+    <!-- ===== MODES ===== -->
+    <section id="modes" class="sec-head">2 — 2 つのモード</section>
+    <div class="ve-card" style="--i:0">
+      <div class="mode-split">
+        <div class="mode-card mode-card--rewrite">
+          <span class="mode-badge mode-badge--rewrite">rewrite</span>
+          <div class="mode-title">リライト（デフォルト）</div>
+          <div class="mode-desc">AI-ism を特定し、テキストを直す。4 セクション形式で返す:</div>
+          <ol style="padding-left: 1.25rem; font-size: 0.8125rem; color: var(--muted-foreground);">
+            <li>Issues found — 引用付きで問題を列挙</li>
+            <li>Rewritten version — 修正済み全文</li>
+            <li>What changed — 主要変更のサマリ</li>
+            <li>Second-pass audit — リライト後の再チェック</li>
+          </ol>
+        </div>
+        <div class="mode-card mode-card--detect">
+          <span class="mode-badge mode-badge--detect">detect</span>
+          <div class="mode-title">検出のみ</div>
+          <div class="mode-desc">AI-ism を特定するが書き直さない。2 セクション形式で返す:</div>
+          <ol style="padding-left: 1.25rem; font-size: 0.8125rem; color: var(--muted-foreground);">
+            <li>Issues found — P0/P1/P2 別に列挙</li>
+            <li>Assessment — 確実に直すべき vs 判断次第の分類</li>
+          </ol>
+          <div class="mode-triggers mt1">
+            トリガー: "detect" / "flag only" / "audit only" / "just flag" / "scan"
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SEVERITY ===== -->
+    <section id="severity" class="sec-head">3 — 重症度ティア</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> P0 / P1 / P2</span>
+      <div class="sev-grid">
+        <div class="sev-card sev-p0">
+          <span class="sev-badge sev-badge--p0">P0 — 即修正</span>
+          <div class="sev-title">信頼性キラー</div>
+          <div class="sev-sub">公開前に必ず直す</div>
+          <ul style="padding-left: 1.25rem; font-size: 0.8125rem; color: var(--muted-foreground);">
+            <li>Cutoff disclaimers ("As of my last update")</li>
+            <li>Chatbot artifacts ("I hope this helps!", "Great question!")</li>
+            <li>Vague attributions ("Experts believe")</li>
+            <li>Significance inflation on routine events</li>
+          </ul>
+        </div>
+        <div class="sev-card sev-p1">
+          <span class="sev-badge sev-badge--p1">P1 — 公開前</span>
+          <div class="sev-title">明らかな AI 臭</div>
+          <div class="sev-sub">公開前に修正</div>
+          <ul style="padding-left: 1.25rem; font-size: 0.8125rem; color: var(--muted-foreground);">
+            <li>語彙 (delve, leverage, robust…)</li>
+            <li>テンプレート語句・slot-fill</li>
+            <li>"Let's" トランジション</li>
+            <li>Synonym cycling・Em dash 頻度</li>
+          </ul>
+        </div>
+        <div class="sev-card sev-p2">
+          <span class="sev-badge sev-badge--p2">P2 — 余裕があれば</span>
+          <div class="sev-title">スタイルの磨き</div>
+          <div class="sev-sub">時間があれば修正</div>
+          <ul style="padding-left: 1.25rem; font-size: 0.8125rem; color: var(--muted-foreground);">
+            <li>Generic conclusions</li>
+            <li>Compulsive rule of three</li>
+            <li>Uniform paragraph length</li>
+            <li>Copula avoidance</li>
+          </ul>
+        </div>
+      </div>
+      <div class="ve-callout mt1">
+        <strong>クイックパスは P0+P1 のみ。</strong>完全監査はすべての 3 ティアをカバーする。
+      </div>
+    </div>
+
+    <!-- ===== PATTERNS ===== -->
+    <section id="patterns" class="sec-head">4 — 36 パターン詳細</section>
+    <div class="ve-card" style="--i:0">
+      <div class="group-label"><span>Content Patterns</span><span class="group-count">7</span></div>
+      <div class="pattern-grid">
+        <div class="pattern-card">
+          <div class="pattern-name">1. Significance inflation</div>
+          <div class="pattern-example"><span class="bad">marking a pivotal moment in the evolution of...</span> → <span class="good">was founded in 2019 to solve X</span></div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">2. Notability name-dropping</div>
+          <div class="pattern-example"><span class="bad">cited in NYT, BBC, and Wired</span> → <span class="good">In a 2024 NYT interview, she argued...</span></div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">3. Superficial -ing analyses</div>
+          <div class="pattern-example"><span class="bad">symbolizing... reflecting... showcasing...</span> → 具体的な事実に置き換えるか削除</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">4. Promotional language</div>
+          <div class="pattern-example"><span class="bad">nestled within the breathtaking region</span> → <span class="good">is a town in the Gonder region</span></div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">5. Vague attributions</div>
+          <div class="pattern-example"><span class="bad">Experts believe it plays a crucial role</span> → <span class="good">according to a 2019 survey by Gartner</span></div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">6. Formulaic challenges</div>
+          <div class="pattern-example"><span class="bad">Despite challenges... continues to thrive</span> → 課題と対応を具体的に記述</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">7. Novelty inflation</div>
+          <div class="pattern-example"><span class="bad">He introduced a term I hadn't heard before</span> → <span class="good">He walked through how X works in practice</span></div>
+        </div>
+      </div>
+
+      <div class="group-label"><span>Language Patterns</span><span class="group-count">7</span></div>
+      <div class="pattern-grid">
+        <div class="pattern-card">
+          <div class="pattern-name">8. Word/phrase replacements (3 tiers)</div>
+          <div class="pattern-example"><span class="bad">leverage... robust... seamless... utilize</span> → <span class="good">use... reliable... smooth... use</span></div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">9. Copula avoidance</div>
+          <div class="pattern-example"><span class="bad">serves as... features... boasts</span> → <span class="good">is... has</span></div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">10. Synonym cycling</div>
+          <div class="pattern-example"><span class="bad">developers... engineers... practitioners... builders</span> → <span class="good">developers</span>（同じ語を繰り返す）</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">11. Template phrases</div>
+          <div class="pattern-example"><span class="bad">a [adj] step towards [adj] infrastructure</span> → 具体的な結果を述べる</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">12. Filler phrases</div>
+          <div class="pattern-example"><span class="bad">In order to</span> → <span class="good">to</span>　<span class="bad">Due to the fact that</span> → <span class="good">because</span></div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">13. False ranges</div>
+          <div class="pattern-example"><span class="bad">from the Big Bang to dark matter</span> → 実際のトピックを列挙</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">14. Parenthetical hedging</div>
+          <div class="pattern-example"><span class="bad">tools (like X and Y)</span> → 直接名前を出すか削除</div>
+        </div>
+      </div>
+
+      <div class="group-label"><span>Structure Patterns</span><span class="group-count">9</span></div>
+      <div class="pattern-grid">
+        <div class="pattern-card">
+          <div class="pattern-name">15. Formatting</div>
+          <div class="pattern-example">Em dash 過多・Bold 乱用・絵文字ヘッダ・箇条書き過剰 → カンマ/点・散文・簡素化</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">16. Sentence structure</div>
+          <div class="pattern-example"><span class="bad">It's not X, it's Y</span> + 中身のない強調語 → 肯定の直接表現</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">17. Structural issues</div>
+          <div class="pattern-example">段落が均一・定型的な書き出し・過度に綺麗な文法 → 長短混在・要点から始める</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">18. Transition phrases</div>
+          <div class="pattern-example"><span class="bad">Moreover, Furthermore, In today's [X]</span> → <span class="good">and / also</span>、または再構成</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">19. Inline-header lists</div>
+          <div class="pattern-example"><span class="bad">**Speed:** Speed improved by...</span> → ポイントを直接書く</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">20. Title case headings</div>
+          <div class="pattern-example"><span class="bad">Strategic Negotiations And Partnerships</span> → <span class="good">Strategic negotiations and partnerships</span></div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">21. Numbered list inflation</div>
+          <div class="pattern-example"><span class="bad">Here are 7 reasons why...</span> → 本当に重要な 2〜3 項目に絞る</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">22. False concession</div>
+          <div class="pattern-example"><span class="bad">While X has limitations, it's still remarkable</span> → 本当のトレードオフを述べる</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">23. Rhetorical question openers</div>
+          <div class="pattern-example"><span class="bad">What if there were a better way to...?</span> → 主張から始める</div>
+        </div>
+      </div>
+
+      <div class="group-label"><span>Communication Patterns</span><span class="group-count">9</span></div>
+      <div class="pattern-grid">
+        <div class="pattern-card">
+          <div class="pattern-name">24. Chatbot artifacts</div>
+          <div class="pattern-example"><span class="bad">I hope this helps! Let me know if...</span> → 完全に削除</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">25. "Let's" constructions</div>
+          <div class="pattern-example"><span class="bad">Let's explore, Let's break this down</span> → 本題から直接始める</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">26. Cutoff disclaimers</div>
+          <div class="pattern-example"><span class="bad">While details are limited in available sources...</span> → 情報を探すか削除</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">27. Generic conclusions</div>
+          <div class="pattern-example"><span class="bad">The future looks bright, Only time will tell</span> → 具体的な締めくくり、または削除</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">28. Emotional flatline</div>
+          <div class="pattern-example"><span class="bad">What surprised me most, I was fascinated to discover</span> → 感情を証明するか削除</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">29. Reasoning chain artifacts</div>
+          <div class="pattern-example"><span class="bad">Let me think step by step, Breaking this down</span> → 結論→根拠の順で述べる</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">30. Sycophantic tone</div>
+          <div class="pattern-example"><span class="bad">Great question!, You're absolutely right!</span> → 完全に削除</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">31. Acknowledgment loops</div>
+          <div class="pattern-example"><span class="bad">You're asking about, To answer your question</span> → 直接答える</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">32. Confidence calibration</div>
+          <div class="pattern-example"><span class="bad">It's worth noting that, Interestingly, Surprisingly</span> → 事実をそのまま述べる</div>
+        </div>
+      </div>
+
+      <div class="group-label"><span>Meta Patterns</span><span class="group-count">4</span></div>
+      <div class="pattern-grid">
+        <div class="pattern-card">
+          <div class="pattern-name">33. Excessive structure</div>
+          <div class="pattern-example">200 語に 5 ヘッダ、"Overview:" "Key Points:" 等 → セクション統合・散文トランジション</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">34. Rhythm and uniformity</div>
+          <div class="pattern-example">文が全部 15〜25 語、段落が全部同じ長さ → 短文・長文・断片を混在させる</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">35. Over-polishing</div>
+          <div class="pattern-example">あらゆる不規則性を除去した均一な文章 → 自然な語りのリズムや不完全さを残す</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-name">36. Rewrite-vs-patch threshold</div>
+          <div class="pattern-example">Tier1 語 5+ & パターン 3 カテゴリ以上 & リズム均一 → 箇所修正ではなく全文リライトを勧告</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== VOCABULARY ===== -->
+    <section id="vocabulary" class="sec-head">5 — 語彙置換テーブル（109 エントリ）</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 3 ティア構成</span>
+      <p>語彙は AI テキストにおける出現頻度に基づいて 3 ティアに分類される。Tier 1 は常にフラグ、Tier 2 は同一段落に 2 語以上で、Tier 3 は高密度（全体の 3% 程度）で初めてフラグを立てる。</p>
+
+      <details>
+        <summary>
+          <span><span class="tier-badge tier1">Tier 1</span> &nbsp;常にフラグ — 60 エントリ</span>
+        </summary>
+        <div class="ve-table-wrap" style="border-radius: 0; border-top: none; border-left: none; border-right: none;">
+          <table>
+            <thead>
+              <tr><th>元の語彙</th><th>置換候補</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>delve / delve into</code></td><td>explore, dig into, look at</td></tr>
+              <tr><td><code>landscape</code>（比喩）</td><td>field, space, industry, world</td></tr>
+              <tr><td><code>tapestry</code></td><td>（実際の複雑さを記述）</td></tr>
+              <tr><td><code>realm</code></td><td>area, field, domain</td></tr>
+              <tr><td><code>paradigm</code></td><td>model, approach, framework</td></tr>
+              <tr><td><code>embark</code></td><td>start, begin</td></tr>
+              <tr><td><code>beacon</code></td><td>（全体的に書き直し）</td></tr>
+              <tr><td><code>testament to</code></td><td>shows, proves, demonstrates</td></tr>
+              <tr><td><code>robust</code></td><td>strong, reliable, solid</td></tr>
+              <tr><td><code>comprehensive</code></td><td>thorough, complete, full</td></tr>
+              <tr><td><code>cutting-edge</code></td><td>latest, newest, advanced</td></tr>
+              <tr><td><code>leverage</code>（動詞）</td><td>use</td></tr>
+              <tr><td><code>pivotal</code></td><td>important, key, critical</td></tr>
+              <tr><td><code>underscores</code></td><td>highlights, shows</td></tr>
+              <tr><td><code>meticulous / meticulously</code></td><td>careful, detailed, precise</td></tr>
+              <tr><td><code>seamless / seamlessly</code></td><td>smooth, easy, without friction</td></tr>
+              <tr><td><code>game-changer / game-changing</code></td><td>何が変わりなぜ重要かを具体的に述べる</td></tr>
+              <tr><td><code>utilize</code></td><td>use</td></tr>
+              <tr><td><code>watershed moment</code></td><td>turning point, shift（または何が変わったか記述）</td></tr>
+              <tr><td><code>marking a pivotal moment</code></td><td>（何が起きたかを述べる）</td></tr>
+              <tr><td><code>the future looks bright</code></td><td>（削除 — 何か具体的なことか何も言わない）</td></tr>
+              <tr><td><code>only time will tell</code></td><td>（削除）</td></tr>
+              <tr><td><code>nestled</code></td><td>is located, sits, is in</td></tr>
+              <tr><td><code>vibrant</code></td><td>（活発さの根拠を述べるか削除）</td></tr>
+              <tr><td><code>thriving</code></td><td>growing, active（または数字を引用）</td></tr>
+              <tr><td><code>despite challenges… continues to thrive</code></td><td>（課題と対応を具体的に）</td></tr>
+              <tr><td><code>showcasing</code></td><td>showing, demonstrating（または節ごと削除）</td></tr>
+              <tr><td><code>deep dive / dive into</code></td><td>look at, examine, explore</td></tr>
+              <tr><td><code>unpack / unpacking</code></td><td>explain, break down, walk through</td></tr>
+              <tr><td><code>bustling</code></td><td>busy, active（または根拠を示す）</td></tr>
+              <tr><td><code>intricate / intricacies</code></td><td>complex, detailed（または具体的な複雑さを述べる）</td></tr>
+              <tr><td><code>complexities</code></td><td>（実際の複雑さを、または problems / details）</td></tr>
+              <tr><td><code>ever-evolving</code></td><td>changing, growing（または具体的に）</td></tr>
+              <tr><td><code>enduring</code></td><td>lasting, long-running（または期間を引用）</td></tr>
+              <tr><td><code>daunting</code></td><td>hard, difficult, challenging</td></tr>
+              <tr><td><code>holistic / holistically</code></td><td>complete, full, whole（または内容を述べる）</td></tr>
+              <tr><td><code>actionable</code></td><td>practical, useful, concrete</td></tr>
+              <tr><td><code>impactful</code></td><td>effective, significant（または影響を述べる）</td></tr>
+              <tr><td><code>learnings</code></td><td>lessons, findings, takeaways</td></tr>
+              <tr><td><code>thought leader / thought leadership</code></td><td>expert, authority（または実際の貢献を記述）</td></tr>
+              <tr><td><code>best practices</code></td><td>what works, proven methods, standard approach</td></tr>
+              <tr><td><code>at its core</code></td><td>（削除 — 直接述べる）</td></tr>
+              <tr><td><code>synergy / synergies</code></td><td>（実際の複合効果を記述）</td></tr>
+              <tr><td><code>interplay</code></td><td>relationship, connection, interaction</td></tr>
+              <tr><td><code>in order to</code></td><td>to</td></tr>
+              <tr><td><code>due to the fact that</code></td><td>because</td></tr>
+              <tr><td><code>serves as</code></td><td>is</td></tr>
+              <tr><td><code>features</code>（動詞）</td><td>has, includes</td></tr>
+              <tr><td><code>boasts</code></td><td>has</td></tr>
+              <tr><td><code>presents</code>（誇張）</td><td>is, shows, gives</td></tr>
+              <tr><td><code>commence</code></td><td>start, begin</td></tr>
+              <tr><td><code>ascertain</code></td><td>find out, determine, learn</td></tr>
+              <tr><td><code>endeavor</code></td><td>effort, attempt, try</td></tr>
+              <tr><td><code>keen</code>（強調）</td><td>interested, eager（または削除）</td></tr>
+              <tr><td><code>symphony</code>（比喩）</td><td>（実際の連携を記述）</td></tr>
+              <tr><td><code>embrace</code>（比喩）</td><td>adopt, accept, use, switch to</td></tr>
+              <tr><td><code>hit differently / hits different</code></td><td>（具体的に何が変わったか）</td></tr>
+              <tr><td><code>game-changer</code></td><td>（何が変わったかを具体的に）</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>
+          <span><span class="tier-badge tier2">Tier 2</span> &nbsp;同一段落に 2 語以上でフラグ — 38 エントリ</span>
+        </summary>
+        <div class="ve-table-wrap" style="border-radius: 0; border-top: none; border-left: none; border-right: none;">
+          <table>
+            <thead>
+              <tr><th>元の語彙</th><th>置換候補</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>harness</code></td><td>use, take advantage of</td></tr>
+              <tr><td><code>navigate / navigating</code></td><td>work through, handle, deal with</td></tr>
+              <tr><td><code>foster</code></td><td>encourage, support, build</td></tr>
+              <tr><td><code>elevate</code></td><td>improve, raise, strengthen</td></tr>
+              <tr><td><code>unleash</code></td><td>release, enable, unlock</td></tr>
+              <tr><td><code>streamline</code></td><td>simplify, speed up</td></tr>
+              <tr><td><code>empower</code></td><td>enable, let, allow</td></tr>
+              <tr><td><code>bolster</code></td><td>support, strengthen, back up</td></tr>
+              <tr><td><code>spearhead</code></td><td>lead, drive, run</td></tr>
+              <tr><td><code>resonate / resonates with</code></td><td>connect with, appeal to, matter to</td></tr>
+              <tr><td><code>revolutionize</code></td><td>change, transform, reshape</td></tr>
+              <tr><td><code>facilitate / facilitates</code></td><td>enable, help, allow, run</td></tr>
+              <tr><td><code>underpin</code></td><td>support, form the basis of</td></tr>
+              <tr><td><code>nuanced</code></td><td>specific, subtle, detailed（または実際のニュアンスを述べる）</td></tr>
+              <tr><td><code>crucial</code></td><td>important, key, necessary</td></tr>
+              <tr><td><code>multifaceted</code></td><td>（実際の側面を述べるか削除）</td></tr>
+              <tr><td><code>ecosystem</code>（比喩）</td><td>system, community, network, market</td></tr>
+              <tr><td><code>myriad</code></td><td>many, numerous（または数字）</td></tr>
+              <tr><td><code>plethora</code></td><td>many, a lot of（または数字）</td></tr>
+              <tr><td><code>encompass</code></td><td>include, cover, span</td></tr>
+              <tr><td><code>catalyze</code></td><td>start, trigger, accelerate</td></tr>
+              <tr><td><code>reimagine</code></td><td>rethink, redesign, rebuild</td></tr>
+              <tr><td><code>galvanize</code></td><td>motivate, rally, push</td></tr>
+              <tr><td><code>augment</code></td><td>add to, expand, supplement</td></tr>
+              <tr><td><code>cultivate</code></td><td>build, develop, grow</td></tr>
+              <tr><td><code>illuminate</code></td><td>clarify, explain, show</td></tr>
+              <tr><td><code>elucidate</code></td><td>explain, clarify, spell out</td></tr>
+              <tr><td><code>juxtapose</code></td><td>compare, contrast, set side by side</td></tr>
+              <tr><td><code>paradigm-shifting</code></td><td>（実際に何が変わったかを述べる）</td></tr>
+              <tr><td><code>transformative / transformation</code></td><td>（何がどう変わったかを述べる）</td></tr>
+              <tr><td><code>cornerstone</code></td><td>foundation, basis, key part</td></tr>
+              <tr><td><code>paramount</code></td><td>most important, top priority</td></tr>
+              <tr><td><code>poised (to)</code></td><td>ready, set, about to</td></tr>
+              <tr><td><code>burgeoning</code></td><td>growing, emerging（または数字）</td></tr>
+              <tr><td><code>nascent</code></td><td>new, early-stage, emerging</td></tr>
+              <tr><td><code>quintessential</code></td><td>typical, classic, defining</td></tr>
+              <tr><td><code>overarching</code></td><td>main, central, broad</td></tr>
+              <tr><td><code>underpinning / underpinnings</code></td><td>basis, foundation, what supports</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>
+          <span><span class="tier-badge tier3">Tier 3</span> &nbsp;高密度でのみフラグ — 11 エントリ</span>
+        </summary>
+        <div class="ve-table-wrap" style="border-radius: 0; border-top: none; border-left: none; border-right: none;">
+          <table>
+            <thead>
+              <tr><th>語彙</th><th>対応</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>significant / significantly</code></td><td>一部を数字・比較・例に置き換える</td></tr>
+              <tr><td><code>innovative / innovation</code></td><td>実際に何が新しいかを述べる</td></tr>
+              <tr><td><code>effective / effectively</code></td><td>どのように、またはメトリクスを引用</td></tr>
+              <tr><td><code>dynamic / dynamics</code></td><td>実際の力や変化を名指し</td></tr>
+              <tr><td><code>scalable / scalability</code></td><td>何がどの程度スケールするかを述べる</td></tr>
+              <tr><td><code>compelling</code></td><td>なぜ compelling かを述べる</td></tr>
+              <tr><td><code>unprecedented</code></td><td>破った先例を挙げるか削除</td></tr>
+              <tr><td><code>exceptional / exceptionally</code></td><td>例外たる根拠を引用</td></tr>
+              <tr><td><code>remarkable / remarkably</code></td><td>何が remarking に値するかを述べる</td></tr>
+              <tr><td><code>sophisticated</code></td><td>洗練の内容を記述</td></tr>
+              <tr><td><code>world-class / state-of-the-art / best-in-class</code></td><td>ベンチマークまたは比較を引用</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+
+    <!-- ===== CONTEXT PROFILES ===== -->
+    <section id="profiles" class="sec-head">6 — コンテキストプロファイル</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 6 プロファイルと許容マトリクス</span>
+      <p>コンテキストを指定しない場合、スキルはシグナルから自動推論する（300 語未満 + ハッシュタグ → <code>linkedin</code>、コードブロック → <code>technical-blog</code> など）。</p>
+      <div class="tag-row">
+        <span class="tag">linkedin</span>
+        <span class="tag">blog</span>
+        <span class="tag">technical-blog</span>
+        <span class="tag">investor-email</span>
+        <span class="tag">docs</span>
+        <span class="tag">casual</span>
+      </div>
+      <div class="profile-scroll">
+        <div class="ve-table-wrap mt1">
+          <table>
+            <thead>
+              <tr>
+                <th>ルール</th>
+                <th>linkedin</th>
+                <th>blog</th>
+                <th>technical-blog</th>
+                <th>investor-email</th>
+                <th>docs</th>
+                <th>casual</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Em dashes</td>
+                <td>relaxed</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>relaxed</td>
+                <td>skip</td>
+              </tr>
+              <tr>
+                <td>Bold overuse</td>
+                <td>relaxed</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>relaxed</td>
+                <td>skip</td>
+              </tr>
+              <tr>
+                <td>Emoji in headers</td>
+                <td>relaxed</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>skip</td>
+                <td>skip</td>
+              </tr>
+              <tr>
+                <td>Excessive bullets</td>
+                <td>skip</td>
+                <td>strict</td>
+                <td>relaxed</td>
+                <td>strict</td>
+                <td>skip</td>
+                <td>skip</td>
+              </tr>
+              <tr>
+                <td>Hedging</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>relaxed</td>
+                <td>strict</td>
+                <td>relaxed</td>
+                <td>skip</td>
+              </tr>
+              <tr>
+                <td>Word table</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>partial *</td>
+                <td>strict</td>
+                <td>relaxed</td>
+                <td>P0 only</td>
+              </tr>
+              <tr>
+                <td>Promotional language</td>
+                <td>relaxed</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>extra strict</td>
+                <td>strict</td>
+                <td>skip</td>
+              </tr>
+              <tr>
+                <td>Generic conclusions</td>
+                <td>skip</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>extra strict</td>
+                <td>skip</td>
+                <td>skip</td>
+              </tr>
+              <tr>
+                <td>Uniform paragraph length</td>
+                <td>skip</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>relaxed</td>
+                <td>skip</td>
+              </tr>
+              <tr>
+                <td>Rhetorical questions</td>
+                <td>relaxed (1 OK)</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>strict</td>
+                <td>skip</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p style="font-size: 0.78rem; color: var(--muted-foreground); margin-top: 0.75rem; margin-bottom: 0;">* technical-blog の語彙例外: <code>robust</code>, <code>comprehensive</code>, <code>seamless</code>, <code>ecosystem</code>, <code>leverage</code>（プラットフォーム文脈）, <code>facilitate</code>, <code>underpin</code>, <code>streamline</code> は技術的意味で有効なためフラグ対象外。</p>
+    </div>
+
+    <!-- ===== INSTALL ===== -->
+    <section id="install" class="sec-head">7 — インストール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Claude Code / OpenClaw / Cursor</span>
+      <div class="install-grid">
+        <div class="install-card">
+          <div class="install-title">Claude Code</div>
+          <div class="install-step">
+            <span class="install-step-num">1</span>
+            <div>
+              <strong>Option A: スキルディレクトリにクローン</strong>
+              <div class="ve-code-block mt1" style="max-height: none;">
+                <pre><code>git clone https://github.com/conorbronsdon/avoid-ai-writing \
+  ~/.claude/skills/avoid-ai-writing</code></pre>
+              </div>
+            </div>
+          </div>
+          <div class="install-step">
+            <span class="install-step-num">2</span>
+            <div>
+              <strong>Option B: CLAUDE.md から参照</strong>
+              <div class="ve-code-block mt1" style="max-height: none;">
+                <pre><code>- AI パターン編集 → `path/to/avoid-ai-writing/SKILL.md` を読む</code></pre>
+              </div>
+            </div>
+          </div>
+          <div class="install-step">
+            <span class="install-step-num">3</span>
+            <div>
+              <strong>Option C: スラッシュコマンド</strong>
+              <p style="font-size: 0.8125rem; color: var(--muted-foreground); margin-bottom: 0.5rem;">~/.claude/commands/clean-ai-writing.md を作成:</p>
+              <div class="ve-code-block" style="max-height: none;">
+                <pre><code>---
+description: AI 文体を監査・リライト
+---
+$ARGUMENTS
+Read and follow ~/.claude/skills/avoid-ai-writing/SKILL.md</code></pre>
+              </div>
+              <p style="font-size: 0.8125rem; color: var(--muted-foreground); margin-top: 0.5rem; margin-bottom: 0;">使い方: <code>/clean-ai-writing &lt;text&gt;</code></p>
+            </div>
+          </div>
+        </div>
+        <div class="install-card">
+          <div class="install-title">OpenClaw / その他のエージェント</div>
+          <div class="install-step">
+            <span class="install-step-num">1</span>
+            <div>
+              <strong>ClawHub からインストール</strong>
+              <div class="ve-code-block mt1" style="max-height: none;">
+                <pre><code>clawhub install avoid-ai-writing</code></pre>
+              </div>
+            </div>
+          </div>
+          <div class="install-step">
+            <span class="install-step-num">2</span>
+            <div>
+              <strong>または手動クローン</strong>
+              <div class="ve-code-block mt1" style="max-height: none;">
+                <pre><code>git clone https://github.com/conorbronsdon/avoid-ai-writing \
+  ~/.openclaw/skills/avoid-ai-writing</code></pre>
+              </div>
+            </div>
+          </div>
+          <div class="install-step">
+            <span class="install-step-num">3</span>
+            <div>
+              <strong>トリガーフレーズ例</strong>
+              <ul style="margin-top: 0.375rem; color: var(--muted-foreground); font-size: 0.8125rem;">
+                <li>"Remove AI-isms from this post"</li>
+                <li>"Audit this draft for AI tells"</li>
+                <li>"Make this sound less like AI"</li>
+                <li>"Clean up AI writing in this paragraph"</li>
+              </ul>
+            </div>
+          </div>
+          <div class="ve-callout mt1">
+            <strong>Cursor / Windsurf / agentskills.io 対応エージェント:</strong> <code>SKILL.md</code> をエージェントが読める場所に配置し、ルールやプロンプトから参照するだけで使える。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Links -->
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 1rem; padding: 1rem 1.5rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 参考リンク</span>
+      <ul style="margin-bottom: 0;">
+        <li><a href="https://github.com/conorbronsdon/avoid-ai-writing" target="_blank" rel="noopener">GitHub: conorbronsdon/avoid-ai-writing</a></li>
+        <li><a href="https://avoid-ai-writing-app.vercel.app" target="_blank" rel="noopener">Web App — avoid-ai-writing-app.vercel.app</a>（1,000 $avoid トークンをバーンして監査）</li>
+        <li><a href="https://agentskills.io" target="_blank" rel="noopener">agentskills.io</a> — スキルエコシステム仕様</li>
+        <li><a href="https://www.pangram.com/" target="_blank" rel="noopener">Pangram Labs</a> — AI 検出研究（28M ドキュメントで訓練した分類器）</li>
+        <li><a href="https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing" target="_blank" rel="noopener">Wikipedia: Signs of AI-generated text</a></li>
+      </ul>
+    </div>
+
+  </div><!-- .main -->
+</div><!-- .wrap -->
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

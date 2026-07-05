@@ -1,177 +1,280 @@
 ---
 name: docs-site-add-visual-doc
-description: docs-site に Spell UI 準拠のビジュアル解説ページを追加し、index にリンク・画面構成を揃え、ブランチでコミットして PR まで行う一連のワークフロー。本スキル内の手順だけで完結する。「資料を追加して」「新しい解説ページを」「index に載せたい」と依頼された時に使用。
+description: >-
+  Adds Spell UI visual documentation pages to docs-site from repos/ sources: optional clone into repos/,
+  Context Engineering (JiT loading, structured extraction, self-refinement), scan-source.sh inventory,
+  Think–Structure–Style and templates, writes docs/<name>.html, links index.html, opens draft PRs.
+  Encodes requested reading tone in concrete wording (short steps, clear labels, respectful imperatives)
+  instead of meta section titles or brochure taglines. Aligns index card titles with the page title and subject matter.
+  Use when converting READMEs, SKILLs, or cloned repos under repos/ into docs-site pages.
+  Do not use for non-docs-site projects, source outside repos/, standalone generic HTML outside this site,
+  large in-place rewrites of existing pages (do focused edits instead), or pages that only name a vibe in headings
+  without substantive content.
 ---
 
-# docs-site ビジュアル解説の追加ワークフロー
+# docs-site ビジュアル解説（統合スキル）
 
-docs-site リポジトリに、Spell UI で統一したビジュアル解説ページを追加し、index との整合を取って **PR まで完了**させる手順。参照はすべて **プロジェクト内** の既存ファイルに取り、本スキル内で完結する。
+`repos/<name>/`（またはクローン取得）を **`docs/<name>.html`** にし、`index.html` を更新して **ドラフト PR まで**完了させる。
 
-**visual-explainer-spell-ui スキルとの連携**: 解説ページの**構成・図の種類・スタイル指針**（Think → Structure → Style）には **visual-explainer-spell-ui スキル**（`.cursor/skills/visual-explainer-spell-ui`）を活用する。ページ生成（Step 2）の前に当該スキルを読み、Spell UI トークン・コンポーネント・図タイプ（Mermaid / CSS Grid / データテーブル等）の選び方に従う。出力先・Unfurl・index リンクは本スキルのルールに従う。
+| 原則 | 適用 | 目的 |
+|------|------|------|
+| **JiT Loading** | ソース走査・参照読み込み | 必要な時だけ読み、コンテキストを汚染しない |
+| **Structured Extraction** | コンテンツ分類 → コンポーネント | 生ソースを視覚コンポーネントへ変換 |
+| **Self-Refinement** | 生成後の検証 | 既存 `docs/*.html` との整合で品質担保 |
+| **Factual copy** | 見出し・index カード・メタ | トーンは本文の書き方で示し、雰囲気ラベル見出しにしない |
 
-## 前提
+## スコープ
 
-- **参照元**: 解説の元ネタ（ソース）は **ワークスペース内** の **`<プロジェクトルート>/repos/`** 以下に置かれたディレクトリを参照する。プロジェクト外のパスは参照しない。
-- **出力先**: 解説ページの HTML は **`<プロジェクトルート>/docs/`** に出力する（ユーザーが別指定した場合はそれに従う）。
-- **main 直接コミット禁止**のルールがある場合は、必ずブランチを切ってからコミットする。
-- ファイル名・ブランチ名は **単語連結最大 4 つまで** のルールに従う。
+- **対象**: docs-site リポジトリ内。解説の正は **`repos/<名前>/`**（URL クローン時は Step 0 で取得）。
+- **出力**: `<プロジェクトルート>/docs/<名前>.html`。`assets/` 内の Markdown プロンプトが参照する `~/.agent/diagrams/` は **docs-site 作業では使わない**（standalone HTML 生成用）。
+- **ファイル名・ブランチ名**: 単語連結 **最大 4 つ**。
+- **公開表記**: 生成 HTML と PR 本文に、ローカル絶対パス（例: `/Users/...`）や作業ツリー前提の `repos/<名前>/...` をそのまま載せない。公開ページでは GitHub URL、プロジェクト名（例: `mattpocock/skills`）、またはリポジトリ内相対パス（例: `README.md`）へ変換する。
 
-### repos の有無を判定するときの注意
-
-**`repos/` は `.gitignore` に含まれているため**、Glob や grep など「gitignore を尊重する検索」では `repos/` 以下が 0 件になることがある。**「repos がない」と結論しないこと。**
-
-- **存在確認**: `repos/` および対象ディレクトリ（例: `repos/Kaku`）の有無は、**そのパスを直接扱う方法**で行う。例: 当該パスを Read で開く、またはターミナルで `ls <プロジェクトルート>/repos` / `ls <プロジェクトルート>/repos/Kaku` を実行する。
-- ユーザーが `@repos/Kaku` のように指定した場合は、`<プロジェクトルート>/repos/Kaku` を上記の方法で確認してから Step 0 に進む。
+> `repos/` は `.gitignore` 対象のため Glob で見えない。`ls` または Read でパス直接確認する。
 
 ---
 
-## ワークフロー（スキル内完結）
+## 入力
 
-### Step 0: 解説対象のコード解析（repos 内にソースがある場合）
+- **リポジトリ URL（通常）**: HTTPS または SSH → Step 0 で `repos/` にクローン。
+- **既存 `repos/<名前>/` のみ**: URL なしでパスだけなら Step 0 をスキップ。同期が必要なら Workflow CLI の `prepare` を使う（手動 `git pull` は使わない）。
+- **クローン先名（任意）**: URL 時のみ。省略時は URL から推測。
 
-解説の元ネタが **`repos/`** 以下のディレクトリ（例: `repos/Kaku`、`repos/learn-claude-code-main/`）である場合、**code-reading スキル**（`.cursor/skills/code-reading`）に従ってコード解析を行う。対象が repos 以下かどうかは、上記「repos の有無を判定するときの注意」に従い、Glob に頼らずパス直接で確認する。
+---
 
-- **事前に code-reading の SKILL.md を読む**。3 層フレームワーク（取得・処理・管理）とクイックフロー（ゴール定義 → 境界設定 → 情報取得の優先順位）に沿って、インターフェイスと役割の理解に集中し、読む箇所を極小化する。
-- 複数モジュール跨ぎ・探索的ゴールの場合は、code-reading で推奨するサブエージェント（explore）の起動を検討する。
-- 得た理解を元に、Step 2 で解説ページの**内容**（概要・構成・使い方・参考リンクなど）を書く。
+## Phase 1: Source Acquisition（JiT — ディレクトリ優先）
 
-### Step 1: 参照取得（プロジェクト内のみ）
+### Step 0: リポジトリの取得（URL があるとき、または既存 clone の同期）
 
-Spell UI のトークン・コンポーネント・TOC 実装は、**プロジェクト内の既存ファイル** を読んで把握する。
+**推奨**: Workflow CLI で Source Acquisition する（既存 clone は `origin/HEAD` へ強制同期、新規は clone）。
+
+```bash
+# 既存 repos/<clone-dir> を同期して runbook を出す
+npx tsx scripts/visual-doc-workflow.ts prepare --source <clone-dir>
+
+# URL から新規取得（または既存を同期）
+npx tsx scripts/visual-doc-workflow.ts prepare --url <URL> [--name <clone-dir>]
+```
+
+`prepare` 成功時は `tmp/<slug>-runbook.md` を読み、以降 **`repos/<clone-dir>` を解説ルート**とする。
+
+**手動で行う場合のみ**（Workflow CLI を使わないとき）:
+
+1. プロジェクトルート（`docs/` と `index.html` がある階層）で作業する。
+2. `repos/<clone-dir>/` を決める（ユーザー指定 → URL から推測 → 長すぎる場合は短名を確認）。
+3. `mkdir -p repos`。
+4. 新規: `git clone <URL> repos/<clone-dir>`（任意で `--depth 1`）。
+5. 既存あり **かつ Git リポジトリ**: `git fetch origin` のあと、デフォルトブランチ（`origin/HEAD`）へ `checkout -B` → `reset --hard` → `clean -fd` でローカル差分を捨てて最新に合わせる。`origin` が無い・`.git` が無い場合は別名で再 clone を確認。
+6. `ls repos/<clone-dir>` で取得を確認。
+
+### Step 1a: スキャン（推奨）
+
+ワークスペースルートから:
+
+```bash
+bash .cursor/skills/docs-site-add-visual-doc/scripts/scan-source.sh repos/<clone-dir>
+```
+
+出力を手がかりに、読むファイルの優先度を決める。
+
+### Step 1b: ソース読み取り順（固定。前段で足りれば後段を読まない）
+
+1. 優先度 1: ディレクトリ構造 → 責務を推測。
+2. 優先度 2: `README.md` → インターフェイスと目的。
+3. 優先度 3: メインエントリ（`SKILL.md` / `index.*` / `main.*`）→ 公開 API・手順。
+4. 優先度 4–6（JiT）: Phase 3 で必要と判断した時のみ `references/` / `assets/` 等を読む。
+
+**Context Compression**: 読んだファイルから「タイトル・目的・主要構造・重要な制約」だけを内部に保持し、全文をコンテキストに載せ続けない。
+
+### Step 1c: 深い解析
+
+**code-reading スキル**（`.cursor/skills/code-reading`）に従い、Glob に頼らずパスで確認する。得た理解を HTML 本文に反映する。
+
+---
+
+## Phase 2: Reference Acquisition（JiT — Spell UI パターン）
+
+読むのは **必須 3 本のみ**。残りは下の JiT 表を参照。
+
+**必ず読む:**
 
 | 読むファイル | 目的 |
 |-------------|------|
-| `index.html` | Spell UI トークン（`:root` / dark）、`.ve-card` / `.ve-card--hero` / `.ve-section-label`、`.doc-list` とリンクカード（`.ve-card--link`、`.index-doc-title`、`.index-doc-file`）の構造。**Unfurl**: `<head>` 内の `<!-- Unfurl: Open Graph -->` / `<!-- Unfurl: Twitter Card -->` コメントと、その直下の `og:*`・`twitter:*` メタタグの並び |
-| `docs/opentui.html` または `docs/react-grab.html` のいずれか 1 件 | 解説ページ 1 本の体裁：**Unfurl**（`<head>` の description ＋ Open Graph ＋ Twitter Card のメタブロック）、THEME（:root + dark）、Spell UI static（.ve-card, .ve-card--elevated, .ve-card--recessed, .ve-card--hero, .ve-section-label, .ve-code-block, .ve-table-wrap, .ve-kpi-card, .ve-callout）、`.wrap` / `.toc` / `.main`、`.sec-head`、Scroll Spy 用の `<script>`。**Scroll Spy** は `docs/defuddle.html` 末尾のスクリプトをコピーすること（active が常に1件になる正しい実装）。 |
+| `index.html` | `.doc-list` の形式（各 `<a>` の `data-updated` / `title="更新: …"`・末尾のソート用 `<script>` は **`data-updated` のみ参照**）・Unfurl コメントとメタの並び |
+| `docs/defuddle.html`（末尾スクリプト含む） | `<style>` 順序・コンポーネント・体裁・Scroll Spy パターン |
+| `references/visual-explainer-core.md` | Think → Structure → Style、品質、Anti-Patterns |
 
-**注意**: 本スキル配下に `references/` がある場合でも、**実際の見た目は index と docs の既存 HTML に合わせる**。プロジェクト内の `index.html` と `docs/*.html` を正とする。
+**本スキル配下の `references/` は補助**。見た目の正は **リポジトリの `index.html` と `docs/*.html`**。
 
-### Step 2: ビジュアル解説ページの生成
+> `visual-explainer-core.md` の Deliver セクションにある `~/.agent/diagrams/` パスは無視する（docs-site では `docs/<名前>.html` が出力先）。
 
-**事前に visual-explainer-spell-ui スキルを読む。** その Workflow（Think → Structure → Style）に沿って、誰向けか・図の種類（アーキテクチャ / Mermaid / データテーブル等）・Spell UI トークン・コンポーネントの使い方を決める。同スキル内の `references/`（spell-ui-tokens.css, spell-ui-static.css, spell-ui-integration.md, css-patterns.md, responsive-nav.md 等）や `templates/` を必要に応じて参照し、品質チェック・アンチパターンも満たす。出力先は本スキルに従い `docs/<名前>.html` とする。
+---
 
-1. **新規ファイル**: `docs/<名前>.html`（名前は内容が分かるように、例: `react-grab.html`, `kaku-terminal.html`）。
-2. **Unfurl（リンクプレビュー）**
-   - `<head>` に以下を必ず含める。既存の `docs/*.html` のメタブロックを流用し、**コメント** `<!-- Unfurl: Open Graph -->` と `<!-- Unfurl: Twitter Card -->` を付けて index と揃える。
-   - **共通**: `<meta name="description" content="（資料の短い説明）">`
-   - **Open Graph**: `og:type` = `article`、`og:locale`（例: `ja_JP`）、`og:title`、`og:description`、`og:url` = `https://tadano-go.github.io/docs-site/docs/<ファイル名>.html`
-   - **Twitter Card**: `twitter:card` = `summary`、`twitter:title`、`twitter:description`
-   - タイトル・説明は資料の内容に合わせて記述する。
-3. **Spell UI 準拠**
-   - 上記 Step 1 で読んだ `docs/opentui.html` または `docs/react-grab.html` の `<style>` 構造を流用する（THEME → Spell UI static → Reset → Wrap+TOC → Typography → その他）。
-   - コンポーネント: `.ve-card`（本文）、`.ve-card--elevated`（強調ブロック）、`.ve-card--recessed`（参照・補足）、`.ve-card--hero`（先頭ヒーロー用）、`.ve-section-label` + `.ve-dot`、`.ve-code-block`、`.ve-table-wrap`、`.ve-kpi-card`、`.ve-callout` を内容に応じて使い分ける。
-4. **4 セクション以上の場合**
-   - `.wrap` / `.toc` / `.main` のレイアートを使う。
-   - デスクトップ: スティッキーサイドバー TOC。モバイル: 横スクロール TOC（既存 docs のメディアクエリを流用）。
-   - 各セクションに `id` を付け、TOC の `a[href="#id"]` と対応させる。
-   - スクロールに連動して TOC の `active` を付ける Scroll Spy 用の `<script>` は、**`docs/defuddle.html` 末尾**からコピーして使う。**注意**: `active` は常に **1 件だけ**付けること。`docTop <= top` のたびに `classList.add('active')` すると、スクロール位置より上にある全セクションがハイライトされる不具合になる。正しい実装は「current = スクロール位置を超えていない最後のセクション」を決め、そのリンクだけ `classList.toggle('active', s === current)` する。
-5. **内容**
-   - 対象の製品・ツール・概念に合わせて、概要・構成・使い方・API・参考リンクなどのセクションを組み、既存の解説ページと同程度の粒度で書く。元ネタが **`repos/`** 内のディレクトリの場合は、Step 0 の code-reading に基づいた理解を反映する。
+## Phase 3: Structured Extraction（コンテンツ変換）
 
-### Step 3: index.html へのリンク追加
+`references/context-extraction.md` を読み、ソースから **情報タイプ**を分類する（概念 / 手順 / 設定 / コード / 比較 / 注意）。
 
-- 資料一覧 **`.doc-list`** 内に、既存と同形式のリンクカードを **1 件** 追加する。
-- 挿入位置: 既存の `<li>...</li>` の直後（コメント「追加する資料はここに」の直前が無難）。
+- 情報タイプ → Spell UI へのマッピングは **`references/spell-ui-map.md`**。
+- セクション **4 本以上**なら TOC 付きレイアウト（`references/responsive-nav.md`、`docs/defuddle.html` の Scroll Spy）。
+- 審美: フォント・パレット・アクセントを選ぶ。**禁止**: Inter / Roboto / violet / cyan-magenta-pink（詳細は `spell-ui-map.md`）。
+- **ASCII 表を避ける**: 複雑な表は HTML テーブル化（`visual-explainer-core.md`）。
+- **文体**: 依頼に「丁寧に」「ホスピタリティ」などがあっても、**見出しでトーンを名指ししない**。`references/copy-tone.md` を読み、事実・手順ベースのラベルにする。
+
+---
+
+## Phase 4: Generation（`docs/<名前>.html`）
+
+`references/visual-explainer-core.md` と Phase 2 の既存 HTML を踏まえ、新規 `docs/<名前>.html` を作成する。`<名前>` はソースディレクトリ名と一致させる。
+
+1. **Unfurl**: 既存 `docs/*.html` と同形式。`og:url` = `https://tadano-go.github.io/docs-site/docs/<ファイル名>.html`。
+2. **Spell UI**: THEME → Spell UI static → Wrap+TOC → …。`.ve-card`、`ve-code-block`、`ve-table-wrap` 等は `spell-ui-map.md` と内容に合わせて使う。
+3. **4 セクション以上**: `.wrap` / `.toc` / `.main`、Scroll Spy を `defuddle.html` からコピー。
+4. **Mermaid・表・図**: `visual-explainer-core.md` の Diagram Types と **`references/libraries.md`**。
+5. **コードブロック可読性**: グローバル `code { background: ...; padding: ... }` を使う場合、`.ve-code-block pre code` で必ず打ち消す。打ち消しが無いとコード行が帯状になり読めない。
+6. **パスの公開化**: 本文・ラベル・出典表記では、読み取り元の `repos/<clone-dir>/...` を公開向けに言い換える。例: `repos/mattpocock/skills/README.md` は `mattpocock/skills の README.md` または `README.md` と書く。
+7. **index カードとページの整合**: `.index-doc-title` はページの `<title>` / 主題と矛盾させない。キャッチコピー専用のカードタイトルにしない（`references/copy-tone.md`）。
+
+```css
+.ve-code-block pre code {
+  display: block;
+  background: transparent;
+  border-radius: 0;
+  color: var(--code-text);
+  padding: 0;
+  tab-size: 2;
+}
+```
+
+### テンプレート選択（`assets/`）
+
+テンプレートは **ゼロから書くよりも参考程度**に使う。既存 `docs/*.html` の体裁を正とする。
+
+| ソースの性質 | 参照テンプレート |
+|------------|----------------|
+| アーキテクチャ・構成図が中心 | `assets/architecture.html` |
+| テーブル・設定値・比較が主体 | `assets/data-table.html` |
+| フロー・状態遷移が主体 | `assets/mermaid-flowchart.html` |
+| スライド形式で説明したい | `assets/slide-deck.html` |
+
+> スライド形式に特化した詳細は `references/slide-patterns.md` を JiT 参照。
+
+---
+
+## Phase 5: Self-Refinement（整合検証）
+
+生成した HTML を出荷前に以下の項目で検証する。すべて通過してから Phase 6 に進む。
+
+**インライン検証（必須）:**
+
+1. `docs/<名前>.html` が存在し、ブラウザで開ける構造になっている。
+2. `<head>` に `og:title` / `og:url` / `og:description` / `twitter:card` がコメント付きで揃っている。
+3. `index.html` の `.doc-list` にリンクカードが追加され、`<a>` に **`data-updated="YYYY-MM-DD"`** と **`title="更新: YYYY-MM-DD"`** が付いている（`data-updated` の欠落はソート用 script が日付 `0` 扱いにし、意図した新着順にならない。**script は `title` を読まない**ため `title` 欠落で script が壊れることはないが、既存 index と形式を揃えるため **両方必須**）。
+4. 4 セクション以上の場合、Scroll Spy スクリプトが `defuddle.html` のパターン（`toggle('active', s === current)`）と一致している。
+5. フォントとアクセントカラーが既存 `docs/*.html` と被っていない（`references/spell-ui-map.md` の差別化チェック）。
+6. コードブロックがある場合、`.ve-code-block pre code` が `background: transparent` / `padding: 0` を持ち、インラインコード用背景がコード全体に漏れていない。
+7. `git status` で `repos/` がステージングされていない。
+8. `scripts/validate-public-paths.sh docs/<名前>.html` を実行し、ローカル絶対パスと `repos/<名前>/...` 表記が公開 HTML に残っていないことを確認する。
+9. 見出し・リード・メタ description に、**雰囲気の単語だけ**が載っていない。トーンの修正依頼があれば `references/copy-tone.md` に沿って差し替え、ユーザーが **stop-slop** スキルを添付している場合はその手順に従う。
+
+**全項目チェック:** `references/checklist.md` を読んで残りの項目を確認する。
+
+---
+
+## Phase 6: index・コミット・PR
+
+### index.html へのリンク追加
+
+`.doc-list` に既存と同形式のリンクカードを 1 件追加する（**`.doc-list` 末尾の説明コメント直前**が無難。コメント内に `href="docs/....html"` の生パターンを書かない — 将来の一括置換やツールが誤マッチするため）。
+
+**更新日ソート（必須）:** `index.html` 末尾のインライン `<script>` が、各カードの `<a>` の **`data-updated` 属性だけ**を読み、**新しい日付が上**になるよう `li` を並べ替える（`title` は参照しない）。追加する `<a>` には **`data-updated`** と **`title="更新: YYYY-MM-DD"`** を **両方** 付ける（`data-updated` を付け、末尾の `<script>` を編集しない限り、ソート用 script の挙動は壊れない）。
+
+**`data-updated` の値（どちらかでよい）:**
+
+1. **推奨:** リポジトリルートで `git log -1 --format=%cs -- docs/<ファイル名>.html` を実行し、出力された `YYYY-MM-DD` を使う（そのファイルに既にコミット履歴がある場合）。
+2. **初回追加で未コミットのとき:** 作業日の日付を `YYYY-MM-DD` で入れる（初回マージ後は次回以降の更新で Git 日付と近づく）。
+
+`index-doc-title` は **`docs/<名前>.html` の `<title>` と主題**に合わせ、ページとカードで言い回しが食い違わないようにする（詳細は `references/copy-tone.md`）。
 
 ```html
 <li>
-  <a class="ve-card ve-card--link" href="docs/<ファイル名>.html">
+  <a class="ve-card ve-card--link" href="docs/<ファイル名>.html" data-updated="YYYY-MM-DD" title="更新: YYYY-MM-DD">
     <span class="index-doc-title">（資料のタイトル）</span>
     <span class="index-doc-file">docs/<ファイル名>.html</span>
   </a>
 </li>
 ```
 
-### Step 4: index の画面構成を Spell UI で揃える（任意）
+**触らない:** `index.html` の `.doc-list` 直後〜`</body>` 手前の **ソート用 `<script>`** と、既存カードの `data-updated` 属性を一括削除・リフォーマットしない（並び順の契約を壊す）。
 
-index のレイアートを他ページと統一したい場合のみ行う。
+### ブランチ・コミット
 
-- ヒーローを `.ve-card.ve-card--hero` でラップする。
-- 資料リスト直前に `.ve-section-label`（＋`.ve-dot`）を追加する。
-- `.container` に `max-width: 920px` を設定する。
-- 背景を chart-1 系の淡いグラデーションにする。
-- 変更対象は `index.html` のみ。既存のリンクカードの挙動は変えない。
-- 実施する場合は、**別コミット**（例: refactor）に分けるとよい。
+1. `git branch --show-current`。main のまま直コミット禁止なら新規ブランチを作成する。
+   - ブランチ名は `git diff --name-only` の変更ファイルから対象を判断し、`docs/<対象名>` 形式で命名する。
+2. **commit-diffs スキル**の全手順を実行する:
+   - `.cursor/skills/commit-diffs/SKILL.md` を読み、環境検出コマンドを実行する。
+   - `.cursor/skills/commit-diffs/classification.md` を読み、変更カテゴリを特定する。
+   - ヒアドキュメント形式でコミットを作成する。**`repos/` はステージングに含めない。**
 
-### Step 5: ブランチ・コミット
+### Push とドラフト PR
 
-1. **環境確認**
-   - `git branch --show-current` で現在ブランチを確認。
-2. **main にいる場合**
-   - main 直接コミット禁止なら、作業用ブランチを切る。
-   - ブランチ名例: `docs/<名前>-link`（単語連結最大 4 つ、例: `docs/react-grab-link`）。
-   ```bash
-   git checkout -b docs/<名前>-link
-   ```
-3. **ステージ・コミット**
-   - 「解説ページ追加＋index リンク」は **1 コミット** にまとめる（論理単位）。
-   - コミットメッセージ例: `docs: ○○ ビジュアル解説追加と index リンク`（○○は資料名・トピック）。
-   ```bash
-   git add docs/<新規ファイル>.html index.html
-   git commit -m "docs: ○○ ビジュアル解説追加と index リンク"
-   ```
-
-### Step 6: Push とドラフト PR 作成
-
-1. **未コミットの有無確認**
-   - `git status -s` で未コミット変更が無いことを確認。
-2. **Push**
-   ```bash
-   git push -u origin docs/<名前>-link
-   ```
-3. **ドラフト PR**
-   - `gh` でドラフト PR を作成。本文はヒアドキュメントで渡し、クォーティング問題を避ける。
-   ```bash
-   gh pr create --draft --base main --assignee @me --title "docs: ○○ ビジュアル解説ページ追加" --body-file - <<'PRBODY'
-   ## なぜ必要か
-   （○○の概要を資料として残し、資料一覧から参照できるようにするため、など）
-
-   ## 何を変えたか
-   - docs/<ファイル>.html を新規追加（Spell UI 準拠・目次・Scroll Spy 付き）
-   - index.html の資料リストに ○○ へのリンクカードを 1 件追加
-
-   ## 変更内容
-   - （セクション構成の簡潔な説明）
-
-   ## レビューポイント
-   - Spell UI の体裁が他資料と揃っているか
-   - リンク・コード例の内容が誤っていないか
-
-   ## 確認済み事項
-   - main には直接コミットせずブランチでコミット済み
-   - コミットは 1 件（解説ページ追加＋index リンク）
-   PRBODY
-   ```
-   - GitHub コメントでは絵文字を使わないルールがある場合は、PR 本文にも絵文字を入れない。
-4. **main にチェックアウト**
-   - PR 作成が終わったら、作業用ブランチから main に戻る。
-   ```bash
-   git checkout main
-   ```
+1. `git push -u origin <branch>`
+2. **pr-creation スキル**の全手順を実行する（ショートカット禁止）:
+   - `.cursor/skills/pr-creation/SKILL.md` を読み、環境検出コマンドを実行する。
+   - `.cursor/skills/pr-creation/templates.md` を読み、PR タイトルと本文を生成する。
+     - ベースブランチは MUST `main`。他は絶対に指定しない。
+     - PR 本文に **解説元**（GitHub URL または公開向けプロジェクト名。`repos/<名前>` は避ける）と **変更ファイル**を含める。
+     - 絵文字は使用しない。
+   - `.cursor/skills/pr-creation/decision-logic.md` を読み、ベースブランチとタイトル形式を確認する。
+   - `.cursor/skills/pr-creation/safety-checks.md` を読み、Self-Refine 評価を実施する。
+   - **「評価完了」と宣言してから** `gh pr create` を実行する。
+3. PR 作成を確認したら `git checkout main` でメインブランチへ戻る。
 
 ---
 
-## チェックリスト（完了確認）
+## Error Handling
 
-- [ ] Step 2 で visual-explainer-spell-ui スキルを読み、その Workflow・品質チェック・アンチパターンに沿ってページを生成している
-- [ ] 解説ページが `docs/` にあり、Spell UI トークン・コンポーネントで統一されている
-- [ ] 解説ページの `<head>` に Unfurl（`description` ＋ Open Graph ＋ Twitter Card メタ、コメント付き）が含まれている
-- [ ] index の資料一覧（`.doc-list`）に当該ページへのリンクが追加されている
-- [ ] （任意）index のヒーロー・セクションラベル・コンテナ幅が Spell UI で揃っている
-- [ ] main に直接コミットしておらず、ブランチでコミットしている
-- [ ] ドラフト PR が作成され、ベースは main・アサイン済み
-- [ ] PR 作成後に main ブランチへチェックアウト済み
+| 状況 | 対応 |
+|------|------|
+| `repos/<name>` が Glob で見つからない | `.gitignore` のため Glob 不可。`ls` または `Read` で直接確認 |
+| README が無い | メインエントリから直接読む |
+| Scroll Spy が動かない | `docs/defuddle.html` 末尾スクリプトを再コピー。`toggle` パターンを確認 |
+| コードブロックがベージュ/灰色の帯で読みにくい | グローバル `code` スタイルが漏れている。`.ve-code-block pre code { background: transparent; padding: 0; }` を追加 |
+| `doc-list` の位置が分からない | `rg -n "doc-list" index.html` |
+| 新規カードが一覧の一番下に固定され、新着にならない | `<a>` に `data-updated="YYYY-MM-DD"` を付け忘れている（script は欠落を日付 0 扱い）。Phase 6 の日付ルールで追加する |
+| `title="更新: …"` を付け忘れた | ソート順は `data-updated` のみで決まるため script は動くが、既存カードと形式がずれる。`data-updated` と同じ `YYYY-MM-DD` で `title="更新: YYYY-MM-DD"` を補う |
+| 一括ツールで `data-updated` を消した | `git log -1 --format=%cs -- docs/<ファイル名>.html` で復元し、ソート用 `<script>` が残っているか確認 |
+| フォント・パレットが既存と被る | `references/spell-ui-map.md` の差別化チェック |
+| `repos/` がステージに混入した | `git reset HEAD repos/` で除外してからコミット |
+| 公開 HTML に `/Users/...` や `repos/<名前>/...` が残った | `scripts/validate-public-paths.sh docs/<名前>.html` の検出箇所を、GitHub URL・プロジェクト名・リポジトリ内相対パスへ置換 |
+| 見出しやカードが「歓迎」「おもてなし」などラベル先行で違和感がある | `references/copy-tone.md` で見出しを事実・手順ラベルへ置換し、本文で丁寧さを担保する |
+| commit-diffs または pr-creation スキルを部分的に読んで実行した | スキル内のすべての参照ファイルを読み直し、未実施ステップを実行する |
 
 ---
 
-## 参照（必要時のみ）
+## 参照（他スキル）
 
 | 用途 | 参照先 |
 |------|--------|
-| **ビジュアル解説の構成・図タイプ・スタイル指針（Step 2 で必須）** | **visual-explainer-spell-ui スキル**（`.cursor/skills/visual-explainer-spell-ui`） |
-| **repos 内のコード・ドキュメント解析** | **code-reading スキル**（`.cursor/skills/code-reading`） |
-| コミット分割・複数カテゴリ | commit-diffs スキル |
-| PR 本文の詳細テンプレート・複雑な PR | pr-creation スキル |
-| index 変更プランの事前評価 | self-refine スキル |
+| repos 内の解析 | code-reading（`.cursor/skills/code-reading`） |
+| コミット作成 | commit-diffs（`.cursor/skills/commit-diffs/SKILL.md` + `classification.md`） |
+| PR 作成 | pr-creation（`.cursor/skills/pr-creation/SKILL.md` + `templates.md` + `decision-logic.md` + `safety-checks.md`） |
+| index 変更の事前評価 | self-refine |
 
-通常の「1 解説ページ追加 + index リンク → 1 コミット → 1 ドラフト PR」は、**上記 Step 1〜6 のみで完結**する。
+---
+
+## JiT リファレンス一覧（迷った時だけ読む）
+
+| タイミング | ファイル |
+|-----------|---------|
+| Phase 1 のファイル一覧把握 | `scripts/scan-source.sh` を実行 |
+| トーン・見出し・index カードの違和感 | `references/copy-tone.md` |
+| コンテンツ変換で迷った時 | `references/context-extraction.md` |
+| コンポーネント選択・フォント | `references/spell-ui-map.md` |
+| Spell UI 実装仕様（CSS 詳細） | `references/spell-ui-integration.md` + `references/spell-ui-tokens.css` + `references/spell-ui-static.css` |
+| CSS カスタムパターン | `references/css-patterns.md` |
+| Mermaid・外部ライブラリ | `references/libraries.md` |
+| TOC 付きレスポンシブナビ | `references/responsive-nav.md` |
+| スライド形式の詳細 | `references/slide-patterns.md` |
+| AS-IS/TO-BE 比較スタイル | `references/as-is-to-be-spell-ui-style.md` |
+| HTML テンプレート参考 | `assets/architecture.html` / `assets/data-table.html` / `assets/mermaid-flowchart.html` / `assets/slide-deck.html` |
+| 汎用 HTML 生成プロンプト（docs-site 外） | `assets/generate-visual-plan.md` / `assets/generate-web-diagram.md` 等 |

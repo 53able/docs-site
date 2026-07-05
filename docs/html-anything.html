@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML Anything — ローカルエージェント向け HTML エディタ（nexu-io/html-anything）</title>
+  <meta name="description" content="nexu-io/html-anything の技術概要。Next.js 16 製 Web UI、8 種のコーディング CLI 検出、75 の SKILL テンプレート、SSE ストリーミング変換、WeChat / X / Zhihu 向けエクスポート、nexu-io/open-design との関係を整理。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="HTML Anything — ローカルエージェント向け HTML エディタ（nexu-io/html-anything）">
+  <meta property="og:description" content="Next.js、8 CLI、75 スキル、SSE、エクスポート、open-design との関係。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/html-anything.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="HTML Anything — ローカルエージェント向け HTML エディタ">
+  <meta name="twitter:description" content="ローカル CLI と SSE で Markdown 等を ship-ready HTML に。テンプレート群とエクスポート経路の整理。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    /* ============ THEME (Spell UI + teal editorial) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.01 95);
+      --foreground: oklch(0.18 0.02 250);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.18 0.02 250);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.18 0.02 250);
+      --primary: oklch(0.22 0.02 250);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.96 0.02 95);
+      --secondary-foreground: oklch(0.22 0.02 250);
+      --muted: oklch(0.94 0.015 95);
+      --muted-foreground: oklch(0.45 0.03 250);
+      --accent: oklch(0.94 0.02 200);
+      --accent-foreground: oklch(0.22 0.02 250);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.02 200);
+      --input: oklch(0.88 0.02 200);
+      --ring: oklch(0.65 0.08 200);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.58 0.14 155);
+      --chart-3: oklch(0.42 0.1 230);
+      --chart-4: oklch(0.72 0.12 80);
+      --chart-5: oklch(0.55 0.08 280);
+      --code-bg: oklch(0.22 0.04 250);
+      --code-text: oklch(0.88 0.05 195);
+      --font-body: 'Syne', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.12 0.02 250);
+        --foreground: oklch(0.96 0.01 95);
+        --card: oklch(0.18 0.025 250);
+        --card-foreground: oklch(0.96 0.01 95);
+        --popover: oklch(0.18 0.025 250);
+        --popover-foreground: oklch(0.96 0.01 95);
+        --primary: oklch(0.92 0.02 95);
+        --primary-foreground: oklch(0.15 0.02 250);
+        --secondary: oklch(0.24 0.03 250);
+        --secondary-foreground: oklch(0.96 0.01 95);
+        --muted: oklch(0.26 0.03 250);
+        --muted-foreground: oklch(0.72 0.04 200);
+        --accent: oklch(0.24 0.04 200);
+        --accent-foreground: oklch(0.96 0.01 95);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(0.32 0.03 250);
+        --input: oklch(0.32 0.03 250);
+        --ring: oklch(0.55 0.1 200);
+        --chart-1: oklch(0.72 0.14 195);
+        --chart-2: oklch(0.65 0.12 160);
+        --chart-3: oklch(0.68 0.1 230);
+        --chart-4: oklch(0.78 0.14 85);
+        --chart-5: oklch(0.62 0.1 300);
+        --code-bg: oklch(0.14 0.03 250);
+        --code-text: oklch(0.82 0.06 195);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 82%, var(--chart-1) 18%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--text-dim); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-table-wrap tr:last-child td { border-bottom: none; }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 800; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--text-dim); margin: 0.75rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--font-body); background: var(--bg); color: var(--text); line-height: 1.6; font-size: 0.9375rem; }
+    body {
+      background-image: radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-1) 12%, transparent) 0%, transparent 55%);
+    }
+
+    .wrap { display: grid; grid-template-columns: 14rem 1fr; gap: 0; min-height: 100vh; max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+    @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } }
+
+    .toc {
+      position: sticky;
+      top: 1.5rem;
+      height: fit-content;
+      max-height: calc(100vh - 3rem);
+      overflow-y: auto;
+      padding: 2rem 1rem 2rem 0;
+      font-size: 0.8125rem;
+    }
+    @media (max-width: 900px) { .toc { display: none; } }
+    .toc-title { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 0.75rem; padding-left: 0.75rem; }
+    .toc ul { list-style: none; margin: 0; padding: 0; }
+    .toc li { margin: 0; }
+    .toc a {
+      display: block;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.15s, background 0.15s;
+      line-height: 1.4;
+      border-left: 2px solid transparent;
+    }
+    .toc a:hover { color: var(--text); background: var(--muted); }
+    .toc a.active { color: var(--chart-1); border-left-color: var(--chart-1); font-weight: 600; background: color-mix(in oklch, var(--chart-1) 8%, transparent); }
+
+    .main { padding: 2.5rem 0 4rem 2rem; min-width: 0; }
+    @media (max-width: 900px) { .main { padding: 2rem 0; } }
+
+    .page-header { margin-bottom: 2.5rem; }
+    .page-header .breadcrumb { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; }
+    .page-header .breadcrumb a { color: var(--text-dim); text-decoration: none; }
+    .page-header .breadcrumb a:hover { color: var(--text); }
+    .page-title { font-size: 1.875rem; font-weight: 800; letter-spacing: -0.03em; margin: 0 0 0.5rem; line-height: 1.15; }
+    .page-subtitle { color: var(--text-dim); font-size: 0.9375rem; margin: 0; max-width: 50rem; }
+
+    .sec-head {
+      font-size: 1rem; font-weight: 700;
+      padding: 0.4rem 0 0.4rem 0.75rem;
+      margin: 2.5rem 0 0.75rem;
+      border-left: 3px solid var(--chart-1);
+      color: var(--text);
+    }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0 0; }
+    @media (max-width: 720px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .ve-card p { margin: 0 0 0.65rem; color: var(--text-dim); font-size: 0.875rem; }
+    .ve-card p:last-child { margin-bottom: 0; }
+    .ve-card ul { margin: 0.5rem 0 0; padding-left: 1.25rem; color: var(--text-dim); font-size: 0.875rem; }
+    .ve-card li { margin-bottom: 0.35rem; }
+    .ve-card strong { color: var(--text); }
+    .ve-card a { color: var(--chart-1); }
+
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+
+    .mermaid { margin: 1rem 0; overflow-x: auto; }
+    @media (prefers-color-scheme: dark) {
+      .mermaid svg { background: transparent !important; }
+    }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">目次</div>
+    <ul>
+      <li><a href="#overview">概要</a></li>
+      <li><a href="#stack">スタックと配置</a></li>
+      <li><a href="#agents">コーディング CLI</a></li>
+      <li><a href="#templates">テンプレート</a></li>
+      <li><a href="#runtime">変換とプレビュー</a></li>
+      <li><a href="#upstream">上流との関係</a></li>
+      <li><a href="#links">参照</a></li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <header class="page-header">
+      <p class="breadcrumb"><a href="../index.html">資料一覧</a> / html-anything</p>
+      <h1 class="page-title">HTML Anything</h1>
+      <p class="page-subtitle"><a href="https://github.com/nexu-io/html-anything" target="_blank" rel="noopener" style="color:var(--chart-1);font-weight:600;">nexu-io/html-anything</a> — Markdown・表・JSON などをローカルのコーディングエージェント CLI に渡し、単一ファイル HTML をストリーミング生成する Next.js アプリ。API キーは不要で、既存の CLI ログインセッションを再利用する。</p>
+    </header>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
+      <p>README が掲げるコンセプトは「<strong>Markdown は下書き、HTML が人間向けの最終成果物</strong>」である。エディタはブラウザ上で入力を受け取り、選択した <code>SKILL.md</code> テンプレートとデザインシステムをプロンプトに織り込み、<strong>特権プロセスがローカル CLI を起動</strong>して stdout の JSON 行を解析し、生成中の HTML を Server-Sent Events でクライアントへ流す。プレビューは <code>sandbox</code> 付き iframe に閉じ、ホストの Cookie や <code>localStorage</code> とは分離する。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">8</span><span class="ve-kpi-card__label">検出する CLI 系統</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">75</span><span class="ve-kpi-card__label">SKILL テンプレート</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">9</span><span class="ve-kpi-card__label">成果物サーフェス</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">0</span><span class="ve-kpi-card__label">追加 API キー</span></div>
+      </div>
+    </div>
+
+    <section id="stack" class="sec-head">2 — スタックと配置</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 実装の骨格</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>領域</th><th>内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>フレームワーク</td><td>Next.js 16（<code>package.json</code> の依存）、React 19、App Router 配下の <code>src/app</code></td></tr>
+            <tr><td>状態</td><td>Zustand（<code>src/lib/store.ts</code> ほか）</td></tr>
+            <tr><td>入力パース</td><td>Markdown は <code>marked</code>、表形式は <code>papaparse</code> と <code>xlsx</code>（ブラウザ完結）</td></tr>
+            <tr><td>サニタイズ</td><td><code>dompurify</code> でプレビュー前にユーザー生成 HTML を制限</td></tr>
+            <tr><td>エクスポート</td><td><code>juice</code> で CSS インライン化（WeChat 等）、<code>modern-screenshot</code> で iframe を高 DPI PNG に、スライドは <code>pptxgenjs</code></td></tr>
+            <tr><td>デプロイ</td><td>Web 層は Vercel 想定。エージェント実行は常にユーザーマシン上の CLI</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> リクエストの流れ（要約）</span>
+      <div class="mermaid">flowchart TD
+  A[ブラウザ UI] -->|POST /api/convert| B[Next.js Route Handler]
+  B -->|spawn + stdin| C[ローカルエージェント CLI]
+  C -->|JSON lines stdout| B
+  B -->|SSE| A
+  A -->|srcdoc 更新| D["iframe sandbox"]
+      </div>
+    </div>
+
+    <section id="agents" class="sec-head">3 — コーディング CLI</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 検出と起動</span>
+      <p>起動時に <code>PATH</code> を走査し、GUI から起動した Node プロセスで見落としがちな <code>~/.local/bin</code> や <code>/opt/homebrew/bin</code> なども候補に含める。各 CLI には <code>src/lib/agents/</code> の薄いアダプタ（<code>argv.ts</code> · <code>invoke.ts</code> 等）が対応し、<strong>stream-json 形式の stdout</strong> を <code>POST /api/convert</code> が SSE に橋渡しする。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>エージェント</th><th>検出コマンド</th><th>起動の要点（README より）</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Claude Code</td><td><code>claude</code></td><td><code>claude -p --output-format stream-json</code></td></tr>
+            <tr><td>OpenAI Codex</td><td><code>codex</code></td><td><code>codex exec --json --sandbox workspace-write</code></td></tr>
+            <tr><td>Cursor Agent</td><td><code>cursor-agent</code></td><td><code>cursor-agent --print --output-format stream-json --force --trust</code></td></tr>
+            <tr><td>Gemini CLI</td><td><code>gemini</code></td><td><code>gemini --output-format stream-json --yolo</code></td></tr>
+            <tr><td>GitHub Copilot CLI</td><td><code>copilot</code></td><td><code>copilot --allow-all-tools --output-format json</code></td></tr>
+            <tr><td>OpenCode</td><td><code>opencode-cli</code> / <code>opencode</code></td><td><code>opencode run --format json --dangerously-skip-permissions -</code></td></tr>
+            <tr><td>Qwen Coder</td><td><code>qwen</code></td><td><code>qwen --yolo -</code></td></tr>
+            <tr><td>Aider</td><td><code>aider</code></td><td><code>aider --no-pretty --no-stream --yes-always --message-file -</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout">
+        <strong>セキュリティ境界:</strong> ブラウザから直接シェルに触れず、サーバー側ルートがローカルプロセスを生成する。サンドボックス iframe は <code>allow-scripts allow-same-origin</code> で生成物のスクリプトとフォント CDN を許可しつつ、ホストオリジンとは隔離する。
+      </div>
+    </div>
+
+    <section id="templates" class="sec-head">4 — テンプレート（SKILL）</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> カタログ構造</span>
+      <p>各スキルは <code>src/lib/templates/skills/&lt;id&gt;/</code> に <code>SKILL.md</code>（Claude Code の Skills 規約＋拡張 frontmatter）と <code>example.html</code> を持つ。ピッカーは <strong>mode</strong>（prototype / deck / frame / social / office / doc / mockup / vfx など）と <strong>scenario</strong>（design / marketing / engineering 等）でグルーピングする。</p>
+      <ul>
+        <li><strong>prototype</strong> — SaaS LP、ダッシュボード、データレポート、履歴書、長文ドキュメントなどの Web 系</li>
+        <li><strong>deck</strong> — 横スワイプのキーノート系（Swiss International、Guizang Editorial、XHS 系など多数）</li>
+        <li><strong>frame</strong> — Hyperframes / Remotion 向けの 1920×1080 フレーム列と遷移マーカー</li>
+        <li><strong>social</strong> — X、小紅書、Spotify、Reddit 風カード</li>
+        <li><strong>office</strong> — PM 仕様、エンジニアリングランブック、財務、人事、請求書、OKR など</li>
+      </ul>
+      <p>README の「9 deliverable surfaces」は、上記モードをユーザー向けに束ねたマーケティング上の区分（記事・スライド・レジュメ・ポスター・SNS カード・Web プロト・レポート・Hyperframes 動画など）に対応する。</p>
+    </div>
+
+    <section id="runtime" class="sec-head">5 — 変換・プレビュー・エクスポート</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ランタイム動作</span>
+      <ul>
+        <li><strong>SSE:</strong> エージェント stdout の JSON 行からテキストデルタを抽出し、クライアントが iframe <code>srcdoc</code> を増分更新する（中断・再プロンプト可能）。</li>
+        <li><strong>フォーマット自動判定:</strong> Markdown / CSV / TSV / JSON / SQL / プレーンテキストを受け付け、表はブラウザ内パースのみで外部アップロードしない。</li>
+        <li><strong>WeChat / Zhihu:</strong> <code>juice</code> による CSS インライン化と、数式の <code>mjx-container</code> を Zhihu 互換の <code>data-eeimg</code> プレースホルダへ変換する経路（README 記載）。</li>
+        <li><strong>X 等の画像貼付:</strong> iframe を <code>modern-screenshot</code> で 2× PNG 化し <code>ClipboardItem</code> 経由でコンポーザへ渡す。</li>
+      </ul>
+    </div>
+    <div class="ve-card ve-card--elevated" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> ローカル起動</span>
+      <div class="ve-code-block">
+        <pre><code>git clone https://github.com/nexu-io/html-anything.git
+cd html-anything
+pnpm install
+pnpm dev
+# → http://localhost:3000</code></pre>
+      </div>
+      <p style="margin-top:0.75rem;font-size:0.8125rem;">以降はテンプレート選択 → 素材貼り付け → ⌘+Enter（README のクイックスタート）。</p>
+    </div>
+
+    <section id="upstream" class="sec-head">6 — 上流との関係</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 依存する OSS の役割</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>プロジェクト</th><th>HTML Anything での役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><a href="https://github.com/nexu-io/open-design" target="_blank" rel="noopener">nexu-io/open-design</a></td><td>エージェント検出、デザインシステムモデル、<code>SKILL.md</code> プロトコル。<code>src/lib/agents/</code> と <code>src/lib/templates/skills/</code> がこの設計を直接反映。</td></tr>
+            <tr><td><a href="https://github.com/mdnice/markdown-nice" target="_blank" rel="noopener">mdnice/markdown-nice</a></td><td>juice インライン CSS が WeChat / Zhihu 貼り付けで破綻しにくいことの実証参照。</td></tr>
+            <tr><td><a href="https://github.com/gcui-art/markdown-to-image" target="_blank" rel="noopener">gcui-art/markdown-to-image</a></td><td>iframe → 高 DPI PNG のエクスポート着想。</td></tr>
+            <tr><td><a href="https://github.com/alchaincyf/huashu-md-html" target="_blank" rel="noopener">alchaincyf/huashu-md-html</a></td><td>CJK フォント・8px ベースライン・コントラスト等、各 SKILL の硬い制約の源流。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">7 — 参照</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 一次情報</span>
+      <ul>
+        <li><a href="https://github.com/nexu-io/html-anything" target="_blank" rel="noopener">GitHub: nexu-io/html-anything</a> — 本体（Apache-2.0）</li>
+        <li><a href="https://github.com/nexu-io/open-design" target="_blank" rel="noopener">nexu-io/open-design</a> — 姉妹プロジェクト（大規模コミュニティ）</li>
+        <li><a href="https://github.com/heygen-com/hyperframes" target="_blank" rel="noopener">heygen-com/hyperframes</a> — frame 系スキルの出力先の一例</li>
+      </ul>
+    </div>
+
+    <p style="margin-top:2rem;font-size:0.75rem;color:var(--text-dim);">本ページは公開リポジトリの README とディレクトリ構成に基づく要約であり、バージョン差で実装詳細が変わる場合がある。</p>
+  </div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

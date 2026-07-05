@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Impeccable — LLM フロントエンドデザインスキル集</title>
+  <meta name="description" content="AI が生み出す凡庸なデザインと戦う 1 スキル・23 コマンド・24 種のアンチパターン検出。Cursor・Claude Code・Gemini CLI など主要ツールに対応。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Impeccable — LLM フロントエンドデザインスキル集">
+  <meta property="og:description" content="AI が生み出す凡庸なデザインと戦う 1 スキル・23 コマンド・24 種のアンチパターン検出。Cursor・Claude Code・Gemini CLI など主要ツールに対応。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/impeccable.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Impeccable — LLM フロントエンドデザインスキル集">
+  <meta name="twitter:description" content="AI が生み出す凡庸なデザインと戦う 1 スキル・23 コマンド・24 種のアンチパターン検出。Cursor・Claude Code・Gemini CLI など主要ツールに対応。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; font-weight: 700; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 70% 0%, oklch(0.646 0.222 41.116 / 0.05) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 70% 0%, oklch(0.488 0.243 264.376 / 0.07) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC (responsive nav) ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ Reference grid ============ */
+    .ref-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-top: 1rem; }
+    @media (max-width: 640px) { .ref-grid { grid-template-columns: 1fr; } }
+    .ref-item { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.875rem 1rem; }
+    .ref-item__name { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; color: var(--chart-1); margin-bottom: 0.25rem; }
+    .ref-item__desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.5; }
+
+    /* ============ Tool grid ============ */
+    .tool-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; }
+    @media (max-width: 640px) { .tool-grid { grid-template-columns: 1fr; } }
+    .tool-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; }
+    .tool-card__name { font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.5rem; }
+    .tool-card__cmd { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted-foreground); background: var(--muted); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); display: block; overflow-x: auto; white-space: pre; }
+
+    /* ============ Anti-pattern list ============ */
+    .anti-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+    .anti-list li { display: grid; grid-template-columns: auto 1fr; gap: 0.625rem; align-items: baseline; font-size: 0.875rem; line-height: 1.55; min-width: 0; }
+    .anti-badge { flex-shrink: 0; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; background: oklch(0.577 0.245 27.325 / 0.12); color: oklch(0.577 0.245 27.325); border-radius: var(--radius-sm); padding: 2px 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+    @media (prefers-color-scheme: dark) {
+      .anti-badge { background: oklch(0.704 0.191 22.216 / 0.18); color: oklch(0.704 0.191 22.216); }
+    }
+
+    /* ============ Mermaid wrapper ============ */
+    .mermaid-wrap { margin: 1rem 0; display: flex; flex-direction: column; align-items: center; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1rem 0.75rem; }
+    .mermaid { min-width: 0; }
+    .mermaid-controls { display: flex; gap: 6px; margin-top: 8px; }
+    .mermaid-controls button { font-family: var(--font-mono); font-size: 11px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px 10px; cursor: pointer; color: var(--text-dim); transition: color 0.15s, border-color 0.15s; }
+    .mermaid-controls button:hover { color: var(--text); border-color: var(--ring); }
+
+    /* ============ Animations ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#skill">スキル構成</a>
+    <a href="#commands">23 コマンド</a>
+    <a href="#antipatterns">アンチパターン</a>
+    <a href="#cli">CLI 検出</a>
+    <a href="#install">インストール</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>Impeccable</h1>
+    <p class="subtitle">1 skill · 23 commands · 24 detector issues — by Paul Bakaus</p>
+
+    <!-- 1. 概要 -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> What is Impeccable?</span>
+      <p><strong>Impeccable</strong> は、LLM 搭載の開発ツール（Cursor・Claude Code・Gemini CLI など）向けに、フロントエンドデザインの品質を引き上げるスキル集とコマンドセット。すべての LLM は同じ凡庸なテンプレートを学習してきた。そのままでは「Inter フォント・紫グラデーション・カード入れ子・カラー背景にグレー文字」という予測可能な失敗を繰り返す。</p>
+      <p>Impeccable はそのバイアスを、<strong>拡張スキル + 23 のステアリングコマンド + 厳選アンチパターン + スタンドアロン検出 CLI</strong>で打ち破る。</p>
+      <div class="kpi-row" style="margin-top: 1rem;">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">スキル</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">23</span><span class="ve-kpi-card__label">コマンド</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">24</span><span class="ve-kpi-card__label">検出項目</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">11</span><span class="ve-kpi-card__label">対応ツール</span></div>
+      </div>
+    </div>
+
+    <!-- 2. スキル構成 -->
+    <section id="skill" class="sec-head">2 — スキル構成</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> impeccable スキル</span>
+      <p>コアスキル <code>impeccable</code> は、デザイン方向性の決定・実装原則・品質チェック（AI スロップテスト）を LLM に伝える主ファイルと、7 つのドメイン別リファレンスで構成される。Anthropic の <code>frontend-design</code> を土台に、より強い事前ゲートとコマンドルーティングを足している。</p>
+      <div class="ref-grid">
+        <div class="ref-item">
+          <div class="ref-item__name">typography.md</div>
+          <div class="ref-item__desc">タイプスケール・フォントペアリング・モジュラースケール・OpenType 機能</div>
+        </div>
+        <div class="ref-item">
+          <div class="ref-item__name">color-and-contrast.md</div>
+          <div class="ref-item__desc">OKLCH・ティントニュートラル・ダークモード・アクセシビリティ</div>
+        </div>
+        <div class="ref-item">
+          <div class="ref-item__name">spatial-design.md</div>
+          <div class="ref-item__desc">スペーシングシステム・グリッド・視覚的ヒエラルキー</div>
+        </div>
+        <div class="ref-item">
+          <div class="ref-item__name">motion-design.md</div>
+          <div class="ref-item__desc">イージングカーブ・スタガリング・モーション削減対応</div>
+        </div>
+        <div class="ref-item">
+          <div class="ref-item__name">interaction-design.md</div>
+          <div class="ref-item__desc">フォーム・フォーカス状態・ローディングパターン</div>
+        </div>
+        <div class="ref-item">
+          <div class="ref-item__name">responsive-design.md</div>
+          <div class="ref-item__desc">モバイルファースト・流動的デザイン・コンテナクエリ</div>
+        </div>
+        <div class="ref-item" style="grid-column: 1 / -1;">
+          <div class="ref-item__name">ux-writing.md</div>
+          <div class="ref-item__desc">ボタンラベル・エラーメッセージ・エンプティステート — すべてのワードに意味を持たせる</div>
+        </div>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 0.75rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> ビルドアーキテクチャ</span>
+      <p>ソースファイルは 1 つ。ビルド時に各プロバイダ向けフォーマットへ自動変換される。Cursor、Claude Code、OpenCode、Gemini CLI、Codex CLI、Pi、GitHub Copilot、Kiro、Trae、Rovo Dev、Qoder で使える。</p>
+      <div class="mermaid-wrap">
+        <div class="mermaid" id="arch-diagram">
+flowchart TD
+  SRC["source/skills/frontend-design/"]
+  BUILD["bun run build"]
+  SRC --> BUILD
+  BUILD --> CUR["Cursor<br/>.cursor/skills/"]
+  BUILD --> CC["Claude Code<br/>.claude/skills/"]
+  BUILD --> OC["OpenCode<br/>.opencode/skills/"]
+  BUILD --> GEM["Gemini CLI<br/>.gemini/skills/"]
+  BUILD --> COD["Codex CLI<br/>.codex/skills/"]
+  BUILD --> KIR["Kiro<br/>.kiro/skills/"]
+  BUILD --> PI["Pi<br/>.pi/skills/"]
+  BUILD --> AG["Agents / Copilot<br/>.agents / .github"]
+  BUILD --> OTHER["Trae / Rovo / Qoder<br/>provider bundles"]
+        </div>
+        <div class="mermaid-controls">
+          <button onclick="zoomMermaid(-0.2)">−</button>
+          <button onclick="zoomMermaid(0)">reset</button>
+          <button onclick="zoomMermaid(0.2)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 23 コマンド -->
+    <section id="commands" class="sec-head">3 — 23 コマンド一覧</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> コマンドリスト</span>
+      <p>メインの呼び出しは <code>/impeccable &lt;command&gt;</code>。<code>/impeccable pin audit</code> のようにピン留めすると、<code>/audit</code> などの単独ショートカットも作れる。</p>
+      <div class="ve-table-wrap" style="margin-top: 1rem;">
+        <table>
+          <thead>
+            <tr><th>コマンド</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>/impeccable craft</code></td><td>shape で合意したブリーフから実装まで進める</td></tr>
+            <tr><td><code>/impeccable shape</code></td><td>コード前に UX/UI の方針を固める</td></tr>
+            <tr><td><code>/impeccable teach</code></td><td>初回セットアップ: PRODUCT.md / DESIGN.md の文脈を作る</td></tr>
+            <tr><td><code>/impeccable document</code></td><td>既存コードから DESIGN.md を生成する</td></tr>
+            <tr><td><code>/impeccable extract</code></td><td>再利用可能なコンポーネントとトークンを抽出する</td></tr>
+            <tr><td><code>/impeccable critique</code></td><td>UX デザインレビュー: ヒエラルキー・明確さ・感情的共鳴</td></tr>
+            <tr><td><code>/impeccable audit</code></td><td>a11y・パフォーマンス・レスポンシブの技術品質チェック</td></tr>
+            <tr><td><code>/impeccable polish</code></td><td>リリース前の最終磨き上げ</td></tr>
+            <tr><td><code>/impeccable bolder</code></td><td>凡庸なデザインを大胆にする</td></tr>
+            <tr><td><code>/impeccable quieter</code></td><td>過剰に大胆なデザインを落ち着かせる</td></tr>
+            <tr><td><code>/impeccable distill</code></td><td>本質へ削ぎ落とす</td></tr>
+            <tr><td><code>/impeccable harden</code></td><td>エラーハンドリング・i18n・エッジケース対応</td></tr>
+            <tr><td><code>/impeccable onboard</code></td><td>初回体験・空状態・アクティベーションを設計する</td></tr>
+            <tr><td><code>/impeccable animate</code></td><td>意図あるモーションを追加する</td></tr>
+            <tr><td><code>/impeccable colorize</code></td><td>戦略的な色を導入する</td></tr>
+            <tr><td><code>/impeccable typeset</code></td><td>フォント選択・ヒエラルキー・サイズを修正する</td></tr>
+            <tr><td><code>/impeccable layout</code></td><td>レイアウト・スペーシング・視覚的リズムを修正する</td></tr>
+            <tr><td><code>/impeccable delight</code></td><td>喜びの瞬間を追加する</td></tr>
+            <tr><td><code>/impeccable overdrive</code></td><td>技術的に卓越したエフェクトを追加する</td></tr>
+            <tr><td><code>/impeccable clarify</code></td><td>不明瞭な UX コピーを改善する</td></tr>
+            <tr><td><code>/impeccable adapt</code></td><td>異なるデバイスや画面サイズへ適応する</td></tr>
+            <tr><td><code>/impeccable optimize</code></td><td>UI パフォーマンスを診断して改善する</td></tr>
+            <tr><td><code>/impeccable live</code></td><td>ブラウザ上で要素を選び、代替案を HMR で試す</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 4. アンチパターン -->
+    <section id="antipatterns" class="sec-head">4 — アンチパターン</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> AI スロップテスト</span>
+      <p>「このインターフェイスを誰かに見せて <em>AI が作った</em> と言ったら、すぐに信じられるか?」— 信じられるなら、それが問題だ。</p>
+      <p>Impeccable は以下のアンチパターンを明示的に LLM へ伝える:</p>
+    </div>
+    <div class="ve-card" style="--i:1; margin-top: 0.75rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> タイポグラフィ</span>
+      <ul class="anti-list">
+        <li><span class="anti-badge">NG</span>Inter・Roboto・Arial・Open Sans・system デフォルトを使う</li>
+        <li><span class="anti-badge">NG</span>monospace フォントを「技術的な雰囲気」の手抜き表現に使う</li>
+        <li><span class="anti-badge">NG</span>すべての見出しの上に丸角アイコンを置く</li>
+      </ul>
+    </div>
+    <div class="ve-card" style="--i:2; margin-top: 0.75rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> カラー & テーマ</span>
+      <ul class="anti-list">
+        <li><span class="anti-badge">NG</span>カラー背景にグレー文字（白抜き感が失われる）</li>
+        <li><span class="anti-badge">NG</span>純粋な黒 (#000) または純白 (#fff) — 自然界には存在しない</li>
+        <li><span class="anti-badge">NG</span>AI 御用達カラー: シアン・暗背景に紫→青グラデーション・ネオンアクセント</li>
+        <li><span class="anti-badge">NG</span>メトリクスや見出しへのグラデーションテキスト</li>
+        <li><span class="anti-badge">NG</span>グローエフェクト付きダークモード（実際のデザイン判断を回避）</li>
+      </ul>
+    </div>
+    <div class="ve-card" style="--i:3; margin-top: 0.75rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> レイアウト & スペーシング</span>
+      <ul class="anti-list">
+        <li><span class="anti-badge">NG</span>すべてをカードに入れる — コンテナが必要でないものまで</li>
+        <li><span class="anti-badge">NG</span>カードの中にカードを入れる（視覚的ノイズ）</li>
+        <li><span class="anti-badge">NG</span>同じサイズのカードグリッド（アイコン＋見出し＋テキストの繰り返し）</li>
+        <li><span class="anti-badge">NG</span>ヒーローメトリクスレイアウトテンプレート（大きい数値・小さいラベル・グラデーントアクセント）</li>
+        <li><span class="anti-badge">NG</span>すべてを中央揃えにする</li>
+        <li><span class="anti-badge">NG</span>全体を均一スペーシングにする — リズムのないレイアウトは単調</li>
+      </ul>
+    </div>
+    <div class="ve-callout" style="margin-top: 0.75rem;">
+      <strong>コンテキスト収集が必須:</strong> デザインスキルはプロジェクトコンテキスト（ターゲット・ユースケース・ブランドトーン）なしでは汎用的な出力しか生成できない。<code>/impeccable teach</code> を最初に実行して <code>PRODUCT.md</code> と <code>DESIGN.md</code> を用意する。
+    </div>
+
+    <!-- 5. CLI 検出 -->
+    <section id="cli" class="sec-head">5 — CLI 検出</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> AI スロップを機械検出</span>
+      <p>Impeccable は AI ハーネス用スキルだけでなく、スタンドアロン CLI も提供する。ディレクトリ、単一 HTML、URL を対象に、AI スロップと一般的なデザイン品質の問題を検出できる。</p>
+      <div class="ve-code-block">
+        <pre><code>npx impeccable detect src/
+npx impeccable detect index.html
+npx impeccable detect https://example.com
+npx impeccable detect --fast --json .</code></pre>
+      </div>
+      <p>検出対象は 24 種。side-tab borders、purple gradients、bounce easing、dark glows などの AI スロップに加え、行長、詰まりすぎた padding、小さい touch target、見出しスキップなども拾う。</p>
+    </div>
+
+    <!-- 6. インストール -->
+    <section id="install" class="sec-head">6 — インストール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 推奨: Web からダウンロード</span>
+      <p><a href="https://impeccable.style" target="_blank" rel="noopener">impeccable.style</a> にアクセスして、使用ツール向けの ZIP をダウンロード・展開するのが最もシンプル。</p>
+    </div>
+    <div class="tool-grid" style="margin-top: 0.75rem;">
+      <div class="tool-card">
+        <div class="tool-card__name">Cursor</div>
+        <code class="tool-card__cmd">cp -r dist/cursor/.cursor your-project/</code>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card__name">Claude Code</div>
+        <code class="tool-card__cmd">cp -r dist/claude-code/.claude your-project/</code>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card__name">OpenCode</div>
+        <code class="tool-card__cmd">cp -r dist/opencode/.opencode your-project/</code>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card__name">Gemini CLI</div>
+        <code class="tool-card__cmd">cp -r dist/gemini/.gemini your-project/</code>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card__name">Codex CLI</div>
+        <code class="tool-card__cmd">cp -r dist/agents/.agents your-project/</code>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card__name">Pi</div>
+        <code class="tool-card__cmd">cp -r dist/pi/.pi your-project/</code>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card__name">GitHub Copilot</div>
+        <code class="tool-card__cmd">cp -r dist/github/.github your-project/</code>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card__name">Trae / Rovo Dev / Qoder</div>
+        <code class="tool-card__cmd">cp -r dist/&lt;provider&gt;/&lt;config-dir&gt; your-project/</code>
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top: 0.75rem;">
+      <strong>Cursor の注意:</strong> Agent Skills を使うには Nightly チャンネルへの切り替えと、Cursor Settings → Rules で Agent Skills の有効化が必要。
+    </div>
+
+    <!-- 7. 参考リンク -->
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
+      <ul>
+        <li><a href="https://impeccable.style" target="_blank" rel="noopener">impeccable.style</a> — デモ・ケーススタディ・ZIP ダウンロード</li>
+        <li><a href="https://github.com/pbakaus/impeccable" target="_blank" rel="noopener">GitHub: pbakaus/impeccable</a> — ソースコード・DEVELOP.md</li>
+        <li><a href="https://www.paulbakaus.com" target="_blank" rel="noopener">Paul Bakaus</a> — 作者</li>
+        <li><a href="https://github.com/anthropics/skills/tree/main/skills/frontend-design" target="_blank" rel="noopener">Anthropic frontend-design skill</a> — Impeccable が拡張したオリジナル</li>
+        <li><a href="https://agentskills.io/specification" target="_blank" rel="noopener">Agent Skills Specification</a> — オープン標準</li>
+      </ul>
+    </div>
+  </div><!-- /.main -->
+</div><!-- /.wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: 'oklch(0.97 0 0)',
+    primaryBorderColor: 'oklch(0.922 0 0)',
+    primaryTextColor: 'oklch(0.145 0 0)',
+    lineColor: 'oklch(0.646 0.222 41.116)',
+    fontSize: '14px'
+  },
+  flowchart: { curve: 'basis', padding: 16 }
+});
+
+var mermaidScale = 1;
+function zoomMermaid(delta) {
+  if (delta === 0) { mermaidScale = 1; } else { mermaidScale = Math.max(0.5, Math.min(2.5, mermaidScale + delta)); }
+  var svg = document.querySelector('#arch-diagram svg');
+  if (svg) { svg.style.transform = 'scale(' + mermaidScale + ')'; svg.style.transformOrigin = 'top center'; }
+}
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

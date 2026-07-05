@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Astryx — React/StyleX オープンソース Design System（facebook/astryx）</title>
+  <meta name="description" content="facebook/astryx は Meta 由来の React + StyleX デザインシステム。150+ コンポーネント、テーマ CSS、CLI/JSON API、人と AI が同じ参照で組み立てる構成を解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Astryx — React/StyleX オープンソース Design System（facebook/astryx）">
+  <meta property="og:description" content="facebook/astryx は Meta 由来の React + StyleX デザインシステム。150+ コンポーネント、テーマ CSS、CLI/JSON API、人と AI が同じ参照で組み立てる構成を解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/astryx.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Astryx — React/StyleX オープンソース Design System（facebook/astryx）">
+  <meta name="twitter:description" content="facebook/astryx は Meta 由来の React + StyleX デザインシステム。150+ コンポーネント、テーマ CSS、CLI/JSON API を解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=Red+Hat+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI — Literata / Red Hat Mono / warm terracotta) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.012 78);
+      --foreground: oklch(0.2 0.03 42);
+      --card: oklch(1 0.006 78);
+      --card-foreground: oklch(0.2 0.03 42);
+      --popover: oklch(1 0.006 78);
+      --popover-foreground: oklch(0.2 0.03 42);
+      --primary: oklch(0.24 0.04 42);
+      --primary-foreground: oklch(0.985 0.012 78);
+      --secondary: oklch(0.955 0.018 78);
+      --secondary-foreground: oklch(0.24 0.04 42);
+      --muted: oklch(0.955 0.018 78);
+      --muted-foreground: oklch(0.48 0.04 42);
+      --accent: oklch(0.94 0.028 72);
+      --accent-foreground: oklch(0.24 0.04 42);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.022 78);
+      --input: oklch(0.88 0.022 78);
+      --ring: oklch(0.55 0.16 42);
+      --chart-1: oklch(0.55 0.16 42);
+      --chart-2: oklch(0.62 0.12 155);
+      --chart-3: oklch(0.52 0.08 35);
+      --chart-4: oklch(0.68 0.1 120);
+      --chart-5: oklch(0.58 0.06 250);
+      --code-bg: oklch(0.94 0.02 78);
+      --code-text: oklch(0.32 0.08 42);
+      --font-body: 'Literata', Georgia, 'Times New Roman', serif;
+      --font-mono: 'Red Hat Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.02 42);
+        --foreground: oklch(0.96 0.012 78);
+        --card: oklch(0.19 0.025 42);
+        --card-foreground: oklch(0.96 0.012 78);
+        --popover: oklch(0.19 0.025 42);
+        --popover-foreground: oklch(0.96 0.012 78);
+        --primary: oklch(0.94 0.02 78);
+        --primary-foreground: oklch(0.16 0.03 42);
+        --secondary: oklch(0.24 0.03 42);
+        --secondary-foreground: oklch(0.96 0.012 78);
+        --muted: oklch(0.24 0.03 42);
+        --muted-foreground: oklch(0.68 0.04 72);
+        --accent: oklch(0.22 0.035 42);
+        --accent-foreground: oklch(0.96 0.012 78);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.62 0.14 42);
+        --chart-1: oklch(0.68 0.15 42);
+        --chart-2: oklch(0.72 0.13 155);
+        --chart-3: oklch(0.62 0.08 35);
+        --chart-4: oklch(0.58 0.1 120);
+        --chart-5: oklch(0.52 0.06 250);
+        --code-bg: oklch(0.11 0.02 42);
+        --code-text: oklch(0.78 0.1 72);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 85%, var(--chart-1) 15%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 24rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); font-family: var(--font-mono); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--border) 80%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.5rem; line-height: 1.1; font-weight: 700; font-family: var(--font-mono); color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; font-family: var(--font-mono); }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .ve-badge { display: inline-flex; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--muted); color: var(--chart-1); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-1) 10%, transparent) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-1) 14%, transparent) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2.125rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.6; max-width: 62rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--text); }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .step-flow { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 720px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; background: var(--card); }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; color: var(--chart-2); margin-bottom: 0.35rem; }
+    .step-card__title { font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.35rem; }
+    .step-card__body { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+
+    .layer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 720px) { .layer-grid { grid-template-columns: 1fr; } }
+    .layer-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; background: var(--card); }
+    .layer-card h4 { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--chart-1); margin-bottom: 0.5rem; }
+
+    .structure-tree .dir { color: var(--chart-1); }
+    .structure-tree .file-main { color: var(--foreground); font-weight: 500; }
+    .structure-tree .comment { color: var(--text-dim); }
+
+    .mermaid-wrap {
+      position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg);
+      background: var(--card); overflow: hidden; margin: 1rem 0;
+    }
+    .mermaid { min-width: 0; padding: 1.25rem; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#structure">モノレポ構成</a>
+    <a href="#architecture">レイヤー</a>
+    <a href="#packages">パッケージ</a>
+    <a href="#cli">CLI / JSON API</a>
+    <a href="#quickstart">クイックスタート</a>
+    <a href="#principles">設計原則</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>Astryx</h1>
+  <p class="subtitle">facebook/astryx — Meta 由来の React + StyleX オープンソース Design System（Beta）。150+ コンポーネント、テーマ CSS、CLI を人と AI が同じ参照で使う。</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <p><strong>Astryx</strong> は Meta 内で 8 年かけて育った Design System をオープンソース化したもの。13,000+ アプリで使われてきた実績を持ち、<strong>ビルドプラグイン不要</strong>で pre-built CSS と型付き React コンポーネントを import するだけで導入できる。内部では StyleX でスタイルを書くが、利用者は Tailwind・CSS Modules・素の CSS など既存の <code>className</code> 上書きでスタイルロックインを避けられる。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">150+</span><span class="ve-kpi-card__label">コンポーネント</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">7</span><span class="ve-kpi-card__label">公開テーマ</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">StyleX</span><span class="ve-kpi-card__label">内部スタイル基盤</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">CLI</span><span class="ve-kpi-card__label">人・AI 共通 IF</span></div>
+    </div>
+    <p>テーマは CSS カスタムプロパティの上書き集合として定義されるため、コンポーネントソースを fork せずにブランド差し替えができる。<strong>swizzle</strong> でコンポーネント全文をプロジェクトへ eject する深いカスタマイズも選べる。</p>
+  </div>
+  <div class="ve-callout" style="margin-top:1rem">
+    <strong>人とエージェントの同一パス:</strong> API・ドキュメント・CLI は同じ設計で提供される。<code>astryx search</code> や <code>--json</code> エンベロープは、ターミナル操作とプログラム import の両方から同型の応答を返す。
+  </div>
+
+  <section id="structure" class="sec-head">2 — モノレポ構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> pnpm ワークスペース</span>
+    <p>ルートは pnpm 10（Corepack）で管理。公開 npm パッケージは <code>packages/</code>、検証用アプリは <code>apps/</code>、eslint プラグインや vibe-tests などは <code>internal/</code> に分かれる。</p>
+    <div class="ve-code-block structure-tree">
+      <pre><code>astryx/
+├── <span class="dir">packages/</span>
+│   ├── <span class="file-main">core/</span>      <span class="comment"># @astryxdesign/core</span>
+│   ├── <span class="file-main">cli/</span>       <span class="comment"># @astryxdesign/cli</span>
+│   ├── <span class="file-main">build/</span>     <span class="comment"># StyleX ビルドプラグイン</span>
+│   ├── <span class="file-main">themes/</span>    <span class="comment"># @astryxdesign/theme-*</span>
+│   ├── <span class="dir">lab/</span>       <span class="comment"># 実験コンポーネント（未公開）</span>
+│   └── <span class="dir">vega/</span>      <span class="comment"># Vega チャート（未公開）</span>
+├── <span class="dir">apps/</span>
+│   ├── <span class="file-main">docsite/</span>   <span class="comment"># 公式ドキュメント</span>
+│   ├── <span class="file-main">storybook/</span> <span class="comment"># コンポーネントカタログ</span>
+│   ├── <span class="file-main">sandbox/</span>   <span class="comment"># テーマ・トークン検証</span>
+│   └── <span class="dir">example-*</span>  <span class="comment"># Next.js / Vite 各種例</span>
+└── <span class="dir">internal/</span>
+    ├── <span class="file-main">eslint-plugin-astryx/</span>
+    └── <span class="file-main">vibe-tests/</span>  <span class="comment"># ビジュアル/a11y 評価</span></code></pre>
+    </div>
+  </div>
+
+  <section id="architecture" class="sec-head">3 — レイヤーアーキテクチャ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 3 層 + CSS カスケード</span>
+    <div class="layer-grid">
+      <div class="layer-card">
+        <h4>Foundations</h4>
+        <p>タイポグラフィ、カラー、レイアウト、アクセシビリティの土台。テーマトークンと CSS レイヤー（reset → base → theme）で一貫性を保つ。</p>
+      </div>
+      <div class="layer-card">
+        <h4>Components</h4>
+        <p>150+ の再利用可能 UI 部品。命名・props・合成ルールが統一され、型とドキュメントがセットで公開される。</p>
+      </div>
+      <div class="layer-card">
+        <h4>Patterns</h4>
+        <p>テーブルページ、詳細レイアウト、フォームウィザードなど実戦的なページパターン。<code>astryx template</code> でソース注入できる。</p>
+      </div>
+    </div>
+    <div class="mermaid-wrap">
+      <pre class="mermaid">
+flowchart TB
+  subgraph consumer["利用者アプリ"]
+    APP["React ページ"]
+  end
+  subgraph css["CSS レイヤー（import 順固定）"]
+    R["reset.css<br/>@layer reset"]
+    B["astryx.css<br/>@layer astryx-base"]
+    T["theme.css<br/>@layer astryx-theme"]
+    R --> B --> T
+  end
+  subgraph runtime["ランタイム"]
+    TH["Theme プロバイダ"]
+    CMP["@astryxdesign/core コンポーネント"]
+    TH --> CMP
+  end
+  subgraph tooling["CLI / JSON API"]
+    CLI["astryx search / component / template"]
+    JSON["--json エンベロープ"]
+    CLI --- JSON
+  end
+  APP --> css
+  APP --> runtime
+  tooling -.->|"docs / scaffold"| APP
+      </pre>
+    </div>
+    <p>利用者は StyleX を意識しない。作者側だけ StyleX でコンポーネントを実装し、利用者には pre-built CSS と React API だけが見える。</p>
+  </div>
+
+  <section id="packages" class="sec-head">4 — パッケージ一覧</section>
+  <div class="ve-card" style="--i:0">
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>パッケージ</th><th>役割</th><th>備考</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>@astryxdesign/core</code></td>
+            <td>コンポーネント、テーマシステム、ユーティリティ</td>
+            <td><code>reset.css</code> / <code>astryx.css</code> / <code>Theme</code> プロバイダ</td>
+          </tr>
+          <tr>
+            <td><code>@astryxdesign/cli</code></td>
+            <td>コンポーネント docs、テンプレート、scaffold、codemod</td>
+            <td>devDependency。JSON API と programmatic import あり</td>
+          </tr>
+          <tr>
+            <td><code>@astryxdesign/build</code></td>
+            <td>StyleX ソースビルド用プラグイン（Babel / PostCSS / Vite）</td>
+            <td>コア利用だけなら不要</td>
+          </tr>
+          <tr>
+            <td><code>@astryxdesign/theme-*</code></td>
+            <td>7 種の完成テーマ CSS</td>
+            <td>neutral, butter, chocolate, matcha, stone, gothic, y2k</td>
+          </tr>
+          <tr>
+            <td><code>@astryxdesign/lab</code> / <code>vega</code></td>
+            <td>実験コンポーネント / Vega チャート</td>
+            <td>Storybook・sandbox 内部用。npm 未公開</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="cli" class="sec-head">5 — CLI / JSON API</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 主要コマンド</span>
+    <p><code>@astryxdesign/cli</code> は Design System の一次インターフェース。コンポーネント名が分からないときは <code>astryx search</code> が component / hook / doc / template を横断検索し、続くコマンドを結果に付ける。</p>
+    <div class="ve-table-wrap" style="margin-top:1rem">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>astryx search &lt;query&gt;</code></td><td>横断検索（関連度順、ドメインタグ付き）</td></tr>
+          <tr><td><code>astryx component Button</code></td><td>props・使用例・ソースを出力</td></tr>
+          <tr><td><code>astryx docs tokens</code></td><td>spacing / color / typography 等の参照</td></tr>
+          <tr><td><code>astryx template dashboard</code></td><td>ページ / ブロックテンプレート注入</td></tr>
+          <tr><td><code>astryx swizzle Button</code></td><td>コンポーネントソースをプロジェクトへ eject</td></tr>
+          <tr><td><code>astryx init</code></td><td>パッケージ導入・テーマ・エージェント向け docs セットアップ</td></tr>
+          <tr><td><code>astryx upgrade --apply</code></td><td>バージョン間 codemod</td></tr>
+          <tr><td><code>astryx doctor</code></td><td>セットアップ診断（CI 向け exit code）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>JSON エンベロープ</h3>
+    <p>全コマンドに <code>--json</code> を付けると <code>{ type, data }</code> 形式で返る。エラーは <code>code</code> フィールド（例: <code>ERR_UNKNOWN_COMPONENT</code>）で機械判定し、人間向け <code>error</code> 文字列には依存しない。</p>
+    <div class="ve-code-block">
+      <pre><code>{"type": "component.detail", "data": {"name": "Button", ...}}
+
+{"error": "No component named \"Buttn\"",
+ "code": "ERR_UNKNOWN_COMPONENT",
+ "suggestions": [{"name": "Button", "reason": "similar name"}]}</code></pre>
+    </div>
+    <p>グローバルオプション: <code>--detail brief|compact|full</code>、<code>--dense</code>（トークン効率）、<code>--lang en|zh|dense</code>。</p>
+  </div>
+
+  <section id="quickstart" class="sec-head">6 — クイックスタート</section>
+  <div class="step-flow">
+    <div class="step-card">
+      <div class="step-card__num">Step 1</div>
+      <div class="step-card__title">パッケージ導入</div>
+      <div class="step-card__body"><code>core</code> + テーマ + dev の <code>cli</code> を install。AI や新規参加者向けに <code>package.json</code> に <code>astryx</code> スクリプトを足すとパス問題を避けやすい。</div>
+    </div>
+    <div class="step-card">
+      <div class="step-card__num">Step 2</div>
+      <div class="step-card__title">CSS 3 枚 import</div>
+      <div class="step-card__body">順序固定: <code>reset.css</code> → <code>astryx.css</code> → <code>theme.css</code>。PostCSS / Babel 設定は不要。</div>
+    </div>
+    <div class="step-card">
+      <div class="step-card__num">Step 3</div>
+      <div class="step-card__title">Theme プロバイダ</div>
+      <div class="step-card__body"><code>Theme</code> に built テーマオブジェクトを渡し、必要なら <code>LinkProvider</code> でルーティング連携。</div>
+    </div>
+    <div class="step-card">
+      <div class="step-card__num">Step 4</div>
+      <div class="step-card__title">CLI で参照</div>
+      <div class="step-card__body"><code>astryx component Button</code> や <code>astryx template --list</code> でページ骨格から着手。</div>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Next.js 最小例</span>
+    <div class="ve-code-block">
+      <pre><code># install
+npm install @astryxdesign/core @astryxdesign/theme-neutral
+npm install -D @astryxdesign/cli
+
+# globals.css（順序がカスケード契約）
+@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
+@import '@astryxdesign/theme-neutral/theme.css';</code></pre>
+    </div>
+    <div class="ve-code-block">
+      <pre><code>'use client';
+import { Theme } from '@astryxdesign/core/theme';
+import { neutralTheme } from '@astryxdesign/theme-neutral/built';
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return &lt;Theme theme={neutralTheme}&gt;{children}&lt;/Theme&gt;;
+}</code></pre>
+    </div>
+    <p>Vite・Tailwind 併用・CDN 配布などフレームワーク別手順は <code>@astryxdesign/core</code> の README Quick Start を参照。</p>
+  </div>
+
+  <section id="principles" class="sec-head">7 — 設計原則</section>
+  <div class="ve-card" style="--i:0">
+    <ul>
+      <li><strong>Guidance over enforcement</strong> — コンポーネントは能力を提供し、渡した値はそのまま描画する。設計上の意見は docs と example に置く。</li>
+      <li><strong>Strong, documented conventions</strong> — 命名・props・合成ルールが全コンポーネントで統一。少数を覚えれば未知の部品も予測しやすい。</li>
+      <li><strong>One system for humans and AI</strong> — API・docs・CLI を同時に設計。AI 向け改善は人間向け UX 改善と同型。</li>
+      <li><strong>Earned by measurement</strong> — 規約は断言ではなくテストで検証し、状況が変われば見直す。</li>
+    </ul>
+    <div class="ve-callout" style="margin-top:0.75rem">
+      <strong>スタイル上書き:</strong> 内部 StyleX は利用者に露出しない。<code>className</code> で Tailwind 等を併用でき、テーマは CSS 変数上書きだけでブランド化できる。
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <div class="ve-card ve-card--recessed" style="--i:0">
+    <ul>
+      <li><a href="https://github.com/facebook/astryx" rel="noopener noreferrer">GitHub — facebook/astryx</a></li>
+      <li><a href="https://facebook.github.io/astryx/" rel="noopener noreferrer">Component Storybook</a></li>
+      <li><a href="https://github.com/facebook/astryx/blob/main/README.md" rel="noopener noreferrer">README.md</a></li>
+      <li><a href="https://github.com/facebook/astryx/blob/main/packages/core/README.md" rel="noopener noreferrer">@astryxdesign/core README（Quick Start）</a></li>
+      <li><a href="https://github.com/facebook/astryx/blob/main/packages/cli/README.md" rel="noopener noreferrer">@astryxdesign/cli README</a></li>
+      <li><a href="https://stylexjs.com" rel="noopener noreferrer">StyleX</a></li>
+    </ul>
+    <p style="margin-top:1rem; font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim)">出典: README.md · packages/core/README.md · packages/cli/README.md</p>
+  </div>
+  </div>
+</div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: isDark ? '#2a2218' : '#f5ebe0',
+    primaryTextColor: isDark ? '#f0e6d8' : '#4a3020',
+    primaryBorderColor: isDark ? '#a06840' : '#b87048',
+    lineColor: isDark ? '#c89060' : '#8b5030',
+    secondaryColor: isDark ? '#1e2820' : '#eef5ee',
+    tertiaryColor: isDark ? '#242018' : '#faf6f0',
+    fontFamily: 'Literata, Georgia, serif',
+    fontSize: '13px'
+  }
+});
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

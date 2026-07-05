@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>oh-my-openagent — マルチモデル・エージェント・オーケストレーション</title>
+  <meta name="description" content="OpenCode 用マルチモデル・エージェント・ハーネス（v3.17.12）。プラグイン ID は oh-my-openagent。CLI / npm は公式ガイド上 oh-my-opencode が主軸（oh-my-openagent パッケージ・コマンドも可）。11 の専門エージェント、Hashline、背景並列、Claude Code 互換。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="oh-my-openagent — マルチモデル・エージェント・オーケストレーション">
+  <meta property="og:description" content="OpenCode 用マルチモデル・エージェント・ハーネス（v3.17.12）。プラグイン oh-my-openagent、CLI は oh-my-opencode 主軸。11 エージェント、Hashline、背景並列、Claude Code 互換。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/oh-my-openagent.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="oh-my-openagent — マルチモデル・エージェント・オーケストレーション">
+  <meta name="twitter:description" content="v3.17.12。プラグイン oh-my-openagent、CLI oh-my-opencode 主軸。11 エージェント、Hashline、Claude Code 互換。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME — Blueprint Dark ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      /* Blueprint dark-first */
+      --background: #0d1117;
+      --foreground: #e6edf3;
+      --card: #161b22;
+      --card-foreground: #e6edf3;
+      --popover: #161b22;
+      --popover-foreground: #e6edf3;
+      --primary: #58a6ff;
+      --primary-foreground: #0d1117;
+      --secondary: #21262d;
+      --secondary-foreground: #e6edf3;
+      --muted: #21262d;
+      --muted-foreground: #8b949e;
+      --accent: #21262d;
+      --accent-foreground: #e6edf3;
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: rgba(255,255,255,0.1);
+      --input: rgba(255,255,255,0.12);
+      --ring: rgba(88,166,255,0.4);
+      --chart-1: oklch(0.55 0.18 248);
+      --chart-2: oklch(0.76 0.15 85);
+      --chart-3: oklch(0.68 0.16 155);
+      --chart-4: oklch(0.68 0.16 25);
+      --chart-5: oklch(0.72 0.14 300);
+
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --surface-elevated: #1c2128;
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      --accent-color: var(--chart-1);
+      --gold: var(--chart-2);
+
+      --code-bg: #0d1117;
+      --code-text: #9ecbff;
+      --font-head: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+      --font-body: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+      --font-mono: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --background: #f6f8fa;
+        --foreground: #1f2328;
+        --card: #ffffff;
+        --card-foreground: #1f2328;
+        --muted: #eaeef2;
+        --muted-foreground: #636c76;
+        --border: rgba(0,0,0,0.12);
+        --secondary: #eaeef2;
+        --secondary-foreground: #1f2328;
+        --accent: #eaeef2;
+        --accent-foreground: #1f2328;
+        --chart-1: oklch(0.40 0.18 248);
+        --chart-2: oklch(0.55 0.15 85);
+        --chart-3: oklch(0.50 0.16 155);
+        --chart-4: oklch(0.52 0.16 25);
+        --surface-elevated: #e8ecf0;
+        --code-bg: #f1f4f9;
+        --code-text: #0550ae;
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--surface-elevated); box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0,0,0,0.15); }
+    .ve-card--hero { padding: 2rem 2.25rem; border: 1px solid var(--chart-1); box-shadow: 0 0 0 1px rgba(88,166,255,0.1), 0 8px 32px rgba(0,0,0,0.3); }
+    .ve-badge { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; }
+    .ve-badge--blue { background: rgba(88,166,255,0.15); color: var(--chart-1); border: 1px solid rgba(88,166,255,0.25); }
+    .ve-badge--gold { background: rgba(210,170,58,0.15); color: var(--gold); border: 1px solid rgba(210,170,58,0.25); }
+    .ve-badge--green { background: rgba(63,185,80,0.15); color: var(--chart-3); border: 1px solid rgba(63,185,80,0.2); }
+    .ve-badge--red { background: rgba(240,81,51,0.1); color: var(--chart-4); border: 1px solid rgba(240,81,51,0.2); }
+    .ve-badge--dim { background: var(--muted); color: var(--text-dim); border: 1px solid var(--border); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-md); overflow-x: auto; }
+    .ve-code-block pre { margin: 0; padding: 1rem 1.25rem; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8rem; color: var(--code-text); white-space: pre-wrap; word-break: break-word; display: block; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-code-block .code-header { padding: 0.5rem 1.25rem; border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 0.5rem; }
+    .ve-table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.825rem; }
+    .ve-table-wrap th { background: var(--muted); color: var(--text-dim); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; padding: 0.65rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tr:hover td { background: var(--surface-elevated); }
+    .ve-section-label { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-dim); margin-bottom: 0.75rem; }
+    .ve-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--chart-1); flex-shrink: 0; }
+    .link-list-plain {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .link-list-plain li {
+      margin-bottom: 0.65rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border);
+      line-height: 1.6;
+    }
+    .link-list-plain li:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .link-list-plain a { font-weight: 600; }
+    .ve-callout { border-left: 3px solid var(--chart-2); background: rgba(210,170,58,0.07); border-radius: 0 var(--radius-md) var(--radius-md) 0; padding: 0.875rem 1.25rem; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1.25rem; }
+    .ve-kpi-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem 1.25rem; }
+    .ve-kpi-card__value { font-family: var(--font-head); font-size: 2rem; font-weight: normal; line-height: 1; color: var(--chart-1); }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-dim); margin-top: 0.35rem; }
+
+    /* ============ Layout ============ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      padding: 40px;
+      line-height: 1.65;
+      font-size: 0.875rem;
+      /* Blueprint grid background */
+      background-image:
+        linear-gradient(rgba(88,166,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(88,166,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .wrap { max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: 180px 1fr; gap: 0 48px; }
+    .main { min-width: 0; }
+
+    h1 {
+      font-family: var(--font-head);
+      font-size: 2.75rem;
+      font-weight: normal;
+      font-style: italic;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 0.35rem;
+      letter-spacing: -0.5px;
+    }
+    .subtitle {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 2.5rem;
+      letter-spacing: 0.2px;
+    }
+    h2 {
+      font-family: var(--font-head);
+      font-size: 1.6rem;
+      font-weight: normal;
+      color: var(--text);
+      margin-bottom: 1rem;
+      padding-top: 0.5rem;
+    }
+    h3 {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--chart-2);
+      margin: 1.25rem 0 0.6rem;
+    }
+    p { color: var(--text); line-height: 1.7; margin-bottom: 0.75rem; }
+    code { font-family: var(--font-mono); font-size: 0.8em; background: var(--muted); padding: 0.1em 0.4em; border-radius: 3px; color: var(--chart-1); }
+    ul { padding-left: 1.25rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: var(--chart-1); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ============ Section header ============ */
+    .sec-head {
+      margin: 2.5rem 0 1.25rem;
+      scroll-margin-top: 24px;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--border);
+    }
+    section.sec-head {
+      display: block;
+      font-family: var(--font-head);
+      font-size: 1.45rem;
+      font-weight: normal;
+      font-style: italic;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .main > section.sec-head:first-of-type {
+      margin-top: 0.75rem;
+    }
+
+    /* ============ TOC ============ */
+    .toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      padding: 14px 0;
+      grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px);
+      overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--surface-elevated); border-radius: 2px; }
+    .toc-title {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      padding: 0 0 10px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .toc ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .toc li {
+      margin-bottom: 0.05rem;
+    }
+    .toc a {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 5px;
+      border-left: 2px solid transparent;
+      transition: all 0.15s;
+      line-height: 1.4;
+      margin-bottom: 1px;
+    }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); background: rgba(88,166,255,0.07); }
+
+    /* ============ Feature grid ============ */
+    .feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; margin-top: 1rem; }
+    .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem 1.25rem; transition: border-color 0.15s; }
+    .feature-card:hover { border-color: rgba(88,166,255,0.3); }
+    .feature-card .fc-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--chart-2); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem; }
+    .feature-card .fc-title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin-bottom: 0.4rem; }
+    .feature-card p { font-size: 0.8rem; color: var(--text-dim); margin: 0; }
+
+    /* ============ Mermaid ============ */
+    .mermaid-wrap { position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); padding: 1.5rem; overflow: hidden; }
+    .mermaid-wrap .mermaid { display: flex; justify-content: center; }
+    .mermaid-wrap svg { max-width: 100%; height: auto; }
+    .zoom-controls { position: absolute; top: 0.75rem; right: 0.75rem; display: flex; gap: 4px; }
+    .zoom-btn { font-family: var(--font-mono); font-size: 12px; width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface2); color: var(--text-dim); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .zoom-btn:hover { background: var(--surface-elevated); color: var(--text); }
+
+    /* ============ Step flow ============ */
+    .step-flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.875rem; margin-top: 1rem; }
+    .step-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; }
+    .step-card__num { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--chart-1); margin-bottom: 0.3rem; }
+    .step-card__title { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; }
+    .step-card__body { font-size: 0.78rem; color: var(--text-dim); }
+
+    /* ============ Tag line ============ */
+    .tag-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+
+    /* ============ Animations ============ */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @media (prefers-reduced-motion: no-preference) {
+      .main > * { animation: fadeUp 0.4s ease backwards; }
+      .main > *:nth-child(2) { animation-delay: 0.06s; }
+      .main > *:nth-child(3) { animation-delay: 0.1s; }
+      .main > *:nth-child(4) { animation-delay: 0.14s; }
+      .ve-card { animation: fadeUp 0.35s ease backwards; }
+    }
+
+    /* ============ Responsive ============ */
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 20px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none;
+        overflow-x: auto; -webkit-overflow-scrolling: touch;
+        background: var(--bg); border-bottom: 1px solid var(--border);
+        padding: 10px 0; margin: 0 -20px; padding-left: 20px; padding-right: 20px;
+        grid-row: auto;
+      }
+      .toc ul {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 4px;
+        align-items: center;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .toc li {
+        margin: 0;
+        flex-shrink: 0;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: rgba(88,166,255,0.08); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .feature-grid { grid-template-columns: 1fr; }
+      .step-flow { grid-template-columns: 1fr; }
+      h1 { font-size: 2rem; }
+    }
+    @media (max-width: 600px) {
+      .kpi-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ TOC（oh-my-claudecode / oh-my-codex と同系の構成） ============ -->
+  <nav class="toc" id="toc" aria-label="目次">
+    <p class="toc-title">目次</p>
+    <ul>
+      <li><a href="#overview">概要</a></li>
+      <li><a href="#quickstart">クイックスタート</a></li>
+      <li><a href="#modes">オーケストレーションモード</a></li>
+      <li><a href="#architecture">アーキテクチャ</a></li>
+      <li><a href="#commands">コマンドリファレンス</a></li>
+      <li><a href="#agents">エージェント一覧</a></li>
+      <li><a href="#skills">スキル &amp; MCP</a></li>
+      <li><a href="#install">インストール &amp; 設定</a></li>
+      <li><a href="#links">参考リンク</a></li>
+    </ul>
+  </nav>
+
+  <!-- ============ Main ============ -->
+  <div class="main">
+    <h1>oh-my-openagent</h1>
+    <p class="subtitle">マルチモデル・エージェント・オーケストレーション for OpenCode — npm <code>oh-my-opencode</code>（<code>oh-my-openagent</code> も可）<span class="ve-badge ve-badge--dim" style="font-size:10px">v3.17.12</span> · プラグイン ID <code>oh-my-openagent</code></p>
+
+    <section id="overview" class="sec-head">概要</section>
+
+    <div class="ve-card ve-card--hero">
+      <div class="ve-section-label"><span class="ve-dot"></span>Philosophy</div>
+      <p style="font-size:1rem;line-height:1.8;margin-bottom:1rem">
+        Claude Code、Codex、各種 OSS モデルを個別に使い分けていた時代は終わった。<br>
+        <strong>Oh My OpenAgent</strong>（<code>opencode.json</code> のプラグイン ID は <code>oh-my-openagent</code>）は、CLI / 公開 npm 名は公式ガイド上まだ <code>oh-my-opencode</code> が主軸だが、<code>oh-my-openagent</code> パッケージ・<code>bunx oh-my-openagent</code> も同一バイナリを指す。複数プロバイダの AI モデルを
+        1 つのハーネスで束ね、専門エージェントに自動委譲する。インストールして <code>ultrawork</code> を打つだけ。
+      </p>
+      <div class="ve-callout" style="margin-bottom:1rem">
+        <strong style="color:var(--chart-2)">Anthropic はこのプロジェクトのせいで OpenCode をブロックした。</strong><br>
+        ロックインを拒否し、Claude / Kimi / GLM / GPT / Gemini / Minimax を並列オーケストレーション。
+        モデルは毎月安くなり、毎月賢くなる。特定プロバイダに縛られない設計。
+      </div>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">11</div>
+          <div class="ve-kpi-card__label">専門エージェント</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value" style="color:var(--gold)">68%</div>
+          <div class="ve-kpi-card__label">編集成功率向上<br><small style="font-size:9px;opacity:.7">6.7→68.3% (Hashline)</small></div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value" style="color:var(--chart-3)">3</div>
+          <div class="ve-kpi-card__label">ビルトイン MCP</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value" style="font-size:1.5rem">100%</div>
+          <div class="ve-kpi-card__label">Claude Code 互換</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Body: claudecode / codex 系のセクション順 ========== -->
+    <section id="quickstart" class="sec-head">クイックスタート</section>
+
+    <div class="step-flow">
+      <div class="step-card">
+        <div class="step-card__num">Step 1 — インストール</div>
+        <div class="step-card__title">公式ガイドに従う</div>
+        <div class="step-card__body">OpenCode の <code>opencode.json</code> ではプラグイン ID に <code>oh-my-openagent</code> を推奨（<code>oh-my-opencode</code> はレガシーで警告付き）。手順は上流 <code>installation.md</code> に従う。</div>
+        <div class="ve-code-block" style="margin-top:0.5rem;border-radius:var(--radius-sm)">
+          <div class="code-header">fetch</div>
+          <pre><code>curl -fsSL https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/refs/heads/dev/docs/guide/installation.md</code></pre>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">Step 2 — 診断</div>
+        <div class="step-card__title"><code>doctor</code></div>
+        <div class="step-card__body">登録・設定・モデル・環境を一括チェック。</div>
+        <div class="ve-code-block" style="margin-top:0.5rem;border-radius:var(--radius-sm)">
+          <div class="code-header">bash</div>
+          <pre><code>bunx oh-my-opencode doctor
+# 同一 CLI: bunx oh-my-openagent doctor</code></pre>
+        </div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">Step 3 — 実行</div>
+        <div class="step-card__title"><code>ultrawork</code> / <code>ulw</code></div>
+        <div class="step-card__body">ワンショットでオーケストレーション開始。詳細は下記「コマンドリファレンス」。</div>
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>Tmux:</strong> 背景エージェントのマルチペイン可視化などは <code>"tmux": { "enabled": true, "layout": "main-vertical" }</code> を推奨。
+    </div>
+
+    <section id="modes" class="sec-head">オーケストレーションモード</section>
+
+    <h3>実行フロー</h3>
+    <div class="mermaid-wrap">
+      <div class="zoom-controls">
+        <button class="zoom-btn" id="zoomIn" title="ズームイン">+</button>
+        <button class="zoom-btn" id="zoomOut" title="ズームアウト">−</button>
+        <button class="zoom-btn" id="zoomReset" title="リセット" style="font-size:10px">↺</button>
+      </div>
+      <div class="mermaid" id="flow-diagram">
+flowchart TD
+  U([User]) --> IG[IntentGate\n意図分類]
+  IG --> S[Sisyphus\n主オーケストレーター]
+  S --> P[Prometheus\n計画・プランニング]
+  S --> H[Hephaestus\n深い実装]
+  S --> O[Oracle\nアーキレビュー]
+  S --> L[Librarian\n調査・ドキュメント]
+  S --> E[Explore\n高速検索]
+  S --> BG[背景エージェント\n並列 × N]
+  P --> S
+  BG --> DONE([完了])
+  H --> DONE
+  O --> DONE
+  L --> DONE
+  E --> DONE
+
+  classDef user fill:#1c2128,stroke:#58a6ff,color:#58a6ff,stroke-width:2px
+  classDef gate fill:#1c2128,stroke:#d4a73a,color:#d4a73a
+  classDef sis fill:#1a2035,stroke:#58a6ff,color:#e6edf3,stroke-width:2px
+  classDef plan fill:#1c2128,stroke:#d4a73a,color:#e6edf3
+  classDef sub fill:#161b22,stroke:#30363d,color:#8b949e
+  classDef done fill:#1c2128,stroke:#3fb950,color:#3fb950,stroke-width:2px
+  class U user
+  class IG gate
+  class S sis
+  class P plan
+  class H,O,L,E,BG sub
+  class DONE done
+      </div>
+    </div>
+
+    <h3>カテゴリシステム</h3>
+    <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:0.75rem">
+      Sisyphus が委譲する際、モデルを直接指定するのではなく <strong>カテゴリ</strong> を選ぶ。カテゴリが適切なモデルに自動マッピングされる。
+    </p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>カテゴリ</th>
+            <th>用途</th>
+            <th>優先モデル（連鎖の先頭）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>visual-engineering</code></td>
+            <td>フロントエンド・UI/UX・デザイン</td>
+            <td><code>gemini-3.1-pro</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">high</span></td>
+          </tr>
+          <tr>
+            <td><code>deep</code></td>
+            <td>自律的な調査・実行（Hephaestus モード）</td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">medium</span></td>
+          </tr>
+          <tr>
+            <td><code>quick</code></td>
+            <td>単一ファイル変更・タイポ修正など軽量タスク</td>
+            <td><code>gpt-5.4-mini</code></td>
+          </tr>
+          <tr>
+            <td><code>ultrabrain</code></td>
+            <td>難解なロジック・アーキテクチャ決定</td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">xhigh</span></td>
+          </tr>
+          <tr>
+            <td><em>カスタム</em></td>
+            <td>独自ドメイン（business-logic など）を定義可能</td>
+            <td>設定で指定</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>背景エージェント（Background Agents）</h3>
+    <div class="feature-grid">
+      <div class="ve-card ve-card--recessed">
+        <div class="fc-label" style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--chart-2);margin-bottom:.35rem">起動</div>
+        <div class="ve-code-block">
+          <div class="code-header">bash</div>
+          <pre><code>task(
+  subagent_type="explore",
+  prompt="auth 実装を探せ",
+  run_in_background=true
+)</code></pre>
+        </div>
+      </div>
+      <div class="ve-card ve-card--recessed">
+        <div class="fc-label" style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--chart-2);margin-bottom:.35rem">結果取得</div>
+        <div class="ve-code-block">
+          <div class="code-header">bash</div>
+          <pre><code>background_output(
+  task_id="bg_abc123"
+)</code></pre>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:0.8rem;color:var(--text-dim);margin-top:.75rem">
+      <strong>Tmux 統合</strong>を有効化すると、背景エージェントが別ペインに表示され、複数エージェントのリアルタイム動作を観察できる。
+      <code>"tmux": { "enabled": true, "layout": "main-vertical" }</code>
+    </p>
+
+    <section id="architecture" class="sec-head">アーキテクチャ</section>
+
+    <h3>Hashline — ハッシュ錨定編集</h3>
+    <div class="ve-card ve-card--elevated" style="margin-bottom:1rem">
+      <p style="margin-bottom:.75rem">
+        従来の編集ツールはモデルに「前に読んだ内容を再現させる」が、モデルはしばしば失敗する。
+        <a href="https://blog.can.ac/2026/02/12/the-harness-problem/" target="_blank">The Harness Problem</a>（Can Bölük）にインスパイアされた <strong>Hashline</strong> はこれを根本解決する。
+      </p>
+      <p style="font-size:.8rem;color:var(--text-dim);margin-bottom:.75rem">
+        各行に <code>LINE#HASH</code> タグを付与。エージェントはそのタグを参照して編集する。
+        ファイルが変更されたらハッシュが一致しなくなり、編集は拒否される。古い行参照によるファイル破損ゼロ。
+      </p>
+      <div class="ve-code-block">
+        <div class="code-header">Hashline — エージェントが読む形式</div>
+        <pre><code>11#VK| function hello() {
+22#XJ|   return "world";
+33#MB| }</code></pre>
+      </div>
+      <div style="margin-top:.75rem;display:flex;gap:.75rem;align-items:center">
+        <div style="text-align:center;flex:1">
+          <div style="font-family:var(--font-mono);font-size:1.5rem;color:var(--chart-4)">6.7%</div>
+          <div style="font-size:.75rem;color:var(--text-dim)">従来の編集成功率</div>
+        </div>
+        <div style="font-size:1.5rem;color:var(--text-dim)">→</div>
+        <div style="text-align:center;flex:1">
+          <div style="font-family:var(--font-mono);font-size:1.5rem;color:var(--chart-3)">68.3%</div>
+          <div style="font-size:.75rem;color:var(--text-dim)">Hashline 導入後</div>
+        </div>
+        <div style="font-size:.8rem;color:var(--text-dim);flex:2">Grok Code Fast 1 での計測。<br>ツール変更のみで <strong>10× 向上</strong>。</div>
+      </div>
+    </div>
+
+    <h3>IntentGate</h3>
+    <p style="font-size:.85rem;margin-bottom:.75rem">
+      ユーザーの <strong>真の意図</strong> を分類・分析してからアクションを選択。文字通りの解釈による誤った実行を防ぐ。
+    </p>
+
+    <h3>LSP + AST-Grep — IDE 精度のツール</h3>
+    <div class="ve-table-wrap" style="margin-bottom:.75rem">
+      <table>
+        <thead><tr><th>ツール</th><th>機能</th></tr></thead>
+        <tbody>
+          <tr><td><code>lsp_rename</code></td><td>ワークスペース全体のシンボルリネーム</td></tr>
+          <tr><td><code>lsp_goto_definition</code></td><td>定義ジャンプ</td></tr>
+          <tr><td><code>lsp_find_references</code></td><td>全参照を検索</td></tr>
+          <tr><td><code>lsp_diagnostics</code></td><td>ビルド前診断・型エラー検出</td></tr>
+          <tr><td><code>ast_grep</code></td><td>25 言語対応のパターン認識コード検索・書き換え</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>/init-deep — 階層的 AGENTS.md 生成</h3>
+    <div class="ve-code-block" style="margin-bottom:.75rem">
+      <div class="code-header">生成されるディレクトリ構造</div>
+      <pre><code>project/
+├── AGENTS.md          ← プロジェクト全体コンテキスト
+├── src/
+│   ├── AGENTS.md      ← src 固有のコンテキスト
+│   └── components/
+│       └── AGENTS.md  ← コンポーネント固有のコンテキスト</code></pre>
+    </div>
+    <p style="font-size:.8rem;color:var(--text-dim)">
+      エージェントが関連コンテキストを自動読み込み。手動管理不要でトークン効率も向上。
+    </p>
+
+    <section id="commands" class="sec-head">コマンドリファレンス</section>
+
+    <h3>主要コマンド</h3>
+    <div class="step-flow">
+      <div class="step-card">
+        <div class="step-card__num">CMD 01</div>
+        <div class="step-card__title"><code>ultrawork</code> / <code>ulw</code></div>
+        <div class="step-card__body">全エージェント起動。完了まで止まらない。ワンワード、フルオーケストレーション。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">CMD 02</div>
+        <div class="step-card__title"><code>/start-work</code></div>
+        <div class="step-card__body">Prometheus を呼び出し、インタビューモードで計画を立ててから実行開始。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">CMD 03</div>
+        <div class="step-card__title"><code>/ulw-loop</code> (Ralph Loop)</div>
+        <div class="step-card__body">自己参照ループ。100% 完了まで繰り返し実行し続ける。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">CMD 04</div>
+        <div class="step-card__title"><code>/init-deep</code></div>
+        <div class="step-card__body">プロジェクト全体に階層的 AGENTS.md を自動生成。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">CMD 05</div>
+        <div class="step-card__title"><code>doctor</code></div>
+        <div class="step-card__body"><code>bunx oh-my-opencode doctor</code>（または <code>bunx oh-my-openagent doctor</code>）でプラグイン登録・設定・モデル・環境を診断。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">CMD 06</div>
+        <div class="step-card__title">Todo Enforcer</div>
+        <div class="step-card__body">エージェントがアイドル状態になったらシステムが自動復帰。タスクは必ず完了する。</div>
+      </div>
+    </div>
+
+    <section id="agents" class="sec-head">エージェント一覧</section>
+
+    <div class="ve-section-label"><span class="ve-dot"></span>Core Agents</div>
+    <div class="ve-table-wrap" style="margin-bottom:1.25rem">
+      <table>
+        <thead>
+          <tr>
+            <th>エージェント</th>
+            <th>優先モデル（連鎖の先頭）</th>
+            <th>役割</th>
+            <th>制限</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Sisyphus</strong> <span class="ve-badge ve-badge--blue">order: 1</span></td>
+            <td><code>claude-opus-4-7</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">max</span></td>
+            <td>主オーケストレーター。計画・委譲・並列実行。接続プロバイダに応じて Kimi K2.5 / GLM-5 / GPT-5.5 などへフォールバック。</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><strong>Hephaestus</strong> <span class="ve-badge ve-badge--gold">深い実装</span></td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">medium</span></td>
+            <td>自律深層ワーカー。目標を与えるだけでコードベース調査から実装まで完結。途中で止まらない鍛冶の神。</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><strong>Oracle</strong></td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">high</span></td>
+            <td>アーキテクチャ決定・コードレビュー・デバッグ。読み取り専用の相談役。Gemini / Opus / GLM などへフォールバック。</td>
+            <td>read-only（write/edit/task 禁止）</td>
+          </tr>
+          <tr>
+            <td><strong>Librarian</strong></td>
+            <td><code>gpt-5.4-mini-fast</code></td>
+            <td>マルチリポジトリ解析・ドキュメント検索・OSS 実装例調査。証拠ベースの回答。Minimax / Haiku などへフォールバック。</td>
+            <td>write/edit/task 禁止</td>
+          </tr>
+          <tr>
+            <td><strong>Explore</strong></td>
+            <td><code>gpt-5.4-mini-fast</code></td>
+            <td>高速なコードベース探索と文脈付き grep。Librarian と同型の軽量連鎖。</td>
+            <td>write/edit/task 禁止</td>
+          </tr>
+          <tr>
+            <td><strong>Multimodal-Looker</strong></td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">medium</span></td>
+            <td>PDF・画像・ダイアグラムから情報を抽出するビジュアル専門家。Kimi / GLM-4.6v などへフォールバック。</td>
+            <td>read のみ</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-2)"></span>Planning Agents</div>
+    <div class="ve-table-wrap" style="margin-bottom:1.25rem">
+      <table>
+        <thead>
+          <tr>
+            <th>エージェント</th>
+            <th>優先モデル（連鎖の先頭）</th>
+            <th>役割</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Prometheus</strong></td>
+            <td><code>claude-opus-4-7</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">max</span></td>
+            <td>戦略プランナー。インタビューモードで質問を繰り返し、詳細な作業計画を構築してから実行する。GPT-5.5 / Gemini などへフォールバック。</td>
+          </tr>
+          <tr>
+            <td><strong>Metis</strong></td>
+            <td><code>claude-opus-4-7</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">max</span></td>
+            <td>計画コンサルタント。隠れた意図・曖昧さ・AI の失敗ポイントを事前特定。</td>
+          </tr>
+          <tr>
+            <td><strong>Momus</strong></td>
+            <td><code>gpt-5.5</code> <span class="ve-badge ve-badge--dim" style="font-size:9px">xhigh</span></td>
+            <td>計画レビュアー。明確性・検証可能性・完全性の基準で計画を検証。Opus / Gemini などへフォールバック。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ve-section-label"><span class="ve-dot" style="background:var(--chart-3)"></span>Orchestration Agents</div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>エージェント</th>
+            <th>優先モデル（連鎖の先頭）</th>
+            <th>役割</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Atlas</strong> <span class="ve-badge ve-badge--blue">order: 4</span></td>
+            <td><code>claude-sonnet-4-6</code></td>
+            <td>Todo リストオーケストレーター。計画済みタスクを体系的に実行・管理・調整。Kimi / GPT-5.5 / Minimax などへフォールバック。</td>
+          </tr>
+          <tr>
+            <td><strong>Sisyphus-Junior</strong></td>
+            <td><em>カテゴリ依存</em></td>
+            <td>カテゴリ生成エグゼキューター。タスクカテゴリ（visual-engineering / quick / deep など）に基づきモデルを自動選択。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:1rem">
+      <p style="font-size:0.8rem;color:var(--text-dim)">
+        実際に選ばれるモデルは接続プロバイダと可用性に依存する。上表のコードはフォールバック連鎖の先頭候補（上流のモデル要件定義に準拠）。
+        Tab 切り替え時のコア順序は固定: Sisyphus (1) → Hephaestus (2) → Prometheus (3) → Atlas (4)。
+        <code>@oracle</code> など明示呼び出しも可能。
+      </p>
+    </div>
+
+    <section id="skills" class="sec-head">スキル &amp; MCP</section>
+
+    <h3>ビルトイン MCP（常時有効）</h3>
+    <div class="ve-table-wrap" style="margin-bottom:1.25rem">
+      <table>
+        <thead><tr><th>MCP</th><th>提供機能</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Exa (websearch)</strong></td>
+            <td>高精度 Web 検索。最新情報・技術ドキュメント・公式ページのリアルタイム取得。</td>
+          </tr>
+          <tr>
+            <td><strong>Context7 (context7)</strong></td>
+            <td>公式ライブラリドキュメントの直接参照。ハルシネーションなしの正確な API 情報。</td>
+          </tr>
+          <tr>
+            <td><strong>Grep.app (grep_app)</strong></td>
+            <td>GitHub 上のコード横断検索。OSS 実装例・パターンの即時発見。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>スキル内蔵 MCP（Skill-Embedded MCPs）</h3>
+    <div class="ve-card">
+      <p style="margin-bottom:.75rem">
+        MCP サーバーはコンテキストバジェットを消費する。oh-my-openagent はこれを解決した。
+      </p>
+      <p style="font-size:.85rem;color:var(--text-dim);margin-bottom:.75rem">
+        スキルが独自の MCP サーバーを内包。タスクスコープでオンデマンド起動し、完了と同時に終了。
+        コンテキストウィンドウは常にクリーンに保たれる。
+      </p>
+      <div class="tag-row">
+        <span class="ve-badge ve-badge--blue">オンデマンド起動</span>
+        <span class="ve-badge ve-badge--green">タスク完了で自動終了</span>
+        <span class="ve-badge ve-badge--dim">コンテキスト汚染なし</span>
+      </div>
+    </div>
+
+    <h3>ビルトインスキル</h3>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="fc-label"><span style="width:5px;height:5px;border-radius:50%;background:var(--chart-1);display:inline-block"></span>playwright</div>
+        <div class="fc-title">ブラウザ自動化</div>
+        <p>Playwright MCP を内蔵。UI テスト・Web スクレイピング・インタラクション自動化。</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-label"><span style="width:5px;height:5px;border-radius:50%;background:var(--chart-2);display:inline-block"></span>git-master</div>
+        <div class="fc-title">アトミックコミット</div>
+        <p>段階的コミット・rebase 手術・変更粒度の最適化。</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-label"><span style="width:5px;height:5px;border-radius:50%;background:var(--chart-3);display:inline-block"></span>frontend-ui-ux</div>
+        <div class="fc-title">デザインファースト UI</div>
+        <p>visual-engineering カテゴリと連携した UI/UX 特化スキル。</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-label"><span style="width:5px;height:5px;border-radius:50%;background:var(--chart-5);display:inline-block"></span>カスタムスキル</div>
+        <div class="fc-title">独自スキルの追加</div>
+        <p><code>.opencode/skills/*/SKILL.md</code> または <code>~/.config/opencode/skills/*/SKILL.md</code> に配置するだけ。</p>
+      </div>
+    </div>
+
+    <h3>Claude Code 互換性</h3>
+    <div class="ve-callout">
+      <strong>フック・コマンド・スキル・エージェント・MCP・プラグイン</strong>、すべてそのまま動作する。
+      Claude Code の設定を移行する必要なし。既存の投資を無駄にしない。
+    </div>
+
+    <section id="install" class="sec-head">インストール &amp; 設定</section>
+
+    <h3>インストール（人間向け）</h3>
+    <p style="font-size:.8rem;color:var(--text-dim);margin-bottom:.75rem">
+      LLM エージェント（Claude Code、Cursor など）にペーストするだけ。人間が設定を手打ちするより確実。
+    </p>
+    <div class="ve-code-block" style="margin-bottom:1rem">
+      <div class="code-header">エージェントへのペースト用プロンプト</div>
+      <pre><code>Install and configure oh-my-opencode by following the instructions here:
+https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/refs/heads/dev/docs/guide/installation.md</code></pre>
+    </div>
+
+    <h3>インストール（LLM エージェント向け）</h3>
+    <div class="ve-code-block" style="margin-bottom:1rem">
+      <div class="code-header">bash</div>
+      <pre><code>curl -fsSL https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/refs/heads/dev/docs/guide/installation.md</code></pre>
+    </div>
+
+    <h3>設定ファイル</h3>
+    <div class="ve-table-wrap" style="margin-bottom:1rem">
+      <table>
+        <thead><tr><th>パス</th><th>説明</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>~/.config/opencode/oh-my-openagent.jsonc</code></td>
+            <td>グローバル設定（推奨）。コメント・末尾カンマ可。</td>
+          </tr>
+          <tr>
+            <td><code>~/.config/opencode/oh-my-opencode.jsonc</code></td>
+            <td>旧名バリアント。移行期間中は警告付きで読み込まれる。</td>
+          </tr>
+          <tr>
+            <td><code>.opencode/oh-my-openagent.jsonc</code></td>
+            <td>プロジェクトローカル設定。グローバルを上書き。</td>
+          </tr>
+          <tr>
+            <td><code>.opencode/oh-my-opencode.jsonc</code></td>
+            <td>プロジェクト側の旧名バリアント。</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:0.78rem;color:var(--text-dim);margin-top:0.65rem;margin-bottom:0">
+        同一ディレクトリに <code>oh-my-opencode.*</code> と <code>oh-my-openagent.*</code> が両方ある場合、上流の互換レイヤーでは現状 <code>oh-my-opencode.*</code> が先に読まれる（<a href="https://github.com/code-yeongyu/oh-my-openagent/blob/dev/docs/reference/configuration.md" target="_blank" rel="noopener">configuration.md</a> 参照）。
+      </p>
+    </div>
+
+    <h3>設定例</h3>
+    <div class="ve-code-block" style="margin-bottom:1rem">
+      <div class="code-header">oh-my-openagent.jsonc</div>
+      <pre><code>{
+  // Tmux 統合を有効化
+  "tmux": {
+    "enabled": true,
+    "layout": "main-vertical"
+  },
+  // 背景エージェントの同時実行数制限
+  "background_tasks": {
+    "max_concurrent_per_provider": 3
+  },
+  // 特定フックを無効化
+  "disabled_hooks": ["comment-checker"],
+  // エージェントをオーバーライド
+  "agents": {
+    "sisyphus": {
+      "model": "opencode-go/kimi-k2.5"
+    }
+  }
+}</code></pre>
+    </div>
+
+    <h3>アンインストール</h3>
+    <div class="ve-code-block">
+      <div class="code-header">bash — opencode.json からプラグインを除去</div>
+      <pre><code>jq '.plugin = [.plugin[] | select(. != "oh-my-openagent" and . != "oh-my-opencode")]' \
+    ~/.config/opencode/opencode.json > /tmp/oc.json && \
+    mv /tmp/oc.json ~/.config/opencode/opencode.json</code></pre>
+    </div>
+
+    <section id="links" class="sec-head">参考リンク</section>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・コミュニティ</span>
+      <ul class="link-list-plain">
+        <li>
+          <a href="https://github.com/code-yeongyu/oh-my-openagent" target="_blank" rel="noopener">GitHub リポジトリ</a>
+          — ソース・Issue
+        </li>
+        <li>
+          <a href="https://www.npmjs.com/package/oh-my-opencode" target="_blank" rel="noopener">npm: oh-my-opencode</a>
+          — 公式ガイドの主軸（<code>npm i -g oh-my-opencode</code>）
+        </li>
+        <li>
+          <a href="https://www.npmjs.com/package/oh-my-openagent" target="_blank" rel="noopener">npm: oh-my-openagent</a>
+          — 同一系の別パッケージ名（<code>npm i -g oh-my-openagent</code>）
+        </li>
+        <li>
+          <a href="https://deepwiki.com/code-yeongyu/oh-my-openagent" target="_blank" rel="noopener">DeepWiki</a>
+          — AI 生成ドキュメント
+        </li>
+        <li>
+          <a href="https://discord.gg/PUwSMR9XNk" target="_blank" rel="noopener">Discord</a>
+          — コミュニティ
+        </li>
+        <li>
+          姉妹プロジェクト:
+          <a href="https://github.com/Yeachan-Heo/oh-my-codex" target="_blank" rel="noopener">oh-my-codex</a>
+          ·
+          <a href="https://github.com/Yeachan-Heo/oh-my-claudecode" target="_blank" rel="noopener">oh-my-claudecode</a>
+        </li>
+      </ul>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /wrap -->
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#1a2035',
+    primaryTextColor: '#e6edf3',
+    primaryBorderColor: '#30363d',
+    lineColor: '#8b949e',
+    secondaryColor: '#21262d',
+    tertiaryColor: '#161b22',
+    nodeBorder: '#30363d',
+    clusterBkg: '#161b22',
+    titleColor: '#e6edf3',
+    edgeLabelBackground: '#0d1117',
+    fontSize: '14px'
+  }
+});
+
+// Mermaid zoom/pan
+(function() {
+  var scale = 1, tx = 0, ty = 0, dragging = false, startX, startY;
+  var wrap = document.querySelector('.mermaid-wrap');
+  var svg;
+
+  function getOrFindSvg() {
+    if (!svg) svg = wrap && wrap.querySelector('svg');
+    return svg;
+  }
+  function applyTransform() {
+    var el = getOrFindSvg();
+    if (!el) return;
+    el.style.transform = 'translate('+tx+'px,'+ty+'px) scale('+scale+')';
+    el.style.transformOrigin = 'center center';
+    el.style.cursor = scale > 1 ? 'grab' : 'default';
+  }
+
+  var retries = 0;
+  var t = setInterval(function() {
+    if (getOrFindSvg() || retries++ > 40) clearInterval(t);
+  }, 250);
+
+  document.getElementById('zoomIn').addEventListener('click', function() {
+    scale = Math.min(scale * 1.3, 5); applyTransform();
+  });
+  document.getElementById('zoomOut').addEventListener('click', function() {
+    scale = Math.max(scale / 1.3, 0.3); applyTransform();
+  });
+  document.getElementById('zoomReset').addEventListener('click', function() {
+    scale = 1; tx = 0; ty = 0; applyTransform();
+  });
+
+  wrap && wrap.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    scale = Math.min(Math.max(scale * (e.deltaY < 0 ? 1.15 : 0.87), 0.3), 5);
+    applyTransform();
+  }, { passive: false });
+
+  wrap && wrap.addEventListener('mousedown', function(e) {
+    if (scale <= 1) return;
+    dragging = true; startX = e.clientX - tx; startY = e.clientY - ty;
+    wrap.style.cursor = 'grabbing';
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    tx = e.clientX - startX; ty = e.clientY - startY; applyTransform();
+  });
+  document.addEventListener('mouseup', function() {
+    dragging = false;
+    if (wrap) wrap.style.cursor = '';
+  });
+})();
+</script>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

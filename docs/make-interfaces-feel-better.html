@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Make Interfaces Feel Better — UI 仕上げのデザインエンジニアリングスキル</title>
+  <meta name="description" content="jakubkrehel/make-interfaces-feel-better は、タイポグラフィ・サーフェス・アニメーション・パフォーマンスの小さな設計判断を AI コーディングアシスタントに教える Agent Skill。16 の原則、参照ファイル、レビュー形式を整理する。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Make Interfaces Feel Better — UI 仕上げのデザインエンジニアリングスキル">
+  <meta property="og:description" content="UI の仕上げに効くデザインエンジニアリング原則を Agent Skill として配布。タイポグラフィ、角丸、影、アニメーション、パフォーマンスの要点をまとめる。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/make-interfaces-feel-better.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Make Interfaces Feel Better — UI 仕上げのデザインエンジニアリングスキル">
+  <meta name="twitter:description" content="UI の仕上げに効くデザインエンジニアリング原則を Agent Skill として配布。16 原則と参照ファイル構成を整理。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.012 75);
+      --foreground: oklch(0.22 0.04 55);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.22 0.04 55);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.22 0.04 55);
+      --primary: oklch(0.38 0.09 55);
+      --primary-foreground: oklch(0.98 0.01 85);
+      --secondary: oklch(0.95 0.018 78);
+      --secondary-foreground: oklch(0.28 0.05 55);
+      --muted: oklch(0.94 0.015 78);
+      --muted-foreground: oklch(0.48 0.03 60);
+      --accent: oklch(0.93 0.028 72);
+      --accent-foreground: oklch(0.24 0.05 55);
+      --destructive: oklch(0.58 0.2 27);
+      --border: oklch(0.88 0.02 75);
+      --input: oklch(0.88 0.02 75);
+      --ring: oklch(0.55 0.08 60);
+      --chart-1: oklch(0.55 0.16 42);
+      --chart-2: oklch(0.62 0.12 155);
+      --chart-3: oklch(0.48 0.08 248);
+      --chart-4: oklch(0.72 0.14 85);
+      --chart-5: oklch(0.58 0.1 25);
+      --code-bg: oklch(0.2 0.02 55);
+      --code-text: oklch(0.94 0.02 85);
+      --font-body: 'Petrona', Georgia, 'Times New Roman', serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.17 0.02 55);
+        --foreground: oklch(0.96 0.01 85);
+        --card: oklch(0.22 0.025 55);
+        --card-foreground: oklch(0.96 0.01 85);
+        --popover: oklch(0.22 0.025 55);
+        --popover-foreground: oklch(0.96 0.01 85);
+        --primary: oklch(0.82 0.1 72);
+        --primary-foreground: oklch(0.18 0.02 55);
+        --secondary: oklch(0.27 0.025 55);
+        --secondary-foreground: oklch(0.96 0.01 85);
+        --muted: oklch(0.27 0.025 55);
+        --muted-foreground: oklch(0.72 0.02 80);
+        --accent: oklch(0.29 0.03 58);
+        --accent-foreground: oklch(0.97 0.01 85);
+        --destructive: oklch(0.7 0.18 22);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.68 0.08 72);
+        --chart-1: oklch(0.72 0.14 58);
+        --chart-2: oklch(0.68 0.11 155);
+        --chart-3: oklch(0.62 0.1 248);
+        --chart-4: oklch(0.76 0.12 85);
+        --chart-5: oklch(0.7 0.1 25);
+        --code-bg: oklch(0.14 0.02 55);
+        --code-text: oklch(0.92 0.02 85);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 8px 28px color-mix(in oklch, var(--chart-1) 10%, transparent); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background:
+        radial-gradient(circle at top right, color-mix(in oklch, var(--chart-2) 18%, transparent), transparent 38%),
+        linear-gradient(135deg, color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%), var(--card));
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+      box-shadow: 0 10px 32px color-mix(in oklch, var(--chart-1) 12%, transparent);
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid color-mix(in oklch, var(--chart-1) 22%, var(--border)); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.84rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.84rem; line-height: 1.6; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid color-mix(in oklch, var(--chart-1) 40%, var(--border)); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--accent) 45%, transparent); }
+    .ve-kpi-card { background: color-mix(in oklch, var(--accent) 80%, var(--card) 20%); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { display: block; font-variant-numeric: tabular-nums; font-size: 1.85rem; line-height: 1.05; font-weight: 700; }
+    .ve-kpi-card__label { display: block; font-size: 0.64rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.45rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.95rem 1.1rem; font-size: 0.84rem; line-height: 1.65; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.72rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--foreground); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .badge--good, .badge--bad { display: inline-block; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+    .badge--good { background: color-mix(in oklch, var(--chart-2) 18%, transparent); color: var(--foreground); }
+    .badge--bad { background: color-mix(in oklch, var(--destructive) 16%, transparent); color: var(--foreground); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background:
+        radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-1) 10%, transparent), transparent 45%),
+        var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 220px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: color 0.15s, background 0.15s, border-color 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2.15rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.12rem; font-weight: 700; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.94rem; line-height: 1.68; margin-bottom: 0.8rem; text-wrap: pretty; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: color-mix(in oklch, var(--chart-1) 75%, var(--chart-3)); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.82rem; background: color-mix(in oklch, var(--muted) 80%, var(--card)); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0 1rem; }
+    .principle-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .principle-grid .ve-card { padding: 1rem 1.15rem; }
+    .principle-grid h3 { margin: 0 0 0.35rem; font-size: 0.95rem; }
+    .principle-grid p { margin: 0; font-size: 0.86rem; color: var(--muted-foreground); }
+    .formula {
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+      background: var(--muted);
+      border: 1px dashed color-mix(in oklch, var(--chart-1) 35%, var(--border));
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 760px) {
+      .kpi-row,
+      .principle-grid { grid-template-columns: 1fr; }
+    }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#install">導入</a>
+    <a href="#structure">構成</a>
+    <a href="#principles">16 原則</a>
+    <a href="#typography">Typography</a>
+    <a href="#surfaces">Surfaces</a>
+    <a href="#animations">Animations</a>
+    <a href="#performance">Performance</a>
+    <a href="#review">レビュー</a>
+    <a href="#links">リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>Make Interfaces Feel Better</h1>
+  <p class="subtitle">Details that make interfaces feel better — 小さなデザインエンジニアリング判断の Agent Skill</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Positioning</span>
+    <p><strong>Make Interfaces Feel Better</strong> は、<a href="https://jakub.kr/writing/details-that-make-interfaces-feel-better" target="_blank" rel="noopener">Details that make interfaces feel better</a> をもとにした <a href="https://docs.anthropic.com/en/docs/claude-code/skills" target="_blank" rel="noopener">Agent Skill</a>。UI コンポーネント実装、フロントエンドレビュー、アニメーション調整のとき、エージェントが「それっぽいが少しズレている」箇所を具体的な CSS / Tailwind パターンで直せるようにする。</p>
+    <p>単一の巨大ルールブックではなく、<code>SKILL.md</code> が入口で、タイポグラフィ・サーフェス・アニメーション・パフォーマンスの 4 参照ファイルに詳細が分割されている。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">16</span><span class="ve-kpi-card__label">Core principles</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">Reference files</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">40×40</span><span class="ve-kpi-card__label">Min hit area (px)</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">0.96</span><span class="ve-kpi-card__label">Press scale (fixed)</span></div>
+    </div>
+    <div class="ve-callout">
+      <strong>前提:</strong> 良い UI は 1 つの魔法ではなく、角丸の同心、影のレイヤー、割り込み可能な transition、段階的 enter などが積み重なって成立する。スキルはその積み上げをレビュー出力まで含めて標準化する。
+    </div>
+  </div>
+
+  <section id="install" class="sec-head">2 — 導入</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Install &amp; invoke</span>
+    <p>配布は <code>npx skills add</code> が中心。インストール後は UI 作業時に自動適用され、手動ではスラッシュコマンドでも呼べる。</p>
+    <div class="ve-code-block">
+      <pre><code>npx skills add jakubkrehel/make-interfaces-feel-better
+
+/make-interfaces-feel-better</code></pre>
+    </div>
+    <p>トリガー例: UI polish、design details、「make it feel better」、「feels off」、stagger animations、border radius、optical alignment、tabular numbers、image outlines、box shadows など。</p>
+  </div>
+
+  <section id="structure" class="sec-head">3 — スキル構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> File map</span>
+    <div class="ve-table-wrap">
+      <table aria-label="参照ファイル一覧">
+        <thead>
+          <tr><th>ファイル</th><th>扱う領域</th><th>主なトピック</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>SKILL.md</code></td><td>入口・原則一覧</td><td>16 原則、Common Mistakes、Review Checklist、出力形式</td></tr>
+          <tr><td><code>typography.md</code></td><td>文字組み</td><td><code>text-wrap: balance/pretty</code>、font smoothing、tabular-nums</td></tr>
+          <tr><td><code>surfaces.md</code></td><td>面・深度</td><td>同心 border-radius、光学配置、shadow-as-border、image outline、hit area</td></tr>
+          <tr><td><code>animations.md</code></td><td>動き</td><td>interruptible transition、stagger enter、exit、icon cross-fade、scale on press</td></tr>
+          <tr><td><code>performance.md</code></td><td>GPU / transition</td><td><code>transition: all</code> 禁止、<code>will-change</code> の使い分け</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="principles" class="sec-head">4 — 16 のコア原則（要約）</section>
+  <div class="ve-card ve-card--recessed" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Quick map</span>
+    <div class="principle-grid">
+      <div class="ve-card" style="--i:1"><h3>1. 同心 border-radius</h3><p>外半径 = 内半径 + padding。ネストした角丸の不一致は「なんか変」の典型。</p></div>
+      <div class="ve-card" style="--i:2"><h3>2. 光学配置</h3><p>幾何中心ではなく見た目の中心。アイコン付きボタンや再生三角は手動調整。</p></div>
+      <div class="ve-card" style="--i:3"><h3>3. 影で深度</h3><p>カードやボタンの縁は透明な <code>box-shadow</code> レイヤー。区切り線は border のまま。</p></div>
+      <div class="ve-card" style="--i:4"><h3>4. 割り込み可能な animation</h3><p>hover / toggle は CSS transition。keyframes は一度きりの enter 向け。</p></div>
+      <div class="ve-card" style="--i:5"><h3>5. Split &amp; stagger enter</h3><p>大きな 1 コンテナではなく意味単位に分け、約 100ms ずつ遅延。</p></div>
+      <div class="ve-card" style="--i:6"><h3>6. 控えめな exit</h3><p>固定 <code>translateY(-12px)</code> 程度。enter より短く、視線を奪わない。</p></div>
+      <div class="ve-card" style="--i:7"><h3>7. 文脈アイコン animation</h3><p>scale 0.25→1、opacity、blur 4px→0。spring の bounce は常に 0。</p></div>
+      <div class="ve-card" style="--i:8"><h3>8–10. タイポ 3 点</h3><p>macOS で <code>antialiased</code>、動的数値に <code>tabular-nums</code>、見出しは balance / 本文は pretty。</p></div>
+      <div class="ve-card" style="--i:9"><h3>11. 画像 outline</h3><p>ライト <code>rgba(0,0,0,0.1)</code>、ダーク <code>rgba(255,255,255,0.1)</code> のみ。slate/zinc 系禁止。</p></div>
+      <div class="ve-card" style="--i:10"><h3>12. Press scale</h3><p>常に <code>scale(0.96)</code>。0.95 未満は大げさ。<code>static</code> で無効化可。</p></div>
+      <div class="ve-card" style="--i:11"><h3>13. 初回 load で animate しない</h3><p><code>AnimatePresence initial={false}</code> — ただし意図的 hero enter は例外。</p></div>
+      <div class="ve-card" style="--i:12"><h3>14–15. Performance</h3><p><code>transition: all</code> 禁止。プロパティを列挙。<code>will-change</code> は stutter 確認後のみ。</p></div>
+      <div class="ve-card" style="--i:13"><h3>16. Hit area</h3><p>最小 40×40px。見た目が小さければ疑似要素で拡張。重なりは避ける。</p></div>
+    </div>
+    <div class="formula">outerRadius = innerRadius + padding</div>
+  </div>
+
+  <section id="typography" class="sec-head">5 — Typography</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Text wrapping</span>
+    <div class="ve-table-wrap">
+      <table aria-label="text-wrap の使い分け">
+        <thead>
+          <tr><th>シナリオ</th><th>指定</th><th>理由</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>見出し・短いタイトル</td><td><code>text-wrap: balance</code></td><td>行長を均等化（6 行以下が対象）</td></tr>
+          <tr><td>段落・UI テキスト</td><td><code>text-wrap: pretty</code></td><td>末尾の orphan を避ける（長さ制限なし）</td></tr>
+          <tr><td>長文・コード</td><td>デフォルト</td><td>balance は長文で無視される</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Font smoothing &amp; tabular numbers</h3>
+    <p>macOS では <code>html { -webkit-font-smoothing: antialiased; }</code> を root に 1 回。カウンタ・価格・タイマーなど更新される数字は <code>font-variant-numeric: tabular-nums</code>（Tailwind: <code>tabular-nums</code>）で桁幅を固定し、layout shift を防ぐ。</p>
+  </div>
+
+  <section id="surfaces" class="sec-head">6 — Surfaces</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Depth &amp; touch</span>
+    <p>カードやボタンの「縁」には、3 層の透明 shadow 変数（1px ring + lift + ambient）を使う。ダークモードでは白 1px ring に簡略化。リスト区切りやフォーム outline は border を維持する。</p>
+    <div class="ve-table-wrap">
+      <table aria-label="shadow vs border">
+        <thead>
+          <tr><th>影を使う</th><th>border を使う</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>カード、ドロップダウン、浮き上がるボタン</td><td>リスト区切り、テーブル罫線、入力 outline</td></tr>
+          <tr><td>背景色が混在する UI</td><td>レイアウト上の separator</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>画像は <code>outline</code> + <code>outline-offset: -1px</code> で layout に影響させず縁取り。色は pure black / pure white の 10% opacity のみ。</p>
+  </div>
+
+  <section id="animations" class="sec-head">7 — Animations</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Motion rules</span>
+    <div class="ve-table-wrap">
+      <table aria-label="transition vs keyframes">
+        <thead>
+          <tr><th></th><th>CSS transition</th><th>CSS keyframes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>割り込み</td><td><span class="badge--good">可</span> — 最新 state へ再補間</td><td><span class="badge--bad">不可</span> — 先頭からやり直し</td></tr>
+          <tr><td>用途</td><td>hover、toggle、drawer</td><td>初回 enter、loading シーケンス</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Icon cross-fade（Motion なし）</h3>
+    <p><code>package.json</code> に <code>motion</code> / <code>framer-motion</code> が無い場合、両アイコンを DOM に残し absolute で重ね、<code>cubic-bezier(0.2, 0, 0, 1)</code> で opacity / scale / blur を cross-fade する。値は scale 0.25、blur 4px を厳守。</p>
+    <h3>Enter / exit のタイミング</h3>
+    <ul>
+      <li>Enter: 意味块ごとに opacity + translateY(12px) + blur(4px)、stagger ~100ms</li>
+      <li>Exit: translateY(-12px) 程度、150ms 前後 — enter より短く</li>
+      <li>Press: <code>active:scale-[0.96]</code> + <code>transition-transform</code></li>
+    </ul>
+  </div>
+
+  <section id="performance" class="sec-head">8 — Performance</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Transition specificity</span>
+    <p><code>transition: all</code> および Tailwind の bare <code>transition</code> は禁止。変化するプロパティだけ列挙する（例: <code>transition-[scale,opacity,filter]</code>）。</p>
+    <div class="ve-table-wrap">
+      <table aria-label="will-change の判断">
+        <thead>
+          <tr><th>プロパティ</th><th>GPU 合成</th><th>will-change</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>transform</code>, <code>opacity</code>, <code>filter</code></td><td>Yes</td><td>初回 stutter が見えたときのみ</td></tr>
+          <tr><td><code>width</code>, <code>background-color</code></td><td>No</td><td>効果薄 — 付けない</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>注意:</strong> <code>will-change: all</code> は禁止。レイヤー増加でメモリコストが上がるため、先回りで全要素に付けない。
+    </div>
+  </div>
+
+  <section id="review" class="sec-head">9 — レビュー出力</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Output contract</span>
+    <p>変更提案は必ず Markdown 表形式。<strong>Before / After</strong> 列を持ち、原則ごとに見出しを付けてグループ化する。変更が無い原則は表ごと省略する。</p>
+    <div class="ve-table-wrap">
+      <table aria-label="レビュー出力例">
+        <thead>
+          <tr><th>Before</th><th>After</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>rounded-xl</code> on card + inner button (<code>p-2</code>)</td><td>card <code>rounded-2xl</code> (12+8), inner <code>rounded-lg</code></td></tr>
+          <tr><td><code>&lt;span&gt;{count}&lt;/span&gt;</code></td><td><code>className="tabular-nums"</code> on counter</td></tr>
+          <tr><td><code>scale(0.9)</code> on press</td><td><code>scale(0.96)</code> — 0.95 未満は大げさ</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Review Checklist（14 項目）は <code>SKILL.md</code> 末尾。ネスト角丸、光学配置、shadow、stagger enter、tabular-nums、hit area などを機械的に確認する。</p>
+  </div>
+
+  <section id="links" class="sec-head">10 — リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Source</span>
+    <ul>
+      <li><a href="https://github.com/jakubkrehel/make-interfaces-feel-better" target="_blank" rel="noopener">GitHub: jakubkrehel/make-interfaces-feel-better</a></li>
+      <li><a href="https://jakub.kr/writing/details-that-make-interfaces-feel-better" target="_blank" rel="noopener">Original article — Details that make interfaces feel better</a></li>
+      <li><a href="https://docs.anthropic.com/en/docs/claude-code/skills" target="_blank" rel="noopener">Anthropic — Agent Skills</a></li>
+    </ul>
+    <p>License: MIT</p>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

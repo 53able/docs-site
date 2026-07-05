@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenCLI — Web サイトを CLI コマンドで操作するブラウザ自動化フレームワーク</title>
+  <meta name="description" content="Chrome の既存ログインセッションを再利用し、任意の Web サイトを CLI コマンドとして操作できる Node.js 製ブラウザ自動化フレームワーク。AI によるアダプター自動生成機能付き。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="OpenCLI — Web サイトを CLI コマンドで操作するブラウザ自動化フレームワーク">
+  <meta property="og:description" content="Chrome の既存ログインセッションを再利用し、任意の Web サイトを CLI コマンドとして操作できる Node.js 製ブラウザ自動化フレームワーク。AI によるアダプター自動生成機能付き。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/opencli.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="OpenCLI — Web サイトを CLI コマンドで操作するブラウザ自動化フレームワーク">
+  <meta name="twitter:description" content="Chrome の既存ログインセッションを再利用し、任意の Web サイトを CLI コマンドとして操作できる Node.js 製ブラウザ自動化フレームワーク。AI によるアダプター自動生成機能付き。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + IBM Plex) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      /* Blueprint: teal/slate accents */
+      --chart-1: oklch(0.55 0.14 210);   /* teal */
+      --chart-2: oklch(0.48 0.11 230);   /* slate-blue */
+      --chart-3: oklch(0.68 0.12 180);   /* cyan */
+      --chart-4: oklch(0.72 0.16 150);   /* green */
+      --chart-5: oklch(0.60 0.18 265);   /* blue */
+      --code-bg: var(--muted);
+      --code-text: #0a3055;
+      --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.68 0.16 210);
+        --chart-2: oklch(0.60 0.13 230);
+        --chart-3: oklch(0.76 0.14 180);
+        --chart-4: oklch(0.78 0.18 150);
+        --chart-5: oklch(0.72 0.20 265);
+        --code-bg: #0b1929;
+        --code-text: #7dd3fc;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 85%, var(--chart-1) 15%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1.125rem; flex: 1; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.75; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.04em; }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 700; font-family: var(--font-mono); color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.55 0.14 210 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 80% 0%, oklch(0.55 0.14 210 / 0.07) 0%, transparent 50%),
+        radial-gradient(ellipse at 10% 80%, oklch(0.48 0.11 230 / 0.04) 0%, transparent 40%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 80% 0%, oklch(0.68 0.16 210 / 0.09) 0%, transparent 50%),
+          radial-gradient(ellipse at 10% 80%, oklch(0.60 0.13 230 / 0.05) 0%, transparent 40%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 0.75rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    strong { font-weight: 600; }
+    .ve-code-block { margin: 0.75rem 0; }
+
+    /* KPI row */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Mermaid diagram */
+    .mermaid-wrap {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem 1rem;
+      margin: 1rem 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      overflow: hidden;
+    }
+    .mermaid-controls { display: flex; gap: 6px; align-self: flex-end; }
+    .mermaid-controls button {
+      background: var(--card); border: 1px solid var(--border); color: var(--text-dim);
+      font-family: var(--font-mono); font-size: 11px; padding: 3px 9px;
+      border-radius: var(--radius-sm); cursor: pointer; transition: background 0.15s, color 0.15s;
+    }
+    .mermaid-controls button:hover { background: var(--accent); color: var(--text); }
+    .mermaid-diagram-container { overflow: auto; width: 100%; display: flex; justify-content: center; cursor: grab; }
+    .mermaid-diagram-container:active { cursor: grabbing; }
+
+    /* Dual engine side-by-side */
+    .dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    @media (max-width: 760px) { .dual-grid { grid-template-columns: 1fr; } }
+
+    /* Strategy badges */
+    .strategy-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; }
+    .strategy-badge {
+      font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500;
+      padding: 3px 10px; border-radius: 999px;
+      border: 1px solid color-mix(in oklch, var(--chart-1) 40%, transparent 60%);
+      background: color-mix(in oklch, var(--chart-1) 8%, transparent 92%);
+      color: var(--chart-1);
+    }
+
+    /* Entrance animation */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#engine">デュアルエンジン</a>
+    <a href="#commands">CLI コマンド</a>
+    <a href="#api">IPage API</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>OpenCLI</h1>
+    <p class="subtitle">任意の Web サイトを CLI コマンドとして操作 — Chrome ログインセッション再利用 + AI アダプター自動生成</p>
+
+    <!-- 1. 概要 -->
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> What is OpenCLI</span>
+      <p><strong>OpenCLI</strong> は、任意の Web サイトや Electron アプリを CLI コマンドとして操作できる Node.js 製ブラウザ自動化フレームワーク。Chrome の既存ログインセッション（Cookie）をそのまま再利用するため、OAuth や API キーの管理が不要。AI による<em>アダプター自動生成</em>機能で、新しいサイトへの対応を数秒で追加できる。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">20+</span><span class="ve-kpi-card__label">組み込みサイト</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">5</span><span class="ve-kpi-card__label">認証ストラテジ</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">5</span><span class="ve-kpi-card__label">出力フォーマット</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">TS 5.8</span><span class="ve-kpi-card__label">言語</span></div>
+      </div>
+      <div class="ve-callout">
+        <strong>前提条件:</strong> Node.js ≥ 20、Chrome が起動済みでターゲットサイトにログイン済みであること。<br>
+        <code>extension/</code> フォルダを Chrome の開発者モードでロードするだけで Browser Bridge が有効になる。
+      </div>
+    </div>
+
+    <!-- 2. アーキテクチャ -->
+    <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> システム全体像</span>
+      <p>CLI → デーモン（HTTP ブリッジ）→ Chrome 拡張 の 3 層構成。デーモンは初回ブラウザコマンド実行時に自動起動し、5 分アイドルで自動終了する。</p>
+      <div class="mermaid-wrap" id="arch-diagram-wrap">
+        <div class="mermaid-controls">
+          <button id="arch-zoom-in">+</button>
+          <button id="arch-zoom-out">−</button>
+          <button id="arch-reset">reset</button>
+        </div>
+        <div class="mermaid-diagram-container" id="arch-container">
+          <div class="mermaid" id="arch-mermaid">
+flowchart TD
+  User["ユーザー<br/><small>opencli bilibili hot</small>"]
+  Main["main.ts<br/><small>commander CLI</small>"]
+  Engine["engine.ts<br/><small>アダプター探索・実行</small>"]
+  MCP["browser/mcp.ts<br/><small>PlaywrightMCP</small>"]
+  Daemon["daemon.ts<br/><small>localhost:19825</small>"]
+  Ext["Chrome 拡張<br/><small>Browser Bridge</small>"]
+  Chrome["Chrome ブラウザ<br/><small>既存セッション</small>"]
+  Output["output.ts<br/><small>table / json / yaml / md / csv</small>"]
+
+  User -->|"opencli &lt;site&gt; &lt;cmd&gt;"| Main
+  Main --> Engine
+  Engine -->|"browserSession()"| MCP
+  MCP -->|"デーモン自動起動"| Daemon
+  Daemon <-->|"HTTP + WebSocket"| Ext
+  Ext -->|"fetch / DOM 操作"| Chrome
+  Chrome -->|"レスポンス"| Ext
+  Ext --> Daemon
+  Daemon --> MCP
+  MCP -->|"IPage"| Engine
+  Engine --> Output
+
+  classDef cli fill:#e8f4f8,stroke:#0891b2,stroke-width:2px,color:#0a3055
+  classDef bridge fill:#f0f9f0,stroke:#059669,stroke-width:2px,color:#064e3b
+  classDef chrome fill:#fff8e8,stroke:#d97706,stroke-width:2px,color:#78350f
+  classDef out fill:#f5f5f5,stroke:#6b7280,stroke-width:1px,color:#374151
+  classDef user fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#92400e
+
+  class User user
+  class Main,Engine cli
+  class MCP,Daemon bridge
+  class Ext,Chrome chrome
+  class Output out
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 認証ストラテジ（Cascade）</span>
+      <p>新しいサイトへのアダプター追加時、<code>opencli cascade &lt;url&gt;</code> が以下の順で最小権限の認証戦略を自動探索する:</p>
+      <div class="strategy-list">
+        <span class="strategy-badge">PUBLIC</span>
+        <span class="strategy-badge">→ COOKIE</span>
+        <span class="strategy-badge">→ HEADER</span>
+        <span class="strategy-badge">→ INTERCEPT</span>
+        <span class="strategy-badge">→ UI</span>
+      </div>
+      <p>Chrome の既存 Cookie を <code>credentials: 'include'</code> で透過的に使い回すため、トークン管理不要。</p>
+    </div>
+
+    <!-- 3. デュアルエンジン -->
+    <section id="engine" class="sec-head">3 — デュアルエンジン</section>
+    <p>アダプターは <strong>YAML 宣言型</strong> と <strong>TypeScript 命令型</strong> の 2 方式で記述できる。同一フレームワークで統一管理される。</p>
+    <div class="dual-grid">
+      <div class="ve-card ve-card--elevated" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> YAML パイプライン</span>
+        <p>シンプルな API 取得向けの宣言的 DSL。テンプレートエンジン（<code>${{ args.limit }}</code>）でパラメータ展開。</p>
+        <div class="ve-code-block">
+          <pre><code>- navigate: https://www.bilibili.com/ranking/
+- evaluate: |
+    Array.from(document.querySelectorAll('.rank-item'))
+      .map(el => ({
+        title: el.querySelector('.title')?.textContent,
+        plays: el.querySelector('.detail-state')?.textContent
+      }))
+- limit: ${{ args.limit }}</code></pre>
+        </div>
+      </div>
+      <div class="ve-card ve-card--elevated" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> TypeScript アダプター</span>
+        <p>複雑なログインフロー・UI 操作向けの命令型コード。<code>IPage</code> を通じて DOM を直接操作。</p>
+        <div class="ve-code-block">
+          <pre><code>cli({
+  site: 'twitter',
+  name: 'trending',
+  strategy: Strategy.COOKIE,
+  browser: true,
+  func: async (page: IPage, kwargs) => {
+    await page.goto('https://x.com/explore');
+    return await page.evaluate(`
+      Array.from(document.querySelectorAll(
+        '[data-testid="trend"]'
+      )).map(el => el.textContent)
+    `);
+  }
+});</code></pre>
+        </div>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> パイプライン組み込みステップ</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>ステップ</th><th>説明</th></tr></thead>
+          <tbody>
+            <tr><td><code>navigate</code></td><td>指定 URL へ移動</td></tr>
+            <tr><td><code>evaluate</code></td><td>JavaScript を Chrome 上で評価し結果取得</td></tr>
+            <tr><td><code>fetch</code></td><td>HTTP フェッチ（バッチ IPC 最適化あり）</td></tr>
+            <tr><td><code>click</code> / <code>type</code> / <code>wait</code></td><td>UI インタラクション</td></tr>
+            <tr><td><code>map</code> / <code>filter</code> / <code>sort</code> / <code>limit</code> / <code>select</code></td><td>データ変換</td></tr>
+            <tr><td><code>download</code></td><td>ファイルダウンロード</td></tr>
+            <tr><td><code>intercept</code></td><td>ネットワークリクエスト傍受</td></tr>
+            <tr><td><code>tap</code></td><td>デバッグ用タップ（パイプラインを止めずにログ）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 4. CLI コマンド -->
+    <section id="commands" class="sec-head">4 — CLI コマンド</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 基本コマンド</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>コマンド</th><th>説明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>opencli list [-f fmt]</code></td><td>登録済みコマンド一覧を表示</td></tr>
+            <tr><td><code>opencli &lt;site&gt; &lt;cmd&gt; [args]</code></td><td>サイト別コマンド実行（例: <code>opencli bilibili hot --limit 5</code>）</td></tr>
+            <tr><td><code>opencli explore &lt;url&gt; --site &lt;name&gt;</code></td><td>AI による Web API 自動探索</td></tr>
+            <tr><td><code>opencli synthesize &lt;target&gt;</code></td><td>探索結果から YAML アダプターを生成</td></tr>
+            <tr><td><code>opencli generate &lt;url&gt; --goal &lt;text&gt;</code></td><td>explore + synthesize + 登録をワンショット実行</td></tr>
+            <tr><td><code>opencli cascade &lt;url&gt;</code></td><td>認証戦略（PUBLIC→UI）を自動プローブ</td></tr>
+            <tr><td><code>opencli doctor [--live]</code></td><td>ブリッジ接続・デーモン状態を診断</td></tr>
+            <tr><td><code>opencli setup</code></td><td>インタラクティブ初期設定ウィザード</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 出力フォーマット</span>
+      <p><code>--format</code> / <code>-f</code> で切り替え可能:</p>
+      <div class="strategy-list">
+        <span class="strategy-badge">table</span>
+        <span class="strategy-badge">json</span>
+        <span class="strategy-badge">yaml</span>
+        <span class="strategy-badge">md</span>
+        <span class="strategy-badge">csv</span>
+      </div>
+      <div class="ve-code-block"><pre><code>opencli bilibili hot --limit 10 --format json</code></pre></div>
+    </div>
+
+    <!-- 5. IPage API -->
+    <section id="api" class="sec-head">5 — IPage API</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> IPage インターフェース</span>
+      <p>TypeScript アダプターから使う、Chrome 操作の統一インターフェース。HTTP POST でデーモンへコマンドを送り、Chrome 拡張が実際の DOM 操作を行う。</p>
+      <div class="ve-code-block">
+        <pre><code>interface IPage {
+  goto(url: string): Promise&lt;void&gt;;
+  evaluate(js: string): Promise&lt;unknown&gt;;
+  snapshot(opts?: SnapshotOptions): Promise&lt;unknown&gt;;
+  click(ref: string): Promise&lt;void&gt;;
+  typeText(ref: string, text: string): Promise&lt;void&gt;;
+  networkRequests(includeStatic?: boolean): Promise&lt;unknown&gt;;
+  installInterceptor(pattern: string): Promise&lt;void&gt;;
+  screenshot(options?: ScreenshotOptions): Promise&lt;string&gt;;
+}</code></pre>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> プラグインシステム</span>
+      <p>ユーザー独自のアダプターは <code>~/.opencli/clis/</code> に <code>.ts</code> / <code>.yaml</code> ファイルを置くだけで自動登録される。ビルド時に <code>cli-manifest.json</code> を生成しておくことで、起動時のファイルスキャンコストをゼロにできる。</p>
+      <div class="ve-callout">
+        <strong>バッチ IPC 最適化:</strong> <code>fetch</code> ステップへの配列データは、N 回の HTTP POST を 1 回の <code>page.evaluate()</code> にまとめ IPC コストを大幅削減。
+      </div>
+    </div>
+
+    <!-- 6. 参考リンク -->
+    <section id="links" class="sec-head">6 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/jackwener/opencli" target="_blank" rel="noopener">GitHub: jackwener/opencli</a> — 本体リポジトリ（TypeScript / Node.js）</li>
+        <li><a href="https://www.npmjs.com/package/@jackwener/opencli" target="_blank" rel="noopener">npm: @jackwener/opencli</a> — インストール: <code>npm install -g @jackwener/opencli</code></li>
+        <li><a href="https://github.com/jackwener/opencli/tree/main/src/clis" target="_blank" rel="noopener">組み込みアダプター一覧</a> — bilibili / twitter / cursor / chatgpt / notion / discord 等 20+ サイト</li>
+        <li><a href="https://github.com/jackwener/opencli/blob/main/CDP.md" target="_blank" rel="noopener">CDP.md</a> — Chrome DevTools Protocol 活用ガイド</li>
+        <li><a href="https://github.com/jackwener/opencli/blob/main/CLI-ELECTRON.md" target="_blank" rel="noopener">CLI-ELECTRON.md</a> — Electron アプリへの対応方法</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#e8f4f8',
+    primaryTextColor: '#0a3055',
+    primaryBorderColor: '#0891b2',
+    lineColor: '#0891b2',
+    secondaryColor: '#f0f9f0',
+    tertiaryColor: '#fff8e8',
+    background: 'transparent',
+    mainBkg: '#e8f4f8',
+    nodeBorder: '#0891b2',
+    clusterBkg: '#f5f5f5',
+    titleColor: '#0a3055',
+    edgeLabelBackground: '#ffffff',
+    fontSize: '14px',
+  }
+});
+</script>
+<script>
+(function() {
+  /* Mermaid zoom + pan */
+  var container = document.getElementById('arch-container');
+  var scale = 1;
+  var MIN_SCALE = 0.5, MAX_SCALE = 3;
+  var translateX = 0, translateY = 0;
+  var dragging = false, startX = 0, startY = 0, startTX = 0, startTY = 0;
+
+  function applyTransform() {
+    var inner = container.querySelector('.mermaid svg');
+    if (inner) {
+      inner.style.transform = 'scale(' + scale + ') translate(' + translateX + 'px,' + translateY + 'px)';
+      inner.style.transformOrigin = '50% 0';
+    }
+  }
+
+  document.getElementById('arch-zoom-in').addEventListener('click', function() {
+    scale = Math.min(MAX_SCALE, scale + 0.2);
+    applyTransform();
+  });
+  document.getElementById('arch-zoom-out').addEventListener('click', function() {
+    scale = Math.max(MIN_SCALE, scale - 0.2);
+    applyTransform();
+  });
+  document.getElementById('arch-reset').addEventListener('click', function() {
+    scale = 1; translateX = 0; translateY = 0;
+    applyTransform();
+  });
+
+  container.addEventListener('wheel', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale - e.deltaY * 0.001));
+      applyTransform();
+    }
+  }, { passive: false });
+
+  container.addEventListener('mousedown', function(e) {
+    if (scale <= 1) return;
+    dragging = true; startX = e.clientX; startY = e.clientY;
+    startTX = translateX; startTY = translateY;
+    container.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    translateX = startTX + (e.clientX - startX) / scale;
+    translateY = startTY + (e.clientY - startY) / scale;
+    applyTransform();
+  });
+  window.addEventListener('mouseup', function() {
+    dragging = false;
+    container.style.cursor = scale > 1 ? 'grab' : 'default';
+  });
+
+  /* Scroll Spy */
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var docTop = s.head.getBoundingClientRect().top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HyperFrames — HTML ベースの動画レンダリング OSS</title>
+  <meta name="description" content="HTML と data 属性で動画構成を書き、プレビュー、検査、MP4 出力まで行うオープンソース枠組み。エージェント向け CLI・Skills・Remotion 移行をビジュアルで整理。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="HyperFrames — HTML ベースの動画レンダリング OSS">
+  <meta property="og:description" content="HTML と data 属性で動画構成を書き、プレビュー、検査、MP4 出力まで行うオープンソース枠組み。エージェント向け CLI・Skills・Remotion 移行をビジュアルで整理。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/hyperframes.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="HyperFrames — HTML ベースの動画レンダリング OSS">
+  <meta name="twitter:description" content="HTML と data 属性で動画構成を書き、プレビュー、検査、MP4 出力まで行うオープンソース枠組み。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    /* ============ THEME (Spell UI tokens + teal / amber) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.48 0.12 195);
+      --chart-2: oklch(0.72 0.15 75);
+      --chart-3: oklch(0.42 0.08 195);
+      --chart-4: oklch(0.78 0.12 145);
+      --chart-5: oklch(0.62 0.14 25);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Syne', system-ui, sans-serif;
+      --font-mono: 'Space Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.72 0.14 195);
+        --chart-2: oklch(0.78 0.16 80);
+        --chart-3: oklch(0.58 0.10 195);
+        --chart-4: oklch(0.72 0.12 150);
+        --chart-5: oklch(0.68 0.14 30);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.48 0.12 195 / 0.12); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.48 0.12 195 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.72 0.14 195 / 0.09) 0%, transparent 55%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    .mermaid-wrap { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); overflow: hidden; margin: 1rem 0; }
+    .mermaid-toolbar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--muted); }
+    .mermaid-toolbar button { font-family: var(--font-mono); font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; transition: background 0.1s; }
+    .mermaid-toolbar button:hover { background: var(--border); }
+    .mermaid-label { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-dim); flex: 1; }
+    .mermaid-inner { overflow: auto; padding: 1.5rem; cursor: grab; user-select: none; }
+    .mermaid-inner:active { cursor: grabbing; }
+    .mermaid-inner .mermaid { display: flex; justify-content: center; }
+    .mermaid .nodeLabel { color: var(--text) !important; }
+    .mermaid .edgeLabel { color: var(--text-dim) !important; background-color: var(--bg) !important; }
+    .mermaid .edgeLabel rect { fill: var(--bg) !important; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#why">特徴</a>
+    <a href="#how">構成と流れ</a>
+    <a href="#packages">パッケージ</a>
+    <a href="#skills">Skills</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>HyperFrames</h1>
+  <p class="subtitle">Write HTML. Render video. Built for agents.</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <p><strong>HyperFrames</strong> は、HTML ベースの動画コンポジションを作成・検査・プレビュー・レンダリングするオープンソースの枠組み。エージェントがそのまま扱える <strong>宣言的な HTML + data 属性</strong> を正とし、CLI は非対話で自動化パイプラインに載せやすい設計になっている（<a href="https://github.com/heygen-com/hyperframes" target="_blank" rel="noopener">heygen-com/hyperframes</a>、Apache 2.0）。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">HTML</span><span class="ve-kpi-card__label">コンポジション</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MP4</span><span class="ve-kpi-card__label">ローカル / Docker</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">20+</span><span class="ve-kpi-card__label">CLI コマンド</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Apache</span><span class="ve-kpi-card__label">2.0</span></div>
+    </div>
+    <div class="ve-callout">
+      <strong>クイックスタート:</strong> <code>npx hyperframes init my-video</code> → <code>npx hyperframes lint</code> → <code>npx hyperframes inspect</code> → <code>npx hyperframes preview</code>（Studio + ライブリロード）→ <code>npx hyperframes render</code>。Node.js 22 以上と FFmpeg が前提。エージェント向けには <code>npx skills add heygen-com/hyperframes</code> でスキル一式を取り込める。
+    </div>
+  </div>
+
+  <section id="why" class="sec-head">2 — なぜ HyperFrames か</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 設計の要点</span>
+    <ul>
+      <li><strong>HTML-native</strong> — コンポジションは HTML + data 属性。React 専用 DSL ではなく、マークアップでタイムラインを表現する。</li>
+      <li><strong>AI-first</strong> — エージェントは HTML を既に書ける。CLI はデフォルト非対話で、Claude Code・Cursor・Codex などのプラグイン／Skills と組み合わせやすい。</li>
+      <li><strong>Deterministic rendering</strong> — 同じ入力なら同じ出力。自動生成パイプライン向け。</li>
+      <li><strong>Frame Adapter</strong> — アニメーション実行環境を差し替え可能（GSAP、Lottie、CSS、Three.js など）。</li>
+    </ul>
+    <div class="ve-callout">
+      <strong>Remotion との違い:</strong> どちらもヘッドレス Chrome と FFmpeg を使うが、Remotion は React コンポーネント、HyperFrames は HTML + CSS + GSAP を主な作者インターフェイスに置く。Apache 2.0 の完全 OSS である点も、再配布や商用利用を考えると大きな判断材料になる。
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> カタログ</span>
+    <p>50 以上のブロック・コンポーネント（ソーシャルオーバーレイ、シェーダー遷移、データ可視化など）を <code>npx hyperframes add &lt;name&gt;</code> で追加できる。一覧は公式サイトの <a href="https://hyperframes.heygen.com/catalog/blocks/data-chart" target="_blank" rel="noopener">Catalog</a> を参照。</p>
+  </div>
+
+  <section id="how" class="sec-head">3 — 構成とデータモデル</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> HTML でのコンポジション例</span>
+    <p>ルートに <code>data-composition-id</code>、解像度・開始時刻、各メディアに <code>data-start</code> / <code>data-duration</code> / <code>data-track-index</code> を付与し、ブラウザでプレビューしたあとキャプチャして動画化する。</p>
+    <div class="ve-code-block">
+      <pre><code>&lt;div id="stage" data-composition-id="my-video" data-start="0"
+     data-width="1920" data-height="1080"&gt;
+  &lt;video id="clip-1" data-start="0" data-duration="5" data-track-index="0"
+    src="intro.mp4" muted playsinline&gt;&lt;/video&gt;
+  &lt;img id="overlay" class="clip" data-start="2" data-duration="3"
+    data-track-index="1" src="logo.png" /&gt;
+  &lt;audio id="bg-music" data-start="0" data-duration="9" data-track-index="2"
+    data-volume="0.5" src="music.wav"&gt;&lt;/audio&gt;
+&lt;/div&gt;</code></pre>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> レンダリングの流れ（概念）</span>
+    <p>コアが HTML を解釈し、エンジンがシーク可能なページ→映像キャプチャにし、プロデューサーがエンコードとオーディオミックスまで担当するイメージ。</p>
+    <div class="pipeline" aria-label="パイプライン">
+      <span class="step">Composition (HTML)</span>
+      <span class="arrow">→</span>
+      <span class="step">@hyperframes/core</span>
+      <span class="arrow">→</span>
+      <span class="step">@hyperframes/engine</span>
+      <span class="arrow">→</span>
+      <span class="step">@hyperframes/producer</span>
+      <span class="arrow">→</span>
+      <span class="step">MP4</span>
+    </div>
+    <div class="mermaid-wrap">
+      <div class="mermaid-toolbar">
+        <span class="mermaid-label">Pipeline</span>
+        <button type="button" onclick="zoomOut()">−</button>
+        <button type="button" onclick="resetZoom()">reset</button>
+        <button type="button" onclick="zoomIn()">+</button>
+      </div>
+      <div class="mermaid-inner" id="mermaid-inner">
+        <div class="mermaid">
+flowchart TD
+  H["HTML + data-*"] --> C["@hyperframes/core"]
+  C --> E["@hyperframes/engine"]
+  E --> P["@hyperframes/producer"]
+  P --> M["MP4 / 出力"]
+  C --> V["preview / lint CLI"]
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> CLI の基本ループ</span>
+    <p>最新の CLI スキルでは、生成した HTML をいきなりレンダリングせず、<code>lint</code> と <code>inspect</code> で構造と見た目を先に検査する流れが推奨されている。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>段階</th><th>コマンド</th><th>目的</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>構造検査</td><td><code>npx hyperframes lint</code></td><td><code>data-composition-id</code>、トラック重なり、タイムライン登録漏れなどを検出。</td></tr>
+          <tr><td>視覚検査</td><td><code>npx hyperframes inspect</code></td><td>ヘッドレス Chrome でタイムラインをサンプルし、テキストのはみ出しやクリップを報告。</td></tr>
+          <tr><td>プレビュー</td><td><code>npx hyperframes preview</code></td><td>Studio を開き、<code>http://localhost:&lt;port&gt;/#project/&lt;name&gt;</code> を確認面にする。</td></tr>
+          <tr><td>出力</td><td><code>npx hyperframes render</code></td><td>MP4 / WebM を生成。<code>--quality</code>、<code>--fps</code>、<code>--docker</code> などで調整。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>補助コマンドとして <code>catalog</code>、<code>compositions</code>、<code>browser</code>、<code>docs</code>、<code>doctor</code>、<code>upgrade</code>、<code>validate</code>、<code>snapshot</code>、<code>capture</code> も用意されている。</p>
+  </div>
+
+  <section id="packages" class="sec-head">4 — モノレポのパッケージ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 役割</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>パッケージ</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>hyperframes</code>（<code>packages/cli</code>）</td><td>プロジェクト作成、プレビュー、lint、レンダリングなどの CLI</td></tr>
+          <tr><td><code>@hyperframes/core</code></td><td>型、パーサ、ジェネレータ、リンタ、ランタイム、フレームアダプタ、Studio API、registry / text API</td></tr>
+          <tr><td><code>@hyperframes/engine</code></td><td>シーク可能なページ→映像キャプチャ（Puppeteer + FFmpeg）</td></tr>
+          <tr><td><code>@hyperframes/producer</code></td><td>キャプチャ + エンコード + オーディオミックスまでのパイプライン</td></tr>
+          <tr><td><code>@hyperframes/studio</code></td><td>ブラウザ上のコンポジション編集 UI</td></tr>
+          <tr><td><code>@hyperframes/player</code></td><td>埋め込み用 <code>&lt;hyperframes-player&gt;</code> Web コンポーネント</td></tr>
+          <tr><td><code>@hyperframes/shader-transitions</code></td><td>WebGL シェーダーによるトランジション</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="skills" class="sec-head">5 — エージェント向け Skills</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Vercel Skills 形式</span>
+    <p><strong>HyperFrames</strong> は <a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">Vercel Skills</a> として公開されており、<code>npx skills add heygen-com/hyperframes</code> で取得できる。エージェントにフレームワーク固有のパターンを教える用途。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Skill</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>hyperframes</code></td><td>HTML コンポジション、キャプション、TTS、オーディオ連動アニメ、トランジション</td></tr>
+          <tr><td><code>hyperframes-cli</code></td><td><code>init</code> / <code>lint</code> / <code>inspect</code> / <code>preview</code> / <code>render</code> / <code>validate</code> / <code>transcribe</code> / <code>tts</code> / <code>doctor</code> など</td></tr>
+          <tr><td><code>hyperframes-registry</code></td><td><code>hyperframes add</code> によるブロック・コンポーネント導入</td></tr>
+          <tr><td><code>website-to-hyperframes</code></td><td>URL をキャプチャして動画化するパイプライン</td></tr>
+          <tr><td><code>remotion-to-hyperframes</code></td><td>Remotion（React）コンポジションを HTML + GSAP の HyperFrames 構成へ移すための変換ガイド</td></tr>
+          <tr><td><code>gsap</code></td><td>GSAP の API、タイムライン、イージング、プラグイン、パフォーマンス</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">6 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/heygen-com/hyperframes" target="_blank" rel="noopener">GitHub: heygen-com/hyperframes</a> — 本体リポジトリ</li>
+      <li><a href="https://hyperframes.heygen.com/introduction" target="_blank" rel="noopener">公式ドキュメント（Introduction）</a></li>
+      <li><a href="https://hyperframes.heygen.com/quickstart" target="_blank" rel="noopener">Quickstart</a></li>
+      <li><a href="https://hyperframes.heygen.com/guides/prompting" target="_blank" rel="noopener">Prompting guide</a></li>
+      <li><a href="https://hyperframes.heygen.com/guides/hyperframes-vs-remotion" target="_blank" rel="noopener">Hyperframes vs Remotion guide</a></li>
+      <li><a href="https://hyperframes.heygen.com/packages/core" target="_blank" rel="noopener">API Reference（core）</a></li>
+      <li><a href="https://www.npmjs.com/package/hyperframes" target="_blank" rel="noopener">npm: hyperframes</a></li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    look: 'classic',
+    themeVariables: {
+      primaryColor: isDark ? '#134e4a' : '#ccfbf1',
+      primaryBorderColor: isDark ? '#14b8a6' : '#0d9488',
+      primaryTextColor: isDark ? '#f0fdfa' : '#134e4a',
+      secondaryColor: isDark ? '#1e293b' : '#fffbeb',
+      secondaryBorderColor: isDark ? '#059669' : '#d97706',
+      secondaryTextColor: isDark ? '#f1f5f9' : '#1e293b',
+      tertiaryColor: isDark ? '#27201a' : '#fef3c7',
+      tertiaryBorderColor: isDark ? '#d97706' : '#f59e0b',
+      tertiaryTextColor: isDark ? '#fef3c7' : '#27201a',
+      lineColor: isDark ? '#64748b' : '#94a3b8',
+      fontSize: '15px'
+    },
+    flowchart: { curve: 'basis', padding: 16 }
+  });
+})();
+
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+
+var scale = 1;
+var panX = 0, panY = 0;
+var dragging = false, startX, startY, startPanX, startPanY;
+var inner = document.getElementById('mermaid-inner');
+
+function applyTransform() {
+  var svg = inner.querySelector('svg');
+  if (svg) svg.style.transform = 'translate(' + panX + 'px,' + panY + 'px) scale(' + scale + ')';
+}
+function zoomIn() { scale = Math.min(scale * 1.25, 4); applyTransform(); }
+function zoomOut() { scale = Math.max(scale / 1.25, 0.4); applyTransform(); }
+function resetZoom() { scale = 1; panX = 0; panY = 0; applyTransform(); }
+
+if (inner) {
+  inner.addEventListener('wheel', function(e) {
+    if (e.ctrlKey || e.metaKey) { e.preventDefault(); e.deltaY < 0 ? zoomIn() : zoomOut(); }
+  }, { passive: false });
+  inner.addEventListener('mousedown', function(e) {
+    if (scale <= 1) return;
+    dragging = true; startX = e.clientX; startY = e.clientY;
+    startPanX = panX; startPanY = panY;
+  });
+  window.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    panX = startPanX + (e.clientX - startX);
+    panY = startPanY + (e.clientY - startY);
+    applyTransform();
+  });
+  window.addEventListener('mouseup', function() { dragging = false; });
+}
+</script>
+</body>
+</html>

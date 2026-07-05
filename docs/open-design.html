@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Design — コーディングエージェント向けデザイン生成ワークスペース</title>
+  <meta name="description" content="Open Design 0.10.0 の技術概要。オールインワン Agentic デザインワークスペース、150 の DESIGN.md、261 プラグイン、21 のコーディング CLI、HyperFrames・ライブアーティファクト・MCP 連携を整理する。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Open Design — コーディングエージェント向けデザイン生成ワークスペース">
+  <meta property="og:description" content="SKILL.md・DESIGN.md・プラグインを束ね、既存 CLI をデザインエンジンにする Open Design の構造解説（0.10.0 時点）。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/open-design.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Open Design — コーディングエージェント向けデザイン生成ワークスペース">
+  <meta name="twitter:description" content="150 Design Systems・261 Plugins・21 Coding Agents。HyperFrames、MCP、AMR を含む Open Design のアーキテクチャ解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,650&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.975 0.016 78);
+      --foreground: oklch(0.18 0.025 55);
+      --card: oklch(0.995 0.006 78);
+      --card-foreground: oklch(0.18 0.025 55);
+      --popover: oklch(0.995 0.006 78);
+      --popover-foreground: oklch(0.18 0.025 55);
+      --primary: oklch(0.25 0.04 35);
+      --primary-foreground: oklch(0.98 0.012 78);
+      --secondary: oklch(0.93 0.018 75);
+      --secondary-foreground: oklch(0.25 0.04 35);
+      --muted: oklch(0.94 0.018 75);
+      --muted-foreground: oklch(0.48 0.03 55);
+      --accent: oklch(0.93 0.035 42);
+      --accent-foreground: oklch(0.22 0.04 35);
+      --destructive: oklch(0.55 0.18 25);
+      --border: oklch(0.86 0.018 70);
+      --input: oklch(0.86 0.018 70);
+      --ring: oklch(0.55 0.16 42);
+      --chart-1: oklch(0.55 0.16 42);
+      --chart-2: oklch(0.62 0.12 155);
+      --chart-3: oklch(0.42 0.08 230);
+      --chart-4: oklch(0.66 0.12 80);
+      --chart-5: oklch(0.45 0.12 15);
+      --code-bg: oklch(0.22 0.025 55);
+      --code-text: oklch(0.93 0.018 78);
+      --font-body: 'Newsreader', Georgia, serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.145 0.02 55);
+        --foreground: oklch(0.93 0.018 78);
+        --card: oklch(0.19 0.022 55);
+        --card-foreground: oklch(0.93 0.018 78);
+        --popover: oklch(0.19 0.022 55);
+        --popover-foreground: oklch(0.93 0.018 78);
+        --primary: oklch(0.88 0.035 78);
+        --primary-foreground: oklch(0.18 0.025 55);
+        --secondary: oklch(0.24 0.025 55);
+        --secondary-foreground: oklch(0.93 0.018 78);
+        --muted: oklch(0.25 0.025 55);
+        --muted-foreground: oklch(0.72 0.025 78);
+        --accent: oklch(0.26 0.045 42);
+        --accent-foreground: oklch(0.95 0.018 78);
+        --destructive: oklch(0.62 0.18 25);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 14%);
+        --ring: oklch(0.66 0.12 80);
+        --chart-1: oklch(0.68 0.14 42);
+        --chart-2: oklch(0.72 0.12 155);
+        --chart-3: oklch(0.72 0.09 230);
+        --chart-4: oklch(0.78 0.12 80);
+        --chart-5: oklch(0.68 0.13 15);
+        --code-bg: oklch(0.105 0.015 55);
+        --code-text: oklch(0.9 0.025 78);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(79, 45, 17, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 8px 26px rgba(79, 45, 17, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.875rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.65; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.875rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 70%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(79, 45, 17, 0.05); min-width: 0; }
+    .ve-kpi-card__value { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: clamp(1.4rem, 3vw, 2rem); line-height: 1.1; color: var(--foreground); overflow-wrap: anywhere; }
+    .ve-kpi-card__label { display: block; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.45rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 650; }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(color-mix(in oklch, var(--border) 45%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in oklch, var(--border) 45%, transparent) 1px, transparent 1px),
+        radial-gradient(ellipse at 28% 0%, oklch(0.55 0.16 42 / 0.12) 0%, transparent 48%);
+      background-size: 32px 32px, 32px 32px, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 28% 0%, oklch(0.68 0.14 42 / 0.14) 0%, transparent 48%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 210px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 5px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); background: color-mix(in oklch, var(--surface2) 70%, transparent); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography + layout ============ */
+    h1 { font-size: clamp(2.2rem, 6vw, 5.25rem); font-weight: 650; letter-spacing: -0.05em; line-height: 0.92; margin-bottom: 1rem; text-wrap: balance; max-width: 920px; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; margin-bottom: 2rem; max-width: 760px; }
+    .sec-head { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.08em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.15rem; font-weight: 650; margin: 1.4rem 0 0.6rem; }
+    p { font-size: 1rem; line-height: 1.72; margin-bottom: 0.8rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.3rem; }
+    li { margin-bottom: 0.35rem; line-height: 1.65; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    @media (max-width: 900px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 760px) {
+      .kpi-row,
+      .grid-2,
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    .loop { display: grid; gap: 0.75rem; margin-top: 1rem; }
+    .loop-step { display: grid; grid-template-columns: 44px 1fr; gap: 0.9rem; align-items: start; }
+    .loop-num { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 999px; background: var(--muted); font-family: var(--font-mono); font-size: 0.78rem; color: var(--foreground); }
+    .loop-body { border-left: 1px solid var(--border); padding: 0 0 0.9rem 1rem; min-width: 0; }
+    .loop-step:last-child .loop-body { border-left-color: transparent; padding-bottom: 0; }
+    .loop-title { display: block; font-weight: 650; margin-bottom: 0.18rem; }
+    .loop-text { color: var(--text-dim); font-size: 0.9rem; line-height: 1.55; margin: 0; }
+    .badge { display: inline-flex; align-items: center; gap: 0.35rem; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.22rem 0.46rem; border-radius: 999px; border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); margin: 0 0.25rem 0.25rem 0; }
+    .badge--accent { color: var(--foreground); background: color-mix(in oklch, var(--chart-1) 18%, var(--card)); border-color: color-mix(in oklch, var(--chart-1) 42%, var(--border)); }
+    .structure-card { min-height: 100%; }
+    .structure-card h3 { margin-top: 0; font-family: var(--font-mono); font-size: 0.9rem; letter-spacing: -0.01em; }
+    .structure-card p { font-size: 0.92rem; color: var(--text-dim); margin-bottom: 0; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card, .ve-callout, .ve-table-wrap { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#product">画面構成</a>
+    <a href="#workspace">0.10 ワークスペース</a>
+    <a href="#loop">生成ループ</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#catalog">カタログ</a>
+    <a href="#agents">エージェント連携</a>
+    <a href="#artifacts">成果物タイプ</a>
+    <a href="#guardrails">品質ゲート</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>Open Design</h1>
+    <p class="subtitle">ローカルファーストのオープンソース製品。0.10.0 では発見から素材収集・対話編集・コメント・モーション調整・エディタ/Code Agent への引き渡しまでを 1 ウィンドウに集約する。README 0.10.0 時点の構成を整理する。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> プロダクトの位置づけ</span>
+      <p><strong>Open Design</strong> は、Claude Design が示した「ブリーフを固める → 方向を決める → 成果物をストリーム → 批評 → 納品」というエージェントネイティブなループを、クローズド実装からファイルベースのスキル・デザインシステム・プラグインへ開いた製品。macOS / Windows 向けネイティブデスクトップアプリと Web UI を持ち、手元の CLI をデザインエンジンとして起動する。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">100+</span><span class="ve-kpi-card__label">skills</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">150</span><span class="ve-kpi-card__label">design systems</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">261</span><span class="ve-kpi-card__label">plugins</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">21</span><span class="ve-kpi-card__label">coding agents</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">14</span><span class="ve-kpi-card__label">media providers</span></div>
+      </div>
+      <p>0.9.0 で内蔵された公式 Model Router（AMR）に加え、0.10.0 はプロジェクトビューをオールインワン Studio へ再編する。並列セッション・コメントキュー・参照ボードで「1 人のアシスタント」から「ローカルなデザインチーム」に近い運用へ移行する。CLI が無い場合は BYOK プロキシ（<code>POST /api/proxy/{anthropic,openai,azure,google,ollama,senseaudio}/stream</code>）へフォールバックし、0.10 では API キーのフィールド検証・下書き保存前の検証・アカウントから取得したモデル一覧が強化される。</p>
+      <div class="ve-callout">
+        <strong>設計判断:</strong> Open Design はモデルもエージェントループも抱え込まない。既存 CLI の tool loop と権限管理を使い、スキル合成・プレビュー・保存・エクスポートの統合シェルに徹する。
+      </div>
+    </div>
+
+    <section id="product" class="sec-head">2 — 画面構成</section>
+    <div class="grid-3">
+      <div class="ve-card structure-card" style="--i:0">
+        <h3>Home</h3>
+        <p>Skill と Design System を選び、ブリーフを入力して実行する入口。Chip Rail で Image / Video / HyperFrames / Audio などの Composer Surface を切り替える。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:1">
+        <h3>Automation</h3>
+        <p>反復するデザインワークフローを再利用可能な自動化として登録・スケジュールする画面。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:2">
+        <h3>Design System</h3>
+        <p>チームの <code>DESIGN.md</code> をブランド契約として蒸留し、以降の出力に一貫した視覚言語を適用する。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:3">
+        <h3>Plugin</h3>
+        <p>公式・コミュニティのプラグインを閲覧・インストールし、生成パイプラインを拡張する。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:4">
+        <h3>Integrations</h3>
+        <p>外部システムや MCP ツールを接続し、IDE・スクリプト・自動化から Open Design を呼び出す。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:5">
+        <h3>Studio / Workspace</h3>
+        <p>0.10.0 以降の制作ハブ。Lexical コンポーザー、対話ターミナル、参照ボード、コメントキューを同一画面に集約し、Prototype・HyperFrame・Deck・Image を扱う。</p>
+      </div>
+    </div>
+
+    <section id="workspace" class="sec-head">3 — 0.10 ワークスペース</section>
+    <div class="grid-2">
+      <div class="ve-card ve-card--hero" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 1 ウィンドウで完結する制作</span>
+        <p>0.10.0 の中心はプロジェクトビューの再編（211 ファイル規模）。ざっくりしたアイデアから参照収集・対話編集・コメント・モーション調整・エディタ/Code Agent への引き渡しまで、アプリを離れずに進められる。</p>
+        <ul>
+          <li><strong>Lexical コンポーザー</strong> — <code>@mention</code> を atomic pill 化。キャレット位置に mention / slash ポップオーバーを出す。</li>
+          <li><strong>対話ターミナル</strong> — チャット横でセッションをその場実行。</li>
+          <li><strong>参照ボード</strong> — ブラウザ風ボードとページキャプチャで外部参照をプロジェクトへ取り込む。</li>
+          <li><strong>会話フォーク</strong> — 任意メッセージから分岐して別ルートを試せる。</li>
+        </ul>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> レビューと引き渡し</span>
+        <ul>
+          <li><strong>コメントキュー</strong> — 生成中でもプレビューコメントを投入でき、デッキマーカーをピン留め。前ターン完了を待たない。</li>
+          <li><strong>ステージドプレビュー</strong> — 生成中に段階的フィードバックをストリーム表示し、黒箱待ちを減らす。</li>
+          <li><strong>Questions タブ</strong> — 発見質問を右ペインへ分離。未変更の example prompt では質問をスキップ。</li>
+          <li><strong>本番引き渡し</strong> — sandbox runtime、run スコープ MCP ツール束、プロジェクト export manifest、contained preview URL でエディタ/Code Agent へ渡す。</li>
+        </ul>
+      </div>
+    </div>
+
+    <section id="loop" class="sec-head">4 — 生成ループ</section>
+    <div class="grid-2">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> ユーザー操作から成果物まで</span>
+        <div class="loop">
+          <div class="loop-step">
+            <span class="loop-num">01</span>
+            <div class="loop-body">
+              <span class="loop-title">Discover</span>
+              <p class="loop-text">Home で Skill / Design System / プラグインを選び、ブリーフを入力。新規依頼では Questions タブの質問フォームで出力面・読者・トーン・規模を先に固定する（example prompt をそのまま使う場合はスキップ）。</p>
+            </div>
+          </div>
+          <div class="loop-step">
+            <span class="loop-num">02</span>
+            <div class="loop-body">
+              <span class="loop-title">Lock direction</span>
+              <p class="loop-text">発見質問、アクティブな <code>DESIGN.md</code>、<code>SKILL.md</code>、プラグインの <code>open-design.json</code>、テンプレート参照をプロンプトスタックへ合成する。</p>
+            </div>
+          </div>
+          <div class="loop-step">
+            <span class="loop-num">03</span>
+            <div class="loop-body">
+              <span class="loop-title">Stream artifact</span>
+              <p class="loop-text">daemon が検出済みエージェントをプロジェクト作業ディレクトリで起動し、tool call とテキストを SSE で UI へ流す。0.10 ではステージドプレビューで途中経過を見せ、CLI が無ければ BYOK API 経路へ落ちる。</p>
+            </div>
+          </div>
+          <div class="loop-step">
+            <span class="loop-num">04</span>
+            <div class="loop-body">
+              <span class="loop-title">Critique &amp; deliver</span>
+              <p class="loop-text">サンドボックス iframe でプレビューし、実行中でもコメントをキュー投入。手動編集インスペクタはピン留め、参照画像付きコメントで refinement。HTML / PDF / PPTX / MP4 / ZIP など Skill 定義に沿ってエクスポートし、必要ならエディタ/Code Agent へ manifest 付きで引き渡す。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Prompt stack</span>
+        <p>プロダクトの中核は「プロンプトスタック」。発見質問と設計哲学を最優先に置き、その後ろへ Design System・Skill・プラグイン指示・デッキ用フレームワークを重ねる。</p>
+        <div class="ve-code-block" aria-label="Prompt stack">
+          <pre><code>DISCOVERY directives
+  + identity and workflow charter
+  + active DESIGN.md
+  + active SKILL.md
+  + plugin scenario / open-design.json
+  + project metadata
+  + skill side files
+  + deck framework directive</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <section id="architecture" class="sec-head">5 — アーキテクチャ</section>
+    <div class="grid-3">
+      <div class="ve-card structure-card" style="--i:0">
+        <h3>Web App</h3>
+        <p>Next.js 16 + React。Lexical コンポーザー、Questions タブ、ステージドプレビュー、artifact tree、サンドボックス iframe、エクスポート導線を担う。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:1">
+        <h3>Desktop shell</h3>
+        <p>macOS / Windows 向けネイティブシェル。GUI 起動時の PATH 問題を吸収し、daemon と一体で配布される。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:2">
+        <h3>Local daemon</h3>
+        <p>デフォルト <code>localhost:7456</code>。エージェント検出、Skill / プラグイン登録、SSE チャット、ファイル保存、エクスポートを担当。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:3">
+        <h3>packages/</h3>
+        <p><code>contracts</code>・<code>plugin-runtime</code>・<code>registry-protocol</code>・<code>sidecar</code> に加え、0.10 で <code>terminals</code> / <code>community</code> / <code>social-share</code> 契約が拡張される。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:4">
+        <h3>Sandbox runtime</h3>
+        <p>プロジェクトルートを閉じた実行基盤。run スコープ MCP ツール束、export manifest、contained preview URL で本番引き渡しを支える。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:5">
+        <h3>Agent adapters</h3>
+        <p>各 CLI の検出と起動引数を吸収。構造化ストリーム対応 CLI は typed events、その他は line-buffered 出力で扱う。</p>
+      </div>
+      <div class="ve-card structure-card" style="--i:6">
+        <h3>Artifact store</h3>
+        <p><code>./.od/artifacts/</code> にプレーンファイルで保存。<code>artifact.json</code> と <code>history.jsonl</code> でメタデータと履歴を Git レビュー可能に保つ。</p>
+      </div>
+    </div>
+    <div class="ve-table-wrap" style="--i:6; margin-top: 1rem;">
+      <table>
+        <thead>
+          <tr><th>Topology</th><th>構成</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>A — Fully local</strong></td><td>ブラウザ → Next.js (<code>:3000</code>) → daemon (<code>:7456</code>) → ローカル CLI</td><td>デフォルト。アカウント不要。</td></tr>
+          <tr><td><strong>B — Vercel + daemon</strong></td><td>ホスト済み Web → トンネル経由で手元 daemon</td><td>秘密情報は daemon 側に留める。</td></tr>
+          <tr><td><strong>C — Direct API</strong></td><td>ホスト済み Web → BYOK API（ブラウザ保存）</td><td>CLI なしの試用。機能は制限される。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:7; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公開向けファイルマップ</span>
+      <div class="ve-code-block" aria-label="Open Design public file map">
+        <pre><code>open-design/
+├── apps/
+│   ├── web/             Next.js UI, prompt composer, artifact preview
+│   ├── daemon/          Node API, agent spawning, export pipeline
+│   ├── desktop/         native shell (macOS / Windows)
+│   └── packaged/        release packaging
+├── packages/
+│   ├── contracts/       shared API, terminals, community contracts
+│   ├── plugin-runtime/  plugin loading and scenario execution
+│   └── registry-protocol/ marketplace manifests
+├── skills/              SKILL.md bundles (+ reference-design-contract)
+├── design-systems/      DESIGN.md catalog (150 systems)
+├── design-templates/  curated template scenarios
+├── plugins/
+│   ├── _official/       bundled first-party plugins
+│   ├── community/       community plugin sources
+│   └── registry/        marketplace JSON manifests
+└── docs/                spec, architecture, modes, protocol</code></pre>
+      </div>
+    </div>
+
+    <section id="catalog" class="sec-head">6 — カタログ（Skills / Design Systems / Plugins）</section>
+    <div class="grid-2">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Skill — 成果物の型</span>
+        <p><code>skills/</code> は「何を作るか」「どの順番で作るか」を定義する。<code>SKILL.md</code>、テンプレート、参照ファイル、チェックリストを 1 フォルダに閉じる。ランディング、ダッシュボード、モバイル、HTML デッキ、HyperFrames、画像生成など用途別に増やせる。</p>
+        <p>
+          <span class="badge badge--accent">web-prototype</span>
+          <span class="badge">html-ppt</span>
+          <span class="badge">live-dashboard</span>
+          <span class="badge">hyperframes</span>
+          <span class="badge">imagegen</span>
+          <span class="badge">brandkit</span>
+        </p>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Design System — 見た目の言語</span>
+        <p><code>design-systems/</code> は 9 セクションの <code>DESIGN.md</code> で色・タイポ・余白・コンポーネント・声のトーンを規定。Linear、Stripe、Notion、Apple、Cursor などプロダクト風システムが同梱される。</p>
+        <p>
+          <span class="badge badge--accent">DESIGN.md</span>
+          <span class="badge">color</span>
+          <span class="badge">typography</span>
+          <span class="badge">spacing</span>
+          <span class="badge">components</span>
+          <span class="badge">voice</span>
+        </p>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:2; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> Plugin — ワークフロー拡張</span>
+      <p>プラグインは portable な Skill フォルダに、任意の <code>open-design.json</code> サイドカーを載せた単位。公式 (<code>plugins/_official/</code>) は daemon 起動時に登録され、コミュニティ版はレジストリ経由でインストールする。入力フォーム、プレビュー型、パイプライン、信頼境界のヒントをマーケットプレイスメタデータとして UI に伝える。</p>
+    </div>
+    <div class="ve-table-wrap" style="--i:3; margin-top: 1rem;">
+      <table>
+        <thead>
+          <tr><th>軸</th><th>役割</th><th>体験への効き</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>SKILL.md</code></td><td>生成手順・成果物種別・テンプレート・チェックリスト</td><td>デッキとダッシュボードで出力の型を固定する</td></tr>
+          <tr><td><code>DESIGN.md</code></td><td>ブランド級トークンと禁止事項</td><td>同一 Skill でも Linear 風 / Editorial 風に切り替える</td></tr>
+          <tr><td><code>open-design.json</code></td><td>プラグインの marketplace メタデータ</td><td>フォーム・プレビュー型・シナリオをアプリが解釈する</td></tr>
+          <tr><td><code>od:</code> frontmatter</td><td>mode・preview・inputs・parameters・capabilities</td><td>コメント編集可否やスライダー UI の有無を決める</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section id="agents" class="sec-head">7 — エージェント連携</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 21 CLI + MCP + BYOK</span>
+      <p>Open Design は Skill・CLI・MCP サーバーを同梱する。インストール後、<code>od mcp install &lt;agent&gt;</code> で各エージェントの MCP 設定へサーバーを配線し、IDE 内から同じツール面を呼べる。0.10 では run スコープ MCP ツール束と sandbox 連携で、Studio から本番エディタ/Code Agent への引き渡しが強化される。</p>
+      <div class="ve-code-block" aria-label="MCP install examples">
+        <pre><code>od mcp install claude
+od mcp install codex
+od mcp install cursor
+od mcp install copilot
+od mcp install opencode
+od mcp install --help   # 全エージェント一覧</code></pre>
+      </div>
+    </div>
+    <div class="ve-table-wrap" style="--i:1; margin-top: 1rem;">
+      <table>
+        <thead>
+          <tr><th>エージェント / プラットフォーム</th><th>状態</th><th>MCP インストール</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Claude Code</td><td>対応</td><td><code>od mcp install claude</code></td></tr>
+          <tr><td>Codex CLI</td><td>対応</td><td><code>od mcp install codex</code></td></tr>
+          <tr><td>Cursor</td><td>対応</td><td><code>od mcp install cursor</code></td></tr>
+          <tr><td>GitHub Copilot / Copilot CLI</td><td>対応</td><td><code>od mcp install copilot</code></td></tr>
+          <tr><td>Gemini CLI</td><td>対応</td><td><code>od mcp install gemini</code></td></tr>
+          <tr><td>OpenCode</td><td>対応</td><td><code>od mcp install opencode</code></td></tr>
+          <tr><td>OpenClaw</td><td>対応</td><td><code>od mcp install openclaw</code></td></tr>
+          <tr><td>Pi Agent</td><td>対応</td><td><code>od mcp install pi</code></td></tr>
+          <tr><td>Hermes Agent</td><td>対応</td><td><code>od mcp install hermes</code></td></tr>
+          <tr><td>その他（Antigravity, Cline, Trae, Kimi, Vibe など）</td><td>対応</td><td><code>od mcp install --help</code> で確認</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="--i:2; margin-top: 1rem;">
+      <strong>ドメイン用語:</strong> MCP がプロジェクト未指定で呼ばれたときは <em>Active Project</em> を対象にする。エージェントが通常のファイル成果物を作る場合は <em>Normal Artifact</em>（<code>artifact.json</code> + エントリファイル）。データ更新型は <em>Live Artifact</em> として別管理する。
+    </div>
+
+    <section id="artifacts" class="sec-head">8 — 成果物タイプ</section>
+    <div class="ve-table-wrap" style="--i:0">
+      <table>
+        <thead>
+          <tr><th>カテゴリ</th><th>作るもの</th><th>代表的な流れ</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Prototype</strong></td><td>Web / デスクトップ / モバイルの単一 HTML</td><td>Skill 選択 → brief → sandbox iframe → HTML / PDF / ZIP</td></tr>
+          <tr><td><strong>Live artifact</strong></td><td>KPI 壁・意思決定ルームなど更新可能なダッシュボード</td><td>tweaks パネルでパラメータ変更 → iframe 再描画</td></tr>
+          <tr><td><strong>Deck</strong></td><td>HTML スライド / PPTX 中間成果物</td><td>枚数・アウトライン決定 → deck framework へ流し込み → PPTX / PDF</td></tr>
+          <tr><td><strong>HyperFrame</strong></td><td>HTML ベースのモーショングラフィックス</td><td>GSAP タイムラインで合成 → MP4（例: 1920×1080 · 30fps）</td></tr>
+          <tr><td><strong>Image / Video / Audio</strong></td><td>ブランド準拠のメディア生成</td><td>Home の Composer Surface から 14 media providers へルーティング</td></tr>
+          <tr><td><strong>Design System</strong></td><td>再利用可能な <code>DESIGN.md</code></td><td>スクリーンショット・URL・brief から 9 セクションを生成</td></tr>
+          <tr><td><strong>Template</strong></td><td>完成テンプレートの内容差し替え</td><td>構造固定のままコピーとブランド要素だけ更新（20–40 秒級）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="--i:1; margin-top: 1rem;">
+      <strong>組み合わせ:</strong> Design System を先に作ると Prototype・Deck・Template が同じ視覚言語を共有する。本質は「成果物タイプ × Skill × Design System × Plugin」の直積にある。
+    </div>
+
+    <section id="guardrails" class="sec-head">9 — 品質ゲート</section>
+    <div class="grid-2">
+      <div class="ve-card ve-card--elevated" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> AI-slop を減らす仕掛け</span>
+        <ul>
+          <li>Turn 1 では Questions タブの質問フォームで未確定の設計判断を固定し、いきなり HTML を書かせない。</li>
+          <li>ブランド未指定なら視覚方向を選ばせ、パレットとフォントを deterministic に束ねる。</li>
+          <li>Skill / テンプレート参照を事前に読ませ、毎回ゼロから CSS を発明させない。</li>
+          <li><code>craft/anti-ai-slop.md</code> などの品質方針と P0/P1/P2 チェックリストで自己批評する。</li>
+        </ul>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> セキュリティと診断</span>
+        <ul>
+          <li>プレビューは <code>&lt;iframe sandbox="allow-scripts"&gt;</code> でホスト UI から隔離する（<code>allow-same-origin</code> なし）。</li>
+          <li>秘密情報は利用者の daemon またはブラウザ側に留まり、Open Design ホストへ預けない前提。</li>
+          <li>Skill / プラグインは強力な指示ファイルなので、インストール時に信頼境界を意識する。</li>
+          <li>Sandbox runtime はプロジェクトルートとホスト探索を閉じ、BYOK プロキシは SSRF 対策で内部 IP / link-local を遮断する。</li>
+          <li>0.10 では生成失敗の識別可能な原因、Langfuse 相関、prompt-stack 診断、safe-retry 契約でトレース可能にする。</li>
+        </ul>
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">10 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Source and lineage</span>
+      <ul>
+        <li><a href="https://github.com/nexu-io/open-design" target="_blank" rel="noopener">GitHub: nexu-io/open-design</a> — Open Design 本体（0.10.0）</li>
+        <li><a href="https://github.com/nexu-io/open-design/blob/main/RELEASE-NOTES-0.10.0.md" target="_blank" rel="noopener">RELEASE-NOTES-0.10.0.md</a> — 0.10.0 の変更一覧</li>
+        <li><a href="https://open-design.ai/" target="_blank" rel="noopener">open-design.ai</a> — 公式サイト・ダウンロード</li>
+        <li><a href="https://github.com/nexu-io/open-design/blob/main/docs/architecture.md" target="_blank" rel="noopener">docs/architecture.md</a> — トポロジとデータフロー</li>
+        <li><a href="https://github.com/nexu-io/open-design/blob/main/docs/plugins-spec.md" target="_blank" rel="noopener">docs/plugins-spec.md</a> — プラグイン仕様</li>
+        <li><a href="https://github.com/VoltAgent/awesome-design-md" target="_blank" rel="noopener">VoltAgent/awesome-design-md</a> — 同梱 Design Systems の源流</li>
+        <li><a href="https://github.com/op7418/guizang-ppt-skill" target="_blank" rel="noopener">op7418/guizang-ppt-skill</a> — Deck mode の中核 Skill</li>
+        <li><a href="https://github.com/OpenCoworkAI/open-codesign" target="_blank" rel="noopener">OpenCoworkAI/open-codesign</a> — iframe preview と artifact loop の参照</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

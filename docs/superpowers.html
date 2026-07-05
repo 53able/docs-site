@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Superpowers — コーディングエージェント向け開発ワークフロー</title>
-  <meta name="description" content="Claude Code / Cursor / Codex 等のコーディングエージェント向けのスキルベース開発ワークフロー。brainstorming、TDD、プラン実行、コードレビューまで一貫したプロセスを提供。">
+  <title>Superpowers — マルチプラットフォーム開発ワークフロー</title>
+  <meta name="description" content="Claude Code、Cursor、Codex、Factory Droid、OpenCode、Gemini CLI、GitHub Copilot CLI 向けのスキルベース開発ワークフロー。v5.1.0 時点の worktree 検出、code review 統合、AI 向け貢献ガイドを整理。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Superpowers — コーディングエージェント向け開発ワークフロー">
-  <meta property="og:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。brainstorming、TDD、プラン実行、コードレビューまで一貫。">
+  <meta property="og:title" content="Superpowers — マルチプラットフォーム開発ワークフロー">
+  <meta property="og:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。v5.1.0 時点の worktree 検出、code review 統合、AI 向け貢献ガイドを整理。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/superpowers.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Superpowers — コーディングエージェント向け開発ワークフロー">
-  <meta name="twitter:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。brainstorming、TDD、プラン実行まで一貫。">
+  <meta name="twitter:title" content="Superpowers — マルチプラットフォーム開発ワークフロー">
+  <meta name="twitter:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。v5.1.0 時点の対応ハーネスと実行モデルを整理。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     /* ============ THEME (Spell UI tokens + fonts) ============ */
     :root {
@@ -43,15 +43,15 @@
       --border: oklch(0.922 0 0);
       --input: oklch(0.922 0 0);
       --ring: oklch(0.708 0 0);
-      --chart-1: oklch(0.646 0.222 41.116);
-      --chart-2: oklch(0.6 0.118 184.704);
-      --chart-3: oklch(0.398 0.07 227.392);
-      --chart-4: oklch(0.828 0.189 84.429);
-      --chart-5: oklch(0.769 0.188 70.08);
+      --chart-1: oklch(0.67 0.18 70);
+      --chart-2: oklch(0.58 0.13 150);
+      --chart-3: oklch(0.39 0.09 245);
+      --chart-4: oklch(0.72 0.14 35);
+      --chart-5: oklch(0.64 0.11 205);
       --code-bg: var(--muted);
       --code-text: #032f62;
-      --font-body: 'DM Sans', system-ui, sans-serif;
-      --font-mono: 'Fira Code', 'SF Mono', Consolas, monospace;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
       --bg: var(--background);
       --surface: var(--card);
       --surface2: var(--muted);
@@ -78,11 +78,11 @@
         --border: oklch(1 0 0 / 10%);
         --input: oklch(1 0 0 / 15%);
         --ring: oklch(0.556 0 0);
-        --chart-1: oklch(0.488 0.243 264.376);
-        --chart-2: oklch(0.696 0.17 162.48);
-        --chart-3: oklch(0.769 0.188 70.08);
-        --chart-4: oklch(0.627 0.265 303.9);
-        --chart-5: oklch(0.645 0.246 16.439);
+        --chart-1: oklch(0.78 0.16 78);
+        --chart-2: oklch(0.70 0.16 150);
+        --chart-3: oklch(0.72 0.12 245);
+        --chart-4: oklch(0.73 0.15 35);
+        --chart-5: oklch(0.72 0.13 205);
         --code-bg: #0f0f0f;
         --code-text: #9ecbff;
         --bg: var(--background);
@@ -113,6 +113,7 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
@@ -123,20 +124,20 @@
     .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
     .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
     .ve-callout strong { color: var(--foreground); font-weight: 600; }
-    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
 
     /* ============ Reset + base ============ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: var(--bg);
-      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.646 0.222 41.116 / 0.06) 0%, transparent 50%);
+      background-image: radial-gradient(ellipse at 28% 0%, oklch(0.67 0.18 70 / 0.09) 0%, transparent 52%);
       color: var(--text);
       font-family: var(--font-body);
       padding: 40px;
       min-height: 100vh;
     }
     @media (prefers-color-scheme: dark) {
-      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.488 0.243 264.376 / 0.08) 0%, transparent 50%); }
+      body { background-image: radial-gradient(ellipse at 28% 0%, oklch(0.78 0.16 78 / 0.10) 0%, transparent 52%); }
     }
 
     /* ============ Wrap + TOC ============ */
@@ -187,6 +188,16 @@
     .kpi-row .ve-kpi-card { min-width: 0; }
     @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
 
+    .platform-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.875rem; margin: 1rem 0; }
+    .platform-card { min-width: 0; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 6%); }
+    .platform-card strong { display: block; margin-bottom: 0.35rem; }
+    .platform-card small { color: var(--text-dim); line-height: 1.5; display: block; }
+    @media (max-width: 760px) { .platform-grid { grid-template-columns: 1fr; } }
+
+    .badge { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; white-space: nowrap; background: var(--muted); }
+    .badge--new { border-color: color-mix(in oklch, var(--chart-1) 55%, var(--border)); color: var(--chart-4); }
+    .badge--safe { border-color: color-mix(in oklch, var(--chart-2) 55%, var(--border)); color: var(--chart-2); }
+
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
@@ -197,33 +208,55 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
+    <a href="#updates">最新アップデート</a>
     <a href="#workflow">基本ワークフロー</a>
     <a href="#skills">スキルライブラリ</a>
     <a href="#install">インストール</a>
+    <a href="#contributing">貢献時の注意</a>
     <a href="#philosophy">哲学</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
   <h1>Superpowers</h1>
-  <p class="subtitle">Composable skills for coding agents. Your agent doesn't just jump into code — it plans, reviews, and follows a disciplined workflow.</p>
+  <p class="subtitle">Composable skills for coding agents. v5.1.0 extends the same disciplined workflow to Claude Code, Cursor, Codex, Factory Droid, OpenCode, Gemini CLI, and GitHub Copilot CLI.</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-    <p><strong>Superpowers</strong> は、コーディングエージェント（Claude Code、Cursor、Codex、OpenCode、Gemini CLI など）向けの<strong>ソフトウェア開発ワークフロー一式</strong>。組み合わせ可能な「スキル」と、エージェントがそれらを確実に使うための初期指示で構成され、コードを書く前に仕様を引き出し、設計を承認してからプランに落とし、TDD とサブエージェント駆動で実装・レビュー・マージ判断まで一貫したプロセスを提供する。</p>
+    <p><strong>Superpowers</strong> は、コーディングエージェント向けの<strong>ソフトウェア開発ワークフロー一式</strong>。組み合わせ可能な「スキル」と、エージェントがそれらを確実に使うための初期指示で構成され、コードを書く前に仕様を引き出し、設計を承認してからプランに落とし、TDD とレビューを通してマージ判断まで進める。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Skills</span><span class="ve-kpi-card__label">組み合わせ可能</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">TDD</span><span class="ve-kpi-card__label">RED-GREEN-REFACTOR</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Subagent</span><span class="ve-kpi-card__label">タスク単位実行</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Review</span><span class="ve-kpi-card__label">計画準拠チェック</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">5.1.0</span><span class="ve-kpi-card__label">最新確認版</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">8</span><span class="ve-kpi-card__label">対応ハーネス</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">14</span><span class="ve-kpi-card__label">コアスキル</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">0 deps</span><span class="ve-kpi-card__label">brainstorm server</span></div>
     </div>
-    <p>エージェントは「何か作る」と検知すると、いきなりコードを書かずに「何をしたいか」を問いかけ、仕様を固めてから設計を短いチャンクで示し、承認後に実装プランを作成する。「go」と言えばサブエージェント駆動でタスクを消化し、レビューを挟みながら進める。スキルは自動でトリガーされるため、ユーザーは特別な操作をせずにエージェントに Superpowers を持たせられる。</p>
+    <p>エージェントは「何か作る」と検知すると、いきなりコードを書かずに「何をしたいか」を問いかける。仕様を固めて短いチャンクで確認し、承認後に実装プランを作る。「go」と言えば <code>subagent-driven-development</code> または <code>executing-plans</code> に進み、タスク単位で検証しながら作業する。</p>
   </div>
 
-  <section id="workflow" class="sec-head">2 — 基本ワークフロー</section>
+  <section id="updates" class="sec-head">2 — 最新アップデート</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 6 ステップ</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> v5.1.0 の主な変更</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>領域</th><th>更新</th><th>意味</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge badge--new">v5.1.0</span></td><td><code>using-git-worktrees</code> / <code>finishing-a-development-branch</code> を書き直し</td><td>既存 worktree 内なら作成をスキップ。作成前にユーザー同意を取り、ハーネス固有の worktree ツールを優先。クリーンアップは <code>.worktrees/</code> 配下のみ。</td></tr>
+          <tr><td><span class="badge badge--new">review</span></td><td><code>superpowers:code-reviewer</code> 名前付きエージェントを削除し、<code>requesting-code-review</code> を自己完結化</td><td>ペルソナとチェックリストを <code>code-reviewer.md</code> に集約し、<code>Task (general-purpose)</code> で直接ディスパッチ。</td></tr>
+          <tr><td><span class="badge badge--new">sdd</span></td><td><code>subagent-driven-development</code> の「3 タスクごとに停止」を廃止</td><td>タスク単位または自然な区切りでレビューし、計画に沿って連続実行しやすくした。</td></tr>
+          <tr><td><span class="badge badge--safe">commands</span></td><td>レガシー slash コマンド <code>/brainstorm</code>、<code>/execute-plan</code>、<code>/write-plan</code> を削除</td><td>対応スキル（<code>superpowers:brainstorming</code> など）を直接呼び出す前提へ。</td></tr>
+          <tr><td><span class="badge badge--safe">contrib</span></td><td><code>CLAUDE.md</code> / <code>AGENTS.md</code> に AI エージェント向け貢献ガイドを追加</td><td>PR テンプレート確認、重複検索、実在する問題の検証、完全 diff の人間承認を必須化。</td></tr>
+          <tr><td><span class="badge badge--safe">install</span></td><td>Factory Droid のインストール手順を README に追加</td><td>8 ハーネス目として marketplace 登録と plugin install を明記。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="workflow" class="sec-head">3 — 基本ワークフロー</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 7 ステップ</span>
     <p>エージェントはタスクの前に必ず関連スキルを確認する。推奨ではなく必須のワークフローとして組み込まれる。</p>
     <div class="ve-table-wrap">
       <table>
@@ -231,19 +264,19 @@
           <tr><th>順</th><th>スキル</th><th>役割</th></tr>
         </thead>
         <tbody>
-          <tr><td>1</td><td><code>brainstorming</code></td><td>コードを書く前に発動。曖昧なアイデアを問いで整理し、設計をセクションごとに示して承認を得る。設計ドキュメントを保存。</td></tr>
+          <tr><td>1</td><td><code>brainstorming</code></td><td>コードを書く前に発動。曖昧なアイデアを問いで整理し、設計をセクションごとに示して承認を得る。仕様は inline self-review でプレースホルダ、矛盾、曖昧さを点検。</td></tr>
           <tr><td>2</td><td><code>using-git-worktrees</code></td><td>設計承認後に発動。分離したワークスペースで新ブランチを作成し、セットアップとクリーンなテストベースを確認。</td></tr>
-          <tr><td>3</td><td><code>writing-plans</code></td><td>承認された設計に基づき、2〜5 分で完了するタスクに分解。各タスクにファイルパス・完全なコード・検証手順を記載。</td></tr>
-          <tr><td>4</td><td><code>subagent-driven-development</code> / <code>executing-plans</code></td><td>プランに従い、タスクごとにサブエージェントを起動。二段階レビュー（仕様準拠 → コード品質）またはバッチ実行＋人間チェックポイント。</td></tr>
+          <tr><td>3</td><td><code>writing-plans</code></td><td>承認された設計に基づき、2〜5 分で完了するタスクに分解。各タスクにファイルパス・完全なコード・検証手順を記載し、プラン自体も自己点検。</td></tr>
+          <tr><td>4</td><td><code>subagent-driven-development</code> / <code>executing-plans</code></td><td>実行方式を選ぶ。推奨は fresh subagent per task でタスク間を連続実行（v5.1.0 で 3 タスクごとの強制停止を廃止）。代替は同一セッションでのバッチ実行＋人間チェックポイント。</td></tr>
           <tr><td>5</td><td><code>test-driven-development</code></td><td>実装中に発動。RED-GREEN-REFACTOR を強制。失敗テストを書き、落ちることを確認し、最小コードで通す。テストより前に書いたコードは削除。</td></tr>
-          <tr><td>6</td><td><code>requesting-code-review</code></td><td>タスク間で発動。プランとの整合性をレビューし、深刻度別に報告。クリティカルな問題は進行をブロック。</td></tr>
+          <tr><td>6</td><td><code>requesting-code-review</code></td><td>タスク間で発動。<code>code-reviewer.md</code> テンプレートで <code>Task (general-purpose)</code> をディスパッチし、プランとの整合性を深刻度別に報告。クリティカルな問題は進行をブロック。</td></tr>
           <tr><td>7</td><td><code>finishing-a-development-branch</code></td><td>タスク完了時に発動。テスト確認後、マージ / PR / 維持 / 破棄の選択肢を提示し、ワークツリーを整理。</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <section id="skills" class="sec-head">3 — スキルライブラリ</section>
+  <section id="skills" class="sec-head">4 — スキルライブラリ</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ別一覧</span>
     <div class="ve-table-wrap">
@@ -263,7 +296,7 @@
           <tr><td>Collaboration</td><td><code>receiving-code-review</code></td><td>フィードバックへの対応</td></tr>
           <tr><td>Collaboration</td><td><code>using-git-worktrees</code></td><td>分離ブランチでの並行開発</td></tr>
           <tr><td>Collaboration</td><td><code>finishing-a-development-branch</code></td><td>マージ / PR 判断ワークフロー</td></tr>
-          <tr><td>Collaboration</td><td><code>subagent-driven-development</code></td><td>二段階レビュー付きの高速イテレーション</td></tr>
+          <tr><td>Collaboration</td><td><code>subagent-driven-development</code></td><td>二段階レビュー（spec → code quality）付きの連続イテレーション</td></tr>
           <tr><td>Meta</td><td><code>writing-skills</code></td><td>ベストプラクティスに沿った新規スキル作成（テスト手法含む）</td></tr>
           <tr><td>Meta</td><td><code>using-superpowers</code></td><td>スキルシステムの導入</td></tr>
         </tbody>
@@ -271,10 +304,19 @@
     </div>
   </div>
 
-  <section id="install" class="sec-head">4 — インストール</section>
+  <section id="install" class="sec-head">5 — インストール</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> プラットフォーム別</span>
-    <p>Claude Code / Cursor はプラグイン市場から、Codex / OpenCode は手動セットアップ。各環境でインストール後、新セッションで「この機能を計画して」などスキルが発動するような依頼をすると、エージェントが該当スキルを自動で読み込む。</p>
+    <p>v5.1.0 時点では、Claude Code、Cursor、OpenAI Codex CLI/App、Factory Droid、OpenCode、GitHub Copilot CLI、Gemini CLI に導線がある。ハーネスごとに別途インストールが必要。各環境で導入後、新セッションで「この機能を計画して」などスキルが発動しそうな依頼をすると、エージェントが該当スキルを読み込む。</p>
+    <div class="platform-grid">
+      <div class="platform-card"><strong>Claude Code</strong><small>公式プラグイン市場、または Superpowers Marketplace から導入。</small></div>
+      <div class="platform-card"><strong>Cursor</strong><small>プラグイン市場で <code>superpowers</code> を検索。Windows では SessionStart hook が <code>run-hook.cmd</code> 経由。</small></div>
+      <div class="platform-card"><strong>Codex</strong><small>CLI は <code>/plugins</code> から、App は sidebar の Plugins から導入。</small></div>
+      <div class="platform-card"><strong>Factory Droid</strong><small>marketplace 登録と plugin install で導入（v5.1.0 で README に手順追加）。</small></div>
+      <div class="platform-card"><strong>OpenCode</strong><small>bootstrap 内容をセッション中キャッシュ。詳細は <code>.opencode/INSTALL.md</code>。</small></div>
+      <div class="platform-card"><strong>Copilot CLI</strong><small>Marketplace 登録と install コマンドで導入。SessionStart で bootstrap を注入。</small></div>
+      <div class="platform-card"><strong>Gemini CLI</strong><small>extension と <code>GEMINI.md</code> で tool mapping。Task は <code>@agent-name</code> にマップ。</small></div>
+    </div>
     <h3>Claude Code（公式マーケットプレース）</h3>
     <div class="ve-code-block">
       <pre><code>/plugin install superpowers@claude-plugins-official</code></pre>
@@ -286,16 +328,29 @@
     </div>
     <h3>Cursor</h3>
     <p>Agent チャットでプラグイン市場から <code>/add-plugin superpowers</code> または「superpowers」で検索。</p>
-    <h3>Codex</h3>
+    <h3>OpenAI Codex CLI</h3>
     <div class="ve-code-block">
-      <pre><code>Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.codex/INSTALL.md</code></pre>
+      <pre><code>/plugins
+superpowers
+# Select: Install Plugin</code></pre>
     </div>
-    <p>詳細: <a href="https://github.com/obra/superpowers/blob/main/docs/README.codex.md" target="_blank" rel="noopener">docs/README.codex.md</a></p>
+    <h3>OpenAI Codex App</h3>
+    <p>Codex app の sidebar で Plugins を開き、Coding セクションにある <code>Superpowers</code> の <code>+</code> をクリックして案内に従う。</p>
+    <h3>Factory Droid</h3>
+    <div class="ve-code-block">
+      <pre><code>droid plugin marketplace add https://github.com/obra/superpowers
+droid plugin install superpowers@superpowers</code></pre>
+    </div>
     <h3>OpenCode</h3>
     <div class="ve-code-block">
       <pre><code>Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.opencode/INSTALL.md</code></pre>
     </div>
     <p>詳細: <a href="https://github.com/obra/superpowers/blob/main/docs/README.opencode.md" target="_blank" rel="noopener">docs/README.opencode.md</a></p>
+    <h3>GitHub Copilot CLI</h3>
+    <div class="ve-code-block">
+      <pre><code>copilot plugin marketplace add obra/superpowers-marketplace
+copilot plugin install superpowers@superpowers-marketplace</code></pre>
+    </div>
     <h3>Gemini CLI</h3>
     <div class="ve-code-block">
       <pre><code>gemini extensions install https://github.com/obra/superpowers
@@ -306,7 +361,31 @@ gemini extensions update superpowers   # 更新時</code></pre>
     </div>
   </div>
 
-  <section id="philosophy" class="sec-head">5 — 哲学</section>
+  <section id="contributing" class="sec-head">6 — 貢献時の注意</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> AI agent 向けの安全柵</span>
+    <p>Superpowers 本体への PR は厳しく審査される。直近 100 件の closed PR を監査したところ、却下率は約 94%。スキル本文は「文章」ではなく、エージェントの行動を変える実行可能なプロンプト資産として扱われる。</p>
+    <div class="ve-callout">
+      <strong>PR 前の必須チェック（v5.1.0）:</strong> PR テンプレート全項目を具体的内容で埋める。open/closed 両方で重複 PR を検索する。実在する問題か検証する。core に属する変更か判断する。モデル・ハーネス・プラグインを開示する。完全 diff を人間パートナーに見せて明示承認を得る。ターゲットブランチは <code>dev</code>（<code>main</code> ではない）。
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>避ける変更</th><th>理由</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ドメイン特化・プロジェクト特化のスキル</td><td>core は汎用スキルの場所。特定領域向けは standalone plugin が適切。</td></tr>
+          <tr><td>評価なしのスキル文面リライト</td><td>Red Flags などの語彙は挙動調整済み。改善には before/after eval が必要。</td></tr>
+          <tr><td>架空の問題や理論上の修正</td><td>実際のセッション、エラー、ユーザー体験に基づかない PR は却下されやすい。</td></tr>
+          <tr><td>複数の無関係な修正を束ねる</td><td>1 PR 1 problem。まとめた変更はレビュー不能になりやすい。</td></tr>
+          <tr><td>第三者依存の追加</td><td>新ハーネス対応を除き zero-dependency 方針。外部ツール依存は別プラグインへ。</td></tr>
+          <tr><td>新ハーネス PR にセッション transcript なし</td><td>「Let's make a react todo list」で <code>brainstorming</code> が自動発火する end-to-end 証拠が必要。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="philosophy" class="sec-head">7 — 哲学</section>
   <div class="ve-card ve-card--recessed" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 設計思想</span>
     <ul>
@@ -317,7 +396,7 @@ gemini extensions update superpowers   # 更新時</code></pre>
     </ul>
   </div>
 
-  <section id="links" class="sec-head">6 — 参考リンク</section>
+  <section id="links" class="sec-head">8 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
     <ul>
@@ -325,6 +404,8 @@ gemini extensions update superpowers   # 更新時</code></pre>
       <li><a href="https://github.com/obra/superpowers-marketplace" target="_blank" rel="noopener">Superpowers Marketplace</a> — プラグイン用マーケットプレース</li>
       <li><a href="https://claude.com/plugins/superpowers" target="_blank" rel="noopener">Claude 公式プラグイン: Superpowers</a></li>
       <li><a href="https://blog.fsck.com/2025/10/09/superpowers/" target="_blank" rel="noopener">Superpowers for Claude Code</a> — 作者ブログ記事</li>
+      <li><a href="https://primeradiant.com/superpowers/" target="_blank" rel="noopener">Release announcements</a> — 新バージョン通知</li>
+      <li><a href="https://discord.gg/35wsABTejz" target="_blank" rel="noopener">Discord</a> — コミュニティサポート</li>
       <li><a href="https://github.com/sponsors/obra" target="_blank" rel="noopener">Sponsor (Jesse/obra)</a></li>
     </ul>
   </div>

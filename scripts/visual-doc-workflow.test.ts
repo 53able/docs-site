@@ -1,0 +1,307 @@
+/**
+ * Usage:
+ *   npm run test:workflow
+ */
+
+import { spawnSync } from "node:child_process";
+import { describe, expect, it } from "vitest";
+
+import {
+  basenameFromUrl,
+  boundedSlug,
+  branchFromOriginHeadRef,
+  buildRunbook,
+  collectCliArgs,
+  collectInteractiveArgs,
+  evaluateReviewGate,
+  gitChangedNames,
+  hasHeadMeta,
+  listDocumentChoices,
+  matchesScope,
+  normalizeDocPath,
+  parseArgs,
+  pathFromStatusLine,
+  resolveSourcePath,
+  slugify,
+} from "./visual-doc-workflow.ts";
+
+describe("visual-doc-workflow pure helpers", () => {
+  it("parses command options", () => {
+    expect(parseArgs(["prepare", "--url", "https://github.com/example/demo.git", "--name", "demo-doc"])).toEqual({
+      command: "prepare",
+      options: {
+        url: "https://github.com/example/demo.git",
+        name: "demo-doc",
+      },
+    });
+  });
+
+  it("prompts for validate doc when command args omit options", async () => {
+    const parsed = await collectCliArgs(["validate"], async () => ({
+      doc: "system-design-primer",
+    }));
+
+    expect(parsed).toEqual({
+      command: "validate",
+      options: {
+        doc: "system-design-primer",
+      },
+    });
+  });
+
+  it("builds autocomplete choices for visual documentation pages", async () => {
+    await expect(listDocumentChoices()).resolves.toContainEqual({
+      title: "system-design-primer",
+      value: "system-design-primer",
+      description: "docs/system-design-primer.html",
+    });
+  });
+
+  it("prompts for prepare source when command args omit source options", async () => {
+    const answers = [
+      {
+        sourceMode: "source",
+      },
+      {
+        doc: "",
+        source: "system-design-primer",
+      },
+    ];
+    const parsed = await collectCliArgs(["prepare"], async () => answers.shift() ?? {});
+
+    expect(parsed).toEqual({
+      command: "prepare",
+      options: {
+        source: "system-design-primer",
+      },
+    });
+  });
+
+  it("collects validate options from interactive answers", async () => {
+    const parsed = await collectInteractiveArgs(async () => ({
+      doc: "system-design-primer",
+      mode: "validate",
+    }));
+
+    expect(parsed).toEqual({
+      command: "validate",
+      options: {
+        doc: "system-design-primer",
+      },
+    });
+  });
+
+  it("collects prepare source options from interactive answers", async () => {
+    const parsed = await collectInteractiveArgs(async () => ({
+      doc: "",
+      mode: "prepare",
+      source: "system-design-primer",
+      sourceMode: "source",
+    }));
+
+    expect(parsed).toEqual({
+      command: "prepare",
+      options: {
+        source: "system-design-primer",
+      },
+    });
+  });
+
+  it("extracts clone names from HTTPS and SSH URLs", () => {
+    expect(basenameFromUrl("https://github.com/example/system-design-primer.git")).toBe("system-design-primer");
+    expect(basenameFromUrl("git@github.com:example/system-design-primer.git")).toBe("system-design-primer");
+  });
+
+  it("normalizes documentation input forms to docs/*.html", () => {
+    expect({
+      slug: normalizeDocPath("system-design").slug,
+      relativePath: normalizeDocPath("system-design").relativePath,
+    }).toEqual({
+      slug: "system-design",
+      relativePath: "docs/system-design.html",
+    });
+    expect(normalizeDocPath("system-design.html").relativePath).toBe("docs/system-design.html");
+    expect(normalizeDocPath("docs/system-design.html").relativePath).toBe("docs/system-design.html");
+  });
+
+  it("rejects documentation paths outside docs root", () => {
+    expect(() => normalizeDocPath("../index")).toThrow(/directly under docs/u);
+    expect(() => normalizeDocPath("docs/../index")).toThrow(/directly under docs/u);
+    expect(() => normalizeDocPath("nested/system-design")).toThrow(/directly under docs/u);
+  });
+
+  it("creates bounded slugs and allows explicit overrides", () => {
+    expect(slugify("Next AI Draw IO")).toBe("next-ai-draw-io");
+    expect(boundedSlug("one-two-three-four-five")).toBe("one-two-three-four");
+    expect(boundedSlug("one-two-three-four-five", "better-name")).toBe("better-name");
+  });
+
+  it("resolves source paths under repos", () => {
+    expect(resolveSourcePath({ source: "system-design-primer" }).relativePath).toBe("repos/system-design-primer");
+    expect(resolveSourcePath({ source: "repos/system-design-primer" }).relativePath).toBe("repos/system-design-primer");
+  });
+
+  it("matches review scope files", () => {
+    expect(matchesScope("docs/system-design.html", "docs/system-design.html")).toBe(true);
+    expect(matchesScope("index.html", "docs/system-design.html")).toBe(true);
+    expect(matchesScope("CONTEXT.md", "docs/system-design.html")).toBe(true);
+    expect(matchesScope(".gitignore", "docs/system-design.html")).toBe(true);
+    expect(matchesScope("package.json", "docs/system-design.html")).toBe(true);
+    expect(matchesScope("package-lock.json", "docs/system-design.html")).toBe(true);
+    expect(matchesScope("tsconfig.json", "docs/system-design.html")).toBe(true);
+    expect(matchesScope("vitest.config.ts", "docs/system-design.html")).toBe(true);
+    expect(matchesScope("docs/adr/0001-workflow-cli-coordinates.md", "docs/system-design.html")).toBe(true);
+    expect(matchesScope("docs/design-docs/visual-doc-workflow.md", "docs/system-design.html")).toBe(true);
+    expect(matchesScope("scripts/visual-doc-workflow.ts", "docs/system-design.html")).toBe(true);
+    expect(matchesScope("README.md", "docs/system-design.html")).toBe(false);
+    expect(matchesScope("docs/pi-mono.html", "docs/pi.html")).toBe(true);
+    expect(matchesScope("docs/pi-mono.html", "docs/system-design.html")).toBe(false);
+    expect(matchesScope("docs/llmfit.html", "docs/alexs-jones-llmfit.html")).toBe(true);
+    expect(matchesScope("docs/llmfit.html", "docs/pi.html")).toBe(false);
+  });
+
+  it("evaluates review gate findings through an injected environment", async () => {
+    const doc = normalizeDocPath("system-design");
+    const findings = await evaluateReviewGate(doc, {
+      changedNames: () => ["repos/system-design-primer/README.md", "README.md"],
+      exists: (absolutePath) => absolutePath.endsWith("docs/system-design.html"),
+      readText: async (absolutePath) =>
+        absolutePath.endsWith("index.html")
+          ? "<!doctype html><a href=\"docs/other.html\">Other</a>"
+          : "<!doctype html><html><head><meta property=\"og:title\" content=\"Title\"></head><body></body></html>",
+      validatePublicPaths: () => ({
+        ok: false,
+        message: "Public path validation failed.",
+        details: {
+          stderr: "local path leak",
+        },
+      }),
+    });
+
+    expect(findings.map((finding) => finding.code)).toEqual([
+      "missing-index-link",
+      "missing-head-meta",
+      "public-path-leak",
+      "source-in-git-status",
+      "out-of-scope-diff",
+    ]);
+  });
+
+  it("reports missing public path support scripts as infrastructure failures", async () => {
+    const doc = normalizeDocPath("system-design");
+    const findings = await evaluateReviewGate(doc, {
+      changedNames: () => [],
+      exists: (absolutePath) => absolutePath.endsWith("docs/system-design.html"),
+      readText: async (absolutePath) =>
+        absolutePath.endsWith("index.html")
+          ? "<!doctype html><a href=\"docs/system-design.html\">System Design</a>"
+          : `<!doctype html>
+<html>
+<head>
+  <meta property="og:title" content="Title">
+  <meta property="og:url" content="https://example.com">
+  <meta property="og:description" content="Description">
+  <meta name="twitter:card" content="summary">
+</head>
+<body></body>
+</html>`,
+      validatePublicPaths: () => ({
+        ok: false,
+        message: "Workflow support script not found.",
+        details: {
+          script: ".cursor/skills/docs-site-add-visual-doc/scripts/validate-public-paths.sh",
+        },
+      }),
+    });
+
+    expect(findings).toEqual([
+      {
+        code: "public-path-check-failed",
+        details: ".cursor/skills/docs-site-add-visual-doc/scripts/validate-public-paths.sh",
+        message: "Workflow support script not found.",
+      },
+    ]);
+  });
+
+  it("parses changed paths from git status output", () => {
+    expect(pathFromStatusLine(" M scripts/visual-doc-workflow.ts")).toBe("scripts/visual-doc-workflow.ts");
+    expect(pathFromStatusLine("?? README.md")).toBe("README.md");
+    expect(pathFromStatusLine("R  old.md -> docs/new.md")).toBe("docs/new.md");
+  });
+
+  it("checks required meta tags inside head only", () => {
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta property="og:title" content="Title">
+  <meta property="og:url" content="https://example.com">
+  <meta property="og:description" content="Description">
+  <meta name="twitter:card" content="summary">
+</head>
+<body>missing-marker</body>
+</html>`;
+    const bodyOnly = `<!doctype html><html><head></head><body>og:title twitter:card</body></html>`;
+
+    expect(hasHeadMeta(html, "og:title")).toBe(true);
+    expect(hasHeadMeta(html, "og:url")).toBe(true);
+    expect(hasHeadMeta(html, "og:description")).toBe(true);
+    expect(hasHeadMeta(html, "twitter:card")).toBe(true);
+    expect(hasHeadMeta(bodyOnly, "og:title")).toBe(false);
+    expect(hasHeadMeta(bodyOnly, "twitter:card")).toBe(false);
+  });
+
+  it("extracts branch names from origin head refs", () => {
+    expect(branchFromOriginHeadRef("origin/main")).toBe("main");
+    expect(branchFromOriginHeadRef("origin/master")).toBe("master");
+  });
+
+  it("builds a runbook with the authoring handoff", () => {
+    const runbook = buildRunbook({
+      source: {
+        absolutePath: "/workspace/repos/system-design-primer",
+        relativePath: "repos/system-design-primer",
+        cloneName: "system-design-primer",
+        acquiredBy: "origin-sync",
+        syncBranch: "main",
+      },
+      doc: {
+        slug: "system-design-primer",
+        relativePath: "docs/system-design-primer.html",
+      },
+      inventory: "=== SCAN: repos/system-design-primer ===",
+    });
+
+    expect(runbook).toMatch(/Source Repository: `repos\/system-design-primer`/u);
+    expect(runbook).toMatch(/Visual Documentation Page: `docs\/system-design-primer.html`/u);
+    expect(runbook).toMatch(/## Authoring Handoff/u);
+    expect(runbook).toMatch(/npx tsx scripts\/visual-doc-workflow.ts validate --doc system-design-primer/u);
+    expect(runbook).toMatch(/- `\.gitignore`/u);
+    expect(runbook).toMatch(/- `package\.json`/u);
+    expect(runbook).toMatch(/- `package-lock\.json`/u);
+    expect(runbook).toMatch(/- `tsconfig\.json`/u);
+    expect(runbook).toMatch(/- `vitest\.config\.ts`/u);
+  });
+
+  it("runs validate through tsx and emits stable JSON", () => {
+    if (gitChangedNames().length > 0) {
+      return;
+    }
+
+    const result = spawnSync("npx", ["tsx", "scripts/visual-doc-workflow.ts", "validate", "--doc", "pi"], {
+      encoding: "utf8",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/"ok": true/u);
+    expect(result.stdout).toMatch(/"doc": "docs\/pi.html"/u);
+  });
+
+  it("rejects invalid doc paths through tsx", () => {
+    const result = spawnSync("npx", ["tsx", "scripts/visual-doc-workflow.ts", "validate", "--doc", "../index"], {
+      encoding: "utf8",
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/directly under docs/u);
+  });
+});

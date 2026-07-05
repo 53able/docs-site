@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Context — 意味検索でコードベースをエージェントのコンテキストへ</title>
+  <meta name="description" content="zilliztech/claude-context は MCP サーバーと core ライブラリで、リポジトリをベクトル化し Claude Code などのエージェントに意味検索コンテキストを渡すモノレポ。構成・データの流れ・導入手順を整理する。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Claude Context — 意味検索でコードベースをエージェントのコンテキストへ">
+  <meta property="og:description" content="MCP、@zilliz/claude-context-core、IDE 拡張でコードをインデックスし、セマンティック検索でエージェントへ供給する Claude Context の技術概要。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/claude-context.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Claude Context — 意味検索でコードベースをエージェントのコンテキストへ">
+  <meta name="twitter:description" content="ベクトルDB、埋め込み、同期、MCP ツールの流れを一枚で把握できる解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Azeret+Mono:ital,wght@0,400;0,500;0,600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    /* ============ THEME (Spell UI + emerald / slate) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.012 195);
+      --foreground: oklch(0.2 0.04 220);
+      --card: oklch(0.997 0.006 195);
+      --card-foreground: oklch(0.2 0.04 220);
+      --popover: oklch(0.997 0.006 195);
+      --popover-foreground: oklch(0.2 0.04 220);
+      --primary: oklch(0.32 0.09 195);
+      --primary-foreground: oklch(0.98 0.01 195);
+      --secondary: oklch(0.94 0.02 195);
+      --secondary-foreground: oklch(0.24 0.05 220);
+      --muted: oklch(0.93 0.018 195);
+      --muted-foreground: oklch(0.44 0.04 220);
+      --accent: oklch(0.92 0.03 175);
+      --accent-foreground: oklch(0.22 0.06 200);
+      --destructive: oklch(0.52 0.18 25);
+      --border: oklch(0.84 0.03 195);
+      --input: oklch(0.84 0.03 195);
+      --ring: oklch(0.42 0.11 175);
+      --chart-1: oklch(0.42 0.11 175);
+      --chart-2: oklch(0.62 0.14 72);
+      --chart-3: oklch(0.48 0.09 200);
+      --chart-4: oklch(0.55 0.1 150);
+      --chart-5: oklch(0.4 0.08 260);
+      --code-bg: oklch(0.16 0.04 220);
+      --code-text: oklch(0.9 0.04 185);
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.035 220);
+        --foreground: oklch(0.94 0.02 185);
+        --card: oklch(0.19 0.04 220);
+        --card-foreground: oklch(0.94 0.02 185);
+        --popover: oklch(0.19 0.04 220);
+        --popover-foreground: oklch(0.94 0.02 185);
+        --primary: oklch(0.78 0.12 175);
+        --primary-foreground: oklch(0.14 0.035 220);
+        --secondary: oklch(0.24 0.04 220);
+        --secondary-foreground: oklch(0.94 0.02 185);
+        --muted: oklch(0.26 0.04 220);
+        --muted-foreground: oklch(0.72 0.03 185);
+        --accent: oklch(0.24 0.045 220);
+        --accent-foreground: oklch(0.94 0.02 185);
+        --destructive: oklch(0.65 0.16 25);
+        --border: oklch(0.42 0.05 220 / 55%);
+        --input: oklch(0.42 0.05 220 / 55%);
+        --ring: oklch(0.72 0.12 175);
+        --chart-1: oklch(0.72 0.12 175);
+        --chart-2: oklch(0.74 0.14 85);
+        --chart-3: oklch(0.65 0.1 200);
+        --chart-4: oklch(0.68 0.11 150);
+        --chart-5: oklch(0.62 0.08 260);
+        --code-bg: oklch(0.11 0.035 220);
+        --code-text: oklch(0.88 0.04 185);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 12px 28px rgba(12, 46, 42, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(12, 46, 42, 0.06); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+      box-shadow: 0 20px 44px rgba(12, 46, 42, 0.1);
+      border-color: color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+        box-shadow: 0 20px 44px rgba(0, 0, 0, 0.28);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.95rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.72; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.875rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 68%, var(--card) 32%); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(12, 46, 42, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.05rem; line-height: 1.2; color: var(--foreground); }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.65; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.75rem; background: color-mix(in oklch, var(--chart-2) 14%, transparent); color: var(--foreground); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(90deg, color-mix(in oklch, var(--border) 32%, transparent) 1px, transparent 1px),
+        linear-gradient(180deg, color-mix(in oklch, var(--border) 26%, transparent) 1px, transparent 1px),
+        radial-gradient(ellipse at 12% 0%, color-mix(in oklch, var(--chart-1) 12%, transparent) 0%, transparent 42%),
+        radial-gradient(ellipse at 88% 8%, color-mix(in oklch, var(--chart-2) 10%, transparent) 0%, transparent 38%);
+      background-size: 28px 28px, 28px 28px, auto, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 700; letter-spacing: -0.04em; line-height: 1.05; margin-bottom: 0.85rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.875rem; margin-bottom: 2rem; line-height: 1.55; max-width: 52rem; }
+    .sec-head { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.04em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h2, h3 { font-weight: 600; letter-spacing: -0.02em; }
+    h3 { font-size: 1.2rem; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 1.02rem; line-height: 1.72; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.35rem; }
+    li { margin-bottom: 0.4rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    small { color: var(--muted-foreground); font-size: 0.8rem; line-height: 1.5; }
+    strong { font-weight: 600; }
+
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr); gap: 1rem; align-items: stretch; margin-bottom: 1.25rem; }
+    .hero-copy { padding: 2rem; }
+    .hero-copy p { font-size: 1.08rem; }
+    .stack-sheet {
+      min-height: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(165deg, color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%), var(--card));
+      padding: 1.35rem;
+      display: grid;
+      gap: 0.65rem;
+      align-content: start;
+    }
+    .stack-line { min-height: 36px; border-radius: var(--radius-md); border: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 70%, var(--card) 30%); padding: 0.65rem 0.75rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted-foreground); }
+    .stack-line strong { color: var(--foreground); font-weight: 700; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .pkg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .pkg-card { min-width: 0; border-top: 3px solid var(--chart-1); }
+    .pkg-card:nth-child(2) { border-top-color: var(--chart-2); }
+    .pkg-card:nth-child(3) { border-top-color: var(--chart-3); }
+    .pkg-card:nth-child(4) { border-top-color: var(--chart-4); }
+    .pkg-title { font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; margin-bottom: 0.45rem; }
+    .pkg-body { color: var(--muted-foreground); font-size: 0.92rem; line-height: 1.58; margin: 0; }
+    .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; padding: 1rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+    .mermaid-wrap svg { max-width: 100%; }
+    .code-label { border-bottom: 1px solid color-mix(in oklch, var(--border) 70%, transparent); color: var(--muted-foreground); font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; padding: 0.7rem 1rem 0.5rem; text-transform: uppercase; }
+    @media (max-width: 900px) {
+      .hero-grid, .pkg-grid { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .kpi-row { grid-template-columns: 1fr; }
+      .hero-copy { padding: 1.35rem; }
+    }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">モノレポ構成</a>
+    <a href="#pipeline">データの流れ</a>
+    <a href="#mcp-setup">MCP セットアップ</a>
+    <a href="#packages">パッケージと役割</a>
+    <a href="#clients">クライアント対応</a>
+    <a href="#references">参照</a>
+  </nav>
+
+  <div class="main">
+    <h1>Claude Context</h1>
+    <p class="subtitle">zilliztech/claude-context — コードベースをベクトル化し、MCP 経由で意味検索コンテキストをコーディングエージェントへ渡す OSS</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="hero-grid">
+      <div class="ve-card ve-card--hero hero-copy" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 何を解決するか</span>
+        <p><strong>Claude Context</strong> は、巨大リポジトリでも「関連コードだけ」をセマンティック検索で取り出し、Claude Code やその他の MCP 対応エージェントのコンテキストに載せるための仕組みだ。</p>
+        <p>ディレクトリ丸ごと読み込む代わりに、<strong>分割・埋め込み・ベクトルストア</strong>に載せたあと、クエリに近いチャンクだけを返す。コストとトークンを抑えつつ、発見性を上げるのが狙い。</p>
+      </div>
+      <div class="stack-sheet" style="--i:1">
+        <div class="stack-line"><strong>Model Context Protocol</strong><br>エージェントと外部ツールの標準接続</div>
+        <div class="stack-line"><strong>Milvus / Zilliz Cloud</strong><br>スケーラブルなベクトル検索バックエンド</div>
+        <div class="stack-line"><strong>Embeddings</strong><br>OpenAI・Voyage・Ollama など複数プロバイダ</div>
+        <div class="stack-line"><strong>IDE / ブラウザ</strong><br>VS Code 拡張と Chrome 拡張で補助 UI</div>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MCP</span><span class="ve-kpi-card__label">@zilliz/claude-context-mcp</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">core</span><span class="ve-kpi-card__label">@zilliz/claude-context-core</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">pnpm</span><span class="ve-kpi-card__label">workspace モノレポ</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node 20+</span><span class="ve-kpi-card__label">ランタイム要件</span></div>
+    </div>
+
+    <section id="architecture" class="sec-head">2 — モノレポ構成</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> レイヤー</span>
+      <p>公式リポジトリは <code>packages/</code> 配下にコアロジックと配布物を分けたモノレポ。<code>evaluation/</code> で検索品質の実験、<code>examples/</code> で最小利用例、<code>docs/</code> で詳細ドキュメントが置かれている。</p>
+      <div class="pkg-grid">
+        <div class="ve-card ve-card--recessed pkg-card" style="--i:1">
+          <div class="pkg-title">packages/core</div>
+          <p class="pkg-body">AST ベースの分割、同期（Merkle 等）、埋め込み抽象、Milvus REST / SDK クライアント。エージェントに依存しない中核。</p>
+        </div>
+        <div class="ve-card ve-card--recessed pkg-card" style="--i:2">
+          <div class="pkg-title">packages/mcp</div>
+          <p class="pkg-body">MCP サーバー実装。スナップショット取得・検索ツールをエージェントへ公開。Node で <code>npx</code> 実行が前提の導線。</p>
+        </div>
+        <div class="ve-card ve-card--recessed pkg-card" style="--i:3">
+          <div class="pkg-title">packages/vscode-extension</div>
+          <p class="pkg-body">エディタ内の意味検索 UI とコマンド。Marketplace からインストール可能な製品版の入り口。</p>
+        </div>
+        <div class="ve-card ve-card--recessed pkg-card" style="--i:4">
+          <div class="pkg-title">packages/chrome-extension</div>
+          <p class="pkg-body">ブラウザ側の補助（GitHub 上のコード閲覧など）とストレージ連携。開発用スタブでオフライン検証も可能。</p>
+        </div>
+      </div>
+    </div>
+
+    <section id="pipeline" class="sec-head">3 — データの流れ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> インデックスから検索まで</span>
+      <p>ローカルのワークスペースや指定パスを走査し、無視パターンでファイルを落としたうえでチャンク化する。各チャンクを埋め込みモデルへ通し、ベクトル DB に upsert。エージェントがクエリを投げると近傍検索でチャンクとメタデータが返る。</p>
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+flowchart LR
+  subgraph ingest["取り込み"]
+    A["ソースツリー"] --> B["分割・フィルタ"]
+    B --> C["Embedding API"]
+    C --> D[("Milvus / Zilliz")]
+  end
+  subgraph serve["配信"]
+    D --> E["MCP ツール"]
+    E --> F["コーディングエージェント"]
+  end
+        </div>
+      </div>
+      <div class="ve-callout">
+        <strong>非同期インデックス</strong> — 大規模リポジトリではバックグラウンド同期や増分更新の設計が重要。公式の <code>docs/dive-deep/</code> にワークフローとファイル包含ルールの詳細がある。
+      </div>
+    </div>
+
+    <section id="mcp-setup" class="sec-head">4 — MCP セットアップ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Claude Code 向けの典型例</span>
+      <p>ベクトル DB のエンドポイントとトークン、埋め込み用の API キーを環境変数で渡し、<code>npx</code> で MCP パッケージを起動する。値はプレースホルダに置き換えて使うこと。</p>
+      <div class="ve-code-block">
+        <div class="code-label">claude mcp add</div>
+        <pre><code>claude mcp add claude-context \
+  -e OPENAI_API_KEY=sk-your-openai-api-key \
+  -e MILVUS_ADDRESS=your-zilliz-cloud-public-endpoint \
+  -e MILVUS_TOKEN=your-zilliz-cloud-api-key \
+  -- npx @zilliz/claude-context-mcp@latest</code></pre>
+      </div>
+      <p><small>詳細は <a href="https://docs.anthropic.com/en/docs/claude-code/mcp" target="_blank" rel="noopener">Claude Code MCP ドキュメント</a> と、<a href="https://github.com/zilliztech/claude-context" target="_blank" rel="noopener">zilliztech/claude-context</a> の README を参照。</small></p>
+    </div>
+
+    <section id="packages" class="sec-head">5 — パッケージと役割</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> npm で公開される主なモジュール</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>パッケージ</th>
+              <th>役割</th>
+              <th>主な利用者</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>@zilliz/claude-context-mcp</code></td>
+              <td>MCP サーバー。検索・同期系ツールをエージェントへ提供。</td>
+              <td>Claude Code、Cursor、Codex CLI など</td>
+            </tr>
+            <tr>
+              <td><code>@zilliz/claude-context-core</code></td>
+              <td>インデックス・ベクトルDB・埋め込みの共通ロジック。</td>
+              <td>MCP 本体、拡張、独自スクリプト</td>
+            </tr>
+            <tr>
+              <td>VS Code 拡張（Marketplace）</td>
+              <td>セマンティック検索 UI とワークスペース連携。</td>
+              <td>VS Code / Cursor 系ユーザー</td>
+            </tr>
+            <tr>
+              <td>Chrome 拡張</td>
+              <td>ブラウザ上のコード文脈取得と補助。</td>
+              <td>Web 上のレビュー・調査フロー</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <section id="clients" class="sec-head">6 — クライアント対応</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 設定ファイルの差</span>
+      <p>README では Claude Code のほか、OpenAI Codex CLI（TOML）、Gemini CLI、Qwen Code、Cursor、Void など、<strong>MCP クライアントごとの設定断片</strong>が並んでいる。キー名やトップレベル構造がクライアントで微妙に異なるので、そのままコピペせず公式の MCP 仕様と突き合わせること。</p>
+      <ul>
+        <li>Cursor は <code>~/.cursor/mcp.json</code> またはプロジェクト直下の <code>.cursor/mcp.json</code> が一般的。</li>
+        <li>Codex CLI は <code>mcp_servers</code> というトップレベルキーに注意（README 内に明記あり）。</li>
+        <li>起動タイムアウトを延ばす例（<code>startup_timeout_ms</code>）も掲載されている。</li>
+      </ul>
+    </div>
+
+    <section id="references" class="sec-head">7 — 参照</section>
+    <div class="ve-card ve-card--recessed" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公開ソース</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>参照先</th>
+              <th>内容</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://github.com/zilliztech/claude-context" target="_blank" rel="noopener">zilliztech/claude-context</a></td>
+              <td>リポジトリ全体、インストール、バッジ、ディスコード。</td>
+            </tr>
+            <tr>
+              <td><a href="https://www.npmjs.com/package/@zilliz/claude-context-mcp" target="_blank" rel="noopener">npm — claude-context-mcp</a></td>
+              <td>MCP パッケージのバージョンと依存関係。</td>
+            </tr>
+            <tr>
+              <td><a href="https://www.npmjs.com/package/@zilliz/claude-context-core" target="_blank" rel="noopener">npm — claude-context-core</a></td>
+              <td>コアライブラリの API 境界の手がかり。</td>
+            </tr>
+            <tr>
+              <td><a href="https://deepwiki.com/zilliztech/claude-context" target="_blank" rel="noopener">DeepWiki</a></td>
+              <td>AI 生成のドキュメントナビゲーション。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:1rem;margin-bottom:0"><small>このビジュアルページは上記公開リポジトリの README とパッジ構造を要約したもの。機密値やローカルパスは載せていない。</small></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'strict' });
+</script>
+</body>
+</html>

@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vercel-labs/skills — オープンエージェントスキル CLI</title>
+  <meta name="description" content="vercel-labs/skills v1.5.11 の add / use / list / update コマンド、70+ エージェント対応、スキル探索と blob 高速パスの技術解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="vercel-labs/skills — オープンエージェントスキル CLI">
+  <meta property="og:description" content="npx skills — GitHub・URL・ローカルから SKILL.md をエージェントへ配布する CLI のコマンドと内部構成。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/skills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="vercel-labs/skills — オープンエージェントスキル CLI">
+  <meta name="twitter:description" content="add / use / update と 70+ エージェント対応を押さえた skills CLI 解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.012 210);
+      --foreground: oklch(0.17 0.034 230);
+      --card: oklch(0.998 0.006 210);
+      --card-foreground: oklch(0.17 0.034 230);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.17 0.034 230);
+      --primary: oklch(0.42 0.11 200);
+      --primary-foreground: oklch(0.985 0.012 210);
+      --secondary: oklch(0.94 0.018 210);
+      --secondary-foreground: oklch(0.20 0.04 230);
+      --muted: oklch(0.93 0.016 210);
+      --muted-foreground: oklch(0.46 0.045 225);
+      --accent: oklch(0.91 0.035 185);
+      --accent-foreground: oklch(0.17 0.034 230);
+      --destructive: oklch(0.57 0.20 25);
+      --border: oklch(0.82 0.026 210);
+      --input: oklch(0.82 0.026 210);
+      --ring: oklch(0.52 0.12 200);
+      --chart-1: oklch(0.48 0.12 200);
+      --chart-2: oklch(0.62 0.14 85);
+      --chart-3: oklch(0.52 0.11 150);
+      --chart-4: oklch(0.55 0.13 25);
+      --chart-5: oklch(0.40 0.10 250);
+      --code-bg: oklch(0.14 0.032 230);
+      --code-text: oklch(0.94 0.025 210);
+      --font-body: 'Source Serif 4', Georgia, serif;
+      --font-mono: 'Space Mono', 'SF Mono', Consolas, monospace;
+      --font-sans: system-ui, sans-serif;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      --grid-line: oklch(0.48 0.12 200 / 0.07);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.032 230);
+        --foreground: oklch(0.94 0.018 210);
+        --card: oklch(0.18 0.034 230);
+        --card-foreground: oklch(0.94 0.018 210);
+        --popover: oklch(0.18 0.034 230);
+        --popover-foreground: oklch(0.94 0.018 210);
+        --primary: oklch(0.72 0.12 200);
+        --primary-foreground: oklch(0.12 0.032 230);
+        --secondary: oklch(0.24 0.034 230);
+        --secondary-foreground: oklch(0.94 0.018 210);
+        --muted: oklch(0.24 0.034 230);
+        --muted-foreground: oklch(0.72 0.030 210);
+        --accent: oklch(0.25 0.045 185);
+        --accent-foreground: oklch(0.94 0.018 210);
+        --destructive: oklch(0.66 0.18 25);
+        --border: oklch(0.90 0.02 210 / 14%);
+        --input: oklch(0.90 0.02 210 / 18%);
+        --ring: oklch(0.72 0.10 200);
+        --chart-1: oklch(0.72 0.12 200);
+        --chart-2: oklch(0.78 0.13 85);
+        --chart-3: oklch(0.72 0.12 150);
+        --chart-4: oklch(0.72 0.13 25);
+        --chart-5: oklch(0.72 0.10 250);
+        --code-bg: oklch(0.09 0.026 230);
+        --code-text: oklch(0.94 0.025 210);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+        --grid-line: oklch(0.72 0.12 200 / 0.10);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 8px 26px rgba(20, 40, 48, 0.09); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(20, 40, 48, 0.05); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%);
+      box-shadow: 0 18px 44px rgba(20, 40, 48, 0.12);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block__label { color: var(--code-text); border-bottom: 1px solid oklch(1 0 0 / 12%); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; padding: 0.625rem 0.875rem; text-transform: uppercase; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.875rem 1rem; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; overflow-x: auto; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-family: var(--font-sans); font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 700; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 72%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(20, 40, 48, 0.06); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-size: 2.15rem; line-height: 1; font-weight: 700; letter-spacing: -0.05em; }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-family: var(--font-sans); font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 700; }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+        radial-gradient(ellipse at 12% 0%, oklch(0.48 0.12 200 / 0.10) 0%, transparent 42%),
+        radial-gradient(ellipse at 88% 16%, oklch(0.62 0.14 85 / 0.08) 0%, transparent 34%);
+      background-size: 36px 36px, 36px 36px, auto, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          linear-gradient(var(--grid-line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+          radial-gradient(ellipse at 12% 0%, oklch(0.72 0.12 200 / 0.12) 0%, transparent 42%),
+          radial-gradient(ellipse at 88% 16%, oklch(0.78 0.13 85 / 0.10) 0%, transparent 34%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 220px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-sans); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: clamp(2.4rem, 6vw, 5rem); font-weight: 600; letter-spacing: -0.04em; line-height: 0.95; margin-bottom: 1rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-sans); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.7; max-width: 62rem; }
+    .sec-head { font-family: var(--font-sans); font-size: 1.125rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-family: var(--font-sans); font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
+    p { font-family: var(--font-sans); font-size: 0.9375rem; line-height: 1.68; margin-bottom: 0.75rem; }
+    ul { font-family: var(--font-sans); margin: 0 0 1rem; padding-left: 1.35rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    strong { font-weight: 700; }
+
+    .hero-grid { display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 1rem; align-items: stretch; }
+    .hero-side { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+    @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 760px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .step-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.85rem; }
+    .step-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; min-width: 0; }
+    .step-card__num { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 999px; background: var(--primary); color: var(--primary-foreground); font-family: var(--font-mono); font-weight: 700; font-size: 0.75rem; margin-bottom: 0.75rem; }
+    .step-card__title { font-family: var(--font-sans); font-weight: 700; margin-bottom: 0.3rem; }
+    .step-card__body { font-family: var(--font-sans); color: var(--text-dim); font-size: 0.84rem; line-height: 1.55; }
+    @media (max-width: 960px) { .step-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .step-flow { grid-template-columns: 1fr; } }
+
+    .agent-grid { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.5rem; }
+    .agent-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.22rem 0.55rem; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; background: var(--muted); border: 1px solid var(--border); color: var(--text-dim); }
+    .agent-badge--primary { background: color-mix(in oklch, var(--chart-1) 14%, transparent); color: var(--chart-1); border-color: color-mix(in oklch, var(--chart-1) 38%, transparent); }
+
+    .source-note { color: var(--text-dim); font-size: 0.82rem; font-family: var(--font-mono); }
+    .link-list { list-style: none; padding: 0; margin: 0; }
+    .link-list li { border-bottom: 1px solid var(--border); padding: 0.65rem 0; margin: 0; }
+    .gap { margin-top: 1rem; }
+
+    .mermaid-wrap { margin: 1rem 0; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--card); }
+    .mermaid-stage { overflow: auto; padding: 1.25rem; display: flex; justify-content: center; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card, .step-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#commands">コマンド</a>
+    <a href="#use">use コマンド</a>
+    <a href="#sources">ソース形式</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#discovery">スキル探索</a>
+    <a href="#install">インストール</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>vercel-labs/skills</h1>
+  <p class="subtitle"><code>npx skills</code> — オープンなエージェントスキルエコシステム向け CLI。GitHub・GitLab・git URL・ローカルパスから <code>SKILL.md</code> を取得し、Claude Code・Cursor・Codex など 70 以上のコーディングエージェントへシンリンクまたはコピーで配布する。</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="hero-grid">
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> CLI role</span>
+      <p><strong>skills</strong> は <a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills 仕様</a> に沿った指示セット（<code>SKILL.md</code>）を、リポジトリからエージェント固有の skills ディレクトリへ届ける配布レイヤー。スキル本体は各リポジトリ（例: <code>vercel-labs/agent-skills</code>）にあり、CLI は探索・取得・配置・更新を担う。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">70+</span><span class="ve-kpi-card__label">対応エージェント</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">v1.5</span><span class="ve-kpi-card__label">.11 最新</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">7</span><span class="ve-kpi-card__label">主要コマンド</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+      </div>
+      <p class="source-note">出典: README.md、package.json、src/cli.ts</p>
+    </div>
+    <div class="hero-side">
+      <div class="ve-card ve-card--elevated" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Typical flow</span>
+        <p>リポジトリを指定して <code>add</code> → エージェント skills ディレクトリへ配置 → <code>list</code> で確認 → <code>update</code> で最新化。試すだけなら <code>use</code> でインストールせずプロンプト生成もできる。</p>
+      </div>
+      <div class="ve-callout" style="--i:2">
+        <strong>スキルとは:</strong> YAML frontmatter に <code>name</code> と <code>description</code> を持つ Markdown 指示書。PR 作成手順・リリースノート生成・外部ツール連携など、エージェントの専門タスクを再利用可能にする。
+      </div>
+    </div>
+  </div>
+
+  <section id="commands" class="sec-head">2 — コマンド一覧</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Manage skills</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>説明</th><th>エイリアス</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>skills add &lt;source&gt;</code></td><td>Git リポジトリ・URL・ローカルパスからスキルをインストール</td><td><code>a</code></td></tr>
+          <tr><td><code>skills use &lt;source&gt;@&lt;skill&gt;</code></td><td>インストールせず 1 スキルのプロンプトを生成（<code>--agent</code> で対話起動）</td><td>—</td></tr>
+          <tr><td><code>skills list</code></td><td>インストール済みスキルを一覧（<code>--json</code> 対応）</td><td><code>ls</code></td></tr>
+          <tr><td><code>skills find [query]</code></td><td>スキルをインタラクティブまたはキーワード検索</td><td>—</td></tr>
+          <tr><td><code>skills remove [skills]</code></td><td>エージェントからスキルを削除</td><td><code>rm</code></td></tr>
+          <tr><td><code>skills update [skills...]</code></td><td>インストール済みスキルを最新版へ更新</td><td><code>upgrade</code></td></tr>
+          <tr><td><code>skills init [name]</code></td><td>新規 <code>SKILL.md</code> テンプレートを生成</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed gap" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Experimental / project</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>skills experimental_install</code></td><td><code>skills-lock.json</code> からスキルを復元</td></tr>
+          <tr><td><code>skills experimental_sync</code></td><td><code>node_modules</code> 内スキルをエージェントディレクトリへ同期</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="use" class="sec-head">3 — use コマンド</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Try without install</span>
+    <p><code>skills use</code> は <code>add</code> と同じソース解決を行い、選択した 1 スキルを一時ディレクトリへ展開したうえで生成プロンプトを stdout に出力する。<code>--agent</code> を付けると対応エージェントを対話起動する。</p>
+    <div class="ve-code-block">
+      <div class="ve-code-block__label">examples</div>
+      <pre><code># プロンプトをパイプで Claude に渡す
+npx skills use vercel-labs/agent-skills@web-design-guidelines | claude
+
+# エージェントを直接起動
+npx skills use vercel-labs/agent-skills --skill web-design-guidelines --agent claude-code</code></pre>
+    </div>
+    <div class="step-flow">
+      <div class="step-card" style="--i:0">
+        <div class="step-card__num">1</div>
+        <div class="step-card__title">Resolve source</div>
+        <div class="step-card__body"><code>source-parser.ts</code> が GitHub shorthand / URL / ローカルを正規化。</div>
+      </div>
+      <div class="step-card" style="--i:1">
+        <div class="step-card__num">2</div>
+        <div class="step-card__title">Fetch skill</div>
+        <div class="step-card__body">git clone、blob 高速パス、well-known プロバイダのいずれかで取得。</div>
+      </div>
+      <div class="step-card" style="--i:2">
+        <div class="step-card__num">3</div>
+        <div class="step-card__title">Materialize</div>
+        <div class="step-card__body">一時ディレクトリに <code>SKILL.md</code> と付随ファイルを配置。</div>
+      </div>
+      <div class="step-card" style="--i:3">
+        <div class="step-card__num">4</div>
+        <div class="step-card__title">Emit / spawn</div>
+        <div class="step-card__body">プロンプトを stdout 出力、または <code>--agent</code> で子プロセス起動。</div>
+      </div>
+    </div>
+  </div>
+
+  <section id="sources" class="sec-head">4 — ソース形式と add オプション</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Source formats</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>形式</th><th>例</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>GitHub shorthand</td><td><code>npx skills add vercel-labs/agent-skills</code></td></tr>
+          <tr><td>フル GitHub URL</td><td><code>npx skills add https://github.com/org/repo</code></td></tr>
+          <tr><td>サブパス（特定スキル）</td><td><code>npx skills add org/repo/tree/main/skills/foo</code></td></tr>
+          <tr><td>GitLab / 任意 git URL</td><td><code>npx skills add https://gitlab.com/org/repo</code></td></tr>
+          <tr><td>ローカルパス</td><td><code>npx skills add ./my-local-skills</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed gap" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> add オプション（代表）</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>オプション</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>-g, --global</code></td><td>ユーザーディレクトリ（<code>~/</code> 配下）へインストール</td></tr>
+          <tr><td><code>-a, --agent &lt;agents&gt;</code></td><td>対象エージェント指定（<code>*</code> で全エージェント）</td></tr>
+          <tr><td><code>-s, --skill &lt;skills&gt;</code></td><td>特定スキルのみ（<code>*</code> で全スキル）</td></tr>
+          <tr><td><code>-l, --list</code></td><td>インストールせずリポジトリ内スキルを一覧</td></tr>
+          <tr><td><code>--copy</code></td><td>シンリンクの代わりにファイルコピー</td></tr>
+          <tr><td><code>--full-depth</code></td><td>ルート <code>SKILL.md</code> があっても全サブディレクトリを探索</td></tr>
+          <tr><td><code>-y, --yes</code></td><td>確認プロンプトをスキップ（CI 向け）</td></tr>
+          <tr><td><code>--all</code></td><td><code>--skill '*' --agent '*' -y</code> の省略形</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-code-block">
+      <div class="ve-code-block__label">ci-friendly</div>
+      <pre><code>npx skills add vercel-labs/agent-skills --skill frontend-design -g -a claude-code -y</code></pre>
+    </div>
+  </div>
+
+  <section id="architecture" class="sec-head">5 — アーキテクチャ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Module graph</span>
+    <p><code>cli.ts</code> がコマンドをルーティング。<code>add.ts</code> と <code>use.ts</code> がソース取得から配置までを担い、<code>installer.ts</code> がシンリンク / コピーを実行する。GitHub 公開リポジトリでは <code>blob.ts</code> 経由で skills.sh ダウンロード API を使う高速パスもある。</p>
+    <div class="mermaid-wrap">
+      <div class="mermaid-stage">
+        <div class="mermaid">
+flowchart TD
+    CLI["cli.ts"] --> ADD["add.ts"]
+    CLI --> USE["use.ts"]
+    CLI --> LIST["list.ts"]
+    CLI --> FIND["find.ts"]
+    CLI --> REMOVE["remove.ts"]
+    CLI --> UPDATE["update.ts"]
+
+    ADD --> PARSE["source-parser.ts"]
+    ADD --> DISC["skills.ts\n探索"]
+    ADD --> INST["installer.ts"]
+    USE --> PARSE
+    USE --> DISC
+
+    ADD --> BLOB["blob.ts\nskills.sh API"]
+    ADD --> WK["providers/wellknown.ts"]
+    ADD --> PLUG["plugin-manifest.ts"]
+
+    INST --> GLOCK["skill-lock.ts\n~/.agents/.skill-lock.json"]
+    INST --> LLOCK["local-lock.ts\nskills-lock.json"]
+    INST --> AGENTS["agents.ts\n70+ 定義"]
+
+    classDef entry fill:color-mix(in oklch, var(--chart-1) 25%, white),stroke:var(--chart-1)
+    classDef cmd fill:color-mix(in oklch, var(--chart-2) 20%, white),stroke:var(--chart-2)
+    classDef core fill:color-mix(in oklch, var(--chart-3) 18%, white),stroke:var(--chart-3)
+    class CLI entry
+    class ADD,USE,LIST,FIND,REMOVE,UPDATE cmd
+    class PARSE,DISC,INST,BLOB,WK,PLUG,GLOCK,LLOCK,AGENTS core
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed gap" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> src/ 主要モジュール</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ファイル</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>add.ts</code></td><td>インタラクティブ選択・セキュリティ監査・インストール一連処理</td></tr>
+          <tr><td><code>use.ts</code></td><td>一時展開とプロンプト生成、エージェント子プロセス起動</td></tr>
+          <tr><td><code>blob.ts</code></td><td>Trees API → frontmatter → skills.sh download の高速取得。一部リポジトリは自前 CDN（例: zapier/connectors）</td></tr>
+          <tr><td><code>installer.ts</code></td><td>シンリンク / コピー配置、canonical path 管理</td></tr>
+          <tr><td><code>skill-lock.ts</code> / <code>local-lock.ts</code></td><td>グローバル / プロジェクトのロックファイルと更新検知</td></tr>
+          <tr><td><code>agents.ts</code></td><td>エージェント別 project / global skills パス定義と自動検出</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="discovery" class="sec-head">6 — スキル探索</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Discovery rules</span>
+    <p>CLI はリポジトリ内のコンテナディレクトリを最大 2 階層まで走査する。フラット配置（<code>skills/&lt;name&gt;/SKILL.md</code>）とカタログ配置（<code>skills/&lt;category&gt;/&lt;name&gt;/SKILL.md</code>）の両方に対応。浅い階層で見つかった <code>SKILL.md</code> は深い階層より優先される。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>探索対象</th><th>備考</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>リポジトリルート（<code>SKILL.md</code> がある場合）</td><td>単一スキルリポジトリ向け</td></tr>
+          <tr><td><code>skills/</code>、<code>skills/.curated/</code> 等</td><td>標準コンテナ。エージェント固有パス（<code>.claude/skills/</code> 等）も列挙</td></tr>
+          <tr><td><code>.claude-plugin/plugin.json</code></td><td>Claude Code プラグインマーケットプレイス互換。manifest 宣言パスは深度制限なし</td></tr>
+          <tr><td><code>--full-depth</code></td><td><code>examples/</code> や <code>tests/</code> などコンテナ外も再帰探索</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card ve-card--elevated gap" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> SKILL.md 必須フィールド</span>
+    <div class="ve-code-block">
+      <pre><code>---
+name: my-skill
+description: このスキルの目的と使うタイミング
+---
+
+# My Skill
+エージェントが実行する手順を記述する。</code></pre>
+    </div>
+    <p><code>metadata.internal: true</code> のスキルは通常探索から除外。<code>INSTALL_INTERNAL_SKILLS=1</code> で表示・インストール可能。</p>
+  </div>
+
+  <section id="install" class="sec-head">7 — インストールスコープ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Scope & method</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>スコープ</th><th>フラグ</th><th>配置先</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>プロジェクト</td><td>（デフォルト）</td><td><code>./&lt;agent&gt;/skills/</code></td><td>リポジトリにコミット、チーム共有</td></tr>
+          <tr><td>グローバル</td><td><code>-g</code></td><td><code>~/&lt;agent&gt;/skills/</code></td><td>全プロジェクトで利用</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="margin-top:0.75rem">
+      <strong>シンリンク（推奨）:</strong> canonical copy を 1 か所に置き、各エージェントから参照。更新は 1 点変更で済む。<code>--copy</code> はシンリンク非対応環境向け。
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed gap" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 主要エージェントとパス</span>
+    <div class="agent-grid">
+      <span class="agent-badge agent-badge--primary">claude-code → .claude/skills/</span>
+      <span class="agent-badge agent-badge--primary">cursor → .agents/skills/</span>
+      <span class="agent-badge agent-badge--primary">codex → .agents/skills/</span>
+      <span class="agent-badge agent-badge--primary">opencode → .agents/skills/</span>
+      <span class="agent-badge">windsurf</span>
+      <span class="agent-badge">github-copilot</span>
+      <span class="agent-badge">gemini-cli</span>
+      <span class="agent-badge">openclaw</span>
+      <span class="agent-badge">... 70+ total</span>
+    </div>
+    <p style="margin-top:0.75rem">CLI はインストール済みエージェントを自動検出。未検出時は対話で選択する。互換性の詳細は README の Compatibility 表を参照（<code>allowed-tools</code>、<code>context: fork</code>、Hooks などエージェント固有機能の差分）。</p>
+  </div>
+
+  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Source references</span>
+    <ul class="link-list">
+      <li><a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">GitHub: vercel-labs/skills</a> — CLI 本体（TypeScript、v1.5.11）</li>
+      <li><a href="https://skills.sh" target="_blank" rel="noopener">skills.sh</a> — 公開スキルディレクトリ</li>
+      <li><a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills 仕様</a> — SKILL.md フォーマット</li>
+      <li><a href="https://github.com/vercel-labs/agent-skills" target="_blank" rel="noopener">vercel-labs/agent-skills</a> — Vercel 公式スキル集（README の代表例）</li>
+      <li>README.md — コマンドリファレンス、対応エージェント表、探索パス一覧</li>
+      <li>src/cli.ts — コマンドルーティングとヘルプテキスト</li>
+      <li>src/blob.ts — skills.sh download API と自前 CDN 対応</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+(function() {
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: 'oklch(0.91 0.035 185)',
+      primaryTextColor: 'oklch(0.17 0.034 230)',
+      primaryBorderColor: 'oklch(0.48 0.12 200)',
+      lineColor: 'oklch(0.62 0.04 210)',
+      fontSize: '13px',
+    }
+  });
+
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
