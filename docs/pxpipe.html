@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pxpipe — Claude Code 向けトークン節約プロキシ</title>
+  <meta name="description" content="teamchong/pxpipe の技術概要。肥大化したシステムプロンプト・ツールドキュメント・履歴を高密度 PNG に変換し、Claude Code の入力トークンを削減するローカルプロキシ。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="pxpipe — Claude Code 向けトークン節約プロキシ">
+  <meta property="og:description" content="teamchong/pxpipe の技術概要。肥大化したコンテキストを高密度 PNG に変換し、Claude Code の入力トークンを削減するローカルプロキシ。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/pxpipe.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="pxpipe — Claude Code 向けトークン節約プロキシ">
+  <meta name="twitter:description" content="teamchong/pxpipe の技術概要。肥大化したコンテキストを高密度 PNG に変換し、入力トークンを削減するローカルプロキシ。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.008 200);
+      --foreground: oklch(0.18 0.03 220);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.18 0.03 220);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.18 0.03 220);
+      --primary: oklch(0.22 0.04 215);
+      --primary-foreground: oklch(0.98 0.01 200);
+      --secondary: oklch(0.96 0.02 200);
+      --secondary-foreground: oklch(0.22 0.04 215);
+      --muted: oklch(0.95 0.015 200);
+      --muted-foreground: oklch(0.48 0.04 215);
+      --accent: oklch(0.94 0.03 195);
+      --accent-foreground: oklch(0.2 0.04 215);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.02 200);
+      --input: oklch(0.88 0.02 200);
+      --ring: oklch(0.55 0.08 200);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.38 0.1 230);
+      --chart-4: oklch(0.72 0.14 75);
+      --chart-5: oklch(0.55 0.1 185);
+      --code-bg: var(--muted);
+      --code-text: #0c4a6e;
+      --font-body: 'Sora', system-ui, sans-serif;
+      --font-mono: 'Space Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.13 0.02 220);
+        --foreground: oklch(0.95 0.015 200);
+        --card: oklch(0.18 0.025 220);
+        --card-foreground: oklch(0.95 0.015 200);
+        --popover: oklch(0.18 0.025 220);
+        --popover-foreground: oklch(0.95 0.015 200);
+        --primary: oklch(0.92 0.02 200);
+        --primary-foreground: oklch(0.16 0.03 220);
+        --secondary: oklch(0.22 0.03 220);
+        --secondary-foreground: oklch(0.95 0.015 200);
+        --muted: oklch(0.24 0.03 220);
+        --muted-foreground: oklch(0.68 0.04 200);
+        --accent: oklch(0.22 0.035 215);
+        --accent-foreground: oklch(0.95 0.015 200);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.5 0.08 200);
+        --chart-1: oklch(0.62 0.14 195);
+        --chart-2: oklch(0.72 0.16 85);
+        --chart-3: oklch(0.55 0.1 230);
+        --chart-4: oklch(0.78 0.14 80);
+        --chart-5: oklch(0.58 0.1 185);
+        --code-bg: #0a1628;
+        --code-text: #7dd3fc;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(8, 47, 73, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(8, 47, 73, 0.1);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.65; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(8, 47, 73, 0.06); min-width: 0; }
+    .ve-kpi-card__value { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: clamp(1.35rem, 3vw, 2rem); line-height: 1.1; color: var(--foreground); overflow-wrap: anywhere; }
+    .ve-kpi-card__label { display: block; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.45rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.65 0.15 80 / 0.12); color: var(--chart-2); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, oklch(0.45 0.12 200 / 0.08) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, oklch(0.45 0.12 200 / 0.14) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.7; max-width: 62rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 1rem 0; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); border: 1px solid var(--border); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    .mermaid-wrap {
+      position: relative; margin: 1.25rem 0; border: 1px solid var(--border); border-radius: var(--radius-lg);
+      background: var(--card); overflow: hidden;
+    }
+    .mermaid-viewport { display: flex; justify-content: center; overflow: auto; padding: 1.25rem; transform-origin: top center; }
+    .mermaid-zoom { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 2; }
+    .mermaid-zoom button {
+      font-family: var(--font-mono); font-size: 11px; width: 28px; height: 28px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); background: var(--muted); color: var(--foreground); cursor: pointer;
+    }
+    .mermaid-zoom button:hover { background: var(--accent); }
+
+    .badge { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.2rem 0.5rem; border-radius: 999px; border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); margin: 0 0.25rem 0.25rem 0; }
+    .badge--good { color: var(--chart-2); background: oklch(0.65 0.15 80 / 0.12); border-color: oklch(0.65 0.15 80 / 0.35); }
+    .badge--warn { color: oklch(0.55 0.16 42); background: oklch(0.55 0.16 42 / 0.1); border-color: oklch(0.55 0.16 42 / 0.3); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#quickstart">起動手順</a>
+    <a href="#pipeline">処理の流れ</a>
+    <a href="#targets">圧縮対象と制約</a>
+    <a href="#benchmarks">ベンチマーク</a>
+    <a href="#api">API と参照</a>
+  </nav>
+
+  <div class="main">
+    <h1>pxpipe</h1>
+    <p class="subtitle">Claude Code の肥大化した入力コンテキスト（システムプロンプト・ツールドキュメント・古い履歴）を高密度 PNG に変換し、ビジョン経路で読ませることで入力トークンを削減するローカルプロキシ。<a href="https://github.com/teamchong/pxpipe" target="_blank" rel="noopener">teamchong/pxpipe</a>（npm: <code>pxpipe-proxy</code>）の技術概要。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
+      <p>画像トークンはピクセル寸法で固定され、中身の文字量には依存しない。コード・JSON・ツール出力など密度の高いコンテキストは、テキストトークンより画像トークンあたり約 3.1 文字を載せられる。pxpipe は <code>/v1/messages</code> を傍受し、対象ブロックを 1928px 幅の列に折り返して PNG ページにレンダリングし、リクエストだけを圧縮して Anthropic / OpenAI へ転送する。応答ストリームはそのまま。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">~59–70%</span><span class="ve-kpi-card__label">エンドツーエンド請求削減（Fable 5 想定）</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">~92k</span><span class="ve-kpi-card__label">chars / 1928×1928 ページ</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">47821</span><span class="ve-kpi-card__label">デフォルト待受ポート</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node + Workers</span><span class="ve-kpi-card__label">ランタイム</span></div>
+      </div>
+      <p>削減率はワークロード依存。リクエストごとに無料の <code>count_tokens</code> カウンターファクチュアルと実請求を並列計測し、<code>~/.pxpipe/events.jsonl</code> に記録する。ダッシュボード（<code>http://127.0.0.1:47821/</code>）で節約量・変換前後の比較・モデル切替・キルスイッチを確認できる。</p>
+    </div>
+
+    <section id="quickstart" class="sec-head">2 — 起動手順</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 30 秒で試す</span>
+      <div class="ve-code-block">
+        <pre><code>npx pxpipe-proxy                                  # 127.0.0.1:47821 で待受
+ANTHROPIC_BASE_URL=http://127.0.0.1:47821 claude  # Claude Code をプロキシ経由に</code></pre>
+      </div>
+      <p>直近ターンはテキストのまま。システムプロンプト・ツールドキュメント・古い履歴の塊だけが画像化される。デフォルトで有効なモデルは <code>claude-fable-5</code> と <code>gpt-5.6</code>。<code>PXPIPE_MODELS=off</code> で画像化を無効化できる。</p>
+      <h3>開発ビルド</h3>
+      <div class="ve-code-block">
+        <pre><code>pnpm install && pnpm test
+pnpm run build   # dist/ を再生成</code></pre>
+      </div>
+    </div>
+
+    <section id="pipeline" class="sec-head">3 — 処理の流れ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> リクエスト変換パイプライン</span>
+      <div class="mermaid-wrap" id="flow-wrap">
+        <div class="mermaid-zoom">
+          <button type="button" data-zoom="out" aria-label="縮小">−</button>
+          <button type="button" data-zoom="reset" aria-label="リセット">◎</button>
+          <button type="button" data-zoom="in" aria-label="拡大">+</button>
+        </div>
+        <div class="mermaid-viewport" id="flow-viewport">
+          <pre class="mermaid">flowchart TD
+  CC["Claude Code / クライアント"] --> PX["pxpipe proxy\n127.0.0.1:47821"]
+  PX --> GATE{"適用判定\nモデル・収益性ゲート"}
+  GATE -->|"対象ブロックあり"| RENDER["折り返し → PNG ページ生成\n~92k chars / page"]
+  GATE -->|"非対象"| PASS["バイト同一で転送"]
+  RENDER --> SPLICE["image block へ差し替え\ncache-friendly に再構成"]
+  SPLICE --> API["Anthropic / OpenAI API"]
+  PASS --> API
+  API --> RESP["応答ストリーム（非圧縮）"]
+  RESP --> CC
+  PX -.-> LOG["events.jsonl\nカウンターファクチュアル計測"]</pre>
+        </div>
+      </div>
+      <p>レンダリングの要点は README の一行式どおり:</p>
+      <div class="pipeline">
+        <span class="step">tool_result 文字列</span>
+        <span class="arrow">→</span>
+        <span class="step">1928px 幅で折り返し</span>
+        <span class="arrow">→</span>
+        <span class="step">~92,000 chars / page に詰める</span>
+        <span class="arrow">→</span>
+        <span class="step">PNG[]</span>
+      </div>
+      <p>1928×1928 画像は約 4,761 ビジョントークンで、テキストが ~19 chars/token を超える場合のみ画像化が有利。Claude Code 実トラフィックは ~1.91 chars/token（N=391）なので、リクエスト単位の推定器がスパースな散文はテキストのまま残す。静的プレフィックス（システム＋ツール定義）はキャッシュ整合を保ったまま差し替える。</p>
+    </div>
+
+    <section id="targets" class="sec-head">4 — 圧縮対象と制約</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 画像化される入力</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>種類</th><th>条件</th><th>備考</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>大きな <code>tool_result</code></td><td>トークン密度の高い本文が ~6k chars 超</td><td>ファイル読取・コマンド出力・ログ</td></tr>
+            <tr><td>折りたたまれた古い履歴</td><td>ライブテールより手前のターン</td><td>直近ターンは常にテキスト</td></tr>
+            <tr><td>システムプロンプト + ツールドキュメント</td><td>静的スラブ</td><td>キャッシュプレフィックスとして保持</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>それ以外（ユーザーメッセージ、直近ターン、スパース散文、小さすぎるブロック、許可リスト外モデル）はバイト同一で通過。GPT 経路ではツール定義はネイティブ JSON のまま、Anthropic の <code>cache_control</code> マーカーは使わない。</p>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 損失あり・読み取り限界</span>
+      <div class="ve-callout">
+        <strong>モデルビジョンは OCR ではない。</strong> パッチ埋め込み経由で「読む」ため、12 文字の hex などバイト完全一致が必要な値は画像から信頼できない。密なレンダー上の verbatim 12-char hex は Fable 5 で <strong>13/15</strong>、Opus 4.8 で <strong>0/15</strong>。ミスはエラーではなく、もっともらしい誤答として表面化する。
+      </div>
+      <ul>
+        <li>ID・ハッシュ・シークレットはテキストのまま残す。専用の verbatim ガードは未実装。</li>
+        <li>非許可モデルのサブエージェントはテキスト通過 — バイト厳密な作業は <code>CLAUDE_CODE_SUBAGENT_MODEL=claude-sonnet-4-6</code> 等へ逃がす。</li>
+        <li>Opus 4.7/4.8 は ~7% のレンダー誤読、GPT 5.5 は画像化コンテキストで劣化 — いずれも <code>PXPIPE_MODELS</code> で opt-in。</li>
+        <li>PNG エンコードは大きなリクエストに送信前レイテンシを追加する。</li>
+      </ul>
+      <p>詳細: <a href="https://github.com/teamchong/pxpipe/blob/main/docs/NOT-OCR.md" target="_blank" rel="noopener">docs/NOT-OCR.md</a>、<a href="https://github.com/teamchong/pxpipe/blob/main/docs/LEGIBILITY-AUDIT-2026-07-01.md" target="_blank" rel="noopener">LEGIBILITY-AUDIT-2026-07-01.md</a>、<a href="https://github.com/teamchong/pxpipe/blob/main/FINDINGS.md" target="_blank" rel="noopener">FINDINGS.md</a>。</p>
+    </div>
+
+    <section id="benchmarks" class="sec-head">5 — ベンチマーク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 再現可能な計測（抜粋）</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>テスト</th><th>N</th><th>text</th><th>pxpipe</th><th>トークン</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>novel arithmetic, <code>claude-fable-5</code></td><td>100</td><td>100%</td><td><span class="badge badge--good">100%</span></td><td>−38%</td></tr>
+            <tr><td>novel arithmetic, <code>claude-opus-4-8</code></td><td>100</td><td>100%</td><td>93%</td><td>−38%</td></tr>
+            <tr><td>gist recall A/B, Fable 5</td><td>98/arm</td><td>98/98</td><td><span class="badge badge--good">98/98</span></td><td>—</td></tr>
+            <tr><td>state tracking, Fable 5</td><td>18/arm</td><td>18/18</td><td><span class="badge badge--good">18/18</span></td><td>—</td></tr>
+            <tr><td>confabulation（未提示事実）</td><td>16/arm</td><td>0/16</td><td><span class="badge badge--good">0/16</span></td><td>—</td></tr>
+            <tr><td>verbatim 12-char hex, Opus</td><td>15</td><td>15/15</td><td><span class="badge badge--warn">0/15</span></td><td>—</td></tr>
+            <tr><td>verbatim 12-char hex, Fable 5</td><td>15</td><td>—</td><td>13/15</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>実作業ベンチ</h3>
+      <ul>
+        <li>SWE-bench Lite pilot: <strong>10/10 both arms</strong>、リクエストサイズ −65%</li>
+        <li>SWE-bench Pro: <strong>14/19 ON vs 15/19 OFF</strong>、−60%、判定一致 18/19（差分 1 件は run-to-run 分散）</li>
+        <li>デモ動画: Fable 5 で 39 ファイルの imaged filler を 10/10 でカウント、セッション終了時 <strong>$6.06 vs $42.21</strong>（plain 比）</li>
+      </ul>
+      <p>受領データ・ログ: <a href="https://github.com/teamchong/pxpipe/tree/main/eval/swe-bench" target="_blank" rel="noopener">eval/swe-bench</a>、<a href="https://github.com/teamchong/pxpipe/tree/main/eval/swe-bench-pro" target="_blank" rel="noopener">eval/swe-bench-pro</a>、<a href="https://github.com/teamchong/pxpipe/tree/main/eval/gist-recall" target="_blank" rel="noopener">eval/gist-recall</a>。</p>
+    </div>
+
+    <section id="api" class="sec-head">6 — API と参照</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ライブラリ利用（プロキシなし）</span>
+      <div class="ve-code-block">
+        <pre><code>import { renderTextToImages, transformAnthropicMessages } from "pxpipe-proxy";
+
+const { pages } = await renderTextToImages(toolResultText);
+const { body, applied, info } = await transformAnthropicMessages({
+  body: requestBytes,
+  model: "claude-fable-5",
+});</code></pre>
+      </div>
+      <p><code>options.keepSharp(block)</code> でブロックをテキスト固定、<code>options.emitRecoverable</code> で画像化した元ブロックを返却。公開 API の正は <code>src/core/index.ts</code>。</p>
+      <h3>主要エクスポート（パッケージ）</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>サブパス</th><th>用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>pxpipe-proxy</code></td><td><code>renderTextToImages</code>、<code>transformAnthropicMessages</code></td></tr>
+            <tr><td><code>pxpipe-proxy/transform</code></td><td><code>transformRequest</code>、低レベル変換</td></tr>
+            <tr><td><code>pxpipe-proxy/proxy</code></td><td><code>createProxy</code> — HTTP プロキシ本体</td></tr>
+            <tr><td><code>pxpipe-proxy/node</code> / <code>./worker</code></td><td>Node / Cloudflare Workers エントリ</td></tr>
+            <tr><td><code>pxpipe-proxy/measurement</code></td><td><code>count_tokens</code> カウンターファクチュアル</td></tr>
+            <tr><td><code>pxpipe-proxy/applicability</code></td><td>モデル許可リスト・適用判定</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式リンク</span>
+      <ul>
+        <li><a href="https://github.com/teamchong/pxpipe" target="_blank" rel="noopener">GitHub: teamchong/pxpipe</a> — 本体（MIT）</li>
+        <li><a href="https://www.npmjs.com/package/pxpipe-proxy" target="_blank" rel="noopener">npm: pxpipe-proxy</a> — <code>npx pxpipe-proxy</code> の実体</li>
+        <li><a href="https://github.com/teamchong/pxpipe/blob/main/docs/CACHING_AND_SAVINGS.md" target="_blank" rel="noopener">CACHING_AND_SAVINGS.md</a> — キャッシュと節約の数学</li>
+        <li><a href="https://github.com/teamchong/pxpipe/blob/main/docs/HISTORY_CACHE_MODEL.md" target="_blank" rel="noopener">HISTORY_CACHE_MODEL.md</a> — 履歴折りたたみとキャッシュモデル</li>
+        <li><a href="https://github.com/teamchong/pxpipe/blob/main/docs/TRANSFORM_INFO.md" target="_blank" rel="noopener">TRANSFORM_INFO.md</a> — 変換メタデータ</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    look: 'classic',
+    themeVariables: {
+      primaryColor: isDark ? '#134e4a' : '#ccfbf1',
+      primaryBorderColor: isDark ? '#14b8a6' : '#0d9488',
+      primaryTextColor: isDark ? '#f0fdfa' : '#134e4a',
+      lineColor: isDark ? '#5eead4' : '#0f766e',
+      secondaryColor: isDark ? '#1e3a5f' : '#e0f2fe',
+      tertiaryColor: isDark ? '#0f172a' : '#f0fdfa',
+      fontFamily: 'Sora, system-ui, sans-serif',
+      fontSize: '14px'
+    }
+  });
+
+  const viewport = document.getElementById('flow-viewport');
+  const wrap = document.getElementById('flow-wrap');
+  let zoom = 1;
+  const INITIAL_ZOOM = 1;
+  const applyZoom = () => { if (viewport) viewport.style.transform = `scale(${zoom})`; };
+  wrap?.querySelectorAll('[data-zoom]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const action = btn.getAttribute('data-zoom');
+      if (action === 'in') zoom = Math.min(zoom + 0.15, 2);
+      else if (action === 'out') zoom = Math.max(zoom - 0.15, 0.6);
+      else zoom = INITIAL_ZOOM;
+      applyZoom();
+    });
+  });
+  applyZoom();
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
