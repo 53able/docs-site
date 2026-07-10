@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hunk — エージェント向けターミナル diff ビューア</title>
-  <meta name="description" content="OpenTUI と Pierre diffs 上の、レビュー優先のターミナル diff ビューア。Git 連携、ウォッチ、インライン注釈、セッション broker。インストールからエージェント連携まで。">
+  <meta name="description" content="OpenTUI と Pierre diffs 上のレビュー優先ターミナル diff ビューア（hunkdiff 0.17）。Git / Jujutsu / Sapling、ウォッチ、インライン注釈、セッション broker、Homebrew 対応。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Hunk — エージェント向けターミナル diff ビューア">
-  <meta property="og:description" content="OpenTUI と Pierre diffs 上の、レビュー優先のターミナル diff ビューア。Git 連携、ウォッチ、インライン注釈、セッション broker。">
+  <meta property="og:description" content="OpenTUI と Pierre diffs 上のレビュー優先ターミナル diff ビューア。Git / jj / Sapling、ウォッチ、エージェント連携、セッション broker。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/hunk.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Hunk — エージェント向けターミナル diff ビューア">
-  <meta name="twitter:description" content="OpenTUI と Pierre diffs 上の、レビュー優先のターミナル diff ビューア。Git 連携とエージェント連携の要点。">
+  <meta name="twitter:description" content="レビュー優先のターミナル diff ビューア。Git / jj / Sapling とエージェント連携の要点。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rethink+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Recursive:ital,wght@0,300..1000;1,300..1000&display=swap" rel="stylesheet">
@@ -202,51 +202,60 @@
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
     <a href="#install">インストール</a>
-    <a href="#git">Git とパッチ</a>
+    <a href="#vcs">VCS とパッチ</a>
     <a href="#agents">エージェント</a>
     <a href="#compare">機能比較</a>
     <a href="#config">設定</a>
+    <a href="#pager">Pager / OpenTUI</a>
     <a href="#layout">構成</a>
     <a href="#links">リンク</a>
   </nav>
 
   <div class="main">
     <h1>Hunk</h1>
-    <p class="subtitle">review-first terminal diff viewer — OpenTUI × Pierre diffs</p>
+    <p class="subtitle">review-first terminal diff viewer — OpenTUI × Pierre diffs · hunkdiff 0.17</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
-      <p><strong>Hunk</strong> は、エージェントが書いた変更一式を<strong>レビュー優先</strong>の UI で読むためのターミナル diff ビューア。UI 基盤は <a href="https://github.com/anomalyco/opentui" target="_blank" rel="noopener">OpenTUI</a>、差分表示は <a href="https://www.npmjs.com/package/@pierre/diffs" target="_blank" rel="noopener">Pierre diffs</a> を利用する。</p>
+      <p><strong>Hunk</strong>（npm: <code>hunkdiff</code>）は、エージェントが書いた変更一式を<strong>レビュー優先</strong>の UI で読むためのターミナル diff ビューア。UI 基盤は <a href="https://github.com/anomalyco/opentui" target="_blank" rel="noopener">OpenTUI</a>、差分表示は <a href="https://www.npmjs.com/package/@pierre/diffs" target="_blank" rel="noopener">Pierre diffs</a> を利用する。リポジトリは <a href="https://github.com/modem-dev/hunk" target="_blank" rel="noopener">modem-dev/hunk</a>。</p>
       <div class="kpi-row">
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">Multi-file</span><span class="ve-kpi-card__label">サイドバー付きストリーム</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">Inline</span><span class="ve-kpi-card__label">AI / エージェント注釈</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Layouts</span><span class="ve-kpi-card__label">split / stack / 自動</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Watch</span><span class="ve-kpi-card__label">ファイル・Git 追従</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">VCS</span><span class="ve-kpi-card__label">Git / jj / Sapling</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Watch</span><span class="ve-kpi-card__label">ファイル・作業ツリー追従</span></div>
       </div>
       <ul>
         <li>キーボード・マウス・pager・Git <code>difftool</code> との連携</li>
-        <li>未追跡ファイルを含むワーキングツリーのレビュー</li>
-        <li>任意コミットやパッチ stdin の閲覧</li>
+        <li>未追跡ファイルを含むワーキングツリーのレビュー（<code>hunk diff</code>）</li>
+        <li>任意コミット / revset、パッチ stdin、2 ファイル比較</li>
+        <li>split / stack / 自動レイアウト、テーマセレクタ（<code>t</code>）</li>
       </ul>
     </div>
 
     <section id="install" class="sec-head">2 — インストールと要件</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> グローバル CLI</span>
-      <div class="ve-code-block"><pre><code>npm i -g hunkdiff</code></pre></div>
+      <div class="ve-code-block"><pre><code>npm i -g hunkdiff
+
+# または Homebrew
+brew install hunk</code></pre></div>
+      <div class="ve-callout" style="margin-bottom: 1rem;">
+        <strong>Homebrew 移行:</strong> 以前 <code>modem-dev/tap</code> から入れていた場合は、先に <code>brew uninstall modem-dev/tap/hunk</code> してから公式 formula を入れる。
+      </div>
       <ul>
         <li>Node.js 18 以上</li>
-        <li>macOS または Linux</li>
-        <li>多くのワークフローで Git を推奨</li>
+        <li>macOS、Linux、または Windows</li>
+        <li>多くのワークフローで Git を推奨（jj / Sapling も自動検出）</li>
+        <li>Nix 利用者は <code>flake.nix</code> の <code>default</code> パッケージ（詳細は上流 <code>nix/README.md</code>）</li>
       </ul>
       <div class="ve-code-block"><pre><code>hunk           # ヘルプ
 hunk --version # バージョン表示</code></pre></div>
     </div>
 
-    <section id="git" class="sec-head">3 — Git 作業ツリーと raw ファイル</section>
+    <section id="vcs" class="sec-head">3 — VCS・ファイル・パッチ</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> Git まわり</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> Git</span>
       <p>サブコマンドは Git の diff 系に寄せており、結果をプレーン text ではなくレビュー UI に載せる。</p>
       <div class="ve-code-block"><pre><code>hunk diff                      # 現在の変更（未追跡含む）
 hunk diff --watch              # ワーキングツリー変更で自動再読込
@@ -254,6 +263,10 @@ hunk show                      # 最新コミット
 hunk show HEAD~1               # 過去コミット</code></pre></div>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> Jujutsu / Sapling</span>
+      <p>jj または Sapling のチェックアウトを自動検出する。<code>hunk diff [revset]</code> / <code>hunk show [revset]</code> はネイティブ revset を使う。検出を上書きするときは設定で <code>vcs = "git"</code> / <code>"jj"</code> / <code>"sl"</code> を指定する。</p>
+    </div>
+    <div class="ve-card" style="--i:2">
       <span class="ve-section-label"><span class="ve-dot"></span> 2 ファイル比較とパッチ</span>
       <div class="ve-code-block"><pre><code>hunk diff before.ts after.ts
 hunk diff before.ts after.ts --watch
@@ -262,16 +275,23 @@ git diff --no-color | hunk patch -</code></pre></div>
 
     <section id="agents" class="sec-head">4 — エージェント連携</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> ライブセッション</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> ライブセッション（推奨）</span>
       <ol style="padding-left: 1.25rem; margin-bottom: 0.75rem;">
         <li style="margin-bottom: 0.5rem;">別ターミナルで <code>hunk diff</code> または <code>hunk show</code> を起動する。</li>
-        <li style="margin-bottom: 0.5rem;">リポジトリ付属の <code>skills/hunk-review/SKILL.md</code> をエージェントに読ませる。</li>
+        <li style="margin-bottom: 0.5rem;"><code>hunk skill path</code> が返すスキルパスをエージェントに読ませる（同梱 <code>skills/hunk-review/SKILL.md</code>）。</li>
         <li style="margin-bottom: 0.5rem;">ライブセッション向けにスキルを実行させる。</li>
       </ol>
+      <div class="ve-code-block"><pre><code>Load the Hunk skill and use it for this review.
+Run `hunk skill path` to get the skill path.</code></pre></div>
+      <p>TUI 起動時にローカル loopback デーモンへ登録され、<code>hunk session ...</code> でウィンドウを操作する。よく使う例:</p>
+      <div class="ve-code-block"><pre><code>hunk session list
+hunk session get --repo .
+hunk session review --repo . --json
+hunk session navigate --repo . --file src/App.tsx --hunk 2
+hunk session reload --repo . -- diff</code></pre></div>
       <div class="ve-callout">
-        <strong>注:</strong> <code>hunk skill path</code> はリリース 0.10.0 以降で整備予定の記述がある。それまでは上記 SKILL パスを直接指定する。
+        <strong>代替:</strong> 事前に書いた注釈を <code>--agent-context</code> で読み込む方法もある。手順の全文は上流の <a href="https://github.com/modem-dev/hunk/blob/main/docs/agent-workflows.md" target="_blank" rel="noopener">docs/agent-workflows.md</a>。
       </div>
-      <p>詳しい手順は上流の <a href="https://github.com/modem-dev/hunk/blob/main/docs/agent-workflows.md" target="_blank" rel="noopener">docs/agent-workflows.md</a> を参照。</p>
     </div>
 
     <section id="compare" class="sec-head">5 — 他ツールとの機能比較（要約）</section>
@@ -283,22 +303,25 @@ git diff --no-color | hunk patch -</code></pre></div>
             <tr>
               <th>能力</th>
               <th>Hunk</th>
+              <th>lumen</th>
               <th>delta</th>
               <th>difftastic</th>
               <th>GNU diff</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>レビュー優先の対話 UI</td><td>○</td><td>×</td><td>×</td><td>×</td></tr>
-            <tr><td>複数ファイルストリーム + サイドバー</td><td>○</td><td>×</td><td>×</td><td>×</td></tr>
-            <tr><td>インライン エージェント / AI 注釈</td><td>○</td><td>×</td><td>×</td><td>×</td></tr>
-            <tr><td>構造 diff（トークン単位）</td><td>×</td><td>×</td><td>○</td><td>×</td></tr>
-            <tr><td>pager 互換モード</td><td>○</td><td>○</td><td>×</td><td>○</td></tr>
-            <tr><td>シンタックス強調</td><td>○</td><td>○</td><td>○</td><td>×</td></tr>
+            <tr><td>レビュー優先の対話 UI</td><td>○</td><td>○</td><td>×</td><td>×</td><td>×</td></tr>
+            <tr><td>複数ファイルストリーム + サイドバー</td><td>○</td><td>○</td><td>×</td><td>×</td><td>×</td></tr>
+            <tr><td>インライン エージェント / AI 注釈</td><td>○</td><td>×</td><td>×</td><td>×</td><td>×</td></tr>
+            <tr><td>自動 split / stack レイアウト</td><td>○</td><td>×</td><td>×</td><td>×</td><td>×</td></tr>
+            <tr><td>ビューア内マウス操作</td><td>○</td><td>○</td><td>×</td><td>×</td><td>×</td></tr>
+            <tr><td>構造 diff（トークン単位）</td><td>×</td><td>×</td><td>×</td><td>○</td><td>×</td></tr>
+            <tr><td>pager 互換モード</td><td>○</td><td>×</td><td>○</td><td>○</td><td>○</td></tr>
+            <tr><td>シンタックス強調</td><td>○</td><td>○</td><td>○</td><td>○</td><td>×</td></tr>
           </tbody>
         </table>
       </div>
-      <p>全文の比較表（lumen / diff-so-fancy 等）は <a href="https://github.com/modem-dev/hunk#feature-comparison" target="_blank" rel="noopener">modem-dev/hunk の README</a> を参照。</p>
+      <p>全文の比較表（diff-so-fancy 等）は <a href="https://github.com/modem-dev/hunk#feature-comparison" target="_blank" rel="noopener">modem-dev/hunk の README</a> を参照。</p>
     </div>
 
     <section id="config" class="sec-head">6 — 設定ファイル</section>
@@ -309,38 +332,91 @@ git diff --no-color | hunk patch -</code></pre></div>
         <li>リポジトリ直下の <code>.hunk/config.toml</code></li>
       </ul>
       <h3>例（TOML）</h3>
-      <div class="ve-code-block"><pre><code>theme = "graphite"   # graphite, midnight, paper, ember
+      <div class="ve-code-block"><pre><code>theme = "github-dark-default" # 組み込み id / auto / custom
 mode = "auto"        # auto, split, stack
+vcs = "git"          # git, jj, sl
+watch = false
 exclude_untracked = false
 line_numbers = true
 wrap_lines = false
-agent_notes = false</code></pre></div>
+menu_bar = true
+agent_notes = false
+transparent_background = false</code></pre></div>
+      <ul>
+        <li><code>theme = "auto"</code>（または <code>--theme auto</code>）は起動時に端末背景を問い合わせ、明背景なら <code>github-light-default</code>、暗背景なら <code>github-dark-default</code> を選ぶ。</li>
+        <li>旧 id（例: <code>graphite</code>、<code>paper</code>）は互換エイリアスとして残る。</li>
+        <li><code>exclude_untracked</code> は Git / Sapling の作業ツリー <code>hunk diff</code> にのみ効く。</li>
+        <li>アプリ内で <code>t</code>、または <code>View → Themes…</code> でテーマセレクタを開く。</li>
+        <li><code>menu_bar = false</code> でメニューバーを消し、キーボード中心のレビューで 1 行分の端末高さを確保できる（0.17）。</li>
+      </ul>
+      <h3>カスタムテーマ</h3>
+      <div class="ve-code-block"><pre><code>theme = "custom"
+
+[custom_theme]
+base = "catppuccin-mocha"
+label = "My Theme"
+accent = "#7fd1ff"
+panel = "#10161d"
+noteBorder = "#c49bff"
+
+[custom_theme.syntax]
+keyword = "#8ed4ff"
+string = "#c7b4ff"
+comment = "#6e85a7"</code></pre></div>
+      <p>カスタム色はすべて <code>#rrggbb</code>。組み込みテーマを <code>base</code> に継承し、必要な色だけ上書きする。</p>
     </div>
 
-    <section id="layout" class="sec-head">7 — リポジトリ構成（処理の層）</section>
+    <section id="pager" class="sec-head">7 — Pager 連携と OpenTUI 埋め込み</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> Git / jj / Sapling pager</span>
+      <div class="ve-code-block"><pre><code># Git
+git config --global core.pager "hunk pager"
+
+# Jujutsu（jj config edit --user）
+[ui]
+pager = ["hunk", "pager"]
+diff-formatter = ":git"
+
+# Sapling（sl config -u）
+[pager]
+pager = hunk pager</code></pre></div>
+      <div class="ve-callout">
+        <strong>未追跡ファイル:</strong> 自動取り込みは Hunk 自身の <code>hunk diff</code> 作業ツリーローダのみ。<code>hunk pager</code> 経由の <code>git diff</code> では Git がパッチ内容を決めるため、未追跡は出ない。
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> hunkdiff/opentui</span>
+      <p><code>HunkDiffView</code> と下位プリミティブを <code>hunkdiff/opentui</code> から公開している。自前の OpenTUI アプリに同じ diff レンダラを埋め込める。peer は OpenTUI / React（例: <code>@opentui/core@^0.4.2</code>）。API と実行例は上流の <a href="https://github.com/modem-dev/hunk/blob/main/docs/opentui-component.md" target="_blank" rel="noopener">docs/opentui-component.md</a>。</p>
+    </div>
+
+    <section id="layout" class="sec-head">8 — リポジトリ構成（処理の層）</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> ざっくりデータフロー</span>
-      <p>CLI エントリ（<code>src/core/cli.ts</code> ほか）が Git / ファイル入力を解釈し、セッションと broker（<code>packages/session-broker*</code>）を介して TUI（<code>src/ui</code>）へ差分とメタデータを流すイメージ。</p>
+      <p>CLI（<code>src/core/cli.ts</code> ほか）が Git / jj / Sapling / ファイル入力を解釈し、セッションと broker（<code>packages/session-broker*</code>）を介して TUI（<code>src/ui</code>）へ差分とメタデータを流す。</p>
       <div class="mermaid-wrap">
         <div class="mermaid">
 flowchart TD
-  A[CLI hunk / hunk show] --> B[src/core Git・パス解決]
+  A[CLI hunk / show / patch] --> B[src/core VCS・パス解決]
   B --> C[src/session プロトコル]
   C --> D[session-broker デーモン]
   D --> E[src/ui OpenTUI + Pierre]
   C --> E
+  F[hunk session / skill] --> D
         </div>
       </div>
     </div>
 
-    <section id="links" class="sec-head">8 — 公式リンク</section>
+    <section id="links" class="sec-head">9 — 公式リンク</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 参照</span>
       <ul>
         <li><a href="https://github.com/modem-dev/hunk" target="_blank" rel="noopener">GitHub: modem-dev/hunk</a> — 本体・Issue・CI</li>
         <li><a href="https://github.com/modem-dev/hunk/blob/main/README.md" target="_blank" rel="noopener">README.md</a> — インストール・比較表・スクリーンショット</li>
+        <li><a href="https://github.com/modem-dev/hunk/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> — 0.17 までの変更履歴</li>
         <li><a href="https://github.com/modem-dev/hunk/blob/main/docs/agent-workflows.md" target="_blank" rel="noopener">docs/agent-workflows.md</a> — エージェント手順</li>
+        <li><a href="https://github.com/modem-dev/hunk/blob/main/docs/opentui-component.md" target="_blank" rel="noopener">docs/opentui-component.md</a> — 埋め込みコンポーネント</li>
         <li><a href="https://github.com/modem-dev/hunk/blob/main/skills/hunk-review/SKILL.md" target="_blank" rel="noopener">skills/hunk-review/SKILL.md</a> — レビュー用スキル</li>
+        <li><a href="https://discord.gg/WZFjaP6Gt8" target="_blank" rel="noopener">Modem Discord</a> — 利用者・コントリビュータ向けチャット</li>
       </ul>
     </div>
   </div>
