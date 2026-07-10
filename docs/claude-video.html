@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>claude-video — /watch で動画を見る Agent Skill（bradautomates/claude-video）</title>
+  <meta name="description" content="URL またはローカル動画を captions / Whisper とフレーム抽出でエージェントに見せる /watch スキル。detail モード、フレーム予算、インストール面、構成の技術概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="claude-video — /watch で動画を見る Agent Skill（bradautomates/claude-video）">
+  <meta property="og:description" content="URL またはローカル動画を captions / Whisper とフレーム抽出でエージェントに見せる /watch スキル。detail モード、フレーム予算、インストール面、構成の技術概要。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/claude-video.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="claude-video — /watch で動画を見る Agent Skill（bradautomates/claude-video）">
+  <meta name="twitter:description" content="URL またはローカル動画を captions / Whisper とフレーム抽出でエージェントに見せる /watch スキル。detail モード、フレーム予算、インストール面、構成の技術概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Red+Hat+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.008 155);
+      --foreground: oklch(0.22 0.03 160);
+      --card: oklch(0.995 0.004 155);
+      --card-foreground: oklch(0.22 0.03 160);
+      --popover: oklch(0.995 0.004 155);
+      --popover-foreground: oklch(0.22 0.03 160);
+      --primary: oklch(0.22 0.03 160);
+      --primary-foreground: oklch(0.985 0.008 155);
+      --secondary: oklch(0.95 0.02 155);
+      --secondary-foreground: oklch(0.22 0.03 160);
+      --muted: oklch(0.95 0.02 155);
+      --muted-foreground: oklch(0.48 0.03 160);
+      --accent: oklch(0.95 0.02 155);
+      --accent-foreground: oklch(0.22 0.03 160);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.90 0.02 155);
+      --input: oklch(0.90 0.02 155);
+      --ring: oklch(0.70 0.04 155);
+      --chart-1: oklch(0.48 0.14 155);
+      --chart-2: oklch(0.72 0.15 75);
+      --chart-3: oklch(0.45 0.06 220);
+      --chart-4: oklch(0.65 0.10 140);
+      --chart-5: oklch(0.55 0.08 40);
+      --code-bg: oklch(0.94 0.025 155);
+      --code-text: #14532d;
+      --font-body: 'Fraunces', Georgia, 'Times New Roman', serif;
+      --font-mono: 'Red Hat Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.16 0.02 160);
+        --foreground: oklch(0.96 0.01 155);
+        --card: oklch(0.21 0.025 160);
+        --card-foreground: oklch(0.96 0.01 155);
+        --popover: oklch(0.21 0.025 160);
+        --popover-foreground: oklch(0.96 0.01 155);
+        --primary: oklch(0.96 0.01 155);
+        --primary-foreground: oklch(0.16 0.02 160);
+        --secondary: oklch(0.26 0.03 160);
+        --secondary-foreground: oklch(0.96 0.01 155);
+        --muted: oklch(0.26 0.03 160);
+        --muted-foreground: oklch(0.72 0.03 155);
+        --accent: oklch(0.26 0.03 160);
+        --accent-foreground: oklch(0.96 0.01 155);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.55 0.06 155);
+        --chart-1: oklch(0.72 0.14 155);
+        --chart-2: oklch(0.80 0.14 75);
+        --chart-3: oklch(0.70 0.08 220);
+        --chart-4: oklch(0.68 0.10 140);
+        --chart-5: oklch(0.65 0.08 40);
+        --code-bg: #0f1410;
+        --code-text: #86efac;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 82%, var(--chart-1) 18%);
+        border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 24rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); font-family: var(--font-mono); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--border) 80%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 700; font-family: var(--font-mono); color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; font-family: var(--font-mono); }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .ve-badge { display: inline-flex; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--muted); color: var(--chart-1); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-1) 10%, transparent) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-1) 14%, transparent) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2.125rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.6; max-width: 62rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--text); }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 1rem 0; }
+    .pipeline .step { background: color-mix(in oklch, var(--muted) 70%, var(--chart-1) 30%); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); border: 1px solid color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    .layer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 720px) { .layer-grid { grid-template-columns: 1fr; } }
+    .layer-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; background: var(--muted); }
+    .layer-card h4 { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--chart-1); margin-bottom: 0.5rem; }
+
+    .back { margin-bottom: 1.5rem; }
+    .back a { color: var(--chart-1); text-decoration: none; font-family: var(--font-mono); font-size: 0.8125rem; }
+    .back a:hover { text-decoration: underline; }
+
+    /* ============ Mermaid wrap + zoom controls ============ */
+    .mermaid-wrap {
+      position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg);
+      background: var(--card); overflow: hidden; margin: 1rem 0;
+    }
+    .mermaid-controls {
+      position: absolute; top: 8px; right: 10px; display: flex; gap: 4px; z-index: 10;
+    }
+    .mermaid-controls button {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      width: 26px; height: 26px; font-family: var(--font-mono); font-size: 13px; color: var(--text-dim);
+      cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s;
+    }
+    .mermaid-controls button:hover { background: var(--border); color: var(--text); }
+    .mermaid-viewport {
+      overflow: hidden; cursor: grab; padding: 1.5rem; display: flex; justify-content: center; min-height: 240px;
+    }
+    .mermaid-viewport:active { cursor: grabbing; }
+    .mermaid-inner { transform-origin: center top; }
+    .mermaid { min-width: 0; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#pipeline">処理の流れ</a>
+    <a href="#detail">Detail モード</a>
+    <a href="#frames">フレーム予算</a>
+    <a href="#install">インストール</a>
+    <a href="#usage">使い方</a>
+    <a href="#structure">構成</a>
+    <a href="#limits">制約・権限</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <p class="back"><a href="../index.html">&larr; 資料一覧</a></p>
+  <h1>claude-video</h1>
+  <p class="subtitle">bradautomates/claude-video — Agent Skill <code>/watch</code> · yt-dlp + ffmpeg + captions/Whisper · v0.2.0</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
+    <p>エージェントに動画入力を足すスキル。URL（yt-dlp が扱えるサイト）またはローカルパス（<code>.mp4</code> / <code>.mov</code> / <code>.mkv</code> / <code>.webm</code>）を渡し、キャプションまたは Whisper のタイムスタンプ付き文字起こしと、JPEG フレームを揃えてから <code>Read</code> で画像を読む。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">/watch</div>
+        <div class="ve-kpi-card__label">スラッシュコマンド</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">4</div>
+        <div class="ve-kpi-card__label">detail モード</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">50+</div>
+        <div class="ve-kpi-card__label">Agent Skills ホスト</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">MIT</div>
+        <div class="ve-kpi-card__label">ライセンス</div>
+      </div>
+    </div>
+    <div class="ve-code-block">
+      <pre><code>/watch https://youtu.be/dQw4w9WgXcQ what happens at the 30 second mark?</code></pre>
+    </div>
+    <div class="ve-callout">
+      <strong>ゼロ設定で開始:</strong> 初回に <code>setup.py</code> が <code>ffmpeg</code> / <code>yt-dlp</code> を確認する。macOS は Homebrew で自動インストール。公開動画の多くはネイティブキャプションだけで足り、Whisper API キーはキャプション無しのときだけ必要。
+    </div>
+  </div>
+
+  <div class="layer-grid">
+    <div class="layer-card">
+      <h4>典型ユース</h4>
+      <ul>
+        <li>他人の動画のフック・構成分析</li>
+        <li>画面録画からのバグ診断</li>
+        <li>長尺の要約・ハイプ除去</li>
+        <li>プレイリストをノート化</li>
+      </ul>
+    </div>
+    <div class="layer-card">
+      <h4>製品の境界</h4>
+      <ul>
+        <li>本体は CLI ではなくスキル契約 <code>SKILL.md</code></li>
+        <li><code>scripts/watch.py</code> は実装エントリ</li>
+        <li>自己完結フォルダ <code>skills/watch/</code> を単位で配布</li>
+        <li>ハーネス固有の <code>CLAUDE_SKILL_DIR</code> に依存しない</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="pipeline" class="sec-head">2 — 処理の流れ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ランタイム</span>
+    <p>ユーザーがソースと質問を渡すと、エージェントは preflight → <code>watch.py</code> → 全フレーム <code>Read</code> → 回答 → 作業ディレクトリ掃除、の順で動く。</p>
+    <div class="pipeline">
+      <span class="step">setup --check</span>
+      <span class="arrow">→</span>
+      <span class="step">download / captions</span>
+      <span class="arrow">→</span>
+      <span class="step">frames + dedup</span>
+      <span class="arrow">→</span>
+      <span class="step">transcript</span>
+      <span class="arrow">→</span>
+      <span class="step">Read frames</span>
+      <span class="arrow">→</span>
+      <span class="step">answer + cleanup</span>
+    </div>
+    <div class="mermaid-wrap">
+      <div class="mermaid-controls">
+        <button type="button" id="zoomIn" aria-label="拡大">+</button>
+        <button type="button" id="zoomOut" aria-label="縮小">−</button>
+        <button type="button" id="zoomReset" aria-label="リセット">↺</button>
+      </div>
+      <div class="mermaid-viewport" id="mermaidViewport">
+        <div class="mermaid-inner" id="mermaidInner">
+          <pre class="mermaid">
+flowchart TD
+  A["/watch source + question"] --> B["setup.py preflight"]
+  B --> C{"captions?"}
+  C -->|yes + transcript detail| D["report without video download"]
+  C -->|need pixels / no captions| E["yt-dlp download"]
+  E --> F["ffmpeg frames"]
+  F --> G["dedup near-duplicates"]
+  C -->|no captions| H["Whisper audio"]
+  D --> I["timestamped transcript"]
+  G --> I
+  H --> I
+  I --> J["Claude Read each JPEG"]
+  J --> K["grounded answer"]
+  K --> L["rm work dir if done"]
+          </pre>
+        </div>
+      </div>
+    </div>
+    <ol>
+      <li><strong>キャプション優先:</strong> <code>transcript</code> detail ではキャプション付き URL なら動画ダウンロードをスキップできる。</li>
+      <li><strong>フレーム抽出:</strong> <code>efficient</code> はキーフレーム、<code>balanced</code> / <code>token-burner</code> はシーン変化（不足時は均一サンプリング）。既定幅 512px、高さ上限 1998px。</li>
+      <li><strong>文字起こし:</strong> ネイティブ字幕 → 失敗時は mono 16 kHz 64 kbps mp3 を Whisper（Groq 優先、OpenAI 代替）。</li>
+      <li><strong>回答:</strong> フレームパスに <code>t=MM:SS</code>、トランスクリプトにタイムスタンプ。全フレームを並列 <code>Read</code>。</li>
+    </ol>
+  </div>
+
+  <section id="detail" class="sec-head">3 — Detail モード</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 速度とトークンのダイヤル</span>
+    <p><code>--detail</code> または <code>~/.config/watch/.env</code> の <code>WATCH_DETAIL</code>。既定は <code>balanced</code>。測定例は 49:08 / 1280×720 の画面録画（英語 auto-captions）に対する実測。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Mode</th><th>Engine</th><th>Cap</th><th>抽出時間（例）</th><th>画像トークン目安</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>transcript</code></td><td>なし（captions）</td><td>—</td><td>~4.5 s（yt-dlp 1 回）</td><td>0（テキストのみ）</td></tr>
+          <tr><td><code>efficient</code></td><td>keyframe</td><td>50</td><td>~0.5 s</td><td>~9.8k</td></tr>
+          <tr><td><code>balanced</code></td><td>scene-change</td><td>100</td><td>~20.9 s</td><td>~19.7k</td></tr>
+          <tr><td><code>token-burner</code></td><td>scene-change</td><td>uncapped</td><td>~21.0 s</td><td>~22.8k（例では 116 枚）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul>
+      <li>512px 幅の 720p フレームは約 197 tokens/frame（Anthropic の <code>(w×h)/750</code>）。</li>
+      <li>候補を全範囲から取り、even-sample（先頭・末尾は必ず残す）で cap まで間引く。モード差は候補ソースと cap だけ。</li>
+      <li><code>efficient</code> は「速い」意味。低モーションではキーフレーム数がシーンカットより多くなり得る。</li>
+    </ul>
+  </div>
+
+  <section id="frames" class="sec-head">4 — フレーム予算と dedup</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> トークンはフレームが支配</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>尺</th><th>フル動画の目安</th><th>備考</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>≤30 s</td><td>~30 frames</td><td>密</td></tr>
+          <tr><td>30 s – 1 min</td><td>~40</td><td>密</td></tr>
+          <tr><td>1 – 3 min</td><td>~60</td><td>余裕あり</td></tr>
+          <tr><td>3 – 10 min</td><td>~80</td><td>疎め</td></tr>
+          <tr><td>&gt; 10 min</td><td>cap まで疎</td><td>sparse scan 警告 → <code>--start</code>/<code>--end</code> 推奨</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>フォーカスモード</h3>
+    <p>ユーザーが時刻を指定したら <code>--start</code> / <code>--end</code>。秒あたり予算が上がり、上限は 2 fps。長尺の全体スキャンより有用。</p>
+    <h3>近傍重複の除去</h3>
+    <p>既定で dedup が走る（<code>--no-dedup</code> で無効）。各 JPEG を 16×16 グレースケールにし、直前に残したフレームとの mean absolute difference ≤ 2.0 なら落とす。cap は dedup 後に適用。</p>
+    <div class="ve-callout">
+      <strong>transcript-cue frames:</strong> プレゼンターの「look here」などは視覚変化が小さい。トランスクリプトを読んで <code>--timestamps T1,T2,...</code> を足す。cue は cap に対して先に予約され、even-sample で落ちない。
+    </div>
+  </div>
+
+  <section id="install" class="sec-head">5 — インストール</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 面ごとの入れ方</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Surface</th><th>Install</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Claude Code</td><td><code>/plugin marketplace add bradautomates/claude-video</code> → <code>/plugin install watch@claude-video</code></td></tr>
+          <tr><td>Codex / Cursor / Copilot / +50</td><td><code>npx skills add bradautomates/claude-video -g</code></td></tr>
+          <tr><td>claude.ai（web）</td><td>Release の <code>watch.skill</code> を Capabilities → Skills に追加（Code execution 必須）</td></tr>
+          <tr><td>Manual / dev</td><td>clone 後 <code>skills/watch</code> をホストの skills へ symlink</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-code-block">
+      <pre><code># Claude Code
+/plugin marketplace add bradautomates/claude-video
+/plugin install watch@claude-video
+
+# Agent Skills CLI（グローバル）
+npx skills add bradautomates/claude-video -g
+
+# 更新
+npx skills update watch -g</code></pre>
+    </div>
+    <h3>初回セットアップ</h3>
+    <ul>
+      <li>macOS: <code>brew install ffmpeg yt-dlp</code> を自動実行</li>
+      <li>Linux / Windows: 表示された <code>apt</code> / <code>dnf</code> / <code>winget</code> 等を実行</li>
+      <li>キー: <code>~/.config/watch/.env</code>（mode <code>0600</code>）に <code>GROQ_API_KEY</code>（優先）または <code>OPENAI_API_KEY</code></li>
+      <li>キー無しでも完了可。キャプション無し動画は <code>--no-whisper</code> でフレームのみ</li>
+    </ul>
+  </div>
+
+  <section id="usage" class="sec-head">6 — 使い方とフラグ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 呼び出し例</span>
+    <div class="ve-code-block">
+      <pre><code>/watch https://youtu.be/abc what language is this in?
+/watch ~/Movies/bug-repro.mov what's going wrong?
+/watch "$URL" --start 2:15 --end 2:45
+/watch video.mp4 --detail efficient --max-frames 40
+/watch "$URL" --detail transcript --timestamps 4:32,7:10</code></pre>
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Flag</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--detail …</code></td><td><code>transcript</code> / <code>efficient</code> / <code>balanced</code> / <code>token-burner</code></td></tr>
+          <tr><td><code>--start</code> / <code>--end</code></td><td>区間フォーカス（<code>SS</code> / <code>MM:SS</code> / <code>HH:MM:SS</code>）</td></tr>
+          <tr><td><code>--timestamps</code></td><td>絶対時刻の cue フレーム（カンマ区切り）</td></tr>
+          <tr><td><code>--max-frames N</code></td><td>cap 上書き</td></tr>
+          <tr><td><code>--resolution W</code></td><td>幅（既定 512。画面文字なら 1024）</td></tr>
+          <tr><td><code>--fps F</code></td><td>auto-fps 上書き（上限 2）</td></tr>
+          <tr><td><code>--whisper groq|openai</code></td><td>Whisper バックエンド固定</td></tr>
+          <tr><td><code>--no-whisper</code></td><td>文字起こしフォールバック無効</td></tr>
+          <tr><td><code>--no-dedup</code></td><td>近傍重複を残す</td></tr>
+          <tr><td><code>--out-dir DIR</code></td><td>作業ディレクトリ指定</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="structure" class="sec-head">7 — 構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> リポジトリレイアウト</span>
+    <div class="ve-code-block">
+      <pre><code>.
+├── skills/watch/                 # 配布単位（SKILL.md + scripts/）
+│   ├── SKILL.md                  # 全ホスト共通の契約
+│   └── scripts/
+│       ├── watch.py              # オーケストレータ
+│       ├── download.py           # yt-dlp
+│       ├── frames.py             # ffmpeg + auto-fps + dedup
+│       ├── transcribe.py         # VTT / Whisper オーケストレーション
+│       ├── whisper.py            # Groq / OpenAI（stdlib）
+│       ├── config.py / setup.py
+│       └── build-skill.sh        # dist/watch.skill
+├── hooks/                        # Claude Code SessionStart
+├── .claude-plugin/ · .codex-plugin/ · .agents/plugins/
+├── tests/                        # pytest（合成クリップ、ネットワーク無し）
+└── .github/workflows/release.yml # タグで watch.skill を添付</code></pre>
+    </div>
+    <p><code>SKILL_DIR</code> は「今 Read した SKILL.md の親ディレクトリ」。すべての <code>python3 "${SKILL_DIR}/scripts/…"</code> はこの解決に依存する。</p>
+  </div>
+
+  <section id="limits" class="sec-head">8 — 制約・権限</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 精度とセキュリティ</span>
+    <ul>
+      <li>cap 付きモード（<code>efficient</code> / <code>balanced</code>）は ~10 分超で疎になる。区間再実行か <code>token-burner</code>。</li>
+      <li>ユニバーサル上限 2 fps。250 フレーム超で soft warning。</li>
+      <li>動画本体は API に送らない。送るのはキャプション欠落時の抽出音声のみ。</li>
+      <li>yt-dlp は公開データのみ。ログイン・Cookie・投稿はしない。</li>
+      <li>キーは stdout/stderr/成果物に出さない。永続は作業 dir と <code>~/.config/watch/.env</code> のみ。</li>
+    </ul>
+    <div class="ve-callout">
+      <strong>コスト目安:</strong> 80 枚 @ 512px でおおよそ 50–80k image tokens。1024px は約 4 倍。同一セッションの追質問ではスクリプトを再実行しない。
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">9 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/bradautomates/claude-video" target="_blank" rel="noopener">GitHub: bradautomates/claude-video</a> — 本体</li>
+      <li><a href="https://github.com/bradautomates/claude-video/releases/latest" target="_blank" rel="noopener">Releases</a> — <code>watch.skill</code> 配布</li>
+      <li><a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills</a> — ホスト横断のスキル仕様</li>
+      <li><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq API keys</a> — Whisper 優先バックエンド</li>
+      <li><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI API keys</a> — Whisper 代替</li>
+      <li><a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener">yt-dlp</a> · <a href="https://ffmpeg.org/" target="_blank" rel="noopener">ffmpeg</a></li>
+    </ul>
+    <p style="margin-top:1rem; font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim)">出典: README.md · skills/watch/SKILL.md · AGENTS.md · CHANGELOG.md</p>
+  </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#dcfce7',
+    primaryTextColor: '#14532d',
+    primaryBorderColor: '#16a34a',
+    lineColor: '#16a34a',
+    secondaryColor: '#fef3c7',
+    tertiaryColor: '#f0fdf4',
+    edgeLabelBackground: '#ffffff',
+    fontSize: '14px'
+  }
+});
+
+(function() {
+  var zoom = 1;
+  var dx = 0;
+  var dy = 0;
+  var inner = document.getElementById('mermaidInner');
+  var viewport = document.getElementById('mermaidViewport');
+  if (!inner || !viewport) return;
+
+  var applyTransform = function() {
+    inner.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(' + zoom + ')';
+  };
+  var setZoom = function(z) {
+    zoom = Math.min(3, Math.max(0.4, z));
+    applyTransform();
+  };
+
+  document.getElementById('zoomIn').addEventListener('click', function() { setZoom(zoom + 0.2); });
+  document.getElementById('zoomOut').addEventListener('click', function() { setZoom(zoom - 0.2); });
+  document.getElementById('zoomReset').addEventListener('click', function() { zoom = 1; dx = 0; dy = 0; applyTransform(); });
+
+  viewport.addEventListener('wheel', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      setZoom(zoom - e.deltaY * 0.002);
+    }
+  }, { passive: false });
+
+  var dragging = false;
+  var lastX = 0;
+  var lastY = 0;
+  viewport.addEventListener('mousedown', function(e) {
+    dragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    e.preventDefault();
+  });
+  document.addEventListener('mouseup', function() { dragging = false; });
+  viewport.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    dx += e.clientX - lastX;
+    dy += e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    applyTransform();
+  });
+})();
+
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
