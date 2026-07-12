@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>vercel-labs/skills — オープンエージェントスキル CLI</title>
-  <meta name="description" content="vercel-labs/skills v1.5.11 の add / use / list / update コマンド、70+ エージェント対応、スキル探索と blob 高速パスの技術解説。">
+  <meta name="description" content="vercel-labs/skills v1.5.16 の add / use / list / update コマンド、73 エージェント対応、スキル探索と blob 高速パスの技術解説。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
@@ -14,7 +14,7 @@
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="vercel-labs/skills — オープンエージェントスキル CLI">
-  <meta name="twitter:description" content="add / use / update と 70+ エージェント対応を押さえた skills CLI 解説。">
+  <meta name="twitter:description" content="add / use / update と 73 エージェント対応を押さえた skills CLI 解説。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -246,7 +246,7 @@
 
   <div class="main">
   <h1>vercel-labs/skills</h1>
-  <p class="subtitle"><code>npx skills</code> — オープンなエージェントスキルエコシステム向け CLI。GitHub・GitLab・git URL・ローカルパスから <code>SKILL.md</code> を取得し、Claude Code・Cursor・Codex など 70 以上のコーディングエージェントへシンリンクまたはコピーで配布する。</p>
+  <p class="subtitle"><code>npx skills</code> — オープンなエージェントスキルエコシステム向け CLI。GitHub・GitLab・git URL・ローカルパスから <code>SKILL.md</code> を取得し、Claude Code・Cursor・Codex など 73 のコーディングエージェントへシンリンクまたはコピーで配布する（README: OpenCode / Claude Code / Codex / Cursor + 69）。</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="hero-grid">
@@ -254,8 +254,8 @@
       <span class="ve-section-label"><span class="ve-dot"></span> CLI role</span>
       <p><strong>skills</strong> は <a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills 仕様</a> に沿った指示セット（<code>SKILL.md</code>）を、リポジトリからエージェント固有の skills ディレクトリへ届ける配布レイヤー。スキル本体は各リポジトリ（例: <code>vercel-labs/agent-skills</code>）にあり、CLI は探索・取得・配置・更新を担う。</p>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">70+</span><span class="ve-kpi-card__label">対応エージェント</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">v1.5</span><span class="ve-kpi-card__label">.11 最新</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">73</span><span class="ve-kpi-card__label">対応エージェント</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">v1.5</span><span class="ve-kpi-card__label">.16 最新</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">7</span><span class="ve-kpi-card__label">主要コマンド</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
       </div>
@@ -374,7 +374,7 @@ npx skills use vercel-labs/agent-skills --skill web-design-guidelines --agent cl
           <tr><td><code>-s, --skill &lt;skills&gt;</code></td><td>特定スキルのみ（<code>*</code> で全スキル）</td></tr>
           <tr><td><code>-l, --list</code></td><td>インストールせずリポジトリ内スキルを一覧</td></tr>
           <tr><td><code>--copy</code></td><td>シンリンクの代わりにファイルコピー</td></tr>
-          <tr><td><code>--full-depth</code></td><td>ルート <code>SKILL.md</code> があっても全サブディレクトリを探索</td></tr>
+          <tr><td><code>--full-depth</code></td><td>ルート <code>SKILL.md</code> があっても全サブディレクトリを探索。コンテナ外（例: <code>examples/</code>、<code>tests/</code>）の <code>SKILL.md</code> も対象</td></tr>
           <tr><td><code>-y, --yes</code></td><td>確認プロンプトをスキップ（CI 向け）</td></tr>
           <tr><td><code>--all</code></td><td><code>--skill '*' --agent '*' -y</code> の省略形</td></tr>
         </tbody>
@@ -413,7 +413,7 @@ flowchart TD
 
     INST --> GLOCK["skill-lock.ts\n~/.agents/.skill-lock.json"]
     INST --> LLOCK["local-lock.ts\nskills-lock.json"]
-    INST --> AGENTS["agents.ts\n70+ 定義"]
+    INST --> AGENTS["agents.ts\n73 定義"]
 
     classDef entry fill:color-mix(in oklch, var(--chart-1) 25%, white),stroke:var(--chart-1)
     classDef cmd fill:color-mix(in oklch, var(--chart-2) 20%, white),stroke:var(--chart-2)
@@ -437,7 +437,7 @@ flowchart TD
           <tr><td><code>use.ts</code></td><td>一時展開とプロンプト生成、エージェント子プロセス起動</td></tr>
           <tr><td><code>blob.ts</code></td><td>Trees API → frontmatter → skills.sh download の高速取得。一部リポジトリは自前 CDN（例: zapier/connectors）</td></tr>
           <tr><td><code>installer.ts</code></td><td>シンリンク / コピー配置、canonical path 管理</td></tr>
-          <tr><td><code>skill-lock.ts</code> / <code>local-lock.ts</code></td><td>グローバル / プロジェクトのロックファイルと更新検知</td></tr>
+          <tr><td><code>skill-lock.ts</code> / <code>local-lock.ts</code></td><td>グローバル（<code>~/.agents/.skill-lock.json</code>）/ プロジェクト（<code>skills-lock.json</code>）のロック。形式は v3（<code>skillFolderHash</code>）。古い版は読み込み時に破棄され再インストールが必要</td></tr>
           <tr><td><code>agents.ts</code></td><td>エージェント別 project / global skills パス定義と自動検出</td></tr>
         </tbody>
       </table>
@@ -505,7 +505,7 @@ description: このスキルの目的と使うタイミング
       <span class="agent-badge">github-copilot</span>
       <span class="agent-badge">gemini-cli</span>
       <span class="agent-badge">openclaw</span>
-      <span class="agent-badge">... 70+ total</span>
+      <span class="agent-badge">... 73 total</span>
     </div>
     <p style="margin-top:0.75rem">CLI はインストール済みエージェントを自動検出。未検出時は対話で選択する。互換性の詳細は README の Compatibility 表を参照（<code>allowed-tools</code>、<code>context: fork</code>、Hooks などエージェント固有機能の差分）。</p>
   </div>
@@ -514,7 +514,7 @@ description: このスキルの目的と使うタイミング
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> Source references</span>
     <ul class="link-list">
-      <li><a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">GitHub: vercel-labs/skills</a> — CLI 本体（TypeScript、v1.5.11）</li>
+      <li><a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">GitHub: vercel-labs/skills</a> — CLI 本体（TypeScript、v1.5.16）</li>
       <li><a href="https://skills.sh" target="_blank" rel="noopener">skills.sh</a> — 公開スキルディレクトリ</li>
       <li><a href="https://agentskills.io" target="_blank" rel="noopener">Agent Skills 仕様</a> — SKILL.md フォーマット</li>
       <li><a href="https://github.com/vercel-labs/agent-skills" target="_blank" rel="noopener">vercel-labs/agent-skills</a> — Vercel 公式スキル集（README の代表例）</li>
