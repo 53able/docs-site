@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pi — Pi Agent Harness（earendil-works）</title>
-  <meta name="description" content="earendil-works/pi のモノレポを、Pi coding agent、統一 LLM API、エージェント基盤、TUI / Web UI、拡張・スキル・パッケージ、セッション管理の観点で整理したビジュアル解説。">
+  <meta name="description" content="earendil-works/pi のモノレポを、Pi coding agent、統一 LLM API、エージェント基盤、TUI、拡張・スキル・パッケージ、コンテナ化、サプライチェーン対策の観点で整理したビジュアル解説。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="pi — Pi Agent Harness（earendil-works）">
-  <meta property="og:description" content="Pi coding agent、統一 LLM API、エージェント基盤、TUI / Web UI、拡張・スキル・パッケージ、セッション管理をまとめた earendil-works/pi のビジュアル解説。">
+  <meta property="og:description" content="Pi coding agent、統一 LLM API、エージェント基盤、TUI、拡張・スキル・パッケージ、コンテナ化、サプライチェーン対策をまとめた earendil-works/pi のビジュアル解説。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/pi.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="pi — Pi Agent Harness（earendil-works）">
-  <meta name="twitter:description" content="Pi coding agent、統一 LLM API、エージェント基盤、拡張・スキル・パッケージ、セッション管理を整理したビジュアル解説。">
+  <meta name="twitter:description" content="Pi coding agent、統一 LLM API、エージェント基盤、拡張・スキル・パッケージ、コンテナ化を整理したビジュアル解説。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -223,13 +223,14 @@
     <a href="#packages">パッケージ</a>
     <a href="#sessions">セッション</a>
     <a href="#customization">拡張モデル</a>
+    <a href="#sandbox">権限と隔離</a>
     <a href="#development">開発・貢献</a>
     <a href="#links">リンク</a>
   </nav>
 
   <div class="main">
   <h1>pi</h1>
-  <p class="subtitle">Pi Agent Harness mono repo — earendil-works（CLI・統一 LLM API・エージェントランタイム・TUI / Web UI）</p>
+  <p class="subtitle">Pi Agent Harness — earendil-works（CLI・統一 LLM API・エージェントランタイム・TUI）</p>
 
   <!-- ===================== 1 概要 ===================== -->
   <section id="overview" class="sec-head">1 — 概要</section>
@@ -237,20 +238,21 @@
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
     <div class="badge-row">
       <span class="badge badge--accent">pi.dev</span>
-      <span class="badge">0.74.0</span>
+      <span class="badge">0.80.6</span>
       <span class="badge">MIT</span>
       <span class="badge">TypeScript</span>
+      <span class="badge">Node &gt;= 22.19</span>
     </div>
-    <p><strong>pi</strong>（GitHub: <a href="https://github.com/earendil-works/pi" target="_blank" rel="noopener">earendil-works/pi</a>）は、Pi agent harness の TypeScript モノレポ。ルート README は「Pi Agent Harness Mono Repo」とし、中心となる <code>@earendil-works/pi-coding-agent</code> は対話型コーディングエージェント CLI（read / write / edit / bash）として位置づけられている。</p>
-    <p>Pi は「ワークフローをツールに合わせる」のではなく、拡張・スキル・プロンプトテンプレート・テーマ・Pi Packages で <strong>ユーザー側の運用に合わせて変形する</strong> ことを狙っている。</p>
+    <p><strong>pi</strong>（GitHub: <a href="https://github.com/earendil-works/pi" target="_blank" rel="noopener">earendil-works/pi</a>）は、Pi agent harness の TypeScript モノレポ。中心の <code>@earendil-works/pi-coding-agent</code> は対話型コーディングエージェント CLI（read / write / edit / bash）として位置づけられている。</p>
+    <p>Pi は「ワークフローをツールに合わせる」のではなく、拡張・スキル・プロンプトテンプレート・テーマ・Pi Packages で <strong>ユーザー側の運用に合わせて変形する</strong>。公式サイトは <a href="https://pi.dev" target="_blank" rel="noopener">pi.dev</a>、ドキュメントは <a href="https://pi.dev/docs/latest" target="_blank" rel="noopener">pi.dev/docs/latest</a>。</p>
     <div class="kpi-row">
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">5</span><span class="ve-kpi-card__label">主要パッケージ</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">実行モード</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">22+</span><span class="ve-kpi-card__label">LLM プロバイダー</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">30+</span><span class="ve-kpi-card__label">LLM プロバイダー</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">pi</span><span class="ve-kpi-card__label">CLI entrypoint</span></div>
     </div>
     <div class="ve-callout">
-      <strong>設計思想:</strong> コアは最小に保ち、サブエージェント・plan mode・MCP・権限確認・ToDo などは組み込み機能ではなく、拡張や外部パッケージとして足せる余地を残す。
+      <strong>設計思想:</strong> コアは最小に保ち、サブエージェント・plan mode・MCP・権限確認・ToDo などは組み込み機能ではなく、拡張や外部パッケージとして足せる余地を残す。組み込みの権限システムは持たない。隔離が必要ならコンテナ化を使う。
     </div>
   </div>
 
@@ -258,9 +260,12 @@
   <section id="agent" class="sec-head">2 — Pi coding agent</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 使い始め</span>
-    <p><code>@earendil-works/pi-coding-agent</code> は、<code>read</code>・<code>write</code>・<code>edit</code>・<code>bash</code> を標準ツールとして持つ対話型コーディングエージェント CLI。API キーでも、既存サブスクリプションの <code>/login</code> でも始められる。</p>
+    <p><code>@earendil-works/pi-coding-agent</code> は、<code>read</code>・<code>write</code>・<code>edit</code>・<code>bash</code> を標準ツールとして持つ対話型コーディングエージェント CLI。API キーでも、既存サブスクリプションの <code>/login</code> でも始められる。通常の npm インストールでは依存の lifecycle script は不要なので、<code>--ignore-scripts</code> を付ける。</p>
     <div class="ve-code-block">
-      <pre><code>npm install -g @earendil-works/pi-coding-agent
+      <pre><code>npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+
+# インストーラ代替
+curl -fsSL https://pi.dev/install.sh | sh
 
 # API key で起動
 export ANTHROPIC_API_KEY=sk-ant-...
@@ -276,6 +281,7 @@ pi
       <div class="mode-card"><code>--mode json</code><p>イベントを JSON Lines で出す。ログ処理や非対話実行向け。</p></div>
       <div class="mode-card"><code>--mode rpc</code><p>stdin/stdout の LF 区切り JSONL RPC。Node 以外のプロセス連携向け。</p></div>
     </div>
+    <p>埋め込み向けに SDK もある。実例は <a href="https://github.com/openclaw/openclaw" target="_blank" rel="noopener">openclaw/openclaw</a>。</p>
   </div>
 
   <div class="ve-card ve-card--recessed" style="--i:1; margin-top:1rem">
@@ -287,7 +293,7 @@ pi
       </div>
       <div>
         <h3>API キー</h3>
-        <p>Anthropic、OpenAI、Azure OpenAI、DeepSeek、Google Gemini、Vertex AI、Bedrock、Mistral、Groq、Cerebras、Cloudflare AI Gateway、Cloudflare Workers AI、xAI、OpenRouter、Vercel AI Gateway、ZAI、OpenCode Zen / Go、Hugging Face、Fireworks、Kimi For Coding、MiniMax などに対応する。</p>
+        <p>Anthropic、Ant Ling、OpenAI、Azure OpenAI、DeepSeek、NVIDIA NIM、Google Gemini / Vertex、Amazon Bedrock、Mistral、Groq、Cerebras、Cloudflare AI Gateway / Workers AI、xAI、OpenRouter、Vercel AI Gateway、ZAI Coding Plan、OpenCode Zen / Go、Hugging Face、Fireworks、Together AI、Kimi For Coding、MiniMax、Xiaomi MiMo などに対応する。詳細は <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/providers.md" target="_blank" rel="noopener">providers.md</a>。</p>
       </div>
     </div>
   </div>
@@ -296,7 +302,7 @@ pi
   <section id="packages" class="sec-head">3 — パッケージ一覧</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> モノレポ構成</span>
-    <p>全主要パッケージは <code>0.74.0</code> 系で揃っている。Pi 本体だけでなく、統一 LLM API、低レベルのエージェントランタイム、差分レンダリング TUI、AI チャット向け Web UI に責務が分かれている。</p>
+    <p>公開パッケージは <code>0.80.6</code> 系で揃っている（ルート monorepo の <code>package.json</code> は <code>0.0.3</code>）。責務は統一 LLM API、エージェントランタイム、coding agent CLI、差分レンダリング TUI、実験的 orchestrator に分かれる。旧 <code>pi-web-ui</code> は本リポジトリから外れており、Slack / チャット自動化は別リポ <a href="https://github.com/earendil-works/pi-chat" target="_blank" rel="noopener">earendil-works/pi-chat</a> を参照する。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
@@ -312,19 +318,19 @@ pi
           </tr>
           <tr>
             <td><code>@earendil-works/pi-ai</code></td>
-            <td>自動モデル発見、プロバイダー設定、トークン・コスト計測、コンテキスト永続化、モデル間ハンドオフを持つ統一 LLM API。</td>
+            <td>自動モデル発見、プロバイダー設定、トークン・コスト計測、モデル間ハンドオフを持つ統一 LLM API。</td>
           </tr>
           <tr>
             <td><code>@earendil-works/pi-agent-core</code></td>
-            <td>ツール呼び出し、状態管理、添付ファイル対応を持つ汎用エージェント基盤。</td>
+            <td>ツール呼び出し、状態管理、添付ファイル対応を持つ汎用エージェント基盤（transport 抽象あり）。</td>
           </tr>
           <tr>
             <td><code>@earendil-works/pi-tui</code></td>
             <td>差分レンダリング付きターミナル UI ライブラリ。</td>
           </tr>
           <tr>
-            <td><code>@earendil-works/pi-web-ui</code></td>
-            <td><code>@earendil-works/pi-ai</code> を使う AI チャット向け再利用 Web UI コンポーネント。</td>
+            <td><code>@earendil-works/pi-orchestrator</code></td>
+            <td>実験的。CLI / API / 挙動は未安定で、変更・削除の可能性がある。</td>
           </tr>
         </tbody>
       </table>
@@ -390,23 +396,73 @@ pi update npm:@foo/pi-tools</code></pre>
     </div>
   </div>
 
-  <!-- ===================== 6 開発・貢献 ===================== -->
-  <section id="development" class="sec-head">6 — 開発・貢献</section>
+  <!-- ===================== 6 権限と隔離 ===================== -->
+  <section id="sandbox" class="sec-head">6 — 権限と隔離</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Permissions &amp; Containerization</span>
+    <p>Pi にはファイルシステム・プロセス・ネットワーク・資格情報を制限する組み込み権限システムはない。起動したユーザーとプロセスの権限で動く。境界が必要ならコンテナ化またはサンドボックスを使う。詳細は <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/containerization.md" target="_blank" rel="noopener">containerization.md</a>。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>パターン</th>
+            <th>隔離対象</th>
+            <th>向き</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Gondolin extension</strong></td>
+            <td>組み込みツールと <code>!</code> コマンド</td>
+            <td>ホストに <code>pi</code> とプロバイダ認証を残し、ツール実行だけをローカル Linux micro-VM へ流す</td>
+          </tr>
+          <tr>
+            <td><strong>Plain Docker</strong></td>
+            <td><code>pi</code> プロセス全体</td>
+            <td>単純なローカル隔離。API キーはコンテナに入る</td>
+          </tr>
+          <tr>
+            <td><strong>OpenShell</strong></td>
+            <td><code>pi</code> プロセス全体</td>
+            <td>ポリシー制御付きサンドボックス（ローカル / リモート）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>注意:</strong> 拡張は <code>pi</code> プロセスが動いている場所で動く。ホスト上の <code>pi</code> にツール転送拡張を付けても、他のカスタム拡張ツールは委譲しない限りホスト側で実行される。
+    </div>
+  </div>
+
+  <!-- ===================== 7 開発・貢献 ===================== -->
+  <section id="development" class="sec-head">7 — 開発・貢献</section>
   <div class="ve-card ve-card--recessed" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> ビルド・検証</span>
-    <p>リポジトリルートで以下を実行する。<code>npm run check</code> は <code>npm run build</code> の後に実行する必要がある。<code>web-ui</code> が依存パッケージのコンパイル済み <code>.d.ts</code> を必要とするため。</p>
+    <p>依存の hydrate は lifecycle script を止めて行う。<code>npm run check</code> は Biome、pinned deps、TS import、shrinkwrap、browser smoke、tsgo などをまとめて見る。</p>
     <div class="ve-code-block">
-      <pre><code>npm install          # 依存関係のインストール
-npm run build        # 全パッケージのビルド
-npm run check        # Biome / tsgo / browser smoke / web-ui check
-./test.sh            # API キーなしなら LLM 依存テストはスキップ
-./pi-test.sh         # ソースから pi を実行</code></pre>
+      <pre><code>npm install --ignore-scripts  # lifecycle script なしで依存を入れる
+npm run build                 # 全パッケージのビルド
+npm run check                 # lint / type / shrinkwrap / smoke
+./test.sh                     # API キーなしなら LLM 依存テストはスキップ
+./pi-test.sh                  # ソースから pi を実行（任意の cwd から可）</code></pre>
     </div>
   </div>
 
   <div class="ve-card" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> Supply-chain hardening</span>
+    <p>npm 依存の変更はレビュー対象のコード変更として扱う。</p>
+    <ul>
+      <li>外部直依存は exact pin。ワークスペース内部パッケージだけ version range を残す。</li>
+      <li><code>.npmrc</code> で <code>save-exact=true</code> と <code>min-release-age=2</code>。</li>
+      <li><code>package-lock.json</code> が依存の正。lockfile の偶然コミットは pre-commit が止め、<code>PI_ALLOW_LOCKFILE_CHANGE=1</code> が必要。</li>
+      <li>公開 CLI にはルート lockfile から生成した <code>packages/coding-agent/npm-shrinkwrap.json</code> を同梱する。</li>
+      <li>ローカルリリース検証は <code>npm run release:local</code>。CI は <code>npm ci --ignore-scripts</code>、定期で <code>npm audit</code> / signature 検証。</li>
+    </ul>
+  </div>
+
+  <div class="ve-card" style="--i:2; margin-top:1rem">
     <span class="ve-section-label"><span class="ve-dot"></span> Contribution gate</span>
-    <p>新規 contributor の Issue / PR はデフォルトで自動クローズされる。メンテナーが日次で見直し、質の高いものだけを reopen または承認する。</p>
+    <p>新規 contributor の Issue / PR はデフォルトで自動クローズされる。メンテナーが日次で見直し、質の高いものだけを reopen または承認する。中長期計画は <a href="https://rfc.earendil.com/keyword/pi/" target="_blank" rel="noopener">RFC（keyword: pi）</a> も参照。</p>
     <ol class="step-list">
       <li><span class="step-num">1</span>短く具体的で、1 画面に収まる Issue を出す。バグや要望と「なぜ重要か」を明確にする。</li>
       <li><span class="step-num">2</span><code>lgtmi</code> なら今後の Issue、<code>lgtm</code> なら今後の Issue と PR が承認済み扱いになる。</li>
@@ -417,17 +473,20 @@ npm run check        # Biome / tsgo / browser smoke / web-ui check
     </div>
   </div>
 
-  <!-- ===================== 7 リンク ===================== -->
-  <section id="links" class="sec-head">7 — リンク</section>
+  <!-- ===================== 8 リンク ===================== -->
+  <section id="links" class="sec-head">8 — リンク</section>
   <div class="ve-callout" style="margin-top:0;">
     <p><strong>公式サイト</strong>: <a href="https://pi.dev" target="_blank" rel="noopener">pi.dev</a></p>
+    <p><strong>ドキュメント</strong>: <a href="https://pi.dev/docs/latest" target="_blank" rel="noopener">pi.dev/docs/latest</a></p>
     <p><strong>リポジトリ</strong>: <a href="https://github.com/earendil-works/pi" target="_blank" rel="noopener">earendil-works/pi</a>（旧 badlogic/pi-mono）</p>
     <p><strong>Discord</strong>: <a href="https://discord.com/invite/3cU7Bz4UPx" target="_blank" rel="noopener">discord.com/invite/3cU7Bz4UPx</a></p>
     <p><strong>Pi coding agent</strong>: <a href="https://www.npmjs.com/package/@earendil-works/pi-coding-agent" target="_blank" rel="noopener">@earendil-works/pi-coding-agent</a></p>
     <p><strong>LLM API</strong>: <a href="https://www.npmjs.com/package/@earendil-works/pi-ai" target="_blank" rel="noopener">@earendil-works/pi-ai</a></p>
-    <p><strong>pi-chat（別リポ）</strong>: <a href="https://github.com/earendil-works/pi-chat" target="_blank" rel="noopener">earendil-works/pi-chat</a>（Slack / チャット向け README 記載）</p>
+    <p><strong>コンテナ化</strong>: <a href="https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/containerization.md" target="_blank" rel="noopener">containerization.md</a></p>
+    <p><strong>pi-chat（別リポ）</strong>: <a href="https://github.com/earendil-works/pi-chat" target="_blank" rel="noopener">earendil-works/pi-chat</a></p>
     <p><strong>セッション共有ツール</strong>: <a href="https://github.com/badlogic/pi-share-hf" target="_blank" rel="noopener">badlogic/pi-share-hf</a></p>
     <p><strong>公開セッション</strong>: <a href="https://huggingface.co/datasets/badlogicgames/pi-mono" target="_blank" rel="noopener">Hugging Face: badlogicgames/pi-mono</a></p>
+    <p><strong>RFC</strong>: <a href="https://rfc.earendil.com/keyword/pi/" target="_blank" rel="noopener">rfc.earendil.com/keyword/pi</a></p>
     <p><strong>CONTRIBUTING</strong>: <a href="https://github.com/earendil-works/pi/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a></p>
     <p><strong>AGENTS.md</strong>: <a href="https://github.com/earendil-works/pi/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a></p>
   </div>
