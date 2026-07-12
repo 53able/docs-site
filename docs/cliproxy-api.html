@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLIProxyAPI — CLI 向け OpenAI/Gemini/Claude 互換プロキシ</title>
+  <meta name="description" content="router-for-me/CLIProxyAPI の技術概要。OAuth とマルチアカウントで CLI サブスクリプションを OpenAI/Gemini/Claude/Codex/Grok 互換 API として公開する Go プロキシ。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="CLIProxyAPI — CLI 向け OpenAI/Gemini/Claude 互換プロキシ">
+  <meta property="og:description" content="OAuth とマルチアカウントで CLI サブスクリプションを OpenAI/Gemini/Claude/Codex/Grok 互換 API として公開する Go プロキシ。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/cliproxy-api.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CLIProxyAPI — CLI 向け OpenAI/Gemini/Claude 互換プロキシ">
+  <meta name="twitter:description" content="OAuth とマルチアカウントで CLI サブスクリプションを互換 API として公開する Go プロキシ。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Commissioner:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.01 248);
+      --foreground: oklch(0.2 0.04 248);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.2 0.04 248);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.2 0.04 248);
+      --primary: oklch(0.28 0.08 248);
+      --primary-foreground: oklch(0.98 0.01 248);
+      --secondary: oklch(0.95 0.015 248);
+      --secondary-foreground: oklch(0.28 0.08 248);
+      --muted: oklch(0.945 0.015 248);
+      --muted-foreground: oklch(0.48 0.04 248);
+      --accent: oklch(0.94 0.02 248);
+      --accent-foreground: oklch(0.22 0.05 248);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.88 0.02 248);
+      --input: oklch(0.88 0.02 248);
+      --ring: oklch(0.55 0.08 248);
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.17 76);
+      --chart-3: oklch(0.45 0.1 230);
+      --chart-4: oklch(0.65 0.14 75);
+      --chart-5: oklch(0.5 0.08 200);
+      --code-bg: var(--muted);
+      --code-text: #0b2e4e;
+      --font-body: 'Commissioner', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.025 248);
+        --foreground: oklch(0.95 0.015 248);
+        --card: oklch(0.19 0.03 248);
+        --card-foreground: oklch(0.95 0.015 248);
+        --popover: oklch(0.19 0.03 248);
+        --popover-foreground: oklch(0.95 0.015 248);
+        --primary: oklch(0.9 0.02 248);
+        --primary-foreground: oklch(0.18 0.04 248);
+        --secondary: oklch(0.24 0.03 248);
+        --secondary-foreground: oklch(0.95 0.015 248);
+        --muted: oklch(0.25 0.03 248);
+        --muted-foreground: oklch(0.7 0.04 248);
+        --accent: oklch(0.24 0.035 248);
+        --accent-foreground: oklch(0.95 0.015 248);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.5 0.08 248);
+        --chart-1: oklch(0.68 0.12 248);
+        --chart-2: oklch(0.78 0.16 80);
+        --chart-3: oklch(0.6 0.1 220);
+        --chart-4: oklch(0.75 0.14 75);
+        --chart-5: oklch(0.62 0.1 200);
+        --code-bg: #0a1220;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(15, 40, 80, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(15, 40, 80, 0.1);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.65; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(15, 40, 80, 0.06); min-width: 0; }
+    .ve-kpi-card__value { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: clamp(1.35rem, 3vw, 2rem); line-height: 1.1; color: var(--foreground); overflow-wrap: anywhere; }
+    .ve-kpi-card__label { display: block; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.45rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.72 0.17 76 / 0.12); color: var(--chart-2); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(oklch(0.38 0.12 248 / 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, oklch(0.38 0.12 248 / 0.04) 1px, transparent 1px),
+        radial-gradient(ellipse at 18% 0%, oklch(0.38 0.12 248 / 0.08) 0%, transparent 55%);
+      background-size: 24px 24px, 24px 24px, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          linear-gradient(oklch(0.68 0.12 248 / 0.06) 1px, transparent 1px),
+          linear-gradient(90deg, oklch(0.68 0.12 248 / 0.06) 1px, transparent 1px),
+          radial-gradient(ellipse at 18% 0%, oklch(0.38 0.12 248 / 0.16) 0%, transparent 55%);
+        background-size: 24px 24px, 24px 24px, auto;
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.7; max-width: 62rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 1rem 0; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); border: 1px solid var(--border); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; }
+    @media (max-width: 720px) { .card-grid { grid-template-columns: 1fr; } }
+
+    .mermaid-wrap {
+      position: relative; margin: 1.25rem 0; border: 1px solid var(--border); border-radius: var(--radius-lg);
+      background: var(--card); overflow: hidden;
+    }
+    .mermaid-viewport { display: flex; justify-content: center; overflow: auto; padding: 1.25rem; transform-origin: top center; }
+    .mermaid-zoom { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; z-index: 2; }
+    .mermaid-zoom button {
+      font-family: var(--font-mono); font-size: 11px; width: 28px; height: 28px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); background: var(--muted); color: var(--foreground); cursor: pointer;
+    }
+    .mermaid-zoom button:hover { background: var(--accent); }
+
+    .badge { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground); margin: 0 0.25rem 0.25rem 0; }
+    .badge--good { color: var(--chart-1); background: oklch(0.38 0.12 248 / 0.1); border-color: oklch(0.38 0.12 248 / 0.3); }
+
+    .dir { color: var(--chart-1); }
+    .file-main { color: var(--chart-2); }
+    .comment { color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">アーキテクチャ</a>
+    <a href="#features">互換 API</a>
+    <a href="#config">起動と設定</a>
+    <a href="#sdk">Go SDK</a>
+    <a href="#ops">管理と周辺</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>CLIProxyAPI</h1>
+    <p class="subtitle">CLI サブスクリプション（Gemini / OpenAI Codex / Claude Code / Grok など）を OAuth または API キーで束ね、OpenAI・Gemini・Claude・Codex・Grok 互換のローカル API として公開する Go プロキシ。<a href="https://github.com/router-for-me/CLIProxyAPI" target="_blank" rel="noopener">router-for-me/CLIProxyAPI</a> の技術概要。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
+      <p>クライアント側はいつもの OpenAI / Anthropic / Gemini SDK やコーディングツールのまま、待ち受けはローカルの CLIProxyAPI。上流は複数アカウントのラウンドロビン、OAuth トークン更新、プロトコル翻訳（translator）、プロバイダ別 executor が担当する。バイナリ単体でも、<code>sdk/cliproxy</code> を埋め込んでも使える。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">8317</span><span class="ve-kpi-card__label">デフォルト待受ポート</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Go 1.26+</span><span class="ve-kpi-card__label">ランタイム</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">OAuth</span><span class="ve-kpi-card__label">Codex / Claude / Gemini / Grok</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">v7</span><span class="ve-kpi-card__label">Go module path</span></div>
+      </div>
+      <p>公式ガイドは <a href="https://help.router-for.me/" target="_blank" rel="noopener">help.router-for.me</a>。管理 API・コントロールパネルは設定の <code>remote-management</code> 経由。</p>
+    </div>
+
+    <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> リクエスト経路</span>
+      <div class="mermaid-wrap" id="flow-wrap">
+        <div class="mermaid-zoom">
+          <button type="button" data-zoom="out" aria-label="縮小">−</button>
+          <button type="button" data-zoom="reset" aria-label="リセット">◎</button>
+          <button type="button" data-zoom="in" aria-label="拡大">+</button>
+        </div>
+        <div class="mermaid-viewport" id="flow-viewport">
+          <pre class="mermaid">flowchart TD
+  CLI["クライアント\nOpenAI / Claude / Gemini SDK"] --> API["internal/api\nGin ルート"]
+  API --> AUTH["api-keys / access"]
+  AUTH --> THINK["internal/thinking\n正規化"]
+  THINK --> TR["internal/translator\nスキーマ変換"]
+  TR --> MGR["auth.Manager\nアカウント選択"]
+  MGR --> EXEC["runtime/executor\nプロバイダ呼出"]
+  EXEC --> UP["上流\nCodex / Claude / Gemini / Grok / OpenAI互換"]
+  UP --> EXEC
+  EXEC --> TR
+  TR --> CLI
+  CFG["config.yaml + watcher"] -.-> API
+  CFG -.-> MGR
+  REG["model registry"] -.-> API</pre>
+        </div>
+      </div>
+      <p>thinking は一度カノニカルな <code>ThinkingConfig</code> に落としてからプロバイダ別出力へ翻訳する。translator は inbound スキーマ ↔ プロバイダスキーマの双方向変換。executor が実際の HTTP / WebSocket 呼び出しを担う。</p>
+    </div>
+
+    <div class="ve-card ve-card--recessed" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 主要ディレクトリ</span>
+      <div class="ve-code-block">
+        <pre><code><span class="dir">cmd/server/</span>              <span class="comment"># エントリポイント</span>
+<span class="dir">internal/api/</span>            <span class="comment"># Gin HTTP（routes / middleware）</span>
+<span class="dir">internal/runtime/executor/</span> <span class="comment"># プロバイダ実行</span>
+<span class="dir">internal/translator/</span>     <span class="comment"># プロトコル翻訳</span>
+<span class="dir">internal/thinking/</span>       <span class="comment"># reasoning 正規化パイプライン</span>
+<span class="dir">internal/registry/</span>       <span class="comment"># モデル一覧 + リモート更新</span>
+<span class="dir">internal/watcher/</span>        <span class="comment"># 設定ホットリロード</span>
+<span class="dir">sdk/cliproxy/</span>            <span class="comment"># 埋め込み用 SDK</span>
+<span class="file-main">config.example.yaml</span>      <span class="comment"># 設定テンプレート</span></code></pre>
+      </div>
+    </div>
+
+    <section id="features" class="sec-head">3 — 互換 API</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> クライアントから見える面</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>面</th><th>内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>互換エンドポイント</td><td>OpenAI（Responses 含む）/ Gemini / Claude / Grok</td></tr>
+            <tr><td>OAuth ログイン</td><td>OpenAI Codex、Claude Code、Grok Build、Gemini 系</td></tr>
+            <tr><td>レスポンス形</td><td>ストリーミング / 非ストリーミング / WebSocket（対応プロバイダ）</td></tr>
+            <tr><td>ツール</td><td>function calling / tools、マルチモーダル（テキスト・画像）</td></tr>
+            <tr><td>負荷分散</td><td>Gemini / OpenAI / Claude / Grok のマルチアカウント・ラウンドロビン</td></tr>
+            <tr><td>上流プロバイダ</td><td>設定で OpenAI 互換（例: OpenRouter）を追加可能</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pipeline">
+        <span class="step">クライアント形式</span>
+        <span class="arrow">→</span>
+        <span class="step">translator</span>
+        <span class="arrow">→</span>
+        <span class="step">executor</span>
+        <span class="arrow">→</span>
+        <span class="step">上流形式</span>
+        <span class="arrow">→</span>
+        <span class="step">translator（応答）</span>
+      </div>
+    </div>
+
+    <section id="config" class="sec-head">4 — 起動と設定</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ビルドと実行</span>
+      <div class="ve-code-block">
+        <pre><code>go build -o cli-proxy-api ./cmd/server
+go run ./cmd/server --config config.yaml
+# よく使うフラグ: --tui --standalone --local-model --no-browser
+#                --oauth-callback-port &lt;port&gt;</code></pre>
+      </div>
+      <p>Docker は <code>docker-compose.yml</code> でイメージ <code>eceasy/cli-proxy-api</code> を起動。ホスト側の <code>config.yaml</code> と認証ディレクトリ（既定 <code>~/.cli-proxy-api</code>）をマウントする。待受は主に <strong>8317</strong>、OAuth コールバック用に追加ポートを公開する。</p>
+      <h3>設定の要点（config.example.yaml）</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>キー</th><th>既定 / 例</th><th>説明</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>host</code></td><td><code>""</code>（全インタフェース）</td><td>ローカル限定なら <code>127.0.0.1</code></td></tr>
+            <tr><td><code>port</code></td><td><code>8317</code></td><td>HTTP 待受</td></tr>
+            <tr><td><code>auth-dir</code></td><td><code>~/.cli-proxy-api</code></td><td>OAuth / 認証マテリアル</td></tr>
+            <tr><td><code>api-keys</code></td><td>配列</td><td>クライアント認証用キー</td></tr>
+            <tr><td><code>remote-management.secret-key</code></td><td>空で無効</td><td>管理 API（<code>/v0/management</code>）有効化</td></tr>
+            <tr><td><code>remote-management.allow-remote</code></td><td><code>false</code></td><td>非 localhost からの管理アクセス</td></tr>
+            <tr><td><code>plugins.enabled</code></td><td><code>false</code></td><td>動的プラグイン（既定オフ）</td></tr>
+            <tr><td><code>tls.enable</code></td><td><code>false</code></td><td>HTTPS（cert / key 指定）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>管理 API は secret-key 必須。</strong> プレーンテキストを書くと起動時にハッシュ化される。空のままだと <code>/v0/management</code> は 404。パネル資産は GitHub の Cli-Proxy-API-Management-Center から取得する設定が既定。
+      </div>
+    </div>
+
+    <section id="sdk" class="sec-head">5 — Go SDK</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 埋め込み（sdk/cliproxy）</span>
+      <p>モジュールパスは <code>github.com/router-for-me/CLIProxyAPI/v7/...</code>（<code>go.mod</code> 準拠。SDK ガイド文書に残る v6 表記よりこちらを優先）。設定ロード → Builder → <code>Run(ctx)</code> で、設定監視・トークン更新・グレースフルシャットダウンまで含む。</p>
+      <div class="ve-code-block">
+        <pre><code>go get github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy
+
+cfg, _ := config.LoadConfig("config.yaml")
+svc, _ := cliproxy.NewBuilder().
+    WithConfig(cfg).
+    WithConfigPath("config.yaml").
+    Build()
+_ = svc.Run(ctx) // cancel で停止</code></pre>
+      </div>
+      <div class="card-grid">
+        <div class="ve-card ve-card--elevated" style="--i:1">
+          <span class="ve-section-label"><span class="ve-dot"></span> 拡張ポイント</span>
+          <ul>
+            <li><code>WithServerOptions</code> — ミドルウェア、ルート、ログ</li>
+            <li><code>WithCoreAuthManager</code> — 独自 transport / フック</li>
+            <li>カスタム executor + translator 登録（sdk-advanced）</li>
+          </ul>
+        </div>
+        <div class="ve-card ve-card--elevated" style="--i:2">
+          <span class="ve-section-label"><span class="ve-dot"></span> SDK ドキュメント</span>
+          <ul>
+            <li><a href="https://github.com/router-for-me/CLIProxyAPI/blob/main/docs/sdk-usage.md" target="_blank" rel="noopener">sdk-usage.md</a></li>
+            <li><a href="https://github.com/router-for-me/CLIProxyAPI/blob/main/docs/sdk-advanced.md" target="_blank" rel="noopener">sdk-advanced.md</a></li>
+            <li><a href="https://github.com/router-for-me/CLIProxyAPI/blob/main/docs/sdk-access.md" target="_blank" rel="noopener">sdk-access.md</a></li>
+            <li><a href="https://github.com/router-for-me/CLIProxyAPI/blob/main/docs/sdk-watcher.md" target="_blank" rel="noopener">sdk-watcher.md</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <section id="ops" class="sec-head">6 — 管理と周辺</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 使用量・管理 UI</span>
+      <p>v6.10.0 以降、本体と CPAMC に内蔵の使用量統計は無い。必要なら外部プロジェクトを併用する。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>プロジェクト</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><a href="https://github.com/Willxup/cpa-usage-keeper" target="_blank" rel="noopener">CPA Usage Keeper</a></td><td>定期同期・SQLite・集計 API・ダッシュボード</td></tr>
+            <tr><td><a href="https://github.com/seakee/CPA-Manager-Plus" target="_blank" rel="noopener">CPA-Manager-Plus</a></td><td>リクエスト監視・コスト推定・Codex プール運用</td></tr>
+            <tr><td><a href="https://github.com/router-for-me/Cli-Proxy-API-Management-Center" target="_blank" rel="noopener">Management Center</a></td><td>設定の管理パネル（バンドル資産）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>エコシステム例: vibeproxy、Quotio、ProxyPilot、CCS など — CLI サブスクを API キーなしでコーディングツールへ繋ぐ GUI / CLI ラッパーが README に列挙されている。</p>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>プラグインは信頼境界あり。</strong> <code>plugins.enabled</code> は既定 false。c-shared / C ABI の動的ライブラリはプロセス内コードとして扱われる。OpenAI 互換設定とネイティブ executor が衝突する場合はネイティブ側が優先。
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・ガイド</span>
+      <ul>
+        <li><a href="https://github.com/router-for-me/CLIProxyAPI" target="_blank" rel="noopener">GitHub: router-for-me/CLIProxyAPI</a> — 本体（MIT）</li>
+        <li><a href="https://help.router-for.me/" target="_blank" rel="noopener">CLIProxyAPI Guides</a> — 公式ドキュメント</li>
+        <li><a href="https://help.router-for.me/management/api" target="_blank" rel="noopener">Management API</a> — 管理エンドポイント</li>
+        <li><a href="https://github.com/router-for-me/CLIProxyAPI/blob/main/config.example.yaml" target="_blank" rel="noopener">config.example.yaml</a> — 設定テンプレート</li>
+        <li><a href="https://github.com/router-for-me/CLIProxyAPI/blob/main/examples/custom-provider" target="_blank" rel="noopener">examples/custom-provider</a> — カスタムプロバイダ例</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    look: 'classic',
+    themeVariables: {
+      primaryColor: isDark ? '#1e3a5f' : '#dbeafe',
+      primaryBorderColor: isDark ? '#60a5fa' : '#1e40af',
+      primaryTextColor: isDark ? '#e0f2fe' : '#1e3a5f',
+      lineColor: isDark ? '#93c5fd' : '#1e40af',
+      secondaryColor: isDark ? '#3f2e1a' : '#fef3c7',
+      tertiaryColor: isDark ? '#0f172a' : '#f8fafc',
+      fontFamily: 'Commissioner, system-ui, sans-serif',
+      fontSize: '14px'
+    }
+  });
+
+  const viewport = document.getElementById('flow-viewport');
+  const wrap = document.getElementById('flow-wrap');
+  let zoom = 1;
+  const INITIAL_ZOOM = 1.15;
+  const applyZoom = () => { if (viewport) viewport.style.transform = `scale(${zoom})`; };
+  wrap?.querySelectorAll('[data-zoom]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const action = btn.getAttribute('data-zoom');
+      if (action === 'in') zoom = Math.min(zoom + 0.15, 2);
+      else if (action === 'out') zoom = Math.max(zoom - 0.15, 0.6);
+      else zoom = INITIAL_ZOOM;
+      applyZoom();
+    });
+  });
+  applyZoom();
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
