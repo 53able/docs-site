@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hallmark — AI 生成 UI のスロップを拒否するデザインスキル</title>
+  <meta name="description" content="Nutlope/hallmark の解説。Claude Code / Cursor / Codex 向けの anti-AI-slop デザインスキル。4 動詞・20 テーマ・21 マクロ構造・58 ゲートのスロップテスト。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Hallmark — AI 生成 UI のスロップを拒否するデザインスキル">
+  <meta property="og:description" content="4 動詞・20 テーマ・21 マクロ構造・58 ゲート。構造の多様性でテンプレ感を断つデザインスキル。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/hallmark.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Hallmark — AI 生成 UI のスロップを拒否するデザインスキル">
+  <meta name="twitter:description" content="4 動詞・20 テーマ・21 マクロ構造・58 ゲート。構造の多様性でテンプレ感を断つデザインスキル。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens — deep teal / ink) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+
+      --background: oklch(0.985 0.006 195);
+      --foreground: oklch(0.18 0.02 250);
+      --card: oklch(0.995 0.003 195);
+      --card-foreground: oklch(0.18 0.02 250);
+      --popover: oklch(0.995 0.003 195);
+      --popover-foreground: oklch(0.18 0.02 250);
+      --primary: oklch(0.32 0.06 195);
+      --primary-foreground: oklch(0.98 0.01 195);
+      --secondary: oklch(0.95 0.01 195);
+      --secondary-foreground: oklch(0.28 0.04 195);
+      --muted: oklch(0.95 0.012 195);
+      --muted-foreground: oklch(0.48 0.03 220);
+      --accent: oklch(0.95 0.012 195);
+      --accent-foreground: oklch(0.28 0.04 195);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.90 0.015 195);
+      --input: oklch(0.90 0.015 195);
+      --ring: oklch(0.65 0.04 195);
+
+      --chart-1: oklch(0.42 0.09 195);
+      --chart-2: oklch(0.62 0.12 75);
+      --chart-3: oklch(0.50 0.08 230);
+      --chart-4: oklch(0.70 0.10 155);
+      --chart-5: oklch(0.55 0.06 30);
+
+      --code-bg: oklch(0.95 0.012 195);
+      --code-text: oklch(0.32 0.07 195);
+      --font-body: 'Sora', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.015 220);
+        --foreground: oklch(0.95 0.01 195);
+        --card: oklch(0.19 0.018 220);
+        --card-foreground: oklch(0.95 0.01 195);
+        --popover: oklch(0.19 0.018 220);
+        --popover-foreground: oklch(0.95 0.01 195);
+        --primary: oklch(0.82 0.06 195);
+        --primary-foreground: oklch(0.18 0.02 220);
+        --secondary: oklch(0.24 0.02 220);
+        --secondary-foreground: oklch(0.95 0.01 195);
+        --muted: oklch(0.26 0.02 220);
+        --muted-foreground: oklch(0.72 0.03 200);
+        --accent: oklch(0.26 0.02 220);
+        --accent-foreground: oklch(0.95 0.01 195);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.55 0.04 195);
+
+        --chart-1: oklch(0.72 0.10 195);
+        --chart-2: oklch(0.78 0.12 75);
+        --chart-3: oklch(0.70 0.08 230);
+        --chart-4: oklch(0.75 0.10 155);
+        --chart-5: oklch(0.68 0.08 30);
+
+        --code-bg: oklch(0.16 0.02 220);
+        --code-text: oklch(0.82 0.08 195);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 86%, var(--chart-1) 14%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.75rem 1rem; border-bottom: 2px solid var(--border); color: var(--muted-foreground); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .ve-table-wrap td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 60%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; font-weight: 700; line-height: 1.1; color: var(--chart-1); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 25% 0%, oklch(0.42 0.09 195 / 0.07) 0%, transparent 52%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 25% 0%, oklch(0.72 0.10 195 / 0.08) 0%, transparent 52%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: color 0.15s, background 0.15s, border-color 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 1.25rem; font-family: var(--font-mono); line-height: 1.5; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.6rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .verb-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; margin: 1rem 0; }
+    @media (max-width: 720px) { .verb-grid { grid-template-columns: 1fr; } }
+    .verb-tile { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.125rem; }
+    .verb-tile__name { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 600; color: var(--chart-1); margin-bottom: 0.35rem; }
+    .verb-tile__desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 0.75rem 0; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    .mermaid-wrap {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 1.25rem; overflow: auto; margin: 1rem 0; display: flex; justify-content: center;
+      position: relative; min-height: 12rem;
+    }
+    .mermaid { font-family: var(--font-mono) !important; }
+    .zoom-controls {
+      position: absolute; top: 0.75rem; right: 0.75rem; display: flex; gap: 0.35rem; z-index: 2;
+    }
+    .zoom-controls button {
+      font-family: var(--font-mono); font-size: 0.75rem; line-height: 1;
+      background: var(--muted); color: var(--foreground); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 0.35rem 0.5rem; cursor: pointer;
+    }
+    .zoom-controls button:hover { border-color: var(--chart-1); color: var(--chart-1); }
+
+    .badge {
+      display: inline-block; font-family: var(--font-mono); font-size: 0.65rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 7px; border-radius: var(--radius-sm);
+      background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1);
+    }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="ページ内目次">
+    <div class="toc-title">Contents</div>
+    <a href="#overview">概要</a>
+    <a href="#verbs">4つの動詞</a>
+    <a href="#flow">Design flow</a>
+    <a href="#structure">構造とテーマ</a>
+    <a href="#gates">規律とスロップテスト</a>
+    <a href="#install">インストール</a>
+    <a href="#links">出典・リンク</a>
+  </nav>
+
+  <div class="main">
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <h1 id="overview">Hallmark</h1>
+      <p class="subtitle">Nutlope/hallmark — AI が吐きがちな UI スロップを拒否するデザインスキル</p>
+      <p><a href="https://github.com/Nutlope/hallmark" target="_blank" rel="noopener">Nutlope/hallmark</a> は Claude Code / Cursor / Codex 向けのデザインスキル。色を変えただけのテンプレではなく、<strong>構造の多様性</strong>を強制する。マクロ構造を先に選び、テーマを被せ、58 ゲートのスロップテストと pre-emit 自己批判を通してから返す。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">4</div>
+          <div class="ve-kpi-card__label">動詞</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">20</div>
+          <div class="ve-kpi-card__label">カタログテーマ</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">21</div>
+          <div class="ve-kpi-card__label">マクロ構造</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">58</div>
+          <div class="ve-kpi-card__label">スロップゲート</div>
+        </div>
+      </div>
+      <div class="ve-callout">
+        <strong>差別化:</strong> 見た目の差し替えではなく、hero → 3 features → CTA → footer という同一リズムを拒否する。2 つのブリーフで 2 つのサイトに見えることが目標（README / <code>SKILL.md</code>）。
+      </div>
+    </div>
+
+    <section id="verbs" class="sec-head">4つの動詞</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 呼び出し面</span>
+      <p>デフォルトは新規 UI 構築。明示動詞は <code>audit</code> / <code>redesign</code> / <code>study</code>。画像や URL だけ渡された場合は study か参照ビルドかを一度確認する。</p>
+      <div class="verb-grid">
+        <div class="verb-tile">
+          <div class="verb-tile__name">(default) Design</div>
+          <div class="verb-tile__desc">新規 UI。マクロ構造 → テーマ → ルールセット → スロップテスト。コンポーネント単体なら Component-scope に分岐。</div>
+        </div>
+        <div class="verb-tile">
+          <div class="verb-tile__name">hallmark audit &lt;target&gt;</div>
+          <div class="verb-tile__desc">既存コードを anti-pattern に照らして採点。パンチリストのみ。<strong>編集しない</strong>。</div>
+        </div>
+        <div class="verb-tile">
+          <div class="verb-tile__name">hallmark redesign &lt;target&gt;</div>
+          <div class="verb-tile__desc">コピー・IA・ブランドは残し、視覚構造を作り直す。既存ルートやコンポーネント所有権はデフォルトで保持。</div>
+        </div>
+        <div class="verb-tile">
+          <div class="verb-tile__name">hallmark study &lt;screenshot|URL&gt;</div>
+          <div class="verb-tile__desc">憧れデザインの DNA（マクロ構造・書体ペア・色アンカー）を抽出。ピクセルコピーと有料テンプレ URL は拒否。</div>
+        </div>
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 実装セーフティレール</span>
+      <ul>
+        <li>本番ファイルやルートツリーの削除は、明示確認がない限り禁止。</li>
+        <li>既存プロジェクトでは名前付きファイルの in-place 編集か、既存ルートへの加算を既定にする。</li>
+        <li>PDF / README / ブリーフは参照資料。ユーザーが verbatim 指定しない限り本文へ丸写ししない。</li>
+        <li>編集前に作成・変更・削除予定ファイルを列挙する。削除は確認必須。</li>
+      </ul>
+    </div>
+
+    <section id="flow" class="sec-head">Design flow</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 既定パイプライン</span>
+      <p>ページ向けデフォルトは次の順序。コンポーネント単体ブリーフはマクロ構造・ナビ・フッター・hero enrichment・project memory をスキップする。</p>
+      <div class="pipeline">
+        <span class="step">0 Pre-flight</span><span class="arrow">→</span>
+        <span class="step">1 Context gate</span><span class="arrow">→</span>
+        <span class="step">2 Macro + nav/ft</span><span class="arrow">→</span>
+        <span class="step">2.5 Memory</span><span class="arrow">→</span>
+        <span class="step">2.6 Theme</span><span class="arrow">→</span>
+        <span class="step">3 Rules</span><span class="arrow">→</span>
+        <span class="step">4 Enrich?</span><span class="arrow">→</span>
+        <span class="step">5 Preview</span><span class="arrow">→</span>
+        <span class="step">6 Build</span><span class="arrow">→</span>
+        <span class="step">7 Slop test</span>
+      </div>
+      <div class="mermaid-wrap" id="flow-diagram">
+        <div class="zoom-controls" aria-label="図のズーム">
+          <button type="button" data-zoom="in" aria-label="拡大">+</button>
+          <button type="button" data-zoom="out" aria-label="縮小">−</button>
+          <button type="button" data-zoom="reset" aria-label="リセット">reset</button>
+        </div>
+        <pre class="mermaid">flowchart TD
+  PF[0 Pre-flight scan] --> CG[1 Audience / Use / Tone]
+  CG --> GEN[Genre: editorial / modern-minimal / atmospheric / playful]
+  GEN --> MAC[2 Pick macrostructure + nav + footer]
+  MAC --> MEM[2.5 Read .hallmark/log.json]
+  MEM --> TH[2.6 Theme: catalog / custom / studied-DNA]
+  TH --> RULES[3 Load visual ruleset JiT]
+  RULES --> ENR[4 Hero enrichment decision]
+  ENR --> PREV[5 Preview block]
+  PREV --> BUILD[6 Build + stamp + tokens.css]
+  BUILD --> SLOP[7 Slop test 58 gates]
+  SLOP -->|fail| BUILD
+  SLOP -->|pass| OUT[Hand off]
+</pre>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> ステップ要約</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>Step</th><th>やること</th><th>読み込むもの（例）</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>0</code></td><td>既存トークン・フォント・モーション・FW をスキャン。あれば <code>design.md</code> が最優先。</td><td>プロジェクト内 CSS / package.json</td></tr>
+            <tr><td><code>1</code></td><td>Audience / Use case / Tone を必ず一度聞く。スキップ時は推論を明示開示。</td><td><code>genres/*.md</code></td></tr>
+            <tr><td><code>2</code></td><td>21 マクロ構造から 1 つ。ナビ N1a–N13・フッター Ft1–Ft8 も同時に選ぶ。</td><td><code>macrostructures.md</code> → 1 ファイルだけ</td></tr>
+            <tr><td><code>2.5</code></td><td>直近ログと連続 macro / theme の重複を避ける。</td><td><code>.hallmark/log.json</code></td></tr>
+            <tr><td><code>2.6</code></td><td>カタログ 20 テーマが既定。カスタムは意図シグナル時のみ。</td><td><code>custom-theme.md</code>（条件付き）</td></tr>
+            <tr><td><code>5–7</code></td><td>プレビュー → ビルド（スタンプ必須）→ 58 ゲート。失敗したら戻す。</td><td><code>slop-test.md</code>（Step 7 のみ）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top: 1rem;">
+      <strong>JiT 読み込み:</strong> 全 references を先読みしない。インデックスから名前を選び、選んだ 1 ファイルだけを読む。cookbook のフルロードはトークン浪費として明示禁止。
+    </div>
+
+    <section id="structure" class="sec-head">構造とテーマ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ジャンル 4 種</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>ジャンル</th><th>シグナル例</th><th>テーマクラスタ（概要）</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>editorial</strong>（既定）</td><td>シグナルなし / 編集・クラフト</td><td>Specimen, Atelier, Brutal, Newsprint, Studio, Manifesto, Almanac, Garden, Riso, Sport, Editorial, Carnival など</td></tr>
+            <tr><td><strong>modern-minimal</strong></td><td>SaaS / API / infra / B2B</td><td>Coral, Cobalt</td></tr>
+            <tr><td><strong>atmospheric</strong></td><td>AI tool / generative / dark</td><td>Bloom, Midnight, Terminal, Aurora, Lumen</td></tr>
+            <tr><td><strong>playful</strong></td><td>consumer / onboarding / community</td><td>Hum</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> マクロ構造（21）</span>
+      <p>ページ形状の名前付きセット。見出し配置・本文構成・区切り・ボタン声・画像扱い・reveal をまとめて選ぶ。Specimen は編集／ファウンダリ明示時のみ。連続実行で同じマクロは禁止。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>名前</th><th>要約</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>01–05</td><td>Bento / Long Document / Marquee Hero / Stat-Led / Workbench</td><td>グリッド・文書・全面ヒーロー・巨大数字・画面ツアー</td></tr>
+            <tr><td>06–10</td><td>Conversational FAQ / Manifesto / Photographic / Quote-Led / Specimen</td><td>Q&amp;A・宣言・写真主導・引用・編集標本</td></tr>
+            <tr><td>11–15</td><td>Catalogue / Letter / Index-First / Narrative Workflow / Split Studio</td><td>一覧・手紙・リンク索引・段階物語・二分割</td></tr>
+            <tr><td>16–21</td><td>Feature Stack / Type Specimen / Portfolio / Map / Ecosystem / Playground</td><td>スティッキー機能・書体標本・作品・地図・発見面・コンポーネント演示</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ve-card ve-card--elevated" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> テーマ多様化の 3 軸</span>
+      <p>連続出力は次のうち<strong>少なくとも 1 軸</strong>が前と異なる必要がある。</p>
+      <ul>
+        <li><strong>Paper band</strong> — dark / mid / light（<code>--color-paper</code> の明度）</li>
+        <li><strong>Display style</strong> — high-contrast-serif / grotesk-sans / mono / display-heavy など</li>
+        <li><strong>Accent hue</strong> — warm / cool / neutral / chromatic-other</li>
+      </ul>
+      <p>Custom 分岐は、ブランド色指定・多属性の雰囲気・明示の custom 要求があるときだけ表面化する。無言ならカタログ。</p>
+    </div>
+
+    <section id="gates" class="sec-head">規律とスロップテスト</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 全動詞共通の 6 規律</span>
+      <ol>
+        <li><strong>Pre-emit self-critique</strong> — Philosophy / Hierarchy / Execution / Specificity / Restraint / Variety を 1–5。いずれか &lt; 3 なら改訂。</li>
+        <li><strong>Honest copy</strong> — ユーザー未提供の指標・証言・ロゴ数を捏造しない（gate 46）。</li>
+        <li><strong>Locked tokens</strong> — テーマ決定後は <code>var(--color-*)</code> / <code>var(--font-*)</code> のみ。インライン色・直書き font-family 禁止（gate 48）。</li>
+        <li><strong>Re-drawn chrome 禁止</strong> — 偽ブラウザバー・偽 IDE 枠を手描きしない（gate 47）。</li>
+        <li><strong>Mobile</strong> — 320 / 375 / 414 / 768 で検証。横スクロール禁止、<code>overflow-x: clip</code>（hidden ではない）。</li>
+        <li><strong>Typography purity</strong> — 見出しに italic を使わない（gate 38a）。強調はウェイト・アクセント・下線。</li>
+      </ol>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> スロップテストの束</span>
+      <p><code>references/slop-test.md</code> は Step 7 専用。ゲートは視覚・構造・マイクロインタラクション・多様化・実装・hero enrichment・レスポンシブ・a11y などに分かれる。ジャンルで緩むゲートもある（例: atmospheric の radial bloom、modern-minimal のゼロクロマニュートラル）。</p>
+      <div class="ve-callout">
+        <strong>スタンプ:</strong> CSS 先頭に <code>/* Hallmark · macrostructure: … · theme: … */</code>。続いて <code>.hallmark/log.json</code> に追記（最大 20 件）。次回の多様化がこれを読む。
+      </div>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> Component-scope</span>
+      <p>ボタン・入力・カードなど単一 UI のとき。マクロ / ナビ / フッター / enrichment / log 追記をスキップ。代わりに 8 状態（default · hover · focus · active · disabled · loading · error · success）必須と、プレビュー用ラッパーを出す。</p>
+    </div>
+
+    <section id="install" class="sec-head">インストール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> skills CLI</span>
+      <div class="ve-code-block">
+        <pre><code>npx skills add nutlope/hallmark</code></pre>
+      </div>
+      <p>または <code>SKILL.md</code> と <code>references/</code> を手動配置:</p>
+      <ul>
+        <li><strong>Claude Code:</strong> <code>~/.claude/skills/hallmark/</code></li>
+        <li><strong>Cursor:</strong> <code>.cursor/rules/hallmark.mdc</code>（frontmatter なしの本文）</li>
+        <li><strong>Codex:</strong> <code>~/.codex/skills/hallmark/</code>（個人）または <code>.codex/skills/hallmark/</code>（プロジェクト）</li>
+      </ul>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> リポジトリ構成</span>
+      <div class="ve-code-block">
+        <pre><code>nutlope/hallmark/
+├── README.md
+├── ROADMAP.md
+├── package.json
+├── docs/                 # recipes / study-examples / talk-slides
+├── site/                 # デモサイト・examples・_tests
+└── skills/hallmark/
+    ├── SKILL.md          # エントリ（v1.1.0）
+    └── references/       # themes / genres / macros / verbs / gates …</code></pre>
+      </div>
+      <p>デモ: <a href="https://www.usehallmark.com" target="_blank" rel="noopener">usehallmark.com</a>。ローカルは <code>npm run serve</code>（<code>site/</code> を 4173）。</p>
+    </div>
+
+    <section id="links" class="sec-head">出典・リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <ul>
+        <li><a href="https://github.com/Nutlope/hallmark" target="_blank" rel="noopener">GitHub: Nutlope/hallmark</a> — 本体（MIT）</li>
+        <li><a href="https://www.usehallmark.com" target="_blank" rel="noopener">Live demo</a> — テーマ例とデモページ</li>
+        <li><span class="badge">entry</span> <code>skills/hallmark/SKILL.md</code></li>
+        <li><span class="badge">human</span> <code>docs/recipes.md</code> / <code>docs/study-examples.md</code>（エージェントは自動ロードしない）</li>
+        <li>Powered by Together AI</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    look: 'classic',
+    themeVariables: {
+      primaryColor: isDark ? '#134e4a' : '#ccfbf1',
+      primaryBorderColor: isDark ? '#2dd4bf' : '#0f766e',
+      primaryTextColor: isDark ? '#f0fdfa' : '#134e4a',
+      secondaryColor: isDark ? '#1e293b' : '#f1f5f9',
+      secondaryBorderColor: isDark ? '#64748b' : '#94a3b8',
+      secondaryTextColor: isDark ? '#f1f5f9' : '#1e293b',
+      tertiaryColor: isDark ? '#422006' : '#fef3c7',
+      tertiaryBorderColor: isDark ? '#d97706' : '#b45309',
+      tertiaryTextColor: isDark ? '#fef3c7' : '#422006',
+      lineColor: isDark ? '#64748b' : '#94a3b8',
+      fontSize: '15px',
+      fontFamily: 'IBM Plex Mono, monospace'
+    }
+  });
+
+  const INITIAL_ZOOM = 1.15;
+  const wrap = document.getElementById('flow-diagram');
+  if (wrap) {
+    let zoom = INITIAL_ZOOM;
+    const apply = () => {
+      const svg = wrap.querySelector('svg');
+      if (svg) svg.style.transform = `scale(${zoom})`;
+      svg && (svg.style.transformOrigin = 'center top');
+    };
+    wrap.querySelectorAll('[data-zoom]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const mode = btn.getAttribute('data-zoom');
+        if (mode === 'in') zoom = Math.min(2.4, zoom + 0.15);
+        else if (mode === 'out') zoom = Math.max(0.6, zoom - 0.15);
+        else zoom = INITIAL_ZOOM;
+        apply();
+      });
+    });
+    const obs = new MutationObserver(() => apply());
+    obs.observe(wrap, { childList: true, subtree: true });
+    setTimeout(apply, 400);
+  }
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
