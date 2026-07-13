@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>graphify — あらゆる入力をナレッジグラフへ変換する AI コーディングスキル</title>
-  <meta name="description" content="コード・ドキュメント・論文・画像をナレッジグラフに変換。コミュニティ検出・信頼性監査・HTML/JSON/GraphML 出力。71.5x トークン削減。">
+  <title>graphify — コードとドキュメントをナレッジグラフに変換する AI スキル</title>
+  <meta name="description" content="tree-sitter でコードをローカル AST 抽出、Docs/PDF/画像はセマンティック抽出。EXTRACTED/INFERRED 付きグラフを query / path / explain。PyPI graphifyy 0.9.14、20+ アシスタント対応。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="graphify — あらゆる入力をナレッジグラフへ変換する AI コーディングスキル">
-  <meta property="og:description" content="コード・ドキュメント・論文・画像をナレッジグラフに変換。コミュニティ検出・信頼性監査・HTML/JSON/GraphML 出力。71.5x トークン削減。">
+  <meta property="og:title" content="graphify — コードとドキュメントをナレッジグラフに変換する AI スキル">
+  <meta property="og:description" content="tree-sitter でコードをローカル AST 抽出、Docs/PDF/画像はセマンティック抽出。EXTRACTED/INFERRED 付きグラフを query / path / explain。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/graphify.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="graphify — あらゆる入力をナレッジグラフへ変換する AI コーディングスキル">
-  <meta name="twitter:description" content="コード・ドキュメント・論文・画像をナレッジグラフに変換。コミュニティ検出・信頼性監査。71.5x トークン削減。">
+  <meta name="twitter:title" content="graphify — コードとドキュメントをナレッジグラフに変換する AI スキル">
+  <meta name="twitter:description" content="tree-sitter でコードをローカル AST 抽出。EXTRACTED/INFERRED 付きグラフを query / path / explain。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
   <style>
     /* ============ THEME (Spell UI tokens + fonts) ============ */
     :root {
@@ -43,16 +43,16 @@
       --border: oklch(0.922 0 0);
       --input: oklch(0.922 0 0);
       --ring: oklch(0.708 0 0);
-      /* Teal + Amber — technical / data-focused */
-      --chart-1: oklch(0.45 0.12 200);   /* teal */
-      --chart-2: oklch(0.65 0.15 80);    /* amber/gold */
-      --chart-3: oklch(0.35 0.10 210);   /* deep teal */
-      --chart-4: oklch(0.75 0.12 90);    /* warm gold */
-      --chart-5: oklch(0.55 0.08 250);   /* slate */
+      /* Editorial rose + warm gold — graph / knowledge */
+      --chart-1: oklch(0.55 0.19 15);
+      --chart-2: oklch(0.68 0.14 75);
+      --chart-3: oklch(0.40 0.10 20);
+      --chart-4: oklch(0.78 0.10 85);
+      --chart-5: oklch(0.50 0.06 250);
       --code-bg: var(--muted);
-      --code-text: #032f62;
-      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
-      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --code-text: #5c1a1a;
+      --font-body: 'Figtree', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
       --bg: var(--background);
       --surface: var(--card);
       --surface2: var(--muted);
@@ -79,13 +79,13 @@
         --border: oklch(1 0 0 / 10%);
         --input: oklch(1 0 0 / 15%);
         --ring: oklch(0.556 0 0);
-        --chart-1: oklch(0.58 0.14 200);
-        --chart-2: oklch(0.72 0.16 80);
-        --chart-3: oklch(0.48 0.12 210);
-        --chart-4: oklch(0.80 0.13 90);
-        --chart-5: oklch(0.65 0.09 250);
+        --chart-1: oklch(0.72 0.16 18);
+        --chart-2: oklch(0.78 0.14 75);
+        --chart-3: oklch(0.58 0.12 25);
+        --chart-4: oklch(0.82 0.12 85);
+        --chart-5: oklch(0.65 0.08 250);
         --code-bg: #0f0f0f;
-        --code-text: #79e0d9;
+        --code-text: #f0a8a0;
       }
     }
 
@@ -106,33 +106,40 @@
     }
     .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
     .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
-    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
-    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
-    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
     .ve-table-wrap tbody tr:hover { background: var(--border); }
     .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
-    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; color: var(--chart-1); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-weight: 700; }
     .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
     .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
     .ve-callout strong { color: var(--foreground); font-weight: 600; }
-    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.65 0.15 80 / 0.12); color: var(--chart-2); padding: 1px 5px; border-radius: var(--radius-sm); }
 
     /* ============ Reset + base ============ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: var(--bg);
-      background-image: radial-gradient(ellipse at 70% 0%, oklch(0.45 0.12 200 / 0.07) 0%, transparent 55%);
+      background-image: radial-gradient(ellipse at 25% 0%, oklch(0.55 0.19 15 / 0.07) 0%, transparent 55%);
       color: var(--text);
       font-family: var(--font-body);
       padding: 40px;
       min-height: 100vh;
     }
     @media (prefers-color-scheme: dark) {
-      body { background-image: radial-gradient(ellipse at 70% 0%, oklch(0.58 0.14 200 / 0.10) 0%, transparent 55%); }
+      body { background-image: radial-gradient(ellipse at 25% 0%, oklch(0.72 0.16 18 / 0.1) 0%, transparent 55%); }
     }
 
     /* ============ Wrap + TOC ============ */
@@ -167,47 +174,53 @@
     /* ============ Typography ============ */
     h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
     .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
-    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
     .sec-head:first-of-type { margin-top: 0; }
-    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.625rem; }
     p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
-    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
-    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.55; }
     a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
     a:hover { color: var(--chart-3); }
     code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
-    .ve-code-block { margin: 1rem 0; }
 
-    /* ============ KPI row ============ */
-    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
-    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin: 1.25rem 0; }
+    @media (max-width: 800px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
 
-    /* ============ Pipeline ============ */
-    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
-    .pipeline .step { background: color-mix(in oklch, var(--muted) 80%, var(--chart-1) 20%); border: 1px solid color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%); padding: 0.4rem 0.7rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.75rem; color: var(--text); }
-    .pipeline .arrow { color: var(--chart-1); font-weight: 700; }
+    .badge {
+      display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600;
+      padding: 2px 6px; border-radius: 4px; letter-spacing: 0.02em;
+    }
+    .badge--extracted { background: oklch(0.55 0.19 15 / 0.12); color: var(--chart-1); }
+    .badge--inferred { background: oklch(0.68 0.14 75 / 0.15); color: var(--chart-2); }
+    .badge--ambiguous { background: oklch(0.50 0.06 250 / 0.15); color: var(--chart-5); }
 
-    /* ============ Confidence badges ============ */
-    .badge { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; padding: 2px 7px; border-radius: 4px; vertical-align: middle; }
-    .badge--extracted { background: oklch(0.45 0.12 200 / 0.12); color: var(--chart-1); border: 1px solid oklch(0.45 0.12 200 / 0.3); }
-    .badge--inferred { background: oklch(0.65 0.15 80 / 0.12); color: var(--chart-2); border: 1px solid oklch(0.65 0.15 80 / 0.3); }
-    .badge--ambiguous { background: oklch(0.577 0.245 27.325 / 0.1); color: var(--destructive); border: 1px solid oklch(0.577 0.245 27.325 / 0.25); }
+    .pipeline {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.5rem;
+      font-family: var(--font-mono); font-size: 0.75rem; margin: 1rem 0 0.5rem;
+    }
+    .pipeline .step {
+      background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 0.35rem 0.55rem; color: var(--chart-1); font-weight: 500;
+    }
+    .pipeline .arrow { color: var(--text-dim); }
 
-    /* ============ Output cards grid ============ */
-    .output-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 0.75rem; }
-    @media (max-width: 640px) { .output-grid { grid-template-columns: 1fr; } }
-    .output-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+    .output-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+    @media (max-width: 700px) { .output-grid { grid-template-columns: 1fr; } }
+    .output-card {
+      background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 0.875rem 1rem;
+    }
     .output-card__file { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 500; color: var(--chart-1); margin-bottom: 0.375rem; }
     .output-card__desc { font-size: 0.8125rem; color: var(--text-dim); line-height: 1.55; }
 
-    /* ============ Animations ============ */
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card + .ve-card { margin-top: 1rem; }
     .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.06s); }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; }
+    }
 
-    /* ============ Mermaid wrap ============ */
     .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; }
-    .mermaid-wrap svg { max-width: 100%; }
   </style>
 </head>
 <body>
@@ -215,53 +228,91 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
+    <a href="#benchmarks">ベンチマーク</a>
     <a href="#pipeline">パイプライン</a>
     <a href="#install">インストール</a>
     <a href="#commands">コマンド</a>
-    <a href="#outputs">出力形式</a>
-    <a href="#tech">テクスタック</a>
+    <a href="#outputs">出力とクエリ</a>
+    <a href="#privacy">入力・プライバシー</a>
     <a href="#links">リンク</a>
   </nav>
 
   <div class="main">
     <h1>graphify</h1>
-    <p class="subtitle">any input → knowledge graph → clustered communities → HTML + JSON + audit report</p>
+    <p class="subtitle">any input → knowledge graph → query / path / explain · Graphify-Labs · v0.9.14</p>
 
     <!-- ============ 1. 概要 ============ -->
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
       <p>
-        <strong>graphify</strong> は AI コーディングアシスタント向けスキル。Claude Code・Codex・OpenCode・OpenClaw・Factory Droid で <code>/graphify</code> とタイプするだけで、コード・ドキュメント・論文・画像など任意のファイル群を読み取り、<strong>ナレッジグラフ</strong>として構造化する。知らなかったつながりが見えてくる。
+        <strong>graphify</strong> は AI コーディングアシスタント向けスキル兼 Python CLI。アシスタントで <code>/graphify .</code>（Codex は <code>$graphify</code>）を実行すると、コード・ドキュメント・PDF・画像・動画などを読み取り、<strong>ナレッジグラフ</strong>として構造化する。ベクトル索引ではなく、エッジを辿る実グラフ。
       </p>
       <div class="kpi-row">
         <div class="ve-kpi-card">
-          <span class="ve-kpi-card__value">71.5x</span>
-          <span class="ve-kpi-card__label">トークン削減（大規模コーパス）</span>
+          <span class="ve-kpi-card__value">0.497</span>
+          <span class="ve-kpi-card__label">LOCOMO recall@10</span>
         </div>
         <div class="ve-kpi-card">
-          <span class="ve-kpi-card__value">Multi</span>
-          <span class="ve-kpi-card__label">コード / Docs / PDF / 画像</span>
+          <span class="ve-kpi-card__value">$0</span>
+          <span class="ve-kpi-card__label">コード AST の LLM コスト</span>
+        </div>
+        <div class="ve-kpi-card">
+          <span class="ve-kpi-card__value">20+</span>
+          <span class="ve-kpi-card__label">対応アシスタント</span>
         </div>
         <div class="ve-kpi-card">
           <span class="ve-kpi-card__value">3.10+</span>
-          <span class="ve-kpi-card__label">Python バージョン</span>
-        </div>
-        <div class="ve-kpi-card">
-          <span class="ve-kpi-card__value">Local</span>
-          <span class="ve-kpi-card__label">サーバー不要・完全ローカル</span>
+          <span class="ve-kpi-card__label">Python</span>
         </div>
       </div>
       <p>
-        Andrej Karpathy の <code>/raw</code> フォルダワークフロー（論文・ツイート・スクリーンショット・コードをひとつの場所に集める）の問題を解決するツール。グラフは永続化されセッション跨ぎでクエリできる。すべてのエッジは <span class="badge badge--extracted">EXTRACTED</span>（根拠あり）/ <span class="badge badge--inferred">INFERRED</span>（推論・信頼スコア付き）/ <span class="badge badge--ambiguous">AMBIGUOUS</span>（要確認）で区別され、何が見つかったのか・何が推測なのかが常に分かる。
+        コードは tree-sitter AST で<strong>完全ローカル・決定論的</strong>（LLM 不要）。Docs / PDF / 画像などはアシスタントのモデル（または設定した API）でセマンティック抽出。各エッジは
+        <span class="badge badge--extracted">EXTRACTED</span>（ソースに明示）/
+        <span class="badge badge--inferred">INFERRED</span>（解決・推論）/
+        <span class="badge badge--ambiguous">AMBIGUOUS</span>（要確認）で区別する。
       </p>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>公式パッケージ名は <code>graphifyy</code>（二重 y）。</strong>PyPI 上の他 <code>graphify*</code> は非公式。CLI コマンドは <code>graphify</code>。Y Combinator S26。
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 30 秒スタート</span>
+      <div class="ve-code-block">
+        <pre><code>uv tool install graphifyy      # または: pipx install graphifyy
+graphify install               # スキルをアシスタントに登録
+# アシスタント内で:
+/graphify .</code></pre>
+      </div>
+      <p>出力は <code>graphify-out/</code> に 3 ファイル: <code>graph.html</code>（ブラウザで操作）・<code>GRAPH_REPORT.md</code>（ハイライト）・<code>graph.json</code>（再クエリ用）。</p>
     </div>
 
-    <!-- ============ 2. パイプライン ============ -->
-    <section id="pipeline" class="sec-head">2 — パイプライン</section>
+    <!-- ============ 2. ベンチマーク ============ -->
+    <section id="benchmarks" class="sec-head">2 — ベンチマーク</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 処理フロー</span>
-      <p>7 段階のパイプラインで構成される。各ステージは独立したモジュールの単一関数として実装され、<strong>共有ステートなし・副作用なし</strong>（<code>graphify-out/</code> 外へ書き出さない）の設計。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> 同一ハーネス比較（BENCHMARKS.md）</span>
+      <p>同一モデル・同一予算・ブラインド検証済みジャッジ（合意 90.6%、κ=0.81）で計測。グラフ構築自体の LLM クレジットは 0。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>スイート</th><th>指標</th><th>graphify</th><th>比較</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>LOCOMO (n=300)</td><td>recall@10</td><td><strong>0.497</strong></td><td>mem0 0.048 / BM25 0.362</td></tr>
+            <tr><td>LOCOMO (n=300)</td><td>QA accuracy</td><td>45.3%</td><td>supermemory 49.7%（ingest 約 11x 高コスト）/ mem0 27.3%</td></tr>
+            <tr><td>LongMemEval-S (n=50)</td><td>QA accuracy</td><td><strong>76%</strong></td><td>dense RAG と同点</td></tr>
+            <tr><td>グラフ構築</td><td>LLM credits</td><td><strong>$0</strong></td><td>多くの系はトークン課金</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.8125rem; color: var(--text-dim); margin-top:0.75rem;">混在コーパス（Karpathy 系 + 論文 + 画像、52 ファイル）ではクエリあたりトークン約 <strong>71.5x</strong> 削減の例あり（how-it-works）。詳細と再現コマンドはリポジトリの <code>BENCHMARKS.md</code>。</p>
+    </div>
+
+    <!-- ============ 3. パイプライン ============ -->
+    <section id="pipeline" class="sec-head">3 — パイプライン</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> ライブラリ段階</span>
+      <p>各ステージは独立モジュールの単一関数。共有ステートなし。副作用は <code>graphify-out/</code> 内への書き出しに限定（ARCHITECTURE.md）。</p>
       <div class="pipeline">
         <span class="step">detect()</span>
         <span class="arrow">→</span>
@@ -279,37 +330,34 @@
       </div>
     </div>
     <div class="ve-card ve-card--elevated" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> 2 パス抽出</span>
-      <p>
-        <strong>Pass 1 — AST（決定論的、LLM コスト不要）:</strong> tree-sitter でコードファイルを構文解析し、クラス・関数・インポート・コールグラフ・ドックストリング・rationale コメントを抽出。<br>
-        <strong>Pass 2 — セマンティック（Claude サブエージェント・並列）:</strong> ドキュメント・論文・画像をサブエージェントが並列処理し、概念・関係・設計意図を抽出。SHA256 キャッシュにより変更ファイルのみ再処理。
-      </p>
-      <div class="ve-callout" style="margin-top: 1rem;">
-        <strong>クラスタリングはグラフトポロジー基盤。</strong>Leiden コミュニティ検出はエッジ密度で動作する。Claude が抽出したセマンティック類似エッジ（<code>semantically_similar_to</code>、INFERRED）がグラフ構造の中に含まれるため、エンベディングや別のベクター DB は不要。
+      <span class="ve-section-label"><span class="ve-dot"></span> 3 パス抽出</span>
+      <ul>
+        <li><strong>Pass 1 — コード構造（無料・API なし）</strong>: tree-sitter AST。クラス・関数・imports / calls / inherits など。コードのみのコーパスでは Pass 3 をスキップ。</li>
+        <li><strong>Pass 2 — 動画・音声（ローカル）</strong>: faster-whisper。トップ god nodes をプロンプトにシード。キャッシュあり。</li>
+        <li><strong>Pass 3 — Docs / 論文 / 画像（セマンティック）</strong>: アシスタントのサブエージェント（または headless backend）が JSON 断片を並列出力しマージ。</li>
+      </ul>
+      <div class="ve-callout" style="margin-top: 0.75rem;">
+        <strong>コミュニティ検出は Leiden。</strong>埋め込みやベクトル DB は不要。<code>semantically_similar_to</code> などのエッジがトポロジーに直接効く。
       </div>
     </div>
     <div class="ve-card" style="--i:2">
-      <span class="ve-section-label"><span class="ve-dot"></span> モジュール一覧</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> 主要モジュール</span>
       <div class="ve-table-wrap">
         <table>
           <thead>
             <tr><th>モジュール</th><th>関数</th><th>入力 → 出力</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>detect.py</code></td><td><code>collect_files(root)</code></td><td>ディレクトリ → <code>[Path]</code> フィルタ済みリスト</td></tr>
-            <tr><td><code>extract.py</code></td><td><code>extract(path)</code></td><td>ファイルパス → <code>{nodes, edges}</code> dict</td></tr>
-            <tr><td><code>build.py</code></td><td><code>build_graph(extractions)</code></td><td>抽出 dict リスト → <code>nx.Graph</code></td></tr>
-            <tr><td><code>cluster.py</code></td><td><code>cluster(G)</code></td><td>グラフ → <code>community</code> 属性付きグラフ</td></tr>
-            <tr><td><code>analyze.py</code></td><td><code>analyze(G)</code></td><td>グラフ → 分析 dict（god nodes・surprises・questions）</td></tr>
-            <tr><td><code>report.py</code></td><td><code>render_report(G, analysis)</code></td><td>グラフ + 分析 → GRAPH_REPORT.md 文字列</td></tr>
-            <tr><td><code>export.py</code></td><td><code>export(G, out_dir, ...)</code></td><td>グラフ → Obsidian vault / graph.json / graph.html / graph.svg</td></tr>
-            <tr><td><code>ingest.py</code></td><td><code>ingest(url, ...)</code></td><td>URL → コーパスディレクトリへ保存</td></tr>
-            <tr><td><code>cache.py</code></td><td><code>check / save_semantic_cache</code></td><td>ファイル群 → (キャッシュ済み, 未処理) 分割</td></tr>
-            <tr><td><code>security.py</code></td><td>バリデーションヘルパー群</td><td>URL / パス / ラベル → 検証済みまたは例外</td></tr>
-            <tr><td><code>validate.py</code></td><td><code>validate_extraction(data)</code></td><td>抽出 dict → スキーマエラー時に例外</td></tr>
-            <tr><td><code>serve.py</code></td><td><code>start_server(graph_path)</code></td><td>グラフファイルパス → MCP stdio サーバー起動</td></tr>
-            <tr><td><code>watch.py</code></td><td><code>watch(root, flag_path)</code></td><td>ディレクトリ → 変更時フラグファイルに書き出し</td></tr>
-            <tr><td><code>benchmark.py</code></td><td><code>run_benchmark(graph_path)</code></td><td>グラフファイル → コーパス vs サブグラフ トークン比較</td></tr>
+            <tr><td><code>detect.py</code></td><td><code>collect_files</code></td><td>ディレクトリ → フィルタ済み <code>[Path]</code></td></tr>
+            <tr><td><code>extract.py</code></td><td><code>extract</code></td><td>パス → <code>{nodes, edges}</code></td></tr>
+            <tr><td><code>build.py</code></td><td><code>build_graph</code></td><td>抽出リスト → <code>nx.Graph</code></td></tr>
+            <tr><td><code>cluster.py</code></td><td><code>cluster</code></td><td>グラフ → <code>community</code> 属性</td></tr>
+            <tr><td><code>analyze.py</code></td><td><code>analyze</code></td><td>god nodes / surprises / questions</td></tr>
+            <tr><td><code>report.py</code></td><td><code>render_report</code></td><td>→ GRAPH_REPORT.md</td></tr>
+            <tr><td><code>export.py</code></td><td><code>export</code></td><td>→ graph.json / graph.html / Obsidian 等</td></tr>
+            <tr><td><code>serve.py</code></td><td><code>start_server</code></td><td>graph → MCP（stdio / HTTP）</td></tr>
+            <tr><td><code>watch.py</code> / <code>hooks.py</code></td><td>監視・git hook</td><td>変更検知 / コミット後再ビルド</td></tr>
+            <tr><td><code>security.py</code></td><td>バリデーション</td><td>URL / パス / ラベル</td></tr>
           </tbody>
         </table>
       </div>
@@ -324,224 +372,184 @@
   ],
   "edges": [
     { "source": "id_a", "target": "id_b",
-      "relation": "calls|imports|uses|semantically_similar_to|rationale_for|...",
-      "confidence": "EXTRACTED|INFERRED|AMBIGUOUS",
-      "confidence_score": 1.0 }
+      "relation": "calls|imports|uses|...",
+      "confidence": "EXTRACTED|INFERRED|AMBIGUOUS" }
   ]
 }</code></pre>
       </div>
-      <p style="font-size:0.8125rem; color: var(--text-dim); margin-top:0.5rem;">EXTRACTED エッジは <code>confidence_score = 1.0</code> 固定。INFERRED は 0.4–0.95 の範囲でモデルが根拠から個別推論。AMBIGUOUS は 0.1–0.3。</p>
+      <p style="font-size:0.8125rem; color: var(--text-dim);">EXTRACTED は confidence 1.0。INFERRED はルーブリック（0.95〜0.55）。AMBIGUOUS はレポートで要レビュー。</p>
     </div>
 
-    <!-- ============ 3. インストール ============ -->
-    <section id="install" class="sec-head">3 — インストール</section>
+    <!-- ============ 4. インストール ============ -->
+    <section id="install" class="sec-head">4 — インストール</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 前提条件</span>
-      <p>Python 3.10+ と、対応する AI コーディングアシスタント（Claude Code / Codex / OpenCode / OpenClaw / Factory Droid）のいずれか。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> パッケージとスキル登録</span>
       <div class="ve-code-block">
-        <pre><code>pip install graphifyy && graphify install</code></pre>
+        <pre><code># 推奨（隔離環境）
+uv tool install graphifyy
+# 代替: pipx install graphifyy  /  pip install graphifyy
+
+graphify install                 # ユーザー向けスキル登録
+graphify install --project       # カレントリポジトリへ（例: .claude/skills/graphify/）
+graphify install --platform codex
+uvx --from graphifyy graphify install   # パッケージ名は graphifyy</code></pre>
       </div>
       <div class="ve-callout">
-        <strong>注:</strong> PyPI パッケージ名は <code>graphifyy</code>（名前返還手続き中）。CLI と スキルコマンドは <code>graphify</code> のまま。
+        <strong><code>graphify: command not found</code></strong> → <code>uv tool update-shell</code> または <code>pipx ensurepath</code> のあとシェル再起動。<code>~/.local/bin</code> が PATH に無いことが多い。
       </div>
     </div>
     <div class="ve-card" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> プラットフォーム対応</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> プラットフォーム（抜粋）</span>
       <div class="ve-table-wrap">
         <table>
           <thead>
-            <tr><th>プラットフォーム</th><th>インストールコマンド</th><th>並列処理</th></tr>
+            <tr><th>プラットフォーム</th><th>コマンド</th></tr>
           </thead>
           <tbody>
-            <tr><td>Claude Code (Linux/Mac)</td><td><code>graphify install</code></td><td>並列（推奨）</td></tr>
-            <tr><td>Claude Code (Windows)</td><td><code>graphify install --platform windows</code></td><td>並列（推奨）</td></tr>
-            <tr><td>Codex</td><td><code>graphify install --platform codex</code></td><td>並列（<code>multi_agent = true</code> 設定要）</td></tr>
-            <tr><td>OpenCode</td><td><code>graphify install --platform opencode</code></td><td>並列</td></tr>
-            <tr><td>OpenClaw</td><td><code>graphify install --platform claw</code></td><td>逐次（並列サポート初期段階）</td></tr>
-            <tr><td>Factory Droid</td><td><code>graphify install --platform droid</code></td><td>並列（<code>Task</code> ツール使用）</td></tr>
+            <tr><td>Claude Code</td><td><code>graphify install</code></td></tr>
+            <tr><td>Cursor</td><td><code>graphify cursor install</code></td></tr>
+            <tr><td>Codex</td><td><code>graphify install --platform codex</code>（並列抽出に <code>multi_agent = true</code>）</td></tr>
+            <tr><td>GitHub Copilot CLI</td><td><code>graphify install --platform copilot</code></td></tr>
+            <tr><td>VS Code Copilot Chat</td><td><code>graphify vscode install</code></td></tr>
+            <tr><td>Gemini CLI / Amp / Pi / Devin 等</td><td><code>graphify install --platform …</code> または専用サブコマンド</td></tr>
+            <tr><td>Agent Skills（汎用）</td><td><code>graphify install --platform agents</code></td></tr>
           </tbody>
         </table>
       </div>
-    </div>
-    <div class="ve-card ve-card--elevated" style="--i:2">
-      <span class="ve-section-label"><span class="ve-dot"></span> Always-On 統合（推奨）</span>
-      <p>グラフ構築後に一度実行することで、アシスタントがアーキテクチャ質問の前に常にグラフを参照するよう設定できる。</p>
-      <div class="ve-table-wrap">
-        <table>
-          <thead>
-            <tr><th>プラットフォーム</th><th>コマンド</th><th>仕組み</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Claude Code</td><td><code>graphify claude install</code></td><td>CLAUDE.md + PreToolUse フック（Glob/Grep 前にグラフ確認）</td></tr>
-            <tr><td>Codex / OpenCode / OpenClaw / Factory Droid</td><td><code>graphify &lt;platform&gt; install</code></td><td>AGENTS.md に常時ルールを書き込む</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ============ 4. コマンド ============ -->
-    <section id="commands" class="sec-head">4 — コマンド</section>
-    <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> スキルコマンド（AI アシスタント内）</span>
-      <div class="ve-code-block">
-        <pre><code>/graphify .                        # カレントディレクトリ → グラフ生成
-/graphify ./raw                    # 指定フォルダ
-/graphify ./raw --mode deep        # INFERRED エッジをより積極的に抽出
-/graphify ./raw --update           # 変更ファイルのみ増分再抽出・マージ
-/graphify ./raw --cluster-only     # 既存グラフを再クラスタリング
-/graphify ./raw --no-viz           # HTML スキップ、レポート + JSON のみ
-/graphify ./raw --obsidian         # Obsidian vault も生成（オプトイン）
-/graphify ./raw --wiki             # コミュニティごとの wiki（index.md + 記事）
-/graphify ./raw --watch            # ファイル変更を監視して自動同期
-/graphify ./raw --svg              # graph.svg も出力
-/graphify ./raw --graphml          # graph.graphml（Gephi / yEd 向け）
-/graphify ./raw --neo4j            # cypher.txt 生成
-/graphify ./raw --neo4j-push bolt://localhost:7687  # Neo4j に直接 Push
-/graphify ./raw --mcp              # MCP stdio サーバー起動
-
-/graphify add &lt;url&gt;               # URL 取得してコーパスに追加・グラフ更新
-/graphify add &lt;url&gt; --author "Name"
-/graphify add &lt;url&gt; --contributor "Name"
-
-/graphify query "attention と optimizer を繋ぐものは？"
-/graphify query "..." --dfs        # DFS: 特定パスを追う
-/graphify query "..." --budget 1500  # トークン上限指定
-/graphify path "DigestAuth" "Response"  # 2 ノード間の最短パス
-/graphify explain "SwinTransformer"     # ノードの平易な説明</code></pre>
-      </div>
-    </div>
-    <div class="ve-card" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> CLI コマンド（ターミナル）</span>
-      <div class="ve-code-block">
-        <pre><code># git フック（コミット / ブランチ切替ごとにグラフ自動再ビルド）
-graphify hook install
-graphify hook uninstall
-graphify hook status
-
-# always-on 統合
-graphify claude install     # CLAUDE.md + PreToolUse フック
-graphify claude uninstall
-graphify codex install      # AGENTS.md (Codex)
-graphify opencode install   # AGENTS.md (OpenCode)
-graphify claw install       # AGENTS.md (OpenClaw)
-graphify droid install      # AGENTS.md (Factory Droid)</code></pre>
-      </div>
+      <p style="font-size:0.8125rem; color: var(--text-dim); margin-top:0.75rem;">always-on（グラフ優先）は <code>graphify claude install</code> / <code>graphify cursor install</code> など。一括削除は <code>graphify uninstall</code>（<code>--purge</code> で <code>graphify-out/</code> も削除）。</p>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:2">
-      <span class="ve-section-label"><span class="ve-dot"></span> .graphifyignore</span>
-      <p><code>.gitignore</code> と同じ構文でグラフ生成から除外するファイルやディレクトリを指定できる。</p>
-      <div class="ve-code-block">
-        <pre><code># .graphifyignore
-vendor/
-node_modules/
-dist/
-*.generated.py</code></pre>
-      </div>
+      <span class="ve-section-label"><span class="ve-dot"></span> 主な extras</span>
+      <p style="font-size:0.875rem;"><code>pdf</code> / <code>office</code> / <code>video</code> / <code>mcp</code> / <code>neo4j</code> / <code>falkordb</code> / <code>leiden</code> / <code>ollama</code> / <code>openai</code> / <code>gemini</code> / <code>anthropic</code> / <code>postgres</code> / <code>terraform</code> / <code>pascal</code> / <code>all</code> など。<code>uv tool install "graphifyy[mcp]"</code> 形式。</p>
     </div>
 
-    <!-- ============ 5. 出力形式 ============ -->
-    <section id="outputs" class="sec-head">5 — 出力形式</section>
+    <!-- ============ 5. コマンド ============ -->
+    <section id="commands" class="sec-head">5 — コマンド</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> graphify-out/ の構成</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> スキル・CLI（よく使うもの）</span>
+      <div class="ve-code-block">
+        <pre><code>/graphify .                        # カレントをグラフ化
+/graphify ./docs --update          # 変更ファイルのみ再抽出
+/graphify . --cluster-only         # クラスタのみ再実行
+/graphify . --no-viz               # HTML スキップ
+/graphify . --wiki                 # グラフから markdown wiki
+
+graphify query "what connects auth to the database?"
+graphify path "UserService" "DatabasePool"
+graphify explain "RateLimiter"
+
+/graphify add https://arxiv.org/abs/1706.03762
+graphify hook install              # コミット後に自動再ビルド
+graphify merge-graphs a.json b.json
+graphify export callflow-html      # Mermaid コールフロー HTML
+
+graphify prs                       # PR ダッシュボード
+graphify prs 42                    # PR #42 のグラフ影響
+graphify prs --triage              # レビューキュー順位付け
+graphify prs --conflicts           # コミュニティ共有の衝突リスク</code></pre>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> .graphifyignore とチーム</span>
+      <p><code>.gitignore</code> は自動尊重。<code>.graphifyignore</code> は同じ構文で追加除外（マージ時は後者が優先）。チームは <code>graphify-out/</code> をコミットし、各自がすぐクエリできるようにする。フック導入で AST のみの自動再ビルドと <code>graph.json</code> のマージドライバが有効になる。</p>
+    </div>
+
+    <!-- ============ 6. 出力とクエリ ============ -->
+    <section id="outputs" class="sec-head">6 — 出力とクエリ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> graphify-out/</span>
       <div class="output-grid">
         <div class="output-card">
           <div class="output-card__file">graph.html</div>
-          <div class="output-card__desc">インタラクティブグラフ。ノードをクリック・検索・コミュニティでフィルタ。ブラウザで開くだけ（サーバー不要）。vis.js 使用。5,000 ノード超では自動スキップ。</div>
+          <div class="output-card__desc">クリック・検索・コミュニティフィルタ可能なインタラクティブ図。サーバー不要。</div>
         </div>
         <div class="output-card">
           <div class="output-card__file">GRAPH_REPORT.md</div>
-          <div class="output-card__desc">プレーンテキストの監査レポート。God Nodes（最高次数ノード）・Surprising Connections（驚くべき接続）・Suggested Questions・トークンコストを含む。</div>
+          <div class="output-card__desc">God nodes・驚く接続・Suggested questions・確信度の監査レポート。</div>
         </div>
         <div class="output-card">
           <div class="output-card__file">graph.json</div>
-          <div class="output-card__desc">永続化グラフ（NetworkX node-link 形式）。セッション跨ぎでクエリ可能。GraphRAG ワークフローの入力として使用できる。</div>
+          <div class="output-card__desc">NetworkX node-link。再読み込みなしで query / path / explain / MCP。</div>
         </div>
         <div class="output-card">
-          <div class="output-card__file">cache/</div>
-          <div class="output-card__desc">SHA256 ベースのキャッシュ。変更ファイルのみ再処理。大規模コーパスの更新コストを最小化。</div>
-        </div>
-        <div class="output-card">
-          <div class="output-card__file">obsidian/</div>
-          <div class="output-card__desc">オプトイン（<code>--obsidian</code>）。コミュニティごとの Markdown ノート + graph.canvas。Obsidian で vault として開くと構造レイアウトを確認できる。</div>
-        </div>
-        <div class="output-card">
-          <div class="output-card__file">cypher.txt / graph.graphml / graph.svg</div>
-          <div class="output-card__desc">Neo4j（<code>--neo4j</code>）/ Gephi・yEd（<code>--graphml</code>）/ SVG 埋め込み（<code>--svg</code>）向けの追加エクスポート形式。</div>
+          <div class="output-card__file">cache/ · callflow · Obsidian</div>
+          <div class="output-card__desc">SHA256 キャッシュ。オプションで callflow HTML、Obsidian vault、Neo4j / GraphML / SVG。</div>
         </div>
       </div>
     </div>
     <div class="ve-card" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> グラフが提供するもの</span>
-      <ul>
-        <li><strong>God Nodes</strong> — 最も多くのノードと接続する概念。すべてがそこを経由する。</li>
-        <li><strong>Surprising Connections</strong> — コード-論文間のエッジを最高スコアとした複合スコアでランク付け。各結果に平易な説明付き。</li>
-        <li><strong>Suggested Questions</strong> — このグラフだから答えられる 4–5 個の質問。</li>
-        <li><strong>Rationale Nodes</strong> — <code># NOTE:</code> <code># WHY:</code> <code># HACK:</code> などのコメントや設計意図ドキュメントを <code>rationale_for</code> エッジ付きノードとして抽出。コードが<em>なぜ</em>書かれたかを保存。</li>
-        <li><strong>Hyperedges</strong> — 共通プロトコルを実装する全クラス、認証フローの全関数など、2 点間エッジでは表現できない 3+ ノードのグループ関係。</li>
-        <li><strong>Confidence Scores</strong> — INFERRED エッジは個別の確信度スコア（0.0–1.0）を持つ。何が推測かが定量的に分かる。</li>
-        <li><strong>Token Benchmark</strong> — 実行後自動でコーパス全体 vs グラフのトークン比を算出・表示。</li>
-      </ul>
+      <span class="ve-section-label"><span class="ve-dot"></span> クエリ例（FastAPI コードベース）</span>
+      <div class="ve-code-block">
+        <pre><code>$ graphify explain "APIRouter"
+Node: APIRouter
+  Source:    routing.py L2210
+  Community: 2
+  Degree:    47
+Connections: --> Dependant [uses] [INFERRED]
+             <-- __init__.py [imports] [EXTRACTED]
+
+$ graphify path "FastAPI" "ModelField"
+Shortest path (3 hops):
+  FastAPI --uses--> DefaultPlaceholder
+    <--references-- get_request_handler()
+    --references--> ModelField</code></pre>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> MCP サーバー</span>
+      <div class="ve-code-block">
+        <pre><code>python -m graphify.serve graphify-out/graph.json
+python -m graphify.serve graphify-out/graph.json \
+  --transport http --host 0.0.0.0 --port 8080 --api-key "$SECRET"</code></pre>
+      </div>
+      <p style="font-size:0.8125rem; color: var(--text-dim);">ツール例: <code>query_graph</code> / <code>get_node</code> / <code>shortest_path</code> / <code>list_prs</code> / <code>triage_prs</code>。共有ホストでは <code>--host 0.0.0.0</code> と <code>--api-key</code> を併用。</p>
     </div>
 
-    <!-- ============ 6. テクスタック ============ -->
-    <section id="tech" class="sec-head">6 — テクスタック</section>
+    <!-- ============ 7. 入力・プライバシー ============ -->
+    <section id="privacy" class="sec-head">7 — 入力・プライバシー</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> コア依存</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> 扱える入力（要約）</span>
       <div class="ve-table-wrap">
         <table>
           <thead>
-            <tr><th>ライブラリ</th><th>役割</th></tr>
+            <tr><th>種別</th><th>内容</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>networkx</code></td><td>グラフ構造・クエリ・エクスポートの中核</td></tr>
-            <tr><td><code>graspologic</code> (leiden)</td><td>Leiden コミュニティ検出（オプション）</td></tr>
-            <tr><td><code>tree-sitter</code> + 各言語パッケージ</td><td>AST ベースのコード構造抽出（Python / TS / JS / Go / Rust / Java / C / C++ / Ruby / C# / Kotlin / Scala / PHP / Swift / Lua / Zig / PS1）</td></tr>
-            <tr><td>vis.js（CDN）</td><td>インタラクティブ HTML グラフの描画</td></tr>
-            <tr><td>Claude / GPT-4 / etc.</td><td>ドキュメント・論文・画像のセマンティック抽出（プラットフォームの API を使用）</td></tr>
+            <tr><td>コード</td><td>多数の tree-sitter 文法（Python / TS / JS / Go / Rust / Java / C/C++ / Ruby / C# / Kotlin / Swift / …）。オプションで Terraform / Pascal / DreamMaker 等</td></tr>
+            <tr><td>Docs</td><td><code>.md</code> / <code>.mdx</code> / HTML / YAML 等。Markdown リンク・wikilink → <code>references</code></td></tr>
+            <tr><td>Office / Google</td><td><code>[office]</code> / <code>[google]</code> + <code>gws</code>、<code>--google-workspace</code></td></tr>
+            <tr><td>PDF / 画像 / 動画</td><td>セマンティックまたはローカル転写（<code>[video]</code>）</td></tr>
+            <tr><td>マニフェスト / MCP</td><td>パッケージ依存・MCP サーバー設定をノード化</td></tr>
           </tbody>
         </table>
       </div>
     </div>
-    <div class="ve-card" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> オプション依存</span>
-      <div class="ve-table-wrap">
-        <table>
-          <thead>
-            <tr><th>エクストラ</th><th>インストール</th><th>追加機能</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><code>leiden</code></td><td><code>pip install graphifyy[leiden]</code></td><td>graspologic — Leiden コミュニティ検出</td></tr>
-            <tr><td><code>mcp</code></td><td><code>pip install graphifyy[mcp]</code></td><td>MCP stdio サーバー（<code>--mcp</code> フラグ）</td></tr>
-            <tr><td><code>neo4j</code></td><td><code>pip install graphifyy[neo4j]</code></td><td>Neo4j への直接 Push</td></tr>
-            <tr><td><code>pdf</code></td><td><code>pip install graphifyy[pdf]</code></td><td>PDF 引用マイニング・概念抽出</td></tr>
-            <tr><td><code>watch</code></td><td><code>pip install graphifyy[watch]</code></td><td>watchdog — ファイル変更監視</td></tr>
-            <tr><td><code>office</code></td><td><code>pip install graphifyy[office]</code></td><td>python-docx / openpyxl — .docx / .xlsx サポート</td></tr>
-          </tbody>
-        </table>
+    <div class="ve-card ve-card--elevated" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> データの行き先</span>
+      <ul>
+        <li><strong>コード</strong> — マシン内 AST のみ。コードのみなら API キー不要でオフライン可。</li>
+        <li><strong>動画・音声</strong> — faster-whisper でローカル転写。</li>
+        <li><strong>Docs / PDF / 画像</strong> — スキル利用時は IDE セッションのモデルへ。headless <code>graphify extract</code> は設定した backend（Gemini / Kimi / Claude / OpenAI / Ollama / Bedrock 等）へ。</li>
+        <li><strong>テレメトリなし。</strong>クエリログはオプトイン（既定オフ、または <code>GRAPHIFY_QUERY_LOG_DISABLE=1</code>）。</li>
+      </ul>
+      <div class="ve-callout" style="margin-top: 0.75rem;">
+        外部入力は <code>security.py</code> 経由（http/https のみ、file:// リダイレクト遮断、サイズ上限、グラフパスは <code>graphify-out/</code> 内、ラベルのサニタイズ）。
       </div>
     </div>
-    <div class="ve-card ve-card--recessed" style="--i:2">
-      <span class="ve-section-label"><span class="ve-dot"></span> セキュリティ</span>
-      <p>外部入力はすべて <code>graphify/security.py</code> を経由してバリデーション:</p>
-      <ul>
-        <li>URL → <code>validate_url()</code>（http/https のみ）+ <code>_NoFileRedirectHandler</code>（file:// リダイレクトをブロック）</li>
-        <li>取得コンテンツ → サイズ上限・タイムアウト</li>
-        <li>グラフファイルパス → <code>graphify-out/</code> 内に解決されることを検証</li>
-        <li>ノードラベル → 制御文字除去・256 文字上限・HTML エスケープ</li>
-      </ul>
-      <p style="margin-top:0.5rem; font-size:0.8125rem; color: var(--text-dim);">コードファイルは tree-sitter AST のみでローカル処理。ファイル内容がネットワークに送信されるのは LLM セマンティック抽出（Docs / 論文 / 画像）のみ。テレメトリ・使用状況追跡はなし。</p>
-    </div>
 
-    <!-- ============ 7. リンク ============ -->
-    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <!-- ============ 8. リンク ============ -->
+    <section id="links" class="sec-head">8 — リンク</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
       <ul>
-        <li><a href="https://github.com/safishamsi/graphify" target="_blank" rel="noopener">GitHub: safishamsi/graphify</a> — 本体リポジトリ（Python）</li>
-        <li><a href="https://pypi.org/project/graphifyy/" target="_blank" rel="noopener">PyPI: graphifyy</a> — パッケージ配布ページ</li>
-        <li><a href="https://github.com/safishamsi/graphify/blob/v3/ARCHITECTURE.md" target="_blank" rel="noopener">ARCHITECTURE.md</a> — モジュール責務・言語追加の手順</li>
-        <li><a href="https://github.com/safishamsi/graphify/blob/v3/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a> — 脅威モデル・セキュリティ設計</li>
-        <li><a href="https://github.com/safishamsi/graphify/tree/v3/worked" target="_blank" rel="noopener">worked/</a> — Karpathy リポジトリ・論文・画像を使ったサンプル出力（71.5x 結果の再現可能な証拠）</li>
+        <li><a href="https://github.com/Graphify-Labs/graphify" target="_blank" rel="noopener">GitHub: Graphify-Labs/graphify</a></li>
+        <li><a href="https://pypi.org/project/graphifyy/" target="_blank" rel="noopener">PyPI: graphifyy</a>（v0.9.14）</li>
+        <li><a href="https://graphify.com" target="_blank" rel="noopener">graphify.com</a></li>
+        <li><a href="https://github.com/Graphify-Labs/graphify/blob/main/ARCHITECTURE.md" target="_blank" rel="noopener">ARCHITECTURE.md</a> — モジュール責務</li>
+        <li><a href="https://github.com/Graphify-Labs/graphify/blob/main/BENCHMARKS.md" target="_blank" rel="noopener">BENCHMARKS.md</a> — 再現可能な比較</li>
+        <li><a href="https://github.com/Graphify-Labs/graphify/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a> — 脅威モデル</li>
+        <li><a href="https://github.com/Graphify-Labs/graphify/tree/main/worked" target="_blank" rel="noopener">worked/</a> — サンプル入出力</li>
+        <li><a href="https://github.com/Graphify-Labs/graphify/blob/main/docs/how-it-works.md" target="_blank" rel="noopener">docs/how-it-works.md</a> — 3 パスとキャッシュ</li>
       </ul>
     </div>
   </div><!-- /.main -->
