@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archify — エージェント向け技術図スキル（tt-a1i/archify）</title>
+  <meta name="description" content="Archify は Claude / Codex / opencode 向け Agent Skill。architecture・workflow・sequence・dataflow・lifecycle を JSON IR から自己完結 HTML に描き、テーマ切替と 4× エクスポートを備える。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Archify — エージェント向け技術図スキル（tt-a1i/archify）">
+  <meta property="og:description" content="5 種の図を JSON IR → 検証 → レンダで生成。ダーク/ライト切替、PNG コピー、最大 4× ラスタと dual-theme SVG。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/archify.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Archify — エージェント向け技術図スキル（tt-a1i/archify）">
+  <meta name="twitter:description" content="JSON IR と 5 レンダラで、チャットから自己完結の技術図 HTML を作る Agent Skill。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,400&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.99 0.005 200);
+      --foreground: oklch(0.18 0.02 240);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.18 0.02 240);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.18 0.02 240);
+      --primary: oklch(0.32 0.06 220);
+      --primary-foreground: oklch(0.98 0.01 200);
+      --secondary: oklch(0.96 0.01 200);
+      --secondary-foreground: oklch(0.28 0.04 220);
+      --muted: oklch(0.96 0.008 200);
+      --muted-foreground: oklch(0.48 0.03 230);
+      --accent: oklch(0.96 0.012 190);
+      --accent-foreground: oklch(0.28 0.04 220);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.90 0.015 200);
+      --input: oklch(0.90 0.015 200);
+      --ring: oklch(0.70 0.04 200);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.42 0.08 240);
+      --chart-4: oklch(0.72 0.12 55);
+      --chart-5: oklch(0.55 0.10 160);
+      --code-bg: var(--muted);
+      --code-text: #0a4a5c;
+      --font-body: 'Newsreader', Georgia, 'Times New Roman', serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.015 220);
+        --foreground: oklch(0.95 0.01 200);
+        --card: oklch(0.19 0.018 220);
+        --card-foreground: oklch(0.95 0.01 200);
+        --popover: oklch(0.19 0.018 220);
+        --popover-foreground: oklch(0.95 0.01 200);
+        --primary: oklch(0.88 0.03 200);
+        --primary-foreground: oklch(0.18 0.02 220);
+        --secondary: oklch(0.24 0.02 220);
+        --secondary-foreground: oklch(0.95 0.01 200);
+        --muted: oklch(0.24 0.02 220);
+        --muted-foreground: oklch(0.70 0.03 200);
+        --accent: oklch(0.24 0.025 200);
+        --accent-foreground: oklch(0.95 0.01 200);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.50 0.06 200);
+        --chart-1: oklch(0.68 0.12 195);
+        --chart-2: oklch(0.78 0.14 85);
+        --chart-3: oklch(0.72 0.08 240);
+        --chart-4: oklch(0.75 0.12 55);
+        --chart-5: oklch(0.65 0.10 160);
+        --code-bg: #0c1418;
+        --code-text: #8fd4e8;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; font-family: var(--font-mono); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); font-family: var(--font-mono); font-size: 0.75rem; }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.35rem; line-height: 1.2; font-weight: 600; font-family: var(--font-mono); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; font-family: var(--font-mono); }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px),
+        radial-gradient(ellipse at 15% 0%, oklch(0.45 0.12 200 / 0.08) 0%, transparent 50%);
+      background-size: 48px 48px, 48px 48px, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          linear-gradient(oklch(1 0 0 / 4%) 1px, transparent 1px),
+          linear-gradient(90deg, oklch(1 0 0 / 4%) 1px, transparent 1px),
+          radial-gradient(ellipse at 15% 0%, oklch(0.68 0.12 195 / 0.12) 0%, transparent 50%);
+        background-size: 48px 48px, 48px 48px, auto;
+      }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; font-family: var(--font-mono); }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    kbd {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 1px 6px;
+      background: var(--surface);
+    }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .type-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 720px) { .type-grid { grid-template-columns: 1fr; } }
+    .type-grid .ve-card h3 { margin-top: 0; font-family: var(--font-mono); font-size: 0.95rem; color: var(--chart-1); }
+    .type-grid .ve-card p { margin-bottom: 0; font-size: 0.875rem; color: var(--text-dim); }
+
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 1rem 0; }
+    @media (max-width: 720px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.15rem; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; color: var(--chart-1); margin-bottom: 0.35rem; }
+    .step-card__title { font-weight: 600; margin-bottom: 0.35rem; }
+    .step-card__body { font-size: 0.875rem; color: var(--text-dim); line-height: 1.55; margin: 0; }
+
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; overflow-x: auto; margin: 1rem 0; display: flex; justify-content: center; }
+    .mermaid svg { max-width: 100%; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#install">インストール</a>
+    <a href="#types">図の種類</a>
+    <a href="#pipeline">処理の流れ</a>
+    <a href="#layout">レイアウト原則</a>
+    <a href="#cli">CLI と出力</a>
+    <a href="#prompts">プロンプト例</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>Archify</h1>
+    <p class="subtitle">agent skill for architecture · workflow · sequence · dataflow · lifecycle — tt-a1i/archify v2.11</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
+      <p><strong>Archify</strong> は Claude、Codex CLI、opencode 向けの Agent Skill。システムの説明や Mermaid 断片を受け取り、自己完結の HTML 技術図を返す。出力はブラウザで開き、ダーク / ライト切替（<kbd>T</kbd>）とエクスポート（<kbd>E</kbd>）が使える。リポジトリは <a href="https://github.com/tt-a1i/archify" target="_blank" rel="noopener">tt-a1i/archify</a>。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">5 modes</span><span class="ve-kpi-card__label">図タイプ</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">JSON IR</span><span class="ve-kpi-card__label">型付き中間表現</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">≤4×</span><span class="ve-kpi-card__label">ラスタ解像度</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">0 deps</span><span class="ve-kpi-card__label">検証もスタンドアロン</span></div>
+      </div>
+      <ul>
+        <li>一般的な描画エディタや Mermaid テーマではなく、ストーリーに合わせた配置判断をエージェントが行う</li>
+        <li>v2.11 で 5 スキーマをコミット済みスタンドアロンバリデータにコンパイル。インストール後は <code>npm install</code> なしでスキーマ契約を強制できる</li>
+        <li><code>postgres</code> / <code>aws.lambda</code> / <code>github-actions</code> などのセマンティックラベルで視覚カテゴリを決める</li>
+        <li>生成 HTML は依存ゼロ。dual-theme SVG は埋め込み先の <code>prefers-color-scheme</code> に追従</li>
+      </ul>
+    </div>
+
+    <section id="install" class="sec-head">2 — インストール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> skills CLI（推奨）</span>
+      <div class="ve-code-block"><pre><code>npx skills add tt-a1i/archify -g
+
+# 試し打ち（永続インストールなし）
+npx skills use tt-a1i/archify@archify --agent codex</code></pre></div>
+      <p><code>codex</code> の代わりに <code>claude-code</code> や <code>opencode</code> を指定できる。プロジェクトページは <a href="https://tt-a1i.github.io/archify/" target="_blank" rel="noopener">tt-a1i.github.io/archify</a>。</p>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 手動配置（archify.zip）</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>環境</th><th>配置先</th><th>能力</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Claude Code</td><td><code>~/.claude/skills/</code> または <code>.claude/skills/</code></td><td>レンダラ + 検証フル</td></tr>
+            <tr><td>Codex CLI</td><td><code>~/.agents/skills/</code> または <code>.agents/skills/</code></td><td>レンダラ + 検証フル</td></tr>
+            <tr><td>opencode</td><td><code>~/.config/opencode/skills/</code> など</td><td>レンダラ + 検証フル</td></tr>
+            <tr><td>Claude.ai / Project Knowledge</td><td><code>archify.zip</code> をアップロード</td><td>サンドボックス次第。Node 無しなら architecture 手置きモード</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>初回確認:</strong> <code>node bin/archify.mjs doctor</code> でランタイム面を検査し、<code>node bin/archify.mjs demo [output-directory]</code> で開ける例と次の render コマンドを出す。ZIP 同梱のスタンドアロンバリデータは開発依存なしで不正入力を拒否する。
+      </div>
+    </div>
+
+    <section id="types" class="sec-head">3 — 図の種類</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 質問に合わせたモード選択</span>
+      <p>1 枚でリポジトリ全体を説明しようとせず、見たい観点を 1 つ選ぶ。トリガー語は SKILL.md に整理されている。</p>
+      <div class="type-grid">
+        <div class="ve-card" style="--i:0">
+          <h3>architecture</h3>
+          <p>コンポーネント・クラウド資源・境界。主経路と trust boundary。例: <code>examples/web-app.html</code>、<code>examples/archify-repo.html</code>。</p>
+        </div>
+        <div class="ve-card" style="--i:1">
+          <h3>workflow</h3>
+          <p>CI/CD・承認・ツール呼び出し・ランブック。スイムレーンと happy path。例外レーンは <code>variant: "exception"</code>。</p>
+        </div>
+        <div class="ve-card" style="--i:2">
+          <h3>sequence</h3>
+          <p>API 呼び出し連鎖・キャッシュフォールバック・非同期トレース。参加者・メッセージ・activation。</p>
+        </div>
+        <div class="ve-card" style="--i:3">
+          <h3>dataflow</h3>
+          <p>パイプライン・系譜・PII 境界。ステージ横断の flow ラベルと <code>classification</code>。</p>
+        </div>
+      </div>
+      <div class="ve-card ve-card--elevated" style="--i:4; margin-top: 0;">
+        <h3 style="margin-top:0; font-family: var(--font-mono); font-size: 0.95rem; color: var(--chart-1);">lifecycle</h3>
+        <p style="margin-bottom:0; font-size:0.875rem; color: var(--text-dim);">状態機械・待機・リトライ・終端。レーン id は意味付き（必須 <code>main</code>、終端は <code>terminal</code>）。他レーンは中央イベント帯を共有する。</p>
+      </div>
+      <h3>Mermaid 入力</h3>
+      <p>貼られた Mermaid を機械パースして描画するのではなく、構造だけ読んで archify スタイルで置き直す。<code>flowchart</code> → workflow（またはコンポーネントなら architecture）、<code>sequenceDiagram</code> → sequence、<code>stateDiagram</code> → lifecycle。スタイル指定は捨て、トポロジと意味だけ残す。</p>
+    </div>
+
+    <section id="pipeline" class="sec-head">4 — 処理の流れ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> JSON IR → 検証 → レンダ → 検査</span>
+      <p>5 モードとも同じループ。レンダラを直接いじらず、JSON を直して再実行する。</p>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+  A["Generate JSON IR"] --> B["Validate schema"]
+  B --> C["Render HTML/SVG"]
+  C --> D["Check layout &amp; artifact"]
+  D -->|fail| E["Fix JSON IR"]
+  E --> B
+  D -->|pass| F["Deliver self-contained HTML"]
+        </pre>
+      </div>
+      <div class="step-flow">
+        <div class="step-card">
+          <div class="step-card__num">01</div>
+          <div class="step-card__title">スキーマと例を読む</div>
+          <p class="step-card__body"><code>schemas/&lt;type&gt;.schema.json</code> と <code>examples/*.&lt;type&gt;.json</code> を先に見る。フィールド形状は推測しない。</p>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">02</div>
+          <div class="step-card__title">JSON を書く</div>
+          <p class="step-card__body"><code>&lt;name&gt;.&lt;type&gt;.json</code>。必須は <code>schema_version</code>（const 1）、<code>diagram_type</code>、<code>meta.title</code>、モード固有の配列。</p>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">03</div>
+          <div class="step-card__title">render / validate</div>
+          <p class="step-card__body"><code>node bin/archify.mjs render &lt;type&gt; …</code> と <code>validate … --json</code>。エラーは JSON path 付きで出る。</p>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">04</div>
+          <div class="step-card__title">check HTML</div>
+          <p class="step-card__body"><code>node bin/archify.mjs check &lt;out&gt;.html</code>。非有限 SVG、対角線矢印、凡例越えなどを検出する。</p>
+        </div>
+      </div>
+      <div class="ve-callout">
+        <strong>手置きフォールバック:</strong> Node が使えないときは <code>assets/template.html</code> に SVG を手配置。色はインラインではなく CSS クラス（<code>c-backend</code> など）必須。テーマ切替が壊れない。スキーマ違反は path 付きで非ゼロ終了し、重なりや凡例越えはレンダラ側のレイアウト検査が担当する。
+      </div>
+    </div>
+
+    <section id="layout" class="sec-head">5 — レイアウト原則</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 空間ナラティブ</span>
+      <p>可読性は「全依存を矢印で描くこと」ではなく、1 本の物語が辿れる配置から来る。</p>
+      <ol>
+        <li><strong>主経路は 1 本</strong> — architecture は左→右、workflow はレーン→列。happy path が交差せず追えること。</li>
+        <li><strong>ラベル付きエッジは少なく</strong> — 境界越えや非自明な遷移だけ。隣接ステップは無ラベルでよい。</li>
+        <li><strong>枝は短く上下へ</strong> — 権限・ストレージ・CI は主経路の最近傍から縦に繋ぐ。斜め横断は避ける。</li>
+        <li><strong>詳細はカードへ</strong> — ポリシーや技術メモは summary cards。矢印を増やさない。</li>
+        <li><strong>モード適合</strong> — プロセス系は workflow / sequence。コンポーネント ≤12 は architecture。エッジが 20+ なら削る。</li>
+      </ol>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> architecture の配置</span>
+      <ul>
+        <li><strong>Free:</strong> <code>pos: [x, y]</code>（左上）、既定サイズ <code>[120, 60]</code>。</li>
+        <li><strong>Grid:</strong> <code>layout.mode: "grid"</code> と <code>row</code> / <code>col</code>。固定セル計算で、dagre 自動配置ではない。</li>
+        <li><strong>境界:</strong> <code>wraps</code> に囲む id を列挙。renderer が padding 付きボックスを計算する。</li>
+        <li><strong>検査:</strong> <code>node bin/archify.mjs inspect architecture …</code> で HTML を開かずに矩形をダンプできる。</li>
+      </ul>
+    </div>
+
+    <section id="cli" class="sec-head">6 — CLI と出力</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> スキルフォルダでの操作</span>
+      <div class="ve-code-block"><pre><code>cd archify
+node bin/archify.mjs doctor
+node bin/archify.mjs demo /tmp/archify-demo
+node bin/archify.mjs render workflow examples/agent-tool-call.workflow.json /tmp/workflow.html
+node bin/archify.mjs validate workflow examples/agent-tool-call.workflow.json --json
+node bin/archify.mjs check /tmp/workflow.html
+node bin/archify.mjs examples</code></pre></div>
+      <h3>生成 HTML の操作</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>操作</th><th>内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Theme（<kbd>T</kbd>）</td><td>ダーク / ライト。localStorage に保存し <code>prefers-color-scheme</code> も尊重</td></tr>
+            <tr><td>Export（<kbd>E</kbd>）</td><td>PNG をクリップボードへコピー、または PNG / JPEG / WebP / SVG をダウンロード</td></tr>
+            <tr><td>ラスタ</td><td>最大 4× でネイティブ描画。巨大図は 3× / 2× に自動ステップダウン</td></tr>
+            <tr><td>SVG</td><td>両テーマ変数 + <code>@media (prefers-color-scheme)</code>。README 埋め込み向け</td></tr>
+            <tr><td>URL パラメータ</td><td><code>?theme=light|dark</code>、<code>?openExport=1</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>アニメーション:</strong> <code>meta.animation: "trace"</code> はデモ時のみ。省略時は静的。<code>prefers-reduced-motion</code> を尊重する。
+      </div>
+    </div>
+
+    <section id="prompts" class="sec-head">7 — プロンプト例</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> スコープを絞る</span>
+      <div class="ve-code-block"><pre><code>Analyze this repository, then use archify to create a high-level runtime architecture diagram.
+Show 8–12 core components, one primary request or data path, external dependencies, and trust boundaries.
+Put supporting detail in cards instead of adding more edges.</code></pre></div>
+      <h3>フロー特化</h3>
+      <div class="ve-code-block"><pre><code>Use archify to draw this login flow: Browser -> Web App -> API -> JWT validation ->
+Redis session lookup -> PostgreSQL fallback. Make the cache-miss path secondary.</code></pre></div>
+      <h3>データ系譜</h3>
+      <div class="ve-code-block"><pre><code>Draw a data-flow diagram from Web and Mobile events through Consent Gate, Kafka,
+Warehouse, and Feature Store to Dashboards and ML consumers. Mark the PII boundary.</code></pre></div>
+      <p>チャットでの修正は JSON IR を残したまま「add Redis」「move auth to the left」のように局所変更する。</p>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> ロードマップ上の非目標</span>
+      <p>v2.11 は zero-install 検証と <code>doctor</code> / <code>demo</code> を追加したうえで、5 モードすべてが型付き JSON IR。今後の焦点はローカル編集の安定化とレイアウト診断。自動 Mermaid パース、汎用 auto-layout、ホスティング共有、WYSIWYG エディタは現時点の目標ではない（<code>ROADMAP.md</code>）。</p>
+    </div>
+
+    <section id="links" class="sec-head">8 — 参考リンク</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式・由来</span>
+      <ul>
+        <li><a href="https://github.com/tt-a1i/archify" target="_blank" rel="noopener">GitHub: tt-a1i/archify</a> — 本体リポジトリ</li>
+        <li><a href="https://tt-a1i.github.io/archify/" target="_blank" rel="noopener">プロジェクトページ</a></li>
+        <li><a href="https://github.com/tt-a1i/archify/blob/main/archify/SKILL.md" target="_blank" rel="noopener">SKILL.md</a> — エージェント向け手順</li>
+        <li><a href="https://github.com/tt-a1i/archify/blob/main/archify/schemas/README.md" target="_blank" rel="noopener">schemas/README.md</a> — JSON IR 契約</li>
+        <li><a href="https://github.com/Cocoon-AI/architecture-diagram-generator" target="_blank" rel="noopener">Cocoon-AI/architecture-diagram-generator</a> — フォーク元（MIT v1.0）</li>
+        <li><a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">vercel-labs/skills</a> — インストールに使う skills CLI</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+<script>
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: isDark
+      ? {
+          primaryColor: '#1a2e36',
+          primaryTextColor: '#e8f4f8',
+          primaryBorderColor: '#4a9bb0',
+          lineColor: '#7ec8d9',
+          secondaryColor: '#243440',
+          tertiaryColor: '#152028',
+          background: '#152028',
+          mainBkg: '#1a2e36',
+          nodeBorder: '#4a9bb0',
+          clusterBkg: '#1a2e36',
+          titleColor: '#e8f4f8',
+          edgeLabelBackground: '#1a2e36',
+          fontFamily: 'IBM Plex Mono, monospace',
+          fontSize: '16px'
+        }
+      : {
+          primaryColor: '#d8eef4',
+          primaryTextColor: '#0a2a34',
+          primaryBorderColor: '#2a6f82',
+          lineColor: '#2a6f82',
+          secondaryColor: '#eef6f8',
+          tertiaryColor: '#f5fafb',
+          background: '#ffffff',
+          mainBkg: '#d8eef4',
+          nodeBorder: '#2a6f82',
+          clusterBkg: '#eef6f8',
+          titleColor: '#0a2a34',
+          edgeLabelBackground: '#ffffff',
+          fontFamily: 'IBM Plex Mono, monospace',
+          fontSize: '16px'
+        }
+  });
+</script>
+</body>
+</html>
