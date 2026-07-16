@@ -243,7 +243,7 @@
 
   <div class="main">
     <h1>Archify</h1>
-    <p class="subtitle">agent skill for architecture · workflow · sequence · dataflow · lifecycle — tt-a1i/archify v2.10</p>
+    <p class="subtitle">agent skill for architecture · workflow · sequence · dataflow · lifecycle — tt-a1i/archify v2.11</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
@@ -253,11 +253,11 @@
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">5 modes</span><span class="ve-kpi-card__label">図タイプ</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">JSON IR</span><span class="ve-kpi-card__label">型付き中間表現</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">≤4×</span><span class="ve-kpi-card__label">ラスタ解像度</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">0 deps</span><span class="ve-kpi-card__label">検証もスタンドアロン</span></div>
       </div>
       <ul>
         <li>一般的な描画エディタや Mermaid テーマではなく、ストーリーに合わせた配置判断をエージェントが行う</li>
-        <li>スキーマ検証・レイアウト検査・HTML/SVG 検査のループが同梱</li>
+        <li>v2.11 で 5 スキーマをコミット済みスタンドアロンバリデータにコンパイル。インストール後は <code>npm install</code> なしでスキーマ契約を強制できる</li>
         <li><code>postgres</code> / <code>aws.lambda</code> / <code>github-actions</code> などのセマンティックラベルで視覚カテゴリを決める</li>
         <li>生成 HTML は依存ゼロ。dual-theme SVG は埋め込み先の <code>prefers-color-scheme</code> に追従</li>
       </ul>
@@ -288,7 +288,7 @@ npx skills use tt-a1i/archify@archify --agent codex</code></pre></div>
         </table>
       </div>
       <div class="ve-callout" style="margin-top: 1rem;">
-        <strong>依存:</strong> パッケージ化されたスキルは <code>npm install</code> 不要。同梱のスタンドアロンバリデータでスキーマ検証が動く。インストール確認は <code>node bin/archify.mjs doctor</code>。
+        <strong>初回確認:</strong> <code>node bin/archify.mjs doctor</code> でランタイム面を検査し、<code>node bin/archify.mjs demo [output-directory]</code> で開ける例と次の render コマンドを出す。ZIP 同梱のスタンドアロンバリデータは開発依存なしで不正入力を拒否する。
       </div>
     </div>
 
@@ -360,7 +360,7 @@ flowchart TD
         </div>
       </div>
       <div class="ve-callout">
-        <strong>手置きフォールバック:</strong> Node が使えないときは <code>assets/template.html</code> に SVG を手配置。色はインラインではなく CSS クラス（<code>c-backend</code> など）必須。テーマ切替が壊れない。
+        <strong>手置きフォールバック:</strong> Node が使えないときは <code>assets/template.html</code> に SVG を手配置。色はインラインではなく CSS クラス（<code>c-backend</code> など）必須。テーマ切替が壊れない。スキーマ違反は path 付きで非ゼロ終了し、重なりや凡例越えはレンダラ側のレイアウト検査が担当する。
       </div>
     </div>
 
@@ -432,7 +432,7 @@ Warehouse, and Feature Store to Dashboards and ML consumers. Mark the PII bounda
     </div>
     <div class="ve-card ve-card--recessed" style="--i:1">
       <span class="ve-section-label"><span class="ve-dot"></span> ロードマップ上の非目標</span>
-      <p>v2.10 は 5 モードすべてが型付き JSON IR。今後の焦点はローカル編集の安定化とレイアウト診断。自動 Mermaid パース、汎用 auto-layout、ホスティング共有、WYSIWYG エディタは現時点の目標ではない（<code>ROADMAP.md</code>）。</p>
+      <p>v2.11 は zero-install 検証と <code>doctor</code> / <code>demo</code> を追加したうえで、5 モードすべてが型付き JSON IR。今後の焦点はローカル編集の安定化とレイアウト診断。自動 Mermaid パース、汎用 auto-layout、ホスティング共有、WYSIWYG エディタは現時点の目標ではない（<code>ROADMAP.md</code>）。</p>
     </div>
 
     <section id="links" class="sec-head">8 — 参考リンク</section>
