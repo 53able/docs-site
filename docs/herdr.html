@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>herdr — コーディングエージェント向けターミナルマルチプレクサ</title>
+  <meta name="description" content="ogulcancelik/herdr。エージェント認識付きターミナルワークスペース。detach でもプロセス継続、ソケット API と SKILL.md でエージェント同士がペインを操作できる。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="herdr — コーディングエージェント向けターミナルマルチプレクサ">
+  <meta property="og:description" content="エージェント認識付きターミナルワークスペース。detach でもプロセス継続、ソケット API でペイン操作。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/herdr.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="herdr — コーディングエージェント向けターミナルマルチプレクサ">
+  <meta name="twitter:description" content="Rust 製エージェントマルチプレクサ。workspace / tab / pane、agent status、socket API。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Fragment+Mono:ital@0;1&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.012 85);
+      --foreground: oklch(0.22 0.03 55);
+      --card: oklch(0.995 0.008 85);
+      --card-foreground: var(--foreground);
+      --muted: oklch(0.95 0.02 85);
+      --muted-foreground: oklch(0.48 0.04 55);
+      --accent: oklch(0.94 0.03 85);
+      --accent-foreground: var(--foreground);
+      --border: oklch(0.88 0.03 75);
+      --ring: oklch(0.55 0.14 75);
+      --chart-1: oklch(0.55 0.14 75);
+      --chart-2: oklch(0.55 0.12 155);
+      --chart-3: oklch(0.42 0.08 40);
+      --chart-4: oklch(0.62 0.1 120);
+      --chart-5: oklch(0.5 0.08 250);
+      --code-bg: var(--muted);
+      --code-text: oklch(0.3 0.06 55);
+      --font-body: 'Bricolage Grotesque', system-ui, sans-serif;
+      --font-mono: 'Fragment Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.02 55);
+        --foreground: oklch(0.95 0.02 85);
+        --card: oklch(0.19 0.025 55);
+        --card-foreground: var(--foreground);
+        --muted: oklch(0.24 0.03 55);
+        --muted-foreground: oklch(0.72 0.04 85);
+        --accent: oklch(0.22 0.03 55);
+        --accent-foreground: var(--foreground);
+        --border: oklch(1 0 0 / 12%);
+        --ring: oklch(0.72 0.14 75);
+        --chart-1: oklch(0.75 0.15 75);
+        --chart-2: oklch(0.7 0.13 155);
+        --chart-3: oklch(0.65 0.08 40);
+        --code-bg: oklch(0.16 0.025 55);
+        --code-text: oklch(0.88 0.08 85);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+      box-shadow: 0 4px 20px rgba(80, 50, 10, 0.08);
+    }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.65; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(80, 50, 10, 0.05); }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.05rem; line-height: 1.2; font-weight: 600; color: var(--chart-1); }
+    .ve-kpi-card__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.55 0.14 75 / 0.12); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 12% 0%, oklch(0.55 0.14 75 / 0.09) 0%, transparent 50%),
+        radial-gradient(ellipse at 92% 8%, oklch(0.55 0.12 155 / 0.07) 0%, transparent 45%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+      font-size: 1rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 12% 0%, oklch(0.75 0.15 75 / 0.12) 0%, transparent 50%); }
+    }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.9375rem; margin-bottom: 2rem; line-height: 1.55; max-width: 52rem; }
+    .sec-head { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: 0.04em; scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.0625rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .mermaid-wrap {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin: 1rem 0;
+      display: flex;
+      justify-content: center;
+      overflow-x: auto;
+    }
+
+    .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+    .feat-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.875rem 1rem;
+      background: color-mix(in oklch, var(--muted) 65%, var(--card) 35%);
+    }
+    .feat-item strong { display: block; font-size: 0.875rem; margin-bottom: 0.35rem; }
+    .feat-item span { font-size: 0.8125rem; color: var(--muted-foreground); line-height: 1.5; }
+
+    .stack-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+    .stack-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      background: color-mix(in oklch, var(--muted) 70%, var(--card) 30%);
+    }
+    .stack-item strong { display: block; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 0.35rem; }
+    .stack-item span { font-size: 0.8125rem; color: var(--muted-foreground); line-height: 1.5; }
+
+    .status-pill {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--muted);
+    }
+    .status-pill--working { color: var(--chart-1); border-color: color-mix(in oklch, var(--chart-1) 50%, var(--border)); }
+    .status-pill--blocked { color: oklch(0.55 0.18 25); border-color: color-mix(in oklch, oklch(0.55 0.18 25) 45%, var(--border)); }
+    .status-pill--done { color: var(--chart-2); border-color: color-mix(in oklch, var(--chart-2) 50%, var(--border)); }
+    .status-pill--idle { color: var(--muted-foreground); }
+
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.875rem 1rem;
+      background: color-mix(in oklch, var(--muted) 55%, var(--card) 45%);
+    }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; color: var(--chart-1); letter-spacing: 0.08em; margin-bottom: 0.35rem; }
+    .step-card__title { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.35rem; }
+    .step-card__body { font-size: 0.8125rem; color: var(--muted-foreground); line-height: 1.5; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#concepts">概念モデル</a>
+    <a href="#architecture">構成</a>
+    <a href="#status">エージェント状態</a>
+    <a href="#install">インストール</a>
+    <a href="#cli">CLI と API</a>
+    <a href="#agent-control">エージェント操作</a>
+    <a href="#dev">開発と制約</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+    <h1>herdr</h1>
+    <p class="subtitle">コーディングエージェント向けのターミナルワークスペースマネージャ。tmux のようにバックグラウンドサーバが実ターミナルを所有し、クライアントが attach して描画する（<a href="https://github.com/ogulcancelik/herdr" target="_blank" rel="noopener">ogulcancelik/herdr</a>）</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <div class="kpi-row">
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">Rust</div>
+          <div class="ve-kpi-card__label">単一バイナリ</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">Agent-aware</div>
+          <div class="ve-kpi-card__label">状態をサイドバー表示</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">Socket API</div>
+          <div class="ve-kpi-card__label">エージェントも操作可</div>
+        </div>
+        <div class="ve-kpi-card">
+          <div class="ve-kpi-card__value">AGPL-3.0</div>
+          <div class="ve-kpi-card__label">商用ライセンス別途</div>
+        </div>
+      </div>
+      <p><strong>herdr</strong> はターミナル上で動くエージェントマルチプレクサ。ペイン内のコーディングエージェントを検出し、<span class="status-pill status-pill--working">working</span> <span class="status-pill status-pill--blocked">blocked</span> <span class="status-pill status-pill--done">done</span> などを一覧できる。detach してもプロセスは動き続け、別ターミナルや SSH から reattach できる。</p>
+      <ul>
+        <li>実ターミナルビュー（ラップされた解釈ではない）</li>
+        <li>キーボード（tmux 風 prefix）とマウス（クリック・ドラッグ・分割）の両方が第一級</li>
+        <li>プラグインとマーケットプレイスでペイン・ワークフローを拡張</li>
+        <li>Electron なし。既存ターミナル内で動作</li>
+      </ul>
+      <div class="ve-callout"><strong>tmux との違い:</strong> herdr はマウスファーストかつエージェント認識。tmux コマンドや <code>.tmux.conf</code> の知識は当てはめない。公式ドキュメントと <code>herdr --help</code> が正。</div>
+    </div>
+
+    <section id="concepts" class="sec-head">2 — 概念モデル</section>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 覚える順</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>概念</th><th>役割</th><th>公開 ID 例</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Session</strong></td>
+              <td>永続バックグラウンドサーバの名前空間。通常は default。名前付きは完全に分離</td>
+              <td><code>default</code> / <code>work</code></td>
+            </tr>
+            <tr>
+              <td><strong>Workspace</strong></td>
+              <td>プロジェクト単位のコンテナ。タブとペインを所有。サイドバーはワークスペース単位で状態を集約</td>
+              <td><code>w1</code></td>
+            </tr>
+            <tr>
+              <td><strong>Tab</strong></td>
+              <td>ワークスペース内のレイアウト（agents / logs / server など）</td>
+              <td><code>w1:t1</code></td>
+            </tr>
+            <tr>
+              <td><strong>Pane</strong></td>
+              <td>実ターミナル。右・下に分割可能。クライアント detach 後も生存</td>
+              <td><code>w1:p1</code></td>
+            </tr>
+            <tr>
+              <td><strong>Agent</strong></td>
+              <td>ペイン内で認識されたプロセス。状態とメタデータを公開</td>
+              <td>（pane に紐づく）</td>
+            </tr>
+            <tr>
+              <td><strong>Terminal</strong></td>
+              <td>PTY 側の内部ハンドル</td>
+              <td><code>term_...</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>モードは 3 つ。ターミナルモード（キーをフォーカスペインへ送る）、prefix モード（既定 <code>ctrl+b</code> のあと 1 アクション）、navigate モード（継続的なナビ面）。</p>
+      <div class="ve-callout"><strong>ID の扱い:</strong> 公開 ID は不透明な文字列。閉じたタブ・ペインの ID は再利用されない。ペインを別ワークスペースへ移すと新しい pane ID になる。変異後は JSON レスポンスを再読し、番号から組み立てない。</div>
+    </div>
+
+    <section id="architecture" class="sec-head">3 — 構成</section>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> ランタイム境界</span>
+      <p>バックグラウンドサーバがセッション状態と PTY を持ち、TUI クライアントが描画する。新機能は「サーバ所有のランタイム事実」と「TUI だけの表示状態」に分けて設計する方針（<code>AGENTS.md</code>）。</p>
+      <div class="mermaid-wrap">
+        <pre class="mermaid">
+flowchart TD
+  subgraph clients["Clients"]
+    TUI["TUI client"]
+    CLI["herdr CLI"]
+    AG["Agent in pane"]
+  end
+  subgraph server["Background server"]
+    SESS["Session / AppState"]
+    WS["Workspace / Tab / Pane"]
+    DET["Agent detection"]
+    API["JSON API / events"]
+  end
+  subgraph term["Terminals"]
+    PTY["portable-pty"]
+    VT["libghostty-vt"]
+  end
+  TUI --> API
+  CLI --> API
+  AG --> CLI
+  API --> SESS
+  SESS --> WS
+  WS --> PTY
+  PTY --> VT
+  DET --> VT
+  DET --> API
+        </pre>
+      </div>
+      <div class="stack-grid">
+        <div class="stack-item"><strong>src/server</strong><span>ヘッドレスサーバ、クライアント受理、handoff、ソケット</span></div>
+        <div class="stack-item"><strong>src/app</strong><span>AppState・アクション・入力。状態と描画を分離</span></div>
+        <div class="stack-item"><strong>src/cli</strong><span>pane / workspace / tab / wait / session 等の制御面</span></div>
+        <div class="stack-item"><strong>src/detect</strong><span>画面スナップショットからのエージェント検出（manifest）</span></div>
+        <div class="stack-item"><strong>src/api</strong><span>JSON API・イベント・スキーマ</span></div>
+        <div class="stack-item"><strong>vendor/</strong><span>portable-pty / libghostty-vt のベンダー</span></div>
+      </div>
+    </div>
+
+    <section id="status" class="sec-head">4 — エージェント状態</section>
+    <div class="ve-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> agent_status</span>
+      <p>ペイン記録は <code>agent</code> / <code>agent_status</code> / ネイティブセッションメタデータを公開する。値は <code>idle</code>、<code>working</code>、<code>blocked</code>、<code>done</code>、<code>unknown</code>。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>状態</th><th>意味</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="status-pill status-pill--idle">idle</span></td>
+              <td>待機中で、結果は「見た」扱い。初回プロンプト表示も idle</td>
+            </tr>
+            <tr>
+              <td><span class="status-pill status-pill--working">working</span></td>
+              <td>作業中</td>
+            </tr>
+            <tr>
+              <td><span class="status-pill status-pill--blocked">blocked</span></td>
+              <td>入力待ち。人間またはフォローアップが必要</td>
+            </tr>
+            <tr>
+              <td><span class="status-pill status-pill--done">done</span></td>
+              <td>完了したが結果はまだ未読。バックグラウンド完了で付きやすい</td>
+            </tr>
+            <tr>
+              <td><span class="status-pill">unknown</span></td>
+              <td>未検出、または統合前</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>idle</code> と <code>done</code> は同じ完了セマンティクスで、差分は注意（seen）状態だけ。フォーカスやタブ切替で visible になると <code>done</code> → <code>idle</code>。離れただけでは <code>idle</code> が <code>done</code> に戻らない。</p>
+      <div class="ve-callout"><strong>検出の権威:</strong> 画面検出は bottom-buffer の証跡ベース。統合を入れると権威ある状態になる — <code>herdr integration install &lt;name&gt;</code>。診断は <code>herdr agent explain &lt;target&gt; --json</code>。</div>
+    </div>
+
+    <section id="install" class="sec-head">5 — インストールと初回起動</section>
+    <div class="ve-card" style="--i:4">
+      <h3>Linux / macOS</h3>
+      <div class="ve-code-block">
+        <pre><code>curl -fsSL https://herdr.dev/install.sh | sh
+# または: brew install herdr · mise use -g herdr
+herdr</code></pre>
+      </div>
+      <h3>Windows（preview beta）</h3>
+      <div class="ve-code-block">
+        <pre><code>powershell -ExecutionPolicy Bypass -c "irm https://herdr.dev/install.ps1 | iex"
+herdr</code></pre>
+      </div>
+      <div class="step-flow">
+        <div class="step-card">
+          <div class="step-card__num">STEP 01</div>
+          <div class="step-card__title">プロジェクトで起動</div>
+          <div class="step-card__body"><code>cd</code> して <code>herdr</code>。default セッションへ attach。初回はオンボーディング。</div>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">STEP 02</div>
+          <div class="step-card__title">エージェント起動</div>
+          <div class="step-card__body"><code>claude</code> / <code>codex</code> 等をペインで実行。必要なら <code>herdr integration install claude</code>。</div>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">STEP 03</div>
+          <div class="step-card__title">マウスで操作</div>
+          <div class="step-card__body">クリックでフォーカス、境界ドラッグで分割、右クリックメニュー。キーバインド必須ではない。</div>
+        </div>
+        <div class="step-card">
+          <div class="step-card__num">STEP 04</div>
+          <div class="step-card__title">detach / reattach</div>
+          <div class="step-card__body"><code>prefix+q</code>（<code>ctrl+b</code> のあと <code>q</code>）またはウィンドウを閉じる。再開は <code>herdr</code>。完全停止は <code>herdr server stop</code>。</div>
+        </div>
+      </div>
+      <p>設定は任意。既定パスは <code>~/.config/herdr/config.toml</code>。既定値の全文は <code>herdr --default-config</code>。実行中サーバへは <code>herdr server reload-config</code>。</p>
+    </div>
+
+    <section id="cli" class="sec-head">6 — CLI とソケット API</section>
+    <div class="ve-card" style="--i:5">
+      <p>制御コマンドの多くは JSON を返す。構文の権威はインストール済みバイナリ。探索はグループを引数なしで呼ぶ（裸の <code>herdr</code> は TUI 起動なので使わない）。</p>
+      <div class="ve-code-block">
+        <pre><code>herdr --help
+herdr pane
+herdr workspace
+herdr worktree
+herdr tab
+herdr wait
+herdr terminal
+herdr notification
+herdr integration
+herdr session</code></pre>
+      </div>
+      <h3>環境変数（呼び出し側コンテキスト）</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>変数</th><th>意味</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>HERDR_ENV=1</code></td><td>Herdr 管理下のペイン内。制御コマンドを出す前提条件</td></tr>
+            <tr><td><code>HERDR_WORKSPACE_ID</code></td><td>呼び出し元ワークスペース</td></tr>
+            <tr><td><code>HERDR_TAB_ID</code></td><td>呼び出し元タブ</td></tr>
+            <tr><td><code>HERDR_PANE_ID</code></td><td>呼び出し元ペイン</td></tr>
+            <tr><td><code>HERDR_SESSION</code></td><td>セッション名（必要時）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>ペインコマンドは <code>--current</code> で呼び出し元を明示するのが安全。省略すると UI フォーカス先になり、別クライアントのペインを誤操作しうる。</p>
+      <div class="ve-callout"><strong>ネスト禁止:</strong> 既に <code>HERDR_ENV=1</code> のとき、内側から再度裸の <code>herdr</code> で TUI を起動しない。デバッグビルドを試すときはソケット上書きを外す — <code>env -u HERDR_SOCKET_PATH -u HERDR_CLIENT_SOCKET_PATH cargo run -- …</code>。</div>
+    </div>
+
+    <section id="agent-control" class="sec-head">7 — エージェントからの操作</section>
+    <div class="ve-card" style="--i:6">
+      <span class="ve-section-label"><span class="ve-dot"></span> SKILL.md の要点</span>
+      <p>リポジトリ同梱の <code>SKILL.md</code> は、Herdr 内のエージェントが隣接ペインを制御するための手順。スキル適用前に必ず <code>test "${HERDR_ENV:-}" = 1</code> を確認する。</p>
+      <h3>兄弟ペインでエージェントを起動する流れ</h3>
+      <div class="ve-code-block">
+        <pre><code>herdr pane layout --pane "$HERDR_PANE_ID"
+herdr pane split --current --direction right --no-focus
+# JSON の result.pane.pane_id を読む
+herdr pane rename &lt;pane-id&gt; "reviewer"
+herdr pane run &lt;pane-id&gt; "codex"
+herdr wait agent-status &lt;pane-id&gt; --status idle --timeout 30000
+herdr pane run &lt;pane-id&gt; "Review the current diff and report only actionable findings."
+herdr wait agent-status &lt;pane-id&gt; --status working --timeout 30000
+herdr wait agent-status &lt;pane-id&gt; --status done --timeout 120000
+herdr pane read &lt;pane-id&gt; --source recent-unwrapped --lines 120</code></pre>
+      </div>
+      <h3>read ソース</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>source</th><th>用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>visible</code></td><td>現在の描画ビューポート</td></tr>
+            <tr><td><code>recent</code></td><td>最近のスクロールバック（ソフトラップ込み）</td></tr>
+            <tr><td><code>recent-unwrapped</code></td><td>ソフトラップ結合。ログ・トランスクリプト向け</td></tr>
+            <tr><td><code>detection</code></td><td>エージェント検出用 bottom-buffer</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li>背景作業は <code>--no-focus</code>。フォーカスを奪わない</li>
+        <li>自分で作っていない workspace / tab / pane / session を閉じない</li>
+        <li>明示指示なしに <code>herdr server stop</code> やメインプロセス kill をしない</li>
+        <li>待ちタイムアウト後は <code>pane get</code> と <code>pane read</code> で現況を確認してから判断</li>
+      </ul>
+      <p>スキル導入例: <code>npx skills add ogulcancelik/herdr --skill herdr -g</code>（対応ハーネスの場合）。正本は GitHub の <code>SKILL.md</code>。</p>
+    </div>
+
+    <section id="dev" class="sec-head">8 — 開発と制約</section>
+    <div class="ve-card ve-card--recessed" style="--i:7">
+      <h3>ビルド・テスト</h3>
+      <div class="ve-code-block">
+        <pre><code>git clone https://github.com/ogulcancelik/herdr
+cd herdr
+cargo build --release
+just test        # unit tests
+just check       # formatting, tests, maintenance checks</code></pre>
+      </div>
+      <div class="feat-grid">
+        <div class="feat-item">
+          <strong>状態とランタイム分離</strong>
+          <span><code>AppState</code> は純粋データ。<code>PaneState</code> と <code>PaneRuntime</code> を分離。PTY なしでテスト可能。</span>
+        </div>
+        <div class="feat-item">
+          <strong>純な描画</strong>
+          <span><code>compute_view()</code> が幾何と変異。<code>render()</code> は <code>&amp;AppState</code> を読んで描くだけ。</span>
+        </div>
+        <div class="feat-item">
+          <strong>プラットフォーム隔離</strong>
+          <span>OS 固有は <code>src/platform/&lt;os&gt;.rs</code>。コアに <code>#[cfg(target_os)]</code> を増やさない。</span>
+        </div>
+        <div class="feat-item">
+          <strong>検出の分離</strong>
+          <span>detector は画面スナップショットだけを読む。パーサやビューポート状態には触らない。</span>
+        </div>
+      </div>
+      <p>バージョン（Cargo.toml）: <strong>0.7.4</strong>。ライセンスは AGPL-3.0-or-later と商用のデュアル。問い合わせ: hey@herdr.dev。</p>
+    </div>
+
+    <section id="links" class="sec-head">9 — 参考リンク</section>
+    <div class="ve-card" style="--i:8">
+      <ul>
+        <li><a href="https://github.com/ogulcancelik/herdr" target="_blank" rel="noopener">ogulcancelik/herdr</a> — ソースリポジトリ</li>
+        <li><a href="https://herdr.dev" target="_blank" rel="noopener">herdr.dev</a> — 公式サイト</li>
+        <li><a href="https://herdr.dev/docs/" target="_blank" rel="noopener">ドキュメント</a> — quick start / concepts / agents / keyboard / configuration</li>
+        <li><a href="https://herdr.dev/docs/socket-api/" target="_blank" rel="noopener">Socket API</a></li>
+        <li><a href="https://herdr.dev/docs/agent-skill/" target="_blank" rel="noopener">Agent skill</a> / リポジトリ内 <code>SKILL.md</code></li>
+        <li><a href="https://herdr.dev/plugins/" target="_blank" rel="noopener">Plugin marketplace</a></li>
+        <li><a href="https://github.com/ogulcancelik/herdr/releases" target="_blank" rel="noopener">Releases</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    fontFamily: 'Fragment Mono, monospace',
+    primaryColor: '#f3e6c8',
+    primaryTextColor: '#3a2a14',
+    primaryBorderColor: '#b8860b',
+    lineColor: '#8a6a2a',
+    secondaryColor: '#d8ebe0',
+    tertiaryColor: '#faf6ee'
+  }
+});
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
