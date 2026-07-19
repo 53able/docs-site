@@ -1,0 +1,544 @@
+# =============================================================================
+# visual-doc-sources.yaml — スキーマ（このブロックが仕様の正）
+# =============================================================================
+# 文字エンコーディング: UTF-8。インデント: スペース 2。
+#
+# 【トップレベル】
+#   version (必須, 整数)
+#     マニフェスト形式の互換性バージョン。スキーマや必須キーが変わったら上げる。
+#   sources (必須, 配列)
+#     ビジュアル資料の元リポジトリと生成物の対応一覧。各要素は「source エントリ」。
+#
+# 【source エントリ — 必須キー】
+#   id (文字列)
+#     エントリの安定 ID。スラッグ（英小文字・ハイフン推奨）。スクリプトのキーに使う。
+#     sources 配列内では一意にすること（重複 id は不可）。
+#   name (文字列)
+#     人間向けの表示名。
+#   repo_url (文字列)
+#     git clone の元 URL（HTTPS または SSH）。秘密値は書かない。
+#   local_path (文字列)
+#     ワークスペース内の相対パス。クローン先。通常 `repos/<名前>`（`repos/` 配下を前提）。
+#   output_html (文字列)
+#     このサイトで公開する生成 HTML の相対パス（例: `docs/foo.html`）。
+#   index_linked (真偽)
+#     `index.html` の `.doc-list` にリンクを載せるか。
+#     現状は手動追記と二重管理になるため、変更時は index.html 側と必ず揃える。
+#
+# 【source エントリ — 任意キー】
+#   tags (文字列の配列)
+#     分類・検索用ラベル。
+#   status (文字列)
+#     ライフサイクル。想定値の例: active（運用中）, stale（更新停滞）, planned（未着手・予定）。
+#     列挙は固定ではなく、運用で拡張可。未知の値はスクリプトが無視してよい。
+#   notes (文字列)
+#     一行メモ（人間・レビュー用）。長文は別ドキュメントへ。
+#   clone_depth (整数 または null)
+#     浅い clone の深さ。`null` は「指定なし・デフォルトに任せる」。
+#   default_branch (文字列)
+#     追跡する既定ブランチ名（例: main）。clone スクリプトが参照。
+#
+# 【将来、トップレベルに追加しうる予約名（未使用の間は書かない）】
+#   metadata, defaults, policies — サイト全体のメタ・既定・ポリシー用として予約。
+#   新キーを足すときは version を上げ、ここに意味を追記すること。
+# =============================================================================
+
+version: 1
+
+sources:
+  - id: a2ui
+    name: A2UI — Agent-to-User Interface オープン標準
+    repo_url: https://github.com/google/A2UI.git
+    local_path: repos/a2ui
+    output_html: docs/a2ui.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: agency-agents
+    name: "The Agency: agency-agents リポジトリ説明"
+    repo_url: https://github.com/msitarzewski/agency-agents.git
+    local_path: repos/agency-agents
+    output_html: docs/agency-agents.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: ai-website-cloner
+    name: AI Website Cloner Template — AIエージェントでサイトをピクセル完全複製
+    repo_url: https://github.com/JCodesMore/ai-website-cloner-template.git
+    local_path: repos/ai-website-cloner
+    output_html: docs/ai-website-cloner.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: aris
+    name: ARIS — 眠っている間に Claude Code が ML 研究を進める自律ワークフロー
+    repo_url: https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep.git
+    local_path: repos/aris
+    output_html: docs/aris.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: baoyu-skills
+    name: baoyu-skills — Claude Code の日常作業を効率化する 18 スキル集
+    repo_url: https://github.com/JimLiu/baoyu-skills.git
+    local_path: repos/baoyu-skills
+    output_html: docs/baoyu-skills.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: browser-use
+    name: browser-use — AI がブラウザを自律操作する Python ライブラリ
+    repo_url: https://github.com/browser-use/browser-use.git
+    local_path: repos/browser-use
+    output_html: docs/browser-use.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: claude-best-practice
+    name: Claude Code Best Practice — 設定・スキル・オーケストレーション
+    repo_url: https://github.com/shanraisshan/claude-code-best-practice.git
+    local_path: repos/claude-best-practice
+    output_html: docs/claude-best-practice.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: claude-mem
+    name: Claude-Mem — Claude Code 向け永続メモリ圧縮
+    repo_url: https://github.com/thedotmack/claude-mem.git
+    local_path: repos/claude-mem
+    output_html: docs/claude-mem.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: code-pilot
+    name: CodePilot — Claude Code デスクトップ GUI クライアント
+    repo_url: https://github.com/op7418/CodePilot.git
+    local_path: repos/code-pilot
+    output_html: docs/code-pilot.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: compound-plugin
+    name: compound-engineering-plugin — Claude Code プラグイン & マルチツール変換 CLI
+    repo_url: https://github.com/EveryInc/compound-engineering-plugin.git
+    local_path: repos/compound-plugin
+    output_html: docs/compound-plugin.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: context-hub
+    name: Context Hub — コーディングエージェント向けキュレートドキュメント
+    repo_url: https://github.com/andrewyng/context-hub.git
+    local_path: repos/context-hub
+    output_html: docs/context-hub.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: cyber-skills
+    name: Anthropic Cybersecurity Skills — AI エージェント向けサイバーセキュリティスキル集
+    repo_url: https://github.com/mukul975/Anthropic-Cybersecurity-Skills.git
+    local_path: repos/cyber-skills
+    output_html: docs/cyber-skills.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: deepagents
+    name: Deep Agents — バッテリー同梱の Python エージェントハーネス
+    repo_url: https://github.com/langchain-ai/deepagents.git
+    local_path: repos/deepagents
+    output_html: docs/deepagents.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: defuddle
+    name: Defuddle — Web ページから本文を抽出するライブラリ
+    repo_url: https://github.com/kepano/defuddle.git
+    local_path: repos/defuddle
+    output_html: docs/defuddle.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: developer-roadmap
+    name: developer-roadmap（roadmap.sh）— 開発者向けロードマップ
+    repo_url: https://github.com/kamranahmedse/developer-roadmap.git
+    local_path: repos/developer-roadmap
+    output_html: docs/developer-roadmap.html
+    index_linked: true
+    default_branch: master
+    status: active
+
+  - id: frontend-slides
+    name: Frontend Slides — Claude Code で作る zero-dep HTML プレゼン
+    repo_url: https://github.com/zarazhangrui/frontend-slides.git
+    local_path: repos/frontend-slides
+    output_html: docs/frontend-slides.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: gitagent
+    name: gitagent — リポジトリがエージェントになる git-native 標準
+    repo_url: https://github.com/open-gitagent/gitagent.git
+    local_path: repos/gitagent
+    output_html: docs/gitagent.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: gitbutler
+    name: GitButler — Git, but better（GUI / CLI）
+    repo_url: https://github.com/gitbutlerapp/gitbutler.git
+    local_path: repos/gitbutler
+    output_html: docs/gitbutler.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: gstack
+    name: gstack — Claude Code 向けワークフロー専門スキル集
+    repo_url: https://github.com/garrytan/gstack.git
+    local_path: repos/gstack
+    output_html: docs/gstack.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: gws
+    name: gws — Google Workspace CLI
+    repo_url: https://github.com/googleworkspace/cli.git
+    local_path: repos/gws
+    output_html: docs/gws.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: impeccable
+    name: Impeccable — LLM フロントエンドデザインスキル集
+    repo_url: https://github.com/pbakaus/impeccable.git
+    local_path: repos/impeccable
+    output_html: docs/impeccable.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: kaku-repo
+    name: Kaku リポジトリ解説 — コードベース構成
+    repo_url: https://github.com/tw93/Kaku.git
+    local_path: repos/kaku-repo
+    output_html: docs/kaku-repo.html
+    index_linked: true
+    default_branch: main
+    status: active
+    notes: WezTerm fork としての Kaku 本体（docs/kaku-repo.html 参照）
+
+  - id: last30days-skill
+    name: last30days — 30日間のリサーチを10+ソースで自動化するClaude Codeスキル
+    repo_url: https://github.com/mvanhorn/last30days-skill.git
+    local_path: repos/last30days-skill
+    output_html: docs/last30days-skill.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: learn-claude-code
+    name: Learn Claude Code — Anthropic 公式の AI コーディングアシスタント
+    repo_url: https://github.com/shareAI-lab/learn-claude-code.git
+    local_path: repos/learn-claude-code
+    output_html: docs/learn-claude-code.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: lightpanda-browser
+    name: Lightpanda Browser — ヘッドレス向けオープンソースブラウザ
+    repo_url: https://github.com/lightpanda-io/browser.git
+    local_path: repos/lightpanda-browser
+    output_html: docs/lightpanda-browser.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: llmfit
+    name: llmfit — ハードウェアに合う LLM を一発で見つける
+    repo_url: https://github.com/AlexsJones/llmfit.git
+    local_path: repos/llmfit
+    output_html: docs/llmfit.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: locutus
+    name: Locutus — 他言語の標準ライブラリを TypeScript に
+    repo_url: https://github.com/locutusjs/locutus.git
+    local_path: repos/locutus
+    output_html: docs/locutus.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: next-ai-draw-io
+    name: Next AI Draw.io — AI チャットで draw.io 図を生成・編集
+    repo_url: https://github.com/DayuanJiang/next-ai-draw-io.git
+    local_path: repos/next-ai-draw-io
+    output_html: docs/next-ai-draw-io.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: opencli
+    name: OpenCLI — Web サイトを CLI コマンドで操作するブラウザ自動化フレームワーク
+    repo_url: https://github.com/jackwener/opencli.git
+    local_path: repos/opencli
+    output_html: docs/opencli.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: opencut
+    name: OpenCut — オープンソースのウェブ動画エディタ
+    repo_url: https://github.com/OpenCut-app/OpenCut.git
+    local_path: repos/opencut
+    output_html: docs/opencut.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: opentui
+    name: OpenTUI — Zig ネイティブのターミナル UI コア
+    repo_url: https://github.com/anomalyco/opentui.git
+    local_path: repos/opentui
+    output_html: docs/opentui.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: page-agent
+    name: Page Agent — ウェブページに住む GUI エージェント
+    repo_url: https://github.com/alibaba/page-agent.git
+    local_path: repos/page-agent
+    output_html: docs/page-agent.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: paperclip-master
+    name: Paperclip — ゼロヒューマン企業のためのオーケストレーション
+    repo_url: https://github.com/paperclipai/paperclip.git
+    local_path: repos/paperclip-master
+    output_html: docs/paperclip-master.html
+    index_linked: true
+    default_branch: main
+    status: active
+    notes: リポジトリ名は paperclip（スラッグは paperclip-master）
+
+  - id: pi-mono
+    name: pi-mono — AI agent toolkit（badlogic）
+    repo_url: https://github.com/badlogic/pi-mono.git
+    local_path: repos/pi-mono
+    output_html: docs/pi-mono.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: plannotator
+    name: Plannotator — プランのビジュアルレビューとエージェント連携
+    repo_url: https://github.com/backnotprop/plannotator.git
+    local_path: repos/plannotator
+    output_html: docs/plannotator.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: portless
+    name: Portless — ポート番号を名前付き .localhost URL に
+    repo_url: https://github.com/vercel-labs/portless.git
+    local_path: repos/portless
+    output_html: docs/portless.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: pretext-layout
+    name: Pretext — DOM を触らないテキスト計測・レイアウトライブラリ
+    repo_url: https://github.com/chenglou/pretext.git
+    local_path: repos/pretext-layout
+    output_html: docs/pretext-layout.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: prompt-master
+    name: Prompt Master — あらゆる AI ツール向け最適プロンプト生成スキル
+    repo_url: https://github.com/nidhinjs/prompt-master.git
+    local_path: repos/prompt-master
+    output_html: docs/prompt-master.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: pua
+    name: PUA — AI コーディングエージェントの生産性を倍増させるスキル
+    repo_url: https://github.com/tanweai/pua.git
+    local_path: repos/pua
+    output_html: docs/pua.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: react-grab
+    name: React Grab — コーディングエージェント用コンテキスト選択
+    repo_url: https://github.com/aidenybai/react-grab.git
+    local_path: repos/react-grab
+    output_html: docs/react-grab.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: recordly
+    name: Recordly — オープンソースのスクリーンレコーダー & エディタ
+    repo_url: https://github.com/webadderall/Recordly.git
+    local_path: repos/recordly
+    output_html: docs/recordly.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: shadcn-ui-blocks
+    name: shadcn-ui-blocks — 無料 shadcn/ui ブロック集
+    repo_url: https://github.com/shadcnblocks/shadcn-ui-blocks.git
+    local_path: repos/shadcn-ui-blocks
+    output_html: docs/shadcn-ui-blocks.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: skills-best-practices
+    name: Agent Skills Best Practices — プロ品質スキルの設計・検証ガイド
+    repo_url: https://github.com/mgechev/skills-best-practices.git
+    local_path: repos/skills-best-practices
+    output_html: docs/skills-best-practices.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: skills-cli
+    name: skills CLI — オープンなエージェントスキルエコシステム
+    repo_url: https://github.com/vercel-labs/skills.git
+    local_path: repos/skills-cli
+    output_html: docs/skills-cli.html
+    index_linked: true
+    default_branch: main
+    status: active
+    notes: npm skills CLI の本体リポジトリ名は skills
+
+  - id: skills-slavingia
+    name: skills-slavingia — The Minimalist Entrepreneur スキル集
+    repo_url: https://github.com/slavingia/skills.git
+    local_path: repos/skills-slavingia
+    output_html: docs/skills-slavingia.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: stop-slop
+    name: Stop Slop — AI 文体のクセを除去するスキル
+    repo_url: https://github.com/hardikpandya/stop-slop.git
+    local_path: repos/stop-slop
+    output_html: docs/stop-slop.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: superpowers
+    name: Superpowers — コーディングエージェント向け開発ワークフロー
+    repo_url: https://github.com/obra/superpowers.git
+    local_path: repos/superpowers
+    output_html: docs/superpowers.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: taste-skill
+    name: Taste Skill — AI が書くフロントを「ちゃんとしたデザイン」にするスキル集
+    repo_url: https://github.com/Leonxlnx/taste-skill.git
+    local_path: repos/taste-skill
+    output_html: docs/taste-skill.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: t3code
+    name: T3 Code — コーディングエージェント用ミニマル Web GUI
+    repo_url: https://github.com/pingdotgg/t3code.git
+    local_path: repos/t3code
+    output_html: docs/t3code.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: ui-ux-pro-max
+    name: UI UX Pro Max — AI デザインインテリジェンス スキル
+    repo_url: https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git
+    local_path: repos/ui-ux-pro-max
+    output_html: docs/ui-ux-pro-max.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: understand-anything
+    name: Understand Anything — コードベースをナレッジグラフに変換する Claude Code プラグイン
+    repo_url: https://github.com/Lum1104/Understand-Anything.git
+    local_path: repos/understand-anything
+    output_html: docs/understand-anything.html
+    index_linked: true
+    tags:
+      - tooling
+    status: active
+    clone_depth: 1
+    default_branch: main
+
+  - id: vite-plus
+    name: Vite+ — Web 開発の統合ツールチェーン
+    repo_url: https://github.com/voidzero-dev/vite-plus.git
+    local_path: repos/vite-plus
+    output_html: docs/vite-plus.html
+    index_linked: true
+    default_branch: main
+    status: active
+
+  - id: visual-explainer
+    name: visual-explainer 説明資料
+    repo_url: https://github.com/nicobailon/visual-explainer.git
+    local_path: repos/visual-explainer
+    output_html: docs/visual-explainer.html
+    index_linked: true
+    tags:
+      - spell-ui
+      - sample
+    status: active
+    notes: index の doc-list にあるパターン `docs/<slug>.html` の例
+    clone_depth: 1
+    default_branch: main
+
+  - id: wxt
+    name: WXT — 次世代 Web 拡張フレームワーク
+    repo_url: https://github.com/wxt-dev/wxt.git
+    local_path: repos/wxt
+    output_html: docs/wxt.html
+    index_linked: true
+    default_branch: main
+    status: active
