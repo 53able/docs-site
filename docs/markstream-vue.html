@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>markstream-vue — AI チャット向けストリーミング Markdown レンダラ</title>
+  <meta name="description" content="Simon-He95/markstream-vue の概要。SSE/WebSocket 上の未完成 Markdown を安定描画する Vue 3 レンダラと、React / Svelte / Angular / Vue 2 向けパッケージ群。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="markstream-vue — AI チャット向けストリーミング Markdown レンダラ">
+  <meta property="og:description" content="未完成 Markdown の増分描画、virtual window / incremental batch、Mermaid / KaTeX の任意統合まで。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/markstream-vue.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="markstream-vue — AI チャット向けストリーミング Markdown レンダラ">
+  <meta name="twitter:description" content="Simon-He95/markstream-vue の概要。ストリーミング Markdown とクロスフレームワーク構成。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.992 0.008 220);
+      --foreground: oklch(0.2 0.035 230);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.2 0.035 230);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.2 0.035 230);
+      --primary: oklch(0.35 0.08 220);
+      --primary-foreground: oklch(0.98 0.01 220);
+      --secondary: oklch(0.96 0.015 220);
+      --secondary-foreground: oklch(0.28 0.05 230);
+      --muted: oklch(0.96 0.012 220);
+      --muted-foreground: oklch(0.48 0.03 230);
+      --accent: oklch(0.95 0.02 220);
+      --accent-foreground: oklch(0.22 0.05 230);
+      --destructive: oklch(0.55 0.2 25);
+      --border: oklch(0.90 0.02 220);
+      --input: oklch(0.90 0.02 220);
+      --ring: oklch(0.65 0.06 220);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.65 0.15 80);
+      --chart-3: oklch(0.42 0.08 250);
+      --chart-4: oklch(0.7 0.12 160);
+      --chart-5: oklch(0.58 0.12 40);
+      --code-bg: oklch(0.97 0.01 220);
+      --code-text: #0a3d4a;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'Azeret Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.025 230);
+        --foreground: oklch(0.96 0.01 220);
+        --card: oklch(0.19 0.03 230);
+        --card-foreground: oklch(0.96 0.01 220);
+        --popover: oklch(0.19 0.03 230);
+        --popover-foreground: oklch(0.96 0.01 220);
+        --primary: oklch(0.85 0.06 200);
+        --primary-foreground: oklch(0.16 0.03 230);
+        --secondary: oklch(0.24 0.03 230);
+        --secondary-foreground: oklch(0.96 0.01 220);
+        --muted: oklch(0.24 0.025 230);
+        --muted-foreground: oklch(0.72 0.03 220);
+        --accent: oklch(0.24 0.03 230);
+        --accent-foreground: oklch(0.96 0.01 220);
+        --destructive: oklch(0.65 0.18 25);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.5 0.06 220);
+        --chart-1: oklch(0.72 0.12 200);
+        --chart-2: oklch(0.78 0.12 85);
+        --chart-3: oklch(0.68 0.08 250);
+        --chart-4: oklch(0.75 0.1 160);
+        --chart-5: oklch(0.7 0.1 40);
+        --code-bg: #0f1a22;
+        --code-text: #9ed4e8;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.5rem; line-height: 1.15; font-weight: 700; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout--warn { border-left-color: var(--chart-2); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.45 0.12 200 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 25% 0%, oklch(0.45 0.12 200 / 0.07) 0%, transparent 52%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 25% 0%, oklch(0.72 0.12 200 / 0.1) 0%, transparent 52%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin: 1.25rem 0 0.65rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .mode-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.85rem; margin: 1rem 0; }
+    @media (max-width: 800px) { .mode-grid { grid-template-columns: 1fr; } }
+    .mode-card h4 { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 600; color: var(--chart-1); margin-bottom: 0.4rem; }
+    .mode-card p { font-size: 0.8125rem; color: var(--text-dim); margin-bottom: 0; }
+
+    .badge {
+      display: inline-block; font-family: var(--font-mono); font-size: 0.65rem; font-weight: 600;
+      padding: 0.1rem 0.4rem; border-radius: 4px; border: 1px solid var(--border);
+      background: var(--muted); color: var(--foreground); margin-right: 0.25rem;
+    }
+    .badge--good { background: color-mix(in oklch, var(--chart-4) 18%, var(--card)); border-color: color-mix(in oklch, var(--chart-4) 40%, var(--border)); }
+    .badge--bad { background: color-mix(in oklch, var(--destructive) 12%, var(--card)); border-color: color-mix(in oklch, var(--destructive) 35%, var(--border)); }
+
+    .mermaid-wrap {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin: 1rem 0;
+      overflow: auto;
+      min-height: 12rem;
+    }
+    .mermaid-wrap .mermaid { font-family: var(--font-body) !important; }
+    .mermaid-zoom {
+      position: absolute; top: 0.5rem; right: 0.5rem; display: flex; gap: 0.25rem; z-index: 2;
+    }
+    .mermaid-zoom button {
+      font-family: var(--font-mono); font-size: 0.7rem; padding: 0.2rem 0.45rem;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--muted); color: var(--foreground); cursor: pointer;
+    }
+    .mermaid-zoom button:hover { border-color: var(--chart-1); color: var(--chart-1); }
+
+    .src-note { margin-top: 1.5rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#packages">パッケージ</a>
+    <a href="#quickstart">クイックスタート</a>
+    <a href="#modes">モードと描画</a>
+    <a href="#pipeline">パイプライン</a>
+    <a href="#props">主要 props</a>
+    <a href="#peers">任意統合</a>
+    <a href="#caveats">注意点</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>markstream-vue</h1>
+  <p class="subtitle">Simon-He95/markstream-vue — AI / SSE 向けストリーミング Markdown レンダラ（Vue 3 中心のパッケージ群）</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <p><strong>markstream-vue</strong> は、AI チャットや LLM トークンストリーム向けの <strong>ストリーミング Markdown レンダラ</strong>。未完成の Markdown、長い回答、Mermaid / KaTeX、ストリーミング中のコードブロックを、ちらつきを抑えつつ描画する。完成済み文書向けの <code>marked</code> / <code>markdown-it</code> / <code>react-markdown</code> とは用途が分かれる。</p>
+    <p>リポジトリ名は <code>markstream-vue</code> だが、Markstream として Vue / React / Svelte / Angular / Vue 2 向けのレンダラ群と、フレームワーク非依存の <code>stream-markdown-parser</code>・<code>markstream-core</code> を同梱する。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">Vue 3</div>
+        <div class="ve-kpi-card__label">Primary package</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">1.x</div>
+        <div class="ve-kpi-card__label">Stable API contract</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">5+</div>
+        <div class="ve-kpi-card__label">Framework packages</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">MIT</div>
+        <div class="ve-kpi-card__label">License</div>
+      </div>
+    </div>
+  </div>
+  <div class="ve-callout" style="margin-top:1rem">
+    <strong>向き先:</strong> SSE / WebSocket で Markdown が増え続ける UI、長い AI 回答、プログレッシブ図・コードブロックが必要なチャット面。<strong>向かない先:</strong> 静的な完成 Markdown だけを一度描画する用途（通常の Markdown ライブラリで足りる）。
+  </div>
+
+  <section id="packages" class="sec-head">2 — パッケージ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> フレームワーク別エントリ</span>
+    <p>公式ドキュメントの framework overview が選択ガイド。Vue / Nuxt / VitePress なら <code>markstream-vue</code>、パースだけなら <code>stream-markdown-parser</code>。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>パッケージ</th><th>対象</th><th>インストール</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>markstream-vue</code></td><td>Vue 3 / Nuxt / VitePress</td><td><code>pnpm add markstream-vue</code></td></tr>
+          <tr><td><code>markstream-react</code></td><td>React / Next.js / Remix</td><td><code>pnpm add markstream-react</code></td></tr>
+          <tr><td><code>markstream-svelte</code></td><td>Svelte 5</td><td><code>pnpm add markstream-svelte svelte@^5</code></td></tr>
+          <tr><td><code>markstream-angular</code></td><td>Angular standalone</td><td><code>pnpm add markstream-angular</code></td></tr>
+          <tr><td><code>markstream-vue2</code></td><td>Vue 2.6 / 2.7</td><td><code>pnpm add markstream-vue2</code></td></tr>
+          <tr><td><code>stream-markdown-parser</code></td><td>任意 JS/TS（パース）</td><td><code>pnpm add stream-markdown-parser</code></td></tr>
+          <tr><td><code>markstream-core</code></td><td>ストリーム制御ユーティリティ</td><td><code>pnpm add markstream-core</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="mermaid-wrap" id="packages-diagram">
+    <div class="mermaid-zoom">
+      <button type="button" data-zoom="out" aria-label="縮小">−</button>
+      <button type="button" data-zoom="reset" aria-label="リセット">1×</button>
+      <button type="button" data-zoom="in" aria-label="拡大">+</button>
+    </div>
+    <pre class="mermaid">
+flowchart TD
+  parser["stream-markdown-parser"]
+  core["markstream-core"]
+  vue["markstream-vue"]
+  react["markstream-react"]
+  svelte["markstream-svelte"]
+  angular["markstream-angular"]
+  vue2["markstream-vue2"]
+  parser --> vue
+  parser --> react
+  parser --> svelte
+  parser --> angular
+  parser --> vue2
+  core --> vue
+  core --> react
+    </pre>
+  </div>
+
+  <section id="quickstart" class="sec-head">3 — クイックスタート</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Vue 3</span>
+    <p>CSS を一度 import し、<code>MarkdownRender</code> に <code>content</code> とストリーム完了フラグ <code>final</code> を渡す。</p>
+    <div class="ve-code-block">
+      <pre><code>pnpm add markstream-vue</code></pre>
+    </div>
+    <div class="ve-code-block">
+      <pre><code>&lt;script setup lang="ts"&gt;
+import MarkdownRender from 'markstream-vue'
+import 'markstream-vue/index.css'
+
+defineProps&lt;{ content: string; isDone: boolean }&gt;()
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;MarkdownRender mode="chat" :content="content" :final="isDone" /&gt;
+&lt;/template&gt;</code></pre>
+    </div>
+    <p>Tailwind 利用時は <code>@import 'markstream-vue/index.css' layer(components);</code> のようにレイヤを指定し、レンダラ側スタイルがユーティリティに負けないようにする。モバイルでルート <code>rem</code> をスケールしている場合は <code>markstream-vue/index.px.css</code> を検討する。</p>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> SSE への接続例</span>
+    <div class="ve-code-block">
+      <pre><code>const content = ref('')
+const final = ref(false)
+
+eventSource.onmessage = (event) =&gt; {
+  content.value += event.data
+}
+eventSource.addEventListener('done', () =&gt; {
+  final.value = true
+})
+
+// &lt;MarkdownRender :content="content" :final="final" :fade="false" /&gt;</code></pre>
+    </div>
+  </div>
+
+  <section id="modes" class="sec-head">4 — モードと描画</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> mode の選び方</span>
+    <div class="mode-grid">
+      <div class="ve-card mode-card" style="--i:0">
+        <h4>mode="chat"</h4>
+        <p>AI / SSE 向け。ペースを安定させ、不透明度アニメによるちらつきを避ける。典型では <code>fade={false}</code> と <code>smooth-streaming="auto"</code>。</p>
+      </div>
+      <div class="ve-card mode-card" style="--i:1">
+        <h4>mode="docs"</h4>
+        <p>リッチなドキュメント向け。大きめの描画バッチ、ツールチップ、fade が既定で有効。コードレンダラとレイアウト戦略が chat と異なる。</p>
+      </div>
+      <div class="ve-card mode-card" style="--i:2">
+        <h4>mode="minimal"</h4>
+        <p>chat と同系統の軽量既定を、非チャット面で中立名として使いたいとき。</p>
+      </div>
+    </div>
+    <div class="ve-callout ve-callout--warn">
+      <strong>同一メッセージで mode を切り替えない。</strong> <code>final</code> が立ったからといって <code>chat</code> → <code>docs</code> に変えない。ペースは <code>smooth-streaming</code> / <code>typewriter</code> / <code>fade</code> で調整する。<code>smooth-streaming</code> の高頻度更新と <code>fade</code> の併用は、opacity 再スタートの連続になりやすい。
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Performance presets</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>プリセット</th><th>設定</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge--good">Virtual window</span></td>
+            <td><code>max-live-nodes</code> 既定 <code>220</code></td>
+            <td>長文のスクロールバックとメモリを安定。ノードはすぐ描画し、マウント窓をスライド。</td>
+          </tr>
+          <tr>
+            <td><span class="badge">Incremental</span></td>
+            <td><code>:max-live-nodes="0"</code></td>
+            <td>タイプライタ風。バッチ系 props（<code>renderBatchSize</code> など）でスライス描画。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>チャットでは例として <code>renderBatchSize={16}</code>、<code>renderBatchDelay={8}</code>、<code>renderBatchBudgetMs</code> を下げて CPU を抑える組み合わせが README に示されている。</p>
+  </div>
+
+  <section id="pipeline" class="sec-head">5 — パイプライン</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 描画の流れ</span>
+    <p><code>content</code>（生 Markdown）または <code>nodes</code>（事前パース結果）のどちらかを受け取り、NodeRenderer 経由でブロック／インラインを描画する。サーバーや Worker で <code>parseMarkdownToStructure</code> した結果をクライアントに渡すと、SSR / hydration を決定的にしやすい。</p>
+  </div>
+  <div class="mermaid-wrap" id="pipeline-diagram">
+    <div class="mermaid-zoom">
+      <button type="button" data-zoom="out" aria-label="縮小">−</button>
+      <button type="button" data-zoom="reset" aria-label="リセット">1×</button>
+      <button type="button" data-zoom="in" aria-label="拡大">+</button>
+    </div>
+    <pre class="mermaid">
+flowchart TD
+  src["SSE / WebSocket / string"]
+  md["content または nodes"]
+  parse["parseMarkdownToStructure\nstreamParse auto / true"]
+  batch["virtual window または\nincremental batches"]
+  nodes["NodeRenderer"]
+  peers["optional: Mermaid / KaTeX\nMonaco / Shiki / D2"]
+  dom[".markstream-vue DOM"]
+  src --> md
+  md --> parse
+  parse --> batch
+  batch --> nodes
+  nodes --> peers
+  peers --> dom
+  nodes --> dom
+    </pre>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> streamParse と final</span>
+    <ul>
+      <li><code>parseMarkdownToStructure</code> の既定は <code>streamParse: 'auto'</code>。非 final のトップレベルでは <code>md.stream.parse</code> とキャッシュを使う。</li>
+      <li><code>MarkdownRender</code> が自分でパースする場合、ストリーム向けに <code>streamParse: true</code> が既定。 <code>final</code> が変わるとキャッシュを無効化し、完了セマンティクスで再パースする。</li>
+      <li>無関係な one-shot 文書で同一 <code>md</code> インスタンスを再利用するときは <code>{ final: true }</code> または <code>{ streamParse: false }</code> を渡す。</li>
+    </ul>
+  </div>
+
+  <section id="props" class="sec-head">6 — 主要 props</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> チートシート</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>prop / API</th><th>要点</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>content</code> / <code>nodes</code></td><td>生 Markdown か、事前パース済みノード。</td></tr>
+          <tr><td><code>final</code></td><td>ストリーム終端。途中状態の loading パースを止め、未閉じ構文を確定させる。</td></tr>
+          <tr><td><code>max-live-nodes</code></td><td><code>220</code>（仮想化）または <code>0</code>（増分バッチ）。</td></tr>
+          <tr><td><code>batchRendering</code> 系</td><td><code>initialRenderBatchSize</code> / <code>renderBatchSize</code> / <code>renderBatchDelay</code> / <code>renderBatchBudgetMs</code>。</td></tr>
+          <tr><td><code>smooth-streaming</code></td><td>typewriter / <code>max-live-nodes &lt;= 0</code> では既定オン。生チャンク間隔にしたい面では <code>false</code>。</td></tr>
+          <tr><td><code>parse-options</code></td><td><code>preTransformTokens</code> や <code>requireClosingStrong</code> などパーサフック。</td></tr>
+          <tr><td><code>custom-html-tags</code></td><td>例: <code>['thinking']</code>。カスタムタグをストリーム許可し、カスタムノードとして出す。</td></tr>
+          <tr><td><code>setCustomComponents</code></td><td><code>custom-id</code> スコープで Vue コンポーネントを登録。</td></tr>
+          <tr><td><code>code-block-props</code></td><td>例: <code>theme: { light, dark }</code>。構造キー（<code>node</code>, <code>ctx</code> 等）は無視される。</td></tr>
+          <tr><td><code>htmlPolicy</code></td><td>信頼できない UGC では <code>"escape"</code> を推奨（生 HTML をテキスト扱い）。</td></tr>
+          <tr><td><code>is-dark</code> / <code>.dark</code></td><td>祖先に <code>.dark</code>、または prop でレンダラ内ダークを指定。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="peers" class="sec-head">7 — 任意統合</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 重い peer は必要なときだけ</span>
+    <p><code>mermaid</code> / <code>katex</code> / <code>stream-diffs</code> / <code>shiki</code> などは任意 peer。使わない限りバンドルに乗らない。強化コードブロック（File / Diff）が要るなら <code>stream-diffs</code>。無い場合は意図的に <code>&lt;pre&gt;</code> へフォールバックする。</p>
+    <div class="ve-code-block">
+      <pre><code>import { enableKatex, enableMermaid } from 'markstream-vue'
+import 'markstream-vue/index.css'
+import 'katex/dist/katex.min.css'
+
+enableMermaid()
+enableKatex()</code></pre>
+    </div>
+    <p>CDN 経由で KaTeX / Mermaid を載せる場合は、<code>createKaTeXWorkerFromCDN</code> + <code>setKaTeXWorker</code>、<code>createMermaidWorkerFromCDN</code> + <code>setMermaidWorker</code> で Worker を注入できる（オフメインスレッド描画・パース向け）。</p>
+  </div>
+  <div class="ve-card ve-card--elevated" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> スタイルスコープ</span>
+    <p>レンダラ CSS は内部コンテナ <code>.markstream-vue</code> にスコープされる。デザイン方針は「既定スタイル付き + CSS 変数で換装可能（非 headless）」。shadcn 互換のため <code>--ms-*</code> bridge token で宿主変数を継承し、未定義時は内蔵デフォルトへフォールバックする（<code>design/architecture.md</code>）。</p>
+    <p><code>MarkdownRender</code> 外でノードコンポーネント単体を使うときは、親に <code>class="markstream-vue"</code> を付ける。</p>
+  </div>
+
+  <section id="caveats" class="sec-head">8 — 注意点</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> よくある落とし穴</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>症状 / 状況</th><th>対応</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Mermaid / KaTeX が出ない</td>
+            <td>peer を入れ、<code>enableMermaid</code> / <code>enableKatex</code>、または prop の enable 系。CDN なら <code>window.mermaid</code> / <code>window.katex</code> も拾う。</td>
+          </tr>
+          <tr>
+            <td>リッチコードブロックが出ない</td>
+            <td><code>stream-diffs</code> を入れるか、<code>:render-code-blocks-as-pre="true"</code> で明示的に軽量にする。</td>
+          </tr>
+          <tr>
+            <td>末尾の <code>$$</code> やフェンスがずっと loading</td>
+            <td>ストリーム終了時に <code>:final="true"</code>、または <code>parseMarkdownToStructure(..., { final: true })</code>。</td>
+          </tr>
+          <tr>
+            <td>信頼できない HTML</td>
+            <td><code>htmlPolicy="escape"</code>。</td>
+          </tr>
+          <tr>
+            <td>1.0 の安定面</td>
+            <td><code>MarkdownRender</code>、ストリーミング / 事前ノード、安全 HTML 方針、任意統合、virtual-scroll 連携、CSS / worker / SSR エントリが契約。npm タグは beta のままの期間があり得る。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 典型レンダラとの差</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ニーズ</th><th>一般的な Markdown プレビュー</th><th>markstream-vue</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ストリーム入力</td><td><span class="badge badge--bad">全体再描画・フラッシュ</span></td><td><span class="badge badge--good">増分バッチ + virtual window</span></td></tr>
+          <tr><td>大きなコード</td><td>再ハイライトが重い</td><td><code>stream-diffs</code> / Shiki オプション</td></tr>
+          <tr><td>図</td><td>パース完了までブロックしやすい</td><td>プログレッシブ Mermaid</td></tr>
+          <tr><td>カスタム UI</td><td>スロットが限られがち</td><td>インライン Vue コンポーネント + 型付きノード</td></tr>
+          <tr><td>長文</td><td>メモリが跳ねやすい</td><td>live-node 上限で定常化</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">9 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・デモ</span>
+    <ul>
+      <li><a href="https://github.com/Simon-He95/markstream-vue" target="_blank" rel="noopener">GitHub: Simon-He95/markstream-vue</a></li>
+      <li><a href="https://markstream.simonhe.me/frameworks" target="_blank" rel="noopener">Framework overview / docs</a></li>
+      <li><a href="https://markstream-vue.simonhe.me/" target="_blank" rel="noopener">Vue 3 playground</a></li>
+      <li><a href="https://markstream-vue.simonhe.me/test" target="_blank" rel="noopener">Shareable test / repro page</a></li>
+      <li><a href="https://www.npmjs.com/package/markstream-vue" target="_blank" rel="noopener">npm: markstream-vue</a></li>
+      <li><a href="https://markstream.simonhe.me/llms.txt" target="_blank" rel="noopener">llms.txt（LLM 向け要約）</a></li>
+      <li>エージェント向けスキル: <code>npx skills add Simon-He95/markstream-vue</code>（リポジトリの <code>.agents/skills</code>）</li>
+    </ul>
+    <p class="src-note">出典: Simon-He95/markstream-vue の README.md / design/architecture.md（解説時点の upstream）</p>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+<script>
+(function() {
+  var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: isDark
+      ? {
+          primaryColor: '#1a2e38',
+          primaryTextColor: '#e8f4f8',
+          primaryBorderColor: '#3d9bb5',
+          lineColor: '#7ec4d6',
+          secondaryColor: '#243440',
+          tertiaryColor: '#152028',
+          background: '#152028',
+          mainBkg: '#1a2e38',
+          nodeBorder: '#3d9bb5',
+          clusterBkg: '#1a2e38',
+          titleColor: '#e8f4f8',
+          fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
+          fontSize: '16px'
+        }
+      : {
+          primaryColor: '#d4eef5',
+          primaryTextColor: '#0a3d4a',
+          primaryBorderColor: '#2a6f82',
+          lineColor: '#4a8fa3',
+          secondaryColor: '#f0f7fa',
+          tertiaryColor: '#fff8e8',
+          background: '#ffffff',
+          mainBkg: '#d4eef5',
+          nodeBorder: '#2a6f82',
+          clusterBkg: '#f0f7fa',
+          titleColor: '#0a3d4a',
+          fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
+          fontSize: '16px'
+        }
+  });
+
+  function bindZoom(wrapId) {
+    var wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    var scale = 1;
+    var mermaidEl = wrap.querySelector('.mermaid');
+    wrap.querySelectorAll('[data-zoom]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var action = btn.getAttribute('data-zoom');
+        if (action === 'in') scale = Math.min(2.2, scale + 0.15);
+        else if (action === 'out') scale = Math.max(0.6, scale - 0.15);
+        else scale = 1;
+        if (mermaidEl) {
+          mermaidEl.style.transform = 'scale(' + scale + ')';
+          mermaidEl.style.transformOrigin = 'center center';
+        }
+      });
+    });
+  }
+  bindZoom('packages-diagram');
+  bindZoom('pipeline-diagram');
+})();
+</script>
+</body>
+</html>
