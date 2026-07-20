@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>claude-code-tips — Claude Code 実践 Tips と dx プラグイン</title>
+  <meta name="description" content="ykdojo/claude-code-tips の解説。40+ の Claude Code Tips、拡張モデル（CLAUDE.md / Skills / Plugins）、dx プラグインのスキル、setup.sh による一括設定。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="claude-code-tips — Claude Code 実践 Tips と dx プラグイン">
+  <meta property="og:description" content="40+ Tips、拡張モデル、dx プラグイン、setup.sh の要点を図解。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/claude-code-tips.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="claude-code-tips — Claude Code 実践 Tips と dx プラグイン">
+  <meta name="twitter:description" content="ykdojo/claude-code-tips の Tips・dx プラグイン・セットアップ手順の解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME — Teal technical + amber accent ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.008 200);
+      --foreground: oklch(0.18 0.03 220);
+      --card: oklch(0.995 0.004 200);
+      --card-foreground: oklch(0.18 0.03 220);
+      --popover: oklch(0.995 0.004 200);
+      --popover-foreground: oklch(0.18 0.03 220);
+      --primary: oklch(0.32 0.08 200);
+      --primary-foreground: oklch(0.98 0.01 90);
+      --secondary: oklch(0.95 0.015 200);
+      --secondary-foreground: oklch(0.28 0.05 200);
+      --muted: oklch(0.945 0.015 200);
+      --muted-foreground: oklch(0.48 0.03 220);
+      --accent: oklch(0.95 0.02 85);
+      --accent-foreground: oklch(0.28 0.05 200);
+      --destructive: oklch(0.55 0.2 25);
+      --border: oklch(0.88 0.02 200);
+      --input: oklch(0.88 0.02 200);
+      --ring: oklch(0.55 0.08 200);
+      --chart-1: oklch(0.45 0.12 200);
+      --chart-2: oklch(0.72 0.15 80);
+      --chart-3: oklch(0.50 0.08 240);
+      --chart-4: oklch(0.58 0.12 155);
+      --chart-5: oklch(0.55 0.14 25);
+      --code-bg: oklch(0.94 0.015 200);
+      --code-text: #0d3d4a;
+      --font-body: 'Epilogue', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.02 220);
+        --foreground: oklch(0.94 0.01 90);
+        --card: oklch(0.19 0.025 220);
+        --card-foreground: oklch(0.94 0.01 90);
+        --popover: oklch(0.19 0.025 220);
+        --popover-foreground: oklch(0.94 0.01 90);
+        --primary: oklch(0.82 0.08 85);
+        --primary-foreground: oklch(0.16 0.02 220);
+        --secondary: oklch(0.24 0.03 220);
+        --secondary-foreground: oklch(0.94 0.01 90);
+        --muted: oklch(0.24 0.03 220);
+        --muted-foreground: oklch(0.70 0.03 200);
+        --accent: oklch(0.26 0.04 85);
+        --accent-foreground: oklch(0.94 0.01 90);
+        --destructive: oklch(0.65 0.18 25);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.55 0.08 200);
+        --chart-1: oklch(0.72 0.12 200);
+        --chart-2: oklch(0.80 0.14 80);
+        --chart-3: oklch(0.68 0.10 240);
+        --chart-4: oklch(0.68 0.12 155);
+        --chart-5: oklch(0.68 0.14 25);
+        --code-bg: #0c1418;
+        --code-text: #9ed8e8;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+        border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; font-family: var(--font-mono); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); font-family: var(--font-mono); font-size: 0.75rem; }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 70%, transparent); }
+    .ve-table-wrap code { font-size: 0.75rem; }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; font-family: var(--font-mono); color: var(--chart-1); font-weight: 600; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; font-family: var(--font-mono); }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .ve-badge { display: inline-flex; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid var(--border); background: var(--muted); color: var(--chart-1); }
+    .ve-badge--core { background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); border-color: color-mix(in oklch, var(--chart-1) 35%, var(--border)); }
+    .ve-badge--opt { background: color-mix(in oklch, var(--chart-2) 14%, transparent); color: color-mix(in oklch, var(--chart-2) 80%, var(--foreground)); border-color: color-mix(in oklch, var(--chart-2) 40%, var(--border)); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 15% 0%, color-mix(in oklch, var(--chart-1) 12%, transparent) 0%, transparent 48%),
+        radial-gradient(ellipse at 90% 10%, color-mix(in oklch, var(--chart-2) 10%, transparent) 0%, transparent 40%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 15% 0%, color-mix(in oklch, var(--chart-1) 14%, transparent) 0%, transparent 48%),
+          radial-gradient(ellipse at 90% 10%, color-mix(in oklch, var(--chart-2) 12%, transparent) 0%, transparent 40%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; font-family: var(--font-mono); }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.8125rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.5; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.0625rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.65; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 1rem 0; }
+    @media (max-width: 640px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; color: var(--chart-2); margin-bottom: 0.35rem; }
+    .step-card__title { font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.35rem; }
+    .step-card__body { font-size: 0.8125rem; color: var(--muted-foreground); line-height: 1.55; }
+
+    .tip-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 1rem 0; }
+    @media (max-width: 720px) { .tip-grid { grid-template-columns: 1fr; } }
+    .tip-card h3 { margin-top: 0; font-size: 0.9375rem; color: var(--chart-1); }
+    .tip-card p { margin-bottom: 0.35rem; font-size: 0.8125rem; color: var(--muted-foreground); }
+    .tip-card .tip-ids { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-dim); }
+
+    .dir { color: var(--chart-1); font-weight: 600; }
+    .file-main { color: var(--chart-2); }
+    .comment { color: var(--text-dim); }
+
+    .mermaid-wrap {
+      position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg);
+      background: var(--card); overflow: hidden; margin: 1rem 0;
+    }
+    .mermaid-controls {
+      position: absolute; top: 8px; right: 10px; display: flex; gap: 4px; z-index: 10;
+    }
+    .mermaid-controls button {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text); font-family: var(--font-mono); font-size: 11px; width: 28px; height: 28px; cursor: pointer;
+    }
+    .mermaid-controls button:hover { border-color: var(--chart-1); color: var(--chart-1); }
+    .mermaid-inner { display: flex; justify-content: center; padding: 1.25rem; overflow: auto; }
+    .mermaid { transform-origin: top center; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#layout">リポジトリ構成</a>
+    <a href="#tips">Tips マップ</a>
+    <a href="#extensibility">拡張モデル</a>
+    <a href="#dx-plugin">dx プラグイン</a>
+    <a href="#setup">セットアップ</a>
+    <a href="#context">コンテキスト運用</a>
+    <a href="#isolation">隔離と並列</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>claude-code-tips</h1>
+  <p class="subtitle">ykdojo/claude-code-tips — Claude Code 実践 Tips（0–45）と dx プラグイン</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <p><strong>claude-code-tips</strong> は、<a href="https://github.com/ykdojo" target="_blank" rel="noopener">YK（ykdojo）</a> による Claude Code 運用 Tips 集。README に Tip 0–45 が並び、同じリポジトリが Claude Code プラグイン <code>dx</code> としても配布される。</p>
+    <p>対象読者は日々 Claude Code を使う開発者。スラッシュコマンド・コンテキスト管理・Git/gh 連携・隔離実行・Remote Control など、実務で効く手順が中心。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">46</div>
+        <div class="ve-kpi-card__label">Tips (0–45)</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">8</div>
+        <div class="ve-kpi-card__label">dx skills</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">9</div>
+        <div class="ve-kpi-card__label">setup 項目</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">dx</div>
+        <div class="ve-kpi-card__label">plugin name</div>
+      </div>
+    </div>
+  </div>
+  <div class="ve-callout" style="--i:1">
+    <strong>出典:</strong> 本文は <a href="https://github.com/ykdojo/claude-code-tips" target="_blank" rel="noopener">ykdojo/claude-code-tips</a> の README・<code>skills/</code>・<code>scripts/</code> に基づく。Tips 全文は README を参照。
+  </div>
+
+  <section id="layout" class="sec-head">2 — リポジトリ構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 主要パス</span>
+    <div class="ve-code-block">
+      <pre><code><span class="dir">claude-code-tips/</span>
+├── <span class="file-main">README.md</span>              <span class="comment"># Tip 0–45 の本体</span>
+├── <span class="file-main">CLAUDE.md</span> / GLOBAL-CLAUDE.md
+├── <span class="dir">.claude-plugin/</span>         <span class="comment"># marketplace.json / plugin.json (dx)</span>
+├── <span class="dir">skills/</span>                 <span class="comment"># gha, half-clone, handoff, …</span>
+├── <span class="dir">scripts/</span>                <span class="comment"># context-bar, setup, half-clone-conversation</span>
+├── <span class="dir">content/</span>                <span class="comment"># 派生記事・スライド・図</span>
+└── <span class="dir">assets/</span>                 <span class="comment"># README 用画像</span></code></pre>
+    </div>
+    <p><code>content/</code> には spectrum of agentic coding のスライド HTML、採用ストーリー、DX 提出メモなどが入る。運用の正本は README と <code>skills/</code>。</p>
+  </div>
+
+  <section id="tips" class="sec-head">3 — Tips マップ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ別の入口</span>
+    <p>46 Tips を主題で束ねた索引。詳細手順は README の各 Tip へ。</p>
+    <div class="tip-grid">
+      <div class="ve-card tip-card ve-card--recessed">
+        <h3>UI・入力</h3>
+        <p>ステータス行、スラッシュ、音声、入力ショートカット、エイリアス。</p>
+        <p class="tip-ids">Tip 0, 1, 2, 7, 10, 37</p>
+      </div>
+      <div class="ve-card tip-card ve-card--recessed">
+        <h3>コンテキスト</h3>
+        <p>新鮮な会話、/compact、handoff、half-clone、履歴検索。</p>
+        <p class="tip-ids">Tip 5, 8, 12, 21</p>
+      </div>
+      <div class="ve-card tip-card ve-card--recessed">
+        <h3>並列・Git</h3>
+        <p>タブ cascade、worktree、gh / draft PR、指数バックオフ。</p>
+        <p class="tip-ids">Tip 4, 13, 14, 15</p>
+      </div>
+      <div class="ve-card tip-card ve-card--recessed">
+        <h3>検証・自律</h3>
+        <p>write-test サイクル、TDD、出力検証、背景 bash / subagent。</p>
+        <p class="tip-ids">Tip 9, 26, 33, 35</p>
+      </div>
+      <div class="ve-card tip-card ve-card--recessed">
+        <h3>隔離・遠隔</h3>
+        <p>コンテナ / 専用機、auto mode、Remote Control、アカウント切替。</p>
+        <p class="tip-ids">Tip 19, 31, 32, 45</p>
+      </div>
+      <div class="ve-card tip-card ve-card--recessed">
+        <h3>拡張と学習</h3>
+        <p>CLAUDE.md vs Skills、dx 導入、setup.sh、継続学習。</p>
+        <p class="tip-ids">Tip 23, 28, 42, 43, 44</p>
+      </div>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> まず押さえる 8 Tips</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Tip</th><th>要点</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>0</code></td><td><code>scripts/context-bar.sh</code> でモデル・git・トークン使用率をステータス行表示</td></tr>
+          <tr><td><code>3</code></td><td>大きな問題を小さな issue に分解してから解く</td></tr>
+          <tr><td><code>5 / 8</code></td><td>コンテキストは新鮮なほど強い。handoff 後に新規会話</td></tr>
+          <tr><td><code>14</code></td><td>同一リポの並列作業は git worktree（ブランチ + ディレクトリ）</td></tr>
+          <tr><td><code>19</code></td><td>長時間・高リスクはコンテナ or 専用機 + skip-permissions</td></tr>
+          <tr><td><code>21</code></td><td><code>/branch</code>・<code>--fork-session</code>・half-clone で会話を分岐・圧縮</td></tr>
+          <tr><td><code>23</code></td><td>CLAUDE.md / Skills / Slash / Plugins の役割分担</td></tr>
+          <tr><td><code>43 / 44</code></td><td>dx プラグイン導入、または <code>setup.sh</code> で一括設定</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="extensibility" class="sec-head">4 — 拡張モデル</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> CLAUDE.md / Skills / Slash / Plugins</span>
+    <p>Tip 23 の整理。似た機能が並ぶため、読み込みタイミングと配布単位で選ぶ。</p>
+    <div class="mermaid-wrap" id="mw-ext">
+      <div class="mermaid-controls">
+        <button type="button" data-zoom="-1" aria-label="縮小">−</button>
+        <button type="button" data-zoom="0" aria-label="リセット">↺</button>
+        <button type="button" data-zoom="1" aria-label="拡大">+</button>
+      </div>
+      <div class="mermaid-inner">
+        <pre class="mermaid">
+flowchart TD
+  A["毎回ロード"] --> B["CLAUDE.md<br/>project / global"]
+  C["必要時だけ"] --> D["Skills<br/>Claude 起点が主"]
+  C --> E["Slash Commands<br/>ユーザー起点が主"]
+  F["配布単位"] --> G["Plugins<br/>skills / hooks / MCP 等を束ねる"]
+  D --> G
+  E --> G
+  B -.->|"トークン常駐"| H["簡潔に保つ"]
+  D -.->|"遅延ロード"| I["トークン節約"]
+        </pre>
+      </div>
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>仕組み</th><th>いつ載るか</th><th>向き</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>CLAUDE.md</strong></td>
+            <td>全会話の先頭に常時</td>
+            <td>プロジェクト説明・繰り返し指示。短いほどよい</td>
+          </tr>
+          <tr>
+            <td><strong>Skills</strong></td>
+            <td>関連時に自動、または <code>/skill</code></td>
+            <td>手順付きの再利用ワークフロー</td>
+          </tr>
+          <tr>
+            <td><strong>Slash Commands</strong></td>
+            <td>明示的に起動</td>
+            <td>ユーザーがタイミングを制御したい操作</td>
+          </tr>
+          <tr>
+            <td><strong>Plugins</strong></td>
+            <td>インストール単位</td>
+            <td>skills / hooks / MCP などをまとめて配布（例: <code>dx</code>）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>注:</strong> Claude Code 2.1.3 以降、Skills と Slash Commands は統合方向。意図の違いは「誰が主に起動するか」。Skills は Claude 向け、Slash はユーザー向けとして設計されてきた。
+    </div>
+  </div>
+
+  <section id="dx-plugin" class="sec-head">5 — dx プラグイン</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 同梱スキル</span>
+    <p>リポジトリはプラグイン名 <code>dx</code>（developer experience）。marketplace <code>ykdojo</code> から入れる。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド / スキル</th><th>役割</th><th>関連 Tip</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>/dx:gha &lt;url&gt;</code></td><td>GitHub Actions 失敗の調査（ジョブ単位の履歴・flaky・breaking commit）</td><td>27</td></tr>
+          <tr><td><code>/dx:handoff</code></td><td><code>HANDOFF.md</code> を書いて次エージェントへ引き継ぎ</td><td>8</td></tr>
+          <tr><td><code>/dx:half-clone</code></td><td>会話後半だけクローンしてトークン削減</td><td>21</td></tr>
+          <tr><td><code>/dx:reddit-fetch</code></td><td>Reddit JSON（DuckDuckGo hop でセッション確保）</td><td>—</td></tr>
+          <tr><td><code>/dx:review-claudemd</code></td><td>直近会話から CLAUDE.md 改善案</td><td>28</td></tr>
+          <tr><td><code>/dx:hn-summarize</code></td><td>Hacker News 上位・スレッド要約（公式 API）</td><td>—</td></tr>
+          <tr><td><code>/dx:version-check</code></td><td>Claude Code の更新可否・ピン推奨</td><td>—</td></tr>
+          <tr><td><code>/dx:private-github-search</code></td><td>ローカル mirror + ripgrep で private 含む全文検索</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-code-block">
+      <pre><code>claude plugin marketplace add ykdojo/claude-code-tips
+claude plugin install dx@ykdojo</code></pre>
+    </div>
+    <p>推奨コンパニオン: <a href="https://github.com/microsoft/playwright-mcp" target="_blank" rel="noopener">Playwright MCP</a>（ブラウザ自動化。Tip 9）。</p>
+  </div>
+
+  <section id="setup" class="sec-head">6 — セットアップ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> setup.sh（Tip 44）</span>
+    <p>対話式で複数推奨設定をまとめて入れるスクリプト。スキップ番号を指定できる。</p>
+    <div class="ve-code-block">
+      <pre><code>bash &lt;(curl -s https://raw.githubusercontent.com/ykdojo/claude-code-tips/main/scripts/setup.sh)</code></pre>
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>区分</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Install</td><td>DX プラグイン</td></tr>
+          <tr><td>2–7</td><td><code>~/.claude/settings.json</code></td><td>status line / 自動更新オフ / MCP lazy-load / <code>Read(~/.claude)</code> / <code>Read(//tmp/**)</code> / attribution 無効</td></tr>
+          <tr><td>8–9</td><td>shell</td><td>aliases（<code>c</code>/<code>ch</code>/<code>cs</code>）と <code>--fs</code> → <code>--fork-session</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> ステータス行だけ入れる場合</span>
+    <ol>
+      <li><code>scripts/context-bar.sh</code> を <code>~/.claude/scripts/</code> にコピーして実行可能にする</li>
+      <li><code>~/.claude/settings.json</code> の <code>statusLine.command</code> にパスを指定</li>
+      <li>必要ならスクリプト先頭の <code>COLOR</code>（orange / teal / …）を変更。プレビューは <code>scripts/color-preview.sh</code></li>
+    </ol>
+    <p>表示例: モデル名・cwd・ブランチ・未コミット数・origin 同期・コンテキスト使用率バー・直前メッセージ。</p>
+  </div>
+
+  <section id="context" class="sec-head">7 — コンテキスト運用</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 圧縮と分岐</span>
+    <div class="step-flow">
+      <div class="step-card">
+        <div class="step-card__num">01</div>
+        <div class="step-card__title">新しい話題は新会話</div>
+        <div class="step-card__body">Tip 5。長い履歴は性能を下げる。トピック切替で <code>/clear</code> か新規セッション。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">02</div>
+        <div class="step-card__title">handoff してから切る</div>
+        <div class="step-card__body">Tip 8 / <code>/dx:handoff</code>。Goal・進捗・成功失敗・Next を <code>HANDOFF.md</code> に書いてパスだけ渡す。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">03</div>
+        <div class="step-card__title">fork / half-clone</div>
+        <div class="step-card__body">Tip 21。<code>/branch</code> や <code>--fork-session</code> で分岐。長い会話は後半だけクローン。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">04</div>
+        <div class="step-card__title">85% で半クローン提案</div>
+        <div class="step-card__body">任意 hook: <code>scripts/check-context.sh</code> を Stop hook に。auto-compact はオフ推奨。</div>
+      </div>
+    </div>
+    <div class="ve-callout">
+      <strong>half-clone の権限:</strong> 会話履歴読み取りのため、グローバル settings に <code>Read(~/.claude)</code> を許可するとプロンプトが減る（Tip 21）。
+    </div>
+    <div class="ve-code-block">
+      <pre><code>{
+  "permissions": {
+    "allow": ["Read(~/.claude)"]
+  }
+}</code></pre>
+    </div>
+  </div>
+
+  <section id="isolation" class="sec-head">8 — 隔離と並列</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 実行モードの段階</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>レベル</th><th>手段</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="ve-badge ve-badge--core">default</span></td>
+            <td>手動承認 / auto mode（Shift+Tab）</td>
+            <td>通常開発。auto は機械的承認疲れを減らす（Tip 31）</td>
+          </tr>
+          <tr>
+            <td><span class="ve-badge ve-badge--opt">container</span></td>
+            <td><code>--dangerously-skip-permissions</code> in sandbox</td>
+            <td>長時間研究・実験。<a href="https://github.com/ykdojo/safeclaw" target="_blank" rel="noopener">safeclaw</a> 等（Tip 19）</td>
+          </tr>
+          <tr>
+            <td><span class="ve-badge ve-badge--opt">dedicated Mac</span></td>
+            <td>computer use 可能な専用機</td>
+            <td><a href="https://github.com/ykdojo/claude-controls-mac" target="_blank" rel="noopener">claude-controls-mac</a>（Tip 19）</td>
+          </tr>
+          <tr>
+            <td><span class="ve-badge">remote</span></td>
+            <td><code>/remote-control</code> / <code>claude remote-control</code></td>
+            <td>スマホから操作。隔離環境以外は慎重に（Tip 32）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>並列作業</h3>
+    <ul>
+      <li><strong>タブ cascade（Tip 13）:</strong> 新規タスクは右にタブ追加。左→右で古い順に巡回。同時は 3–4 本程度。</li>
+      <li><strong>worktree（Tip 14）:</strong> ブランチごとに別ディレクトリ。同じプロジェクトの衝突を避ける。</li>
+      <li><strong>tmux ワーカー（Tip 19）:</strong> 外側 Claude が <code>tmux send-keys</code> / <code>capture-pane</code> でコンテナ内 Claude を操縦。</li>
+    </ul>
+  </div>
+
+  <section id="links" class="sec-head">9 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/ykdojo/claude-code-tips" target="_blank" rel="noopener">GitHub: ykdojo/claude-code-tips</a> — Tips 本体と dx プラグイン</li>
+      <li><a href="https://www.youtube.com/watch?v=hiISl558JGE" target="_blank" rel="noopener">Quick demo</a> — マルチ Claude + 音声入力</li>
+      <li><a href="https://youtu.be/9UdZhTnMrTA" target="_blank" rel="noopener">Claude Code Masterclass</a> — 関連トーク</li>
+      <li><a href="https://github.com/ykdojo/safeclaw" target="_blank" rel="noopener">safeclaw</a> — コンテナ実行プリセット</li>
+      <li><a href="https://github.com/ykdojo/claude-controls-mac" target="_blank" rel="noopener">claude-controls-mac</a> — 専用 Mac セットアップ</li>
+      <li><a href="https://code.claude.com/docs/en/remote-control" target="_blank" rel="noopener">Remote Control docs</a></li>
+      <li><a href="https://www.reddit.com/r/ClaudeAI/" target="_blank" rel="noopener">r/ClaudeAI</a> — コミュニティ Tips</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: dark ? {
+      primaryColor: '#1a3a42',
+      primaryTextColor: '#e8f4f6',
+      primaryBorderColor: '#3d8a9a',
+      lineColor: '#8ec8d4',
+      secondaryColor: '#2a2a20',
+      tertiaryColor: '#1a1a22',
+      background: '#1a1a22',
+      mainBkg: '#1a3a42',
+      nodeBorder: '#3d8a9a',
+      clusterBkg: '#222830',
+      titleColor: '#e8f4f6',
+      edgeLabelBackground: '#1a1a22',
+      fontFamily: 'IBM Plex Mono, monospace',
+      fontSize: '14px'
+    } : {
+      primaryColor: '#d4eef2',
+      primaryTextColor: '#0d3d4a',
+      primaryBorderColor: '#2a7a8a',
+      lineColor: '#3d6a72',
+      secondaryColor: '#f5edd8',
+      tertiaryColor: '#f7fafb',
+      background: '#ffffff',
+      mainBkg: '#d4eef2',
+      nodeBorder: '#2a7a8a',
+      clusterBkg: '#eef6f8',
+      titleColor: '#0d3d4a',
+      edgeLabelBackground: '#ffffff',
+      fontFamily: 'IBM Plex Mono, monospace',
+      fontSize: '14px'
+    }
+  });
+  await mermaid.run({ querySelector: '.mermaid' });
+
+  const INITIAL_ZOOM = 1.15;
+  document.querySelectorAll('.mermaid-wrap').forEach((wrap) => {
+    const diagram = wrap.querySelector('.mermaid');
+    if (!diagram) return;
+    let zoom = INITIAL_ZOOM;
+    const apply = () => { diagram.style.transform = 'scale(' + zoom + ')'; };
+    apply();
+    wrap.querySelectorAll('[data-zoom]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const d = Number(btn.getAttribute('data-zoom'));
+        if (d === 0) zoom = INITIAL_ZOOM;
+        else zoom = Math.min(2.2, Math.max(0.6, zoom + d * 0.15));
+        apply();
+      });
+    });
+  });
+</script>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
