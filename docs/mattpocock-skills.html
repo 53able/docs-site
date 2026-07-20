@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>mattpocock/skills — エージェント開発の運用地図</title>
-  <meta name="description" content="mattpocock/skills を、失敗モード、セットアップ依存、TDD・診断・トリアージの品質ループから読み解くビジュアル運用ガイド。">
+  <meta name="description" content="mattpocock/skills v1.1 を、失敗モード、セットアップ契約、to-spec / to-tickets / wayfinder、TDD・診断・レビューの品質ループから読み解くビジュアル運用ガイド。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="mattpocock/skills — エージェント開発の運用地図">
-  <meta property="og:description" content="real engineering, not vibe coding を支える小さな agent skills の選び方と組み合わせ方。">
+  <meta property="og:description" content="real engineering, not vibe coding を支える小さな agent skills の選び方と組み合わせ方（v1.1: to-spec / to-tickets / wayfinder / plugin）。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/mattpocock-skills.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
@@ -240,6 +240,9 @@
     @media (max-width: 900px) { .rail { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
     @media (max-width: 560px) { .rail { grid-template-columns: 1fr; } }
 
+    .install-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    @media (max-width: 760px) { .install-grid { grid-template-columns: 1fr; } }
+
     .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.16rem 0.5rem; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 800; white-space: nowrap; }
     .badge--hard { background: color-mix(in oklch, var(--chart-4) 15%, transparent); color: var(--chart-4); border: 1px solid color-mix(in oklch, var(--chart-4) 38%, transparent); }
     .badge--soft { background: color-mix(in oklch, var(--chart-3) 15%, transparent); color: var(--chart-3); border: 1px solid color-mix(in oklch, var(--chart-3) 38%, transparent); }
@@ -260,33 +263,35 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
+    <a href="#install">インストール</a>
     <a href="#invocation">呼び出しモデル</a>
     <a href="#main-flow">メインフロー</a>
     <a href="#routes">失敗モード別ルート</a>
     <a href="#setup">セットアップ契約</a>
     <a href="#quality">品質ループ</a>
-    <a href="#issue-flow">Issue 化フロー</a>
+    <a href="#ticket-flow">チケット化フロー</a>
+    <a href="#wayfinder">Wayfinder</a>
     <a href="#architecture">設計レビュー</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
   <h1>mattpocock/skills</h1>
-  <p class="subtitle">README の “real engineering, not vibe coding” を、実務での選び方に変換する運用地図。巨大な自動運転ではなく、ズレを減らす小さなループを必要な場面に差し込む。</p>
+  <p class="subtitle">README の “real engineering, not vibe coding” を、実務での選び方に変換する運用地図。v1.1 の軸は <code>to-spec</code> → <code>to-tickets</code> → <code>implement</code>。巨大自動運転ではなく、ズレを減らす小さなループを差し込む。</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="hero-grid">
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> Operating model</span>
-      <p><strong>mattpocock/skills</strong> は、Claude Code などのエージェントに読み込ませる小さなスキル集。リポジトリ全体のプロセスを奪うのではなく、計画確認、共有語彙、TDD、診断、トリアージ、設計改善という「事故りやすい瞬間」にだけ介入する。</p>
+      <p><strong>mattpocock/skills</strong>（package <code>1.1.0</code> / plugin manifest <code>1.2.0</code>）は、コーディングエージェントに読み込ませる小さなスキル集。リポジトリ全体のプロセスを奪うのではなく、計画確認、共有語彙、TDD、診断、トリアージ、設計改善という「事故りやすい瞬間」にだけ介入する。</p>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">20</span><span class="ve-kpi-card__label">plugin entries</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">12</span><span class="ve-kpi-card__label">user-invoked</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">8</span><span class="ve-kpi-card__label">model-invoked</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">22</span><span class="ve-kpi-card__label">plugin entries</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">13</span><span class="ve-kpi-card__label">user-invoked</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">9</span><span class="ve-kpi-card__label">model-invoked</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">1</span><span class="ve-kpi-card__label">setup contract</span></div>
       </div>
-      <p>入口は <code>/ask-matt</code>。状況に合う user-invoked スキルへルーティングする。</p>
-      <p class="source-note">Source: <code>README.md</code>, <code>.claude-plugin/plugin.json</code>, <code>.agents/invocation.md</code></p>
+      <p>入口は <code>/ask-matt</code>。状況に合うスキルへルーティングする。主経路は <code>idea → grill → to-spec → to-tickets → implement</code>。</p>
+      <p class="source-note">Source: <code>README.md</code>, <code>package.json</code>, <code>.claude-plugin/plugin.json</code>, <code>.agents/invocation.md</code></p>
     </div>
     <div class="hero-side">
       <div class="ve-card ve-card--elevated" style="--i:1">
@@ -294,53 +299,76 @@
         <p>GSD / BMAD / Spec-Kit のように全体ワークフローを所有するより、ユーザーが制御を持ったまま必要なスキルを組み合わせる設計。失敗時にプロセス自体を直しやすい。</p>
       </div>
       <div class="ve-callout" style="--i:2">
-        <strong>読み方:</strong> これはスキル一覧ではなくルーティング表。今起きている失敗を見て、入れるループを選ぶ。
+        <strong>読み方:</strong> これはスキル一覧ではなくルーティング表。今起きている失敗を見て、入れるループを選ぶ。迷ったら <code>/ask-matt</code>。
       </div>
     </div>
   </div>
 
-  <section id="invocation" class="sec-head">2 — 呼び出しモデル</section>
+  <section id="install" class="sec-head">2 — インストール</section>
+  <div class="install-grid">
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> skills.sh（編集可能）</span>
+      <p>スキルをプロジェクトへコピーする。hack して自分用に直したいとき向き。</p>
+      <div class="ve-code-block">
+        <div class="ve-code-block__label">shell</div>
+        <pre><code>npx skills@latest add mattpocock/skills</code></pre>
+      </div>
+      <p><code>/setup-matt-pocock-skills</code> を必ず選び、repo ごとに一度走らせる。</p>
+    </div>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> Claude Code plugin（購読）</span>
+      <p>read-only の managed bundle。作者が ship したら追従する。自分でメンテしない。</p>
+      <div class="ve-code-block">
+        <div class="ve-code-block__label">claude code</div>
+        <pre><code>/plugin marketplace add mattpocock/skills
+/plugin install mattpocock-skills@mattpocock</code></pre>
+      </div>
+      <p>どちらも最後は <code>/setup-matt-pocock-skills</code> が必要。Codex 等は skills.sh 経由で Agent Skills 標準へ入る（native Codex plugin は roadmap）。</p>
+    </div>
+  </div>
+
+  <section id="invocation" class="sec-head">3 — 呼び出しモデル</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> User-invoked vs model-invoked</span>
-    <p>v1.0 以降、スキルは <strong>誰が到達できるか</strong> で分類される。旧来の Commands / Skills 区分は廃止。</p>
+    <p>スキルは <strong>誰が到達できるか</strong> で分類する。旧来の Commands / Skills 区分は廃止済み。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
           <tr><th>種別</th><th>到達方法</th><th>description の向き</th><th>例</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge--hard">user-invoked</span></td><td>人間が slash 名を入力したときのみ</td><td>人間向けの一行要約（<code>disable-model-invocation: true</code>）</td><td><code>/grill-me</code>, <code>/to-prd</code>, <code>/ask-matt</code></td></tr>
-          <tr><td><span class="badge badge--soft">model-invoked</span></td><td>人間またはエージェントの自動選択</td><td>モデル向けトリガー文（"Use when…"）</td><td><code>/tdd</code>, <code>/domain-modeling</code>, <code>/grilling</code></td></tr>
+          <tr><td><span class="badge badge--hard">user-invoked</span></td><td>人間が slash 名を入力したときのみ</td><td>人間向けの一行要約（<code>disable-model-invocation: true</code>）</td><td><code>/grill-me</code>, <code>/to-spec</code>, <code>/wayfinder</code>, <code>/ask-matt</code></td></tr>
+          <tr><td><span class="badge badge--soft">model-invoked</span></td><td>人間またはエージェントの自動選択</td><td>モデル向けトリガー文（"Use when…"）</td><td><code>/tdd</code>, <code>/grilling</code>, <code>/prototype</code>, <code>/research</code></td></tr>
         </tbody>
       </table>
     </div>
-    <p>user-invoked は model-invoked を呼べるが、別の user-invoked は呼べない。依存は <code>/skill</code> 形式の prose invocation で表現し、フォルダ横断リンクは使わない。共有語彙は <code>/codebase-design</code> と <code>/domain-modeling</code> に集約され、<code>improve-codebase-architecture</code> や <code>grill-with-docs</code> が参照する。</p>
+    <p>user-invoked は model-invoked を呼べるが、別の user-invoked は呼べない。依存は <code>/skill</code> 形式の prose invocation で表現し、フォルダ横断リンクは使わない。共有語彙は <code>/codebase-design</code> と <code>/domain-modeling</code> に集約される。</p>
   </div>
 
-  <section id="main-flow" class="sec-head">3 — メインフロー（idea → ship）</section>
+  <section id="main-flow" class="sec-head">4 — メインフロー（idea → ship）</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> ask-matt router</span>
-    <p><code>/ask-matt</code> が定義する主経路。コードベースがあるなら <code>/grill-with-docs</code> で合意と <code>CONTEXT.md</code> / ADR を残し、設計疑問は <code>/handoff</code> → <code>/prototype</code> → <code>/handoff</code> で runnable に解消する。複数セッションの build なら <code>/to-prd</code> → <code>/to-issues</code> まで<strong>同一 context window</strong>を保ち、issue ごとに fresh session で <code>/implement</code> を走らせる。</p>
+    <p><code>/ask-matt</code> が定義する主経路。コードベースがあるなら <code>/grill-with-docs</code> で合意と <code>CONTEXT.md</code> / ADR を残す（内部は <code>/grilling</code>）。設計疑問は <code>/handoff</code> → <code>/prototype</code> → <code>/handoff</code> で runnable に解消する。複数セッションの build なら <code>/to-spec</code> → <code>/to-tickets</code> まで<strong>同一 context window</strong>を保ち、ticket ごとに fresh session で <code>/implement</code> を走らせる。</p>
     <div class="step-flow">
       <div class="step-card" style="--i:0">
         <div class="step-card__num">1</div>
         <div class="step-card__title">Grill</div>
-        <div class="step-card__body"><code>/grill-with-docs</code> で合意と domain docs。コードベースなしなら <code>/grill-me</code>。</div>
+        <div class="step-card__body"><code>/grill-with-docs</code> で合意と domain docs。コードベースなしなら <code>/grill-me</code>。<code>/grilling</code> は確認ゲートまで待つ。</div>
       </div>
       <div class="step-card" style="--i:1">
         <div class="step-card__num">2</div>
-        <div class="step-card__title">Plan</div>
-        <div class="step-card__body">複数 session なら <code>/to-prd</code> → <code>/to-issues</code>。単発ならそのまま implement へ。</div>
+        <div class="step-card__title">Spec</div>
+        <div class="step-card__body">複数 session なら <code>/to-spec</code> → <code>/to-tickets</code>。単発ならそのまま implement へ。</div>
       </div>
       <div class="step-card" style="--i:2">
         <div class="step-card__num">3</div>
         <div class="step-card__title">Implement</div>
-        <div class="step-card__body"><code>/implement</code> が issue を TDD slice で組み立て。内部で <code>/tdd</code> を呼ぶ。</div>
+        <div class="step-card__body"><code>/implement</code> が ticket を TDD slice で組み立て。内部で <code>/tdd</code>（red → green）を呼ぶ。</div>
       </div>
       <div class="step-card" style="--i:3">
         <div class="step-card__num">4</div>
         <div class="step-card__title">Review</div>
-        <div class="step-card__body"><code>/code-review</code> で Standards + Spec の二軸レビュー後 commit。</div>
+        <div class="step-card__body"><code>/code-review</code> で Standards + Spec の二軸レビュー後 commit。refactor はここ。</div>
       </div>
     </div>
   </div>
@@ -352,8 +380,9 @@
           <tr><th>状況</th><th>入口</th><th>備考</th></tr>
         </thead>
         <tbody>
-          <tr><td>外部から来た raw issue</td><td><code>/triage</code></td><td><code>/to-issues</code> 由来は triage しない</td></tr>
+          <tr><td>外部から来た raw issue / PR</td><td><code>/triage</code></td><td><code>/to-tickets</code> 由来は triage しない。PR は setup のトグル次第</td></tr>
           <tr><td>硬い bug / flake</td><td><code>/diagnosing-bugs</code></td><td>feedback loop 確立後に fix。post-mortem で architecture へ</td></tr>
+          <tr><td>1 session に収まらない霧</td><td><code>/wayfinder</code></td><td>決定チケットの地図。終わったら <code>/to-spec</code> へ合流</td></tr>
           <tr><td>調査を delegate したい</td><td><code>/research</code></td><td>background agent が primary sources を読み cited Markdown を残す</td></tr>
           <tr><td>context が smart zone 付近</td><td><code>/handoff</code></td><td>fresh session へ。mid-phase の <code>/compact</code> は避ける</td></tr>
         </tbody>
@@ -361,84 +390,80 @@
     </div>
   </div>
 
-  <section id="routes" class="sec-head">4 — 失敗モード別ルート</section>
+  <section id="routes" class="sec-head">5 — 失敗モード別ルート</section>
   <div class="route-grid">
     <div class="ve-card route-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> Misalignment</span>
       <h3>Agent didn't do what I want</h3>
-      <p>作る前の合意が薄い。<code>/grill-me</code> または <code>/grill-with-docs</code> で、設計ツリーを質問で潰してから実装へ進む。</p>
-      <p class="source-note">Main skills: <code>grill-me</code>, <code>grill-with-docs</code></p>
+      <p>作る前の合意が薄い。<code>/grill-me</code> または <code>/grill-with-docs</code> で設計ツリーを質問で潰す。事実はコード探索、決定は人間に聞く。<code>/grilling</code> は共有理解の確認まで計画を実行しない。</p>
+      <p class="source-note">Main skills: <code>grill-me</code>, <code>grill-with-docs</code>, <code>grilling</code></p>
     </div>
     <div class="ve-card route-card" style="--i:1">
       <span class="ve-section-label"><span class="ve-dot"></span> Vocabulary drift</span>
       <h3>Agent is too verbose</h3>
-      <p>同じ概念を毎回20語で説明している。<code>CONTEXT.md</code> と ADR に共有語彙を置き、会話とコードの命名を短くする。</p>
-      <p class="source-note">Main skills: <code>grill-with-docs</code>, <code>setup-matt-pocock-skills</code></p>
+      <p>同じ概念を毎回20語で説明している。<code>CONTEXT.md</code> と ADR に共有語彙を置き、会話とコードの命名を短くする。<code>/domain-modeling</code> が能動的に更新する。</p>
+      <p class="source-note">Main skills: <code>grill-with-docs</code>, <code>domain-modeling</code>, <code>setup-matt-pocock-skills</code></p>
     </div>
     <div class="ve-card route-card" style="--i:2">
       <span class="ve-section-label"><span class="ve-dot"></span> Broken output</span>
       <h3>Code doesn't work</h3>
-      <p>エージェントが動くフィードバックループを持っていない。<code>/tdd</code> は vertical slice で RED/GREEN を作り、<code>/diagnosing-bugs</code> は再現信号から原因へ進む。</p>
+      <p>エージェントが動くフィードバックループを持っていない。<code>/tdd</code> は pre-agreed seam で RED → GREEN。<code>/diagnosing-bugs</code> は再現信号から原因へ進む。</p>
       <p class="source-note">Main skills: <code>tdd</code>, <code>diagnosing-bugs</code></p>
     </div>
     <div class="ve-card route-card" style="--i:3">
       <span class="ve-section-label"><span class="ve-dot"></span> Entropy</span>
       <h3>Ball of mud</h3>
-      <p>生成速度が設計負債も加速している。<code>/to-prd</code> は触る module を確認してから PRD を作り、<code>/to-issues</code> で vertical slice に分ける。<code>/prototype</code> で捨て UI/CLI を試し、<code>/improve-codebase-architecture</code> で deep module 候補を探す。</p>
-      <p class="source-note">Main skills: <code>to-prd</code>, <code>to-issues</code>, <code>prototype</code>, <code>improve-codebase-architecture</code></p>
+      <p>生成速度が設計負債も加速している。<code>/to-spec</code> は触る module を確認してから spec を作り、<code>/to-tickets</code> で vertical slice（または wide refactor の expand–contract）に分ける。<code>/prototype</code> で捨て UI/CLI を試し、<code>/improve-codebase-architecture</code> で deep module 候補を探す。</p>
+      <p class="source-note">Main skills: <code>to-spec</code>, <code>to-tickets</code>, <code>prototype</code>, <code>improve-codebase-architecture</code></p>
     </div>
   </div>
 
-  <section id="setup" class="sec-head">5 — セットアップ契約</section>
+  <section id="setup" class="sec-head">6 — セットアップ契約</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> Hard vs soft dependency</span>
-    <p><code>/setup-matt-pocock-skills</code> は、他の engineering skills が共有する repo 固有の契約を作る。ADR は依存を 2 種類に分ける。Issue tracker や label mapping がないと誤った外部操作になるスキルは hard。domain docs がなくても動くが出力が鈍るだけのスキルは soft。</p>
+    <p><code>/setup-matt-pocock-skills</code> は、他の engineering skills が共有する repo 固有の契約を作る。Issue tracker（GitHub / GitLab / local markdown / その他）、triage labels、domain docs の置き場を記録する。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
           <tr><th>依存タイプ</th><th>対象スキル</th><th>必要な契約</th><th>ない場合</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge--hard">hard</span></td><td><code>to-issues</code>, <code>to-prd</code>, <code>triage</code></td><td>Issue tracker と triage label vocabulary</td><td>Issue 作成先や label が間違う</td></tr>
+          <tr><td><span class="badge badge--hard">hard</span></td><td><code>to-tickets</code>, <code>to-spec</code>, <code>triage</code>, <code>wayfinder</code></td><td>Issue tracker と triage label vocabulary</td><td>Issue 作成先や label が間違う</td></tr>
           <tr><td><span class="badge badge--soft">soft</span></td><td><code>diagnosing-bugs</code>, <code>tdd</code>, <code>improve-codebase-architecture</code>, <code>codebase-design</code>, <code>domain-modeling</code></td><td>domain glossary と ADR</td><td>動くが、語彙と判断が浅くなる</td></tr>
         </tbody>
       </table>
     </div>
   </div>
   <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> Quickstart</span>
-    <div class="ve-code-block">
-      <div class="ve-code-block__label">install</div>
-      <pre><code>npx skills@latest add mattpocock/skills</code></pre>
-    </div>
+    <span class="ve-section-label"><span class="ve-dot"></span> Quickstart checklist</span>
     <div class="step-flow">
       <div class="step-card" style="--i:0">
         <div class="step-card__num">1</div>
-        <div class="step-card__title">Add skills</div>
-        <div class="step-card__body"><code>skills</code> CLI で repo を追加する。</div>
+        <div class="step-card__title">Install</div>
+        <div class="step-card__body">skills.sh または Claude plugin でセットを入れる。</div>
       </div>
       <div class="step-card" style="--i:1">
         <div class="step-card__num">2</div>
         <div class="step-card__title">Select setup</div>
-        <div class="step-card__body"><code>/setup-matt-pocock-skills</code> を必ず選ぶ。</div>
+        <div class="step-card__body"><code>/setup-matt-pocock-skills</code> を必ず選ぶ / 実行する。</div>
       </div>
       <div class="step-card" style="--i:2">
         <div class="step-card__num">3</div>
         <div class="step-card__title">Record contract</div>
-        <div class="step-card__body">Issue tracker、labels、domain docs を記録する。</div>
+        <div class="step-card__body">tracker・labels・domain docs を <code>docs/agents/</code> に書く。</div>
       </div>
       <div class="step-card" style="--i:3">
         <div class="step-card__num">4</div>
         <div class="step-card__title">Route work</div>
-        <div class="step-card__body">以後のスキルが同じ語彙で作業する。</div>
+        <div class="step-card__body">以後は <code>/ask-matt</code> か主経路で同じ語彙で作業する。</div>
       </div>
     </div>
   </div>
 
-  <section id="quality" class="sec-head">6 — 品質ループ</section>
+  <section id="quality" class="sec-head">7 — 品質ループ</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> Feedback first</span>
-    <p><code>/diagnosing-bugs</code> の中心は「まず高速で決定的な pass/fail signal を作る」こと。<code>/tdd</code> は一括で全テストを書く horizontal slice を避け、1つの振る舞いを RED → GREEN で通す。interface 設計の語彙は <code>/codebase-design</code> に委譲する。</p>
+    <p><code>/diagnosing-bugs</code> の中心は「まず高速で決定的な pass/fail signal を作る」こと。<code>/tdd</code> は reference-only の red → green。refactor はループ外で、<code>/code-review</code> 側。テストは pre-agreed seam のみ。tautological test（期待値が実装と同じ再計算）は anti-pattern。</p>
     <div class="rail">
       <div class="rail__item" style="--i:0"><strong>Signal</strong>test / CLI / browser / harness</div>
       <div class="rail__item" style="--i:1"><strong>Reproduce</strong>user symptom を確認</div>
@@ -450,7 +475,7 @@
   </div>
   <div class="ve-card ve-card--elevated" style="--i:1">
     <span class="ve-section-label"><span class="ve-dot"></span> Code review gate</span>
-    <p><code>/code-review</code> は固定点（commit / branch / tag）からの diff を <strong>Standards</strong>（repo 標準 + Fowler smell baseline）と <strong>Spec</strong>（originating issue / PRD との一致）の二軸で並列 sub-agent レビューする。implement の締め、または PR 前の単独実行に使う。</p>
+    <p><code>/code-review</code> は固定点（commit / branch / tag）からの diff を <strong>Standards</strong>（repo 標準 + Fowler smell baseline 約12種）と <strong>Spec</strong>（originating issue / PRD との一致）の二軸で並列 sub-agent レビューする。repo 標準が baseline より優先。smell は judgement call であり hard violation ではない。</p>
   </div>
   <div class="ve-card ve-card--recessed" style="--i:2">
     <span class="ve-section-label"><span class="ve-dot"></span> TDD contrast</span>
@@ -461,17 +486,18 @@
         </thead>
         <tbody>
           <tr><td>全テストを先に書く</td><td>1 test → 1 implementation</td><td>想像上の振る舞いではなく、学びに反応した test になる</td></tr>
-          <tr><td>private method を検証する</td><td>public interface の振る舞いを検証する</td><td>内部リファクタで壊れない</td></tr>
+          <tr><td>private method を検証する</td><td>合意した seam の振る舞いを検証する</td><td>内部リファクタで壊れない</td></tr>
+          <tr><td>実装と同じ式で期待値を作る</td><td>独立した source of truth から期待値を取る</td><td>tautological test を避ける</td></tr>
           <tr><td>mock で形だけ通す</td><td>real code path を通す</td><td>本当の統合バグを拾える</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <section id="issue-flow" class="sec-head">7 — Issue 化フロー</section>
+  <section id="ticket-flow" class="sec-head">8 — チケット化フロー</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> PRD to slices</span>
-    <p><code>/to-prd</code> は会話とコード理解を PRD にまとめ、<code>/to-issues</code> は tracer bullet の vertical slice に分解する。slice は schema/API/UI/tests の層ではなく、完了したら単体で demoable な細い経路として切る。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> Spec to tickets</span>
+    <p>v1.1 で <code>to-prd</code> は <code>/to-spec</code> に改名、<code>to-plan</code> / <code>to-issues</code> は <code>/to-tickets</code> に統合された。<code>/to-spec</code> は会話を spec にまとめ、<code>/to-tickets</code> は blocking edges 付きの tracer-bullet tickets に分解する。local tracker なら edges はテキスト、実 tracker なら native blocking links。</p>
     <div class="step-flow">
       <div class="step-card" style="--i:0">
         <div class="step-card__num">A</div>
@@ -480,21 +506,21 @@
       </div>
       <div class="step-card" style="--i:1">
         <div class="step-card__num">B</div>
-        <div class="step-card__title">PRD</div>
-        <div class="step-card__body">Problem、Solution、User Stories、Testing Decisions を作る。</div>
+        <div class="step-card__title">Spec</div>
+        <div class="step-card__body"><code>/to-spec</code> で Problem / Solution / Stories / Testing を発行する。</div>
       </div>
       <div class="step-card" style="--i:2">
         <div class="step-card__num">C</div>
-        <div class="step-card__title">Vertical slices</div>
-        <div class="step-card__body">AFK / HITL と依存関係を明示して薄く分ける。</div>
+        <div class="step-card__title">Tickets</div>
+        <div class="step-card__body"><code>/to-tickets</code> で vertical slices + Blocked by。wide refactor は expand–contract。</div>
       </div>
       <div class="step-card" style="--i:3">
         <div class="step-card__num">D</div>
         <div class="step-card__title">Implement</div>
-        <div class="step-card__body">issue ごと fresh session で <code>/implement</code> → <code>/code-review</code> → commit。</div>
+        <div class="step-card__body">ticket ごと fresh session で <code>/implement</code> → <code>/code-review</code> → commit。</div>
       </div>
     </div>
-    <p>外部由来の issue だけ <code>needs-triage</code> から triage state machine に乗せる。<code>/to-issues</code> 出力は agent-ready なので triage しない。</p>
+    <p>外部由来の issue / PR だけ <code>needs-triage</code> から triage state machine に乗せる。<code>/to-tickets</code> 出力は agent-ready なので triage しない。</p>
   </div>
   <div class="ve-card ve-card--recessed" style="--i:1">
     <span class="ve-section-label"><span class="ve-dot"></span> Triage state machine</span>
@@ -514,10 +540,34 @@
     </div>
   </div>
 
-  <section id="architecture" class="sec-head">8 — 設計レビュー</section>
+  <section id="wayfinder" class="sec-head">9 — Wayfinder</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Situational on-ramp</span>
+    <p><code>/wayfinder</code> は greenfield や巨大 feature など、<strong>1 session に収まらない霧</strong>向けの on-ramp。主経路の置き換えではない。地図は issue tracker 上の <code>wayfinder:map</code> と子チケット。産物は deliverable ではなく <strong>decisions</strong>。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>概念</th><th>意味</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Destination</td><td>地図の到達点。全セッションがここに向き直す</td></tr>
+          <tr><td>Map as index</td><td>決定の詳細はチケットにだけ置き、地図は gist + link</td></tr>
+          <tr><td>Not yet specified</td><td>スコープ内の霧。frontier が進むとチケット化する</td></tr>
+          <tr><td>Out of scope</td><td>destination 外。卒業しない</td></tr>
+          <tr><td>HITL / AFK</td><td>人間との対話が要るか（grilling / prototype）vs agent 単独（research）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>霧が晴れたら <code>/to-spec</code> に合流してから <code>/to-tickets</code> → <code>/implement</code>。地図をそのまま <code>/implement</code> に投げるとリンクされた決定が崩れる。</p>
+  </div>
+  <div class="ve-callout" style="--i:1">
+    <strong>選び方:</strong> 1 session で握れるなら <code>/grill-with-docs</code>。握れない霧なら <code>/wayfinder</code>。スコープがはっきりした feature に wayfinder は使わない。
+  </div>
+
+  <section id="architecture" class="sec-head">10 — 設計レビュー</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> Deepening opportunities</span>
-    <p><code>/improve-codebase-architecture</code> は、浅い module を深くする候補を探す。語彙は <code>/codebase-design</code>、ドメインモデルは <code>/domain-modeling</code> から借りる。目的は美しい抽象化ではなく、<strong>locality</strong> と <strong>leverage</strong>。bug、変更、知識が散らばる場所を見つけ、interface の後ろに実装の複雑さを隠せるかを見る。</p>
+    <p><code>/improve-codebase-architecture</code> は、浅い module を深くする候補を探す。語彙は <code>/codebase-design</code>、ドメインモデルは <code>/domain-modeling</code> から借りる。目的は美しい抽象化ではなく、<strong>locality</strong> と <strong>leverage</strong>。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
@@ -526,35 +576,37 @@
         <tbody>
           <tr><td><code>Module</code></td><td>interface と implementation を持つ単位</td><td>削除すると複雑さは消えるか、caller に散るか</td></tr>
           <tr><td><code>Interface</code></td><td>caller が知る必要のある契約</td><td>test surface として十分に安定しているか</td></tr>
-          <tr><td><code>Seam</code></td><td>振る舞いを差し替える場所</td><td>adapter が2つ以上あり、現実の seam になっているか</td></tr>
+          <tr><td><code>Seam</code></td><td>振る舞いを差し替える場所 / テスト境界</td><td>adapter が2つ以上あり、現実の seam になっているか</td></tr>
           <tr><td><code>Depth</code></td><td>小さな interface の背後にある大きな振る舞い</td><td>caller は少ない知識で大きな効果を得ているか</td></tr>
         </tbody>
       </table>
     </div>
   </div>
   <div class="ve-callout" style="--i:1">
-    <strong>運用のコツ:</strong> 迷ったら <code>/ask-matt</code>。実装前は <code>grill-with-docs</code>、ship は <code>implement</code> → <code>code-review</code>、壊れたら <code>diagnosing-bugs</code>、調査は <code>research</code>、泥団子化したら <code>improve-codebase-architecture</code>。順番より、失敗モードへの適合が大事。
+    <strong>運用のコツ:</strong> 迷ったら <code>/ask-matt</code>。実装前は <code>grill-with-docs</code>、巨大な霧は <code>wayfinder</code>、ship は <code>to-spec</code> → <code>to-tickets</code> → <code>implement</code> → <code>code-review</code>、壊れたら <code>diagnosing-bugs</code>、調査は <code>research</code>、泥団子化したら <code>improve-codebase-architecture</code>。
   </div>
 
-  <section id="links" class="sec-head">9 — 参考リンク</section>
+  <section id="links" class="sec-head">11 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> Source references</span>
     <ul class="link-list">
       <li><a href="https://github.com/mattpocock/skills" target="_blank" rel="noopener">GitHub: mattpocock/skills</a> — Skills For Real Engineers</li>
-      <li><a href="https://skills.sh/mattpocock/skills" target="_blank" rel="noopener">skills.sh: mattpocock/skills</a> — <code>npx skills@latest add mattpocock/skills</code> のインストール先</li>
-      <li><code>README.md</code> — 目的、Quickstart、4つの失敗モード、promoted スキル一覧</li>
-      <li><code>CLAUDE.md</code> — bucket 構成、docs ページ同期ルール、<code>link-skills.sh</code></li>
-      <li><code>.claude-plugin/plugin.json</code> — Claude plugin として公開される 20 entries</li>
+      <li><a href="https://skills.sh/mattpocock/skills" target="_blank" rel="noopener">skills.sh: mattpocock/skills</a> — <code>npx skills@latest add mattpocock/skills</code></li>
+      <li><code>README.md</code> — 目的、Quickstart、plugin 導線、4つの失敗モード、スキル一覧</li>
+      <li><code>CHANGELOG.md</code> — v1.1.0 の rename / 統合 / wayfinder 昇格</li>
+      <li><code>.claude-plugin/plugin.json</code> — Claude plugin として公開される 22 entries</li>
       <li><code>.agents/invocation.md</code> — user-invoked / model-invoked の定義と依存の書き方</li>
+      <li><code>.agents/adr/0002-ship-as-a-claude-code-plugin.md</code> — plugin 配送の判断</li>
       <li><code>skills/engineering/ask-matt/SKILL.md</code> — idea → ship のルーターと on-ramp</li>
-      <li><code>skills/engineering/implement/SKILL.md</code> — PRD / issue から TDD で ship</li>
+      <li><code>skills/engineering/to-spec/SKILL.md</code> — 会話を spec に発行</li>
+      <li><code>skills/engineering/to-tickets/SKILL.md</code> — blocking edges 付き tickets / wide refactor</li>
+      <li><code>skills/engineering/wayfinder/SKILL.md</code> — 巨大作業の決定地図</li>
+      <li><code>skills/engineering/implement/SKILL.md</code> — spec / tickets から TDD で ship</li>
       <li><code>skills/engineering/code-review/SKILL.md</code> — Standards + Spec の二軸レビュー</li>
       <li><code>skills/engineering/research/SKILL.md</code> — background agent による primary-source 調査</li>
-      <li><code>skills/engineering/codebase-design/SKILL.md</code> — deep module 語彙（module, interface, seam, depth）</li>
-      <li><code>skills/engineering/domain-modeling/SKILL.md</code> — CONTEXT.md と ADR の能動的更新</li>
-      <li><code>skills/engineering/tdd/SKILL.md</code> — vertical slice の RED/GREEN loop</li>
-      <li><code>skills/engineering/diagnosing-bugs/SKILL.md</code> — feedback loop first の診断手順</li>
-      <li><code>skills/productivity/writing-great-skills/SKILL.md</code> — スキル執筆の参照</li>
+      <li><code>skills/engineering/tdd/SKILL.md</code> — red → green と seam / anti-patterns</li>
+      <li><code>skills/productivity/grilling/SKILL.md</code> — facts vs decisions と確認ゲート</li>
+      <li><code>skills/productivity/writing-great-skills/SKILL.md</code> — スキル執筆の参照（Negation / Negative Space 含む）</li>
       <li><code>.agents/adr/0001-explicit-setup-pointer-only-for-hard-dependencies.md</code> — hard / soft dependency の判断</li>
     </ul>
   </div>
