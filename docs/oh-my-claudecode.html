@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>oh-my-claudecode — Claude Code マルチエージェント・オーケストレーション</title>
-  <meta name="description" content="Claude Code 向けマルチエージェント・オーケストレーションシステム。Team・Autopilot・Ultrawork・Ralph・Ultragoal など 9 つの実行面、19 専門エージェント、39 スキルを図解。ゼロ設定・30-50% コスト削減。">
+  <meta name="description" content="Claude Code 向けマルチエージェント・オーケストレーション。Team・Autopilot・UltraQA・Artifact Ultragoal など実行面、19 専門エージェント、41 スキル、tmux CLI ワーカー（Codex / Antigravity / Grok / Cursor）を図解。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="oh-my-claudecode — Claude Code マルチエージェント・オーケストレーション">
-  <meta property="og:description" content="Claude Code 向けマルチエージェント・オーケストレーション。19 専門エージェント・39 スキル・スマートモデルルーティングを図解。">
+  <meta property="og:description" content="Claude Code 向けマルチエージェント・オーケストレーション。19 専門エージェント・41 スキル・Team / UltraQA / Antigravity ワーカーを図解。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/oh-my-claudecode.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="oh-my-claudecode — Claude Code マルチエージェント・オーケストレーション">
-  <meta name="twitter:description" content="19 専門エージェント・39 スキル・9 実行面を備えた Claude Code オーケストレーション。">
+  <meta name="twitter:description" content="19 専門エージェント・41 スキル・Team-first 実行面を備えた Claude Code オーケストレーション。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -457,6 +457,15 @@
     p { line-height: 1.65; }
     ul { padding-left: 1.3rem; }
     li { margin-bottom: 0.3rem; line-height: 1.6; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+
     strong { font-weight: 600; }
     h3 { font-size: 0.92rem; font-weight: 700; margin: 0.875rem 0 0.5rem; }
     small { font-size: 0.8em; color: var(--muted-foreground); }
@@ -471,6 +480,7 @@
     <ul>
       <li><a href="#overview">概要</a></li>
       <li><a href="#quickstart">クイックスタート</a></li>
+      <li><a href="#surfaces">CLI とセッション内スキル</a></li>
       <li><a href="#modes">オーケストレーションモード</a></li>
       <li><a href="#architecture">アーキテクチャ</a></li>
       <li><a href="#agents">エージェント一覧</a></li>
@@ -495,8 +505,8 @@
         Marketplace 名は <code>oh-my-claudecode</code>（<a href="https://github.com/Yeachan-Heo/oh-my-claudecode" target="_blank" rel="noopener">プラグインリポジトリ</a>）。
       </p>
       <div class="badge-row">
-        <span class="hero-badge">v4.14.0</span>
-        <span class="hero-badge hero-badge--gold">⭐ 11k stars</span>
+        <span class="hero-badge">v4.15.4</span>
+        <span class="hero-badge hero-badge--gold">⭐ 38k stars</span>
         <span class="hero-badge">MIT</span>
         <span class="hero-badge">Node ≥ 20</span>
       </div>
@@ -506,7 +516,7 @@
           <div class="kpi-label">専門エージェント</div>
         </div>
         <div class="ve-kpi-card">
-          <div class="kpi-value">39</div>
+          <div class="kpi-value">41</div>
           <div class="kpi-label">スキル (動作注入)</div>
         </div>
         <div class="ve-kpi-card">
@@ -514,8 +524,8 @@
           <div class="kpi-label">トークンコスト削減</div>
         </div>
         <div class="ve-kpi-card">
-          <div class="kpi-value">9</div>
-          <div class="kpi-label">実行面</div>
+          <div class="kpi-value">11</div>
+          <div class="kpi-label">実行面（表の行数）</div>
         </div>
       </div>
       <p class="hero-link-row">
@@ -525,7 +535,7 @@
         <span class="hero-link-sep" aria-hidden="true">·</span>
         <a href="https://www.npmjs.com/package/oh-my-claude-sisyphus" target="_blank" rel="noopener">npm</a>
         <span class="hero-link-sep" aria-hidden="true">·</span>
-        <a href="https://discord.gg/PUwSMR9XNk" target="_blank" rel="noopener">Discord</a>
+        <a href="https://discord.gg/jq6jnSGABY" target="_blank" rel="noopener">Discord</a>
         <span class="hero-link-sep" aria-hidden="true">·</span>
         <a href="https://github.com/Yeachan-Heo/oh-my-codex" target="_blank" rel="noopener">oh-my-codex</a>
       </p>
@@ -535,10 +545,10 @@
       <span class="ve-section-label"><span class="ve-dot"></span> なぜ OMC か</span>
       <ul>
         <li><strong>ゼロ設定</strong> — インストール後すぐ使えるインテリジェントなデフォルト設定</li>
-        <li><strong>チームファースト</strong> — <code>/team N:executor "..."</code> が正規のマルチエージェント実行面（v4.1.7 以降。旧 swarm は Team に統合）。<code>plan → prd → exec → verify → fix</code> の 5 ステージパイプライン</li>
+        <li><strong>チームファースト</strong> — <code>/team N:executor "..."</code> が正規のマルチエージェント実行面（v4.1.7 以降。旧 <code>swarm</code> キーワード／スキルは削除）。パイプラインは <code>team-plan → team-prd → team-exec → team-verify → team-fix</code></li>
         <li><strong>自然言語インターフェース</strong> — コマンドを覚えなくてよい。やりたいことを書くだけ</li>
         <li><strong>自動並列化</strong> — 複雑なタスクを専門エージェントへ自動分散。Haiku / Sonnet / Opus を目的で使い分け</li>
-        <li><strong>永続実行</strong> — ralph モードは <code>verifier</code> が完了を確認するまで絶対に停止しない</li>
+        <li><strong>永続実行</strong> — ralph モードは <code>verifier</code> が完了を確認するまで停止しない</li>
         <li><strong>スキル学習</strong> — セッションから問題解決パターンを抽出し、次回セッションで自動インジェクション</li>
         <li><strong>リアルタイム可視化</strong> — HUD ステータスバーでオーケストレーション状況を常時確認</li>
       </ul>
@@ -551,24 +561,33 @@
       <div class="step-card">
         <div class="step-num">Step 1 — インストール</div>
         <div class="step-title">Marketplace (推奨)</div>
-        <code class="step-code">/plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
-/plugin install oh-my-claudecode</code>
+        <p class="step-body" style="margin-bottom:0.5rem;">Claude Code のスラッシュコマンドは<strong>1 行ずつ</strong>入力する（2 行を同時ペーストすると失敗する）。</p>
+        <code class="step-code">/plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode</code>
+        <div class="step-body" style="margin-top:0.5rem;">続けて</div>
+        <code class="step-code">/plugin install oh-my-claudecode</code>
         <div class="step-body" style="margin-top:0.5rem;">または npm から直接</div>
         <code class="step-code">npm i -g oh-my-claude-sisyphus@latest</code>
+        <div class="step-body" style="margin-top:0.5rem;"><code>deprecated prebuild-install@7.1.3</code> 警告は <code>better-sqlite3</code> 由来で、インストール失敗を意味しない（Issue #2913）。</div>
       </div>
       <div class="step-card">
         <div class="step-num">Step 2 — セットアップ</div>
-        <div class="step-title">初期設定ウィザード</div>
+        <div class="step-title">初期設定</div>
         <code class="step-code">/setup
-/omc-setup</code>
+/omc-setup
+
+# ターミナルからも可
+omc setup</code>
         <div class="step-body" style="margin-top:0.5rem;"><code>omc --plugin-dir …</code> で実行する場合は <code>omc setup --plugin-dir-mode</code> または事前に <code>OMC_PLUGIN_ROOT</code> を設定し、プラグイン同梱スキルとの二重登録を避ける（詳細は上流の REFERENCE.md Plugin directory flags）。</div>
         <div class="step-body" style="margin-top:0.5rem;">更新後にキャッシュを消したい場合</div>
         <code class="step-code">/omc-doctor</code>
       </div>
       <div class="step-card">
         <div class="step-num">Step 3 — ビルド</div>
-        <div class="step-title">そのまま話しかける</div>
-        <code class="step-code">autopilot: build a REST API for managing tasks</code>
+        <div class="step-title">セッション内で起動</div>
+        <code class="step-code">/autopilot "build a REST API for managing tasks"
+
+# 自然言語ショートカット
+autopilot: build a REST API for managing tasks</code>
         <div class="step-body" style="margin-top:0.5rem;">要件が曖昧なら Socratic インタビューから</div>
         <code class="step-code">/deep-interview "アイデア"</code>
       </div>
@@ -584,11 +603,64 @@
       <p style="font-size:0.875rem; line-height:1.65; margin:0;">
         Marketplace 利用時は <code>/plugin marketplace update omc</code> のあと <code>/setup</code> を再実行。
         npm 経路は <code>npm i -g oh-my-claude-sisyphus@latest</code>。問題時は <code>/omc-doctor</code>。
-        v4.14.0 では <strong>ultragoal</strong>（<code>omc ultragoal</code>）とプラグイン skill レジストリのコンパクト化が追加。
+        現行解説のソースは <strong>v4.15.4</strong>（Team / UltraQA / Antigravity・Grok・Cursor ワーカー、Artifact-only Ultragoal）。
       </p>
     </div>
 
-    <!-- 3. Orchestration Modes -->
+    <!-- 3. Surfaces -->
+    <section id="surfaces" class="sec-head">CLI とセッション内スキル</section>
+
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> 2 つの実行サーフェス</span>
+      <p style="font-size:0.875rem; margin-bottom:0.875rem; line-height:1.65;">
+        <strong>Terminal CLI</strong>（シェルで <code>omc …</code>）と <strong>In-session skills</strong>（Claude Code セッション内の <code>/…</code>）は別ランタイム。同じ名前でも挙動が違うものがある。
+      </p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>機能</th><th>Terminal CLI</th><th>In-session skill</th><th>メモ</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Setup</td>
+              <td><code>omc setup</code></td>
+              <td><code>/setup</code> / <code>/omc-setup</code></td>
+              <td>どちらも正規エントリ。プラグイン優先なら <code>/setup</code></td>
+            </tr>
+            <tr>
+              <td>Ask providers</td>
+              <td><code>omc ask codex "…"</code></td>
+              <td><code>/ask codex "…"</code></td>
+              <td>同じ advisor フロー。<code>claude</code> / <code>codex</code> / <code>gemini</code> / <code>antigravity</code> / <code>grok</code> / <code>cursor</code></td>
+            </tr>
+            <tr>
+              <td>Team</td>
+              <td><code>omc team 2:codex "…"</code></td>
+              <td><code>/team 3:executor "…"</code></td>
+              <td><code>omc team</code> は tmux CLI ワーカー。<code>/team</code> はセッション内ネイティブ Team</td>
+            </tr>
+            <tr>
+              <td>Autopilot / Ralph / Ultrawork</td>
+              <td>—</td>
+              <td><code>/autopilot</code> / <code>/ralph</code> / <code>/ultrawork</code></td>
+              <td>CLI サブコマンドはない（セッション内スキルのみ）</td>
+            </tr>
+            <tr>
+              <td>Autoresearch</td>
+              <td><code>omc autoresearch</code>（hard-deprecated shim）</td>
+              <td><code>/deep-interview --autoresearch …</code> + 状態保持スキル</td>
+              <td>セットアップは deep-interview、実行は stateful skill</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top:0.875rem;">
+        <strong>スコープ:</strong> VS Code 拡張は同梱しない。Agent SDK の <code>createOmcSession()</code> はライブラリ面。
+        CI では対話スラッシュ（<code>/autopilot</code> 等）に頼らず、決定的な <code>omc …</code> コマンドを使う。
+      </div>
+    </div>
+
+    <!-- 4. Orchestration Modes -->
     <section id="modes" class="sec-head">オーケストレーションモード</section>
 
     <div class="ve-card">
@@ -602,50 +674,56 @@
             <tr>
               <td><span class="mode-badge mode-badge--gold">Team</span></td>
               <td><code>/team 3:executor "..."</code></td>
-              <td>5 ステージパイプライン<br><small>plan→prd→exec→verify→fix</small></td>
+              <td>5 ステージパイプライン<br><small>team-plan → team-prd → team-exec → team-verify → team-fix</small></td>
               <td>複数 Claude エージェントが共有タスクリストで協調する場合（<strong>推奨</strong>）</td>
             </tr>
             <tr>
               <td><span class="mode-badge">omc team</span></td>
-              <td><code>omc team 2:codex "..."</code></td>
-              <td>tmux CLI ワーカー<br><small>claude/codex/gemini を実プロセスで起動</small></td>
-              <td>Codex・Gemini CLI タスク。完了後に自動終了してリソース消費なし</td>
-            </tr>
-            <tr>
-              <td><span class="mode-badge">autopilot</span></td>
-              <td><code>autopilot: ...</code></td>
-              <td>5 フェーズ自律パイプライン<br><small>expand→plan→exec→qa→validate</small></td>
-              <td>アイデアから動くコードまで自動生成。エンド・ツー・エンド</td>
-            </tr>
-            <tr>
-              <td><span class="mode-badge">ralph</span></td>
-              <td><code>ralph: ...</code></td>
-              <td>完了まで絶対停止しないループ<br><small>verifier が確認するまで継続</small></td>
-              <td>サイレントな部分完了を許せないタスク。ultrawork を自動包含</td>
-            </tr>
-            <tr>
-              <td><span class="mode-badge">ultrawork</span></td>
-              <td><code>ulw ...</code></td>
-              <td>最大並列実行（非 Team）</td>
-              <td>Team 不要なバースト並列修正・リファクタリング</td>
+              <td><code>omc team 2:antigravity "..."</code></td>
+              <td>tmux CLI ワーカー<br><small>claude / codex / gemini / antigravity / grok / cursor-agent</small></td>
+              <td>外部 CLI タスク。完了後に自動終了してリソース消費なし</td>
             </tr>
             <tr>
               <td><span class="mode-badge">ccg</span></td>
               <td><code>/ccg ...</code></td>
-              <td>3 モデル統合<br><small>/ask codex + /ask gemini → Claude が統合</small></td>
-              <td>バックエンド(Codex) + UI(Gemini) を同時レビューして Claude が統合</td>
+              <td>3 モデル統合<br><small>/ask codex + /ask antigravity → Claude が統合</small></td>
+              <td>バックエンド(Codex) + UI(Antigravity)。Gemini は enterprise / API キーのフォールバック</td>
             </tr>
             <tr>
-              <td><span class="mode-badge">ralplan</span></td>
-              <td><code>ralplan ...</code></td>
-              <td>Planner・Architect・Critic の合意ループ</td>
-              <td>計画の反復的コンセンサス形成</td>
+              <td><span class="mode-badge">autopilot</span></td>
+              <td><code>/autopilot "..."</code></td>
+              <td>単一リードの自律実行</td>
+              <td>エンド・ツー・エンドの機能実装を最小セレモニーで進める</td>
             </tr>
             <tr>
-              <td><span class="mode-badge">ultragoal</span></td>
-              <td><code>omc ultragoal …</code><br><small>/goal 連携</small></td>
-              <td>マルチゴール計画＋台帳<br><small>.omc/ultragoal に永続化。Claude <code>/goal</code> とハンドオフ</small></td>
-              <td>セッションをまたぐ大規模イニシアチブ。最終ゴールは品質ゲート付き</td>
+              <td><span class="mode-badge">ultrawork</span></td>
+              <td><code>ulw ...</code> / <code>/ultrawork</code></td>
+              <td>最大並列実行（非 Team）</td>
+              <td>Team 不要なバースト並列修正・リファクタリング</td>
+            </tr>
+            <tr>
+              <td><span class="mode-badge">ralph</span></td>
+              <td><code>/ralph "..."</code></td>
+              <td>完了まで停止しない verify/fix ループ<br><small>ultrawork を自動包含</small></td>
+              <td>サイレントな部分完了を許せないタスク</td>
+            </tr>
+            <tr>
+              <td><span class="mode-badge">UltraQA</span></td>
+              <td><code>/ultraqa ...</code></td>
+              <td>テスト・ビルド・lint・型チェックが通るまで QA サイクル</td>
+              <td>品質ゲートを何度も回す必要があるとき</td>
+            </tr>
+            <tr>
+              <td><span class="mode-badge">/goal</span></td>
+              <td>Claude Code <code>/goal</code></td>
+              <td>ネイティブのクロス・ターン完了条件<br><small>OMC のエビデンス台帳ではない</small></td>
+              <td>セッション内の測定可能な完了条件を 1 つ置く</td>
+            </tr>
+            <tr>
+              <td><span class="mode-badge">Ultragoal</span></td>
+              <td><code>omc ultragoal …</code></td>
+              <td>Artifact-only 台帳<br><small>ゴール／チェックポイント／エビデンスを永続化（ループは起動しない）</small></td>
+              <td>ハンドオフ・監査、または他ループと衝突するとき</td>
             </tr>
             <tr>
               <td><span class="mode-badge">pipeline</span></td>
@@ -653,12 +731,44 @@
               <td>順次・段階的処理</td>
               <td>厳密な順序が必要な多段変換</td>
             </tr>
+            <tr>
+              <td><span class="mode-badge">Ultrapilot</span></td>
+              <td>（legacy）</td>
+              <td>非推奨互換モード（autopilot パイプライン別名）</td>
+              <td>既存ワークフロー・古いドキュメント向け</td>
+            </tr>
           </tbody>
         </table>
       </div>
+      <div class="ve-callout" style="margin-top:0.875rem;">
+        <strong>Goal Workflow Guidance:</strong> 1 セッションで primary loop authority は 1 つ。
+        <code>/goal</code>（ネイティブ完了条件）・Ralph（単一エージェント検証完了）・Team（並列ステージ）・UltraQA（品質ゲート反復）を混在させない。
+        Artifact-only Ultragoal は台帳が欲しいときの安全なフォールバック。
+        <code>ralplan</code> は Orchestration Modes 表外の計画コンセンサス・ショートカット。
+      </div>
     </div>
 
-    <!-- 4. Architecture -->
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> tmux CLI ワーカー例</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>コマンド</th><th>起動するもの</th><th>用途例</th></tr></thead>
+          <tbody>
+            <tr><td><code>omc team N:codex "…"</code></td><td>N 個の Codex pane</td><td>実装・レビュー</td></tr>
+            <tr><td><code>omc team N:antigravity "…"</code></td><td>N 個の Antigravity (<code>agy</code>) pane</td><td>UI/UX・大コンテキスト</td></tr>
+            <tr><td><code>omc team N:grok "…"</code></td><td>N 個の Grok pane</td><td>代替モデルでの並列作業</td></tr>
+            <tr><td><code>omc team N:cursor "…"</code></td><td>N 個の Cursor agent pane</td><td>executor 風の実装タスク</td></tr>
+            <tr><td><code>/ccg …</code></td><td>/ask codex + /ask antigravity</td><td>三モデル助言の統合</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.82rem; margin-top:0.75rem; color:var(--muted-foreground); line-height:1.55;">
+        Gemini CLI は Google の Antigravity CLI（<code>agy</code>）へ移行中。従来の <code>gemini</code> 指定は引き続き使えるが、新規は <code>antigravity</code> を優先。
+        Autopilot の executor に Cursor を寄せる設定例は <code>.claude/omc.jsonc</code> の <code>execution: "team"</code> と <code>team.agentTypes: ["cursor"]</code>。
+      </p>
+    </div>
+
+    <!-- 5. Architecture -->
     <section id="architecture" class="sec-head">アーキテクチャ</section>
 
     <div class="ve-card">
@@ -684,14 +794,15 @@ flowchart LR
     <div class="ve-card">
       <span class="ve-section-label"><span class="ve-dot"></span> Hooks — ライフサイクルイベント</span>
       <p style="font-size:0.875rem; margin-bottom:0.875rem; line-height:1.6;">
-        Claude Code の 11 ライフサイクルイベントにフックを登録。<code>&lt;system-reminder&gt;</code> タグで追加コンテキストをインジェクション。
+        Claude Code の 11 ライフサイクルイベントに、<strong>21 hooks</strong> を登録。<code>&lt;system-reminder&gt;</code> タグで追加コンテキストをインジェクション。
+        下表は代表例。
       </p>
       <div class="ve-table-wrap">
         <table>
           <thead><tr><th>フック名</th><th>イベント</th><th>役割</th></tr></thead>
           <tbody>
             <tr><td><code>keyword-detector</code></td><td>UserPromptSubmit</td><td>マジックキーワード検出 → <code>[MAGIC KEYWORD: ...]</code> でスキルを有効化</td></tr>
-            <tr><td><code>persistent-mode</code></td><td>Stop</td><td>ralph/ultrawork がアクティブな間は停止をブロック。<em>"The boulder never stops"</em></td></tr>
+            <tr><td><code>persistent-mode</code></td><td>Stop</td><td>ralph / ultrawork / ultraqa がアクティブな間は停止をブロック。<em>"The boulder never stops"</em></td></tr>
             <tr><td><code>pre-compact</code></td><td>PreCompact</td><td>コンパクション前に重要情報を <code>notepad.md</code> へ保存し、コンテキストリセット後も継続</td></tr>
             <tr><td><code>subagent-tracker</code></td><td>SubagentStart/Stop</td><td>実行中エージェントを追跡し、停止時に出力を検証</td></tr>
             <tr><td><code>context-guard-stop</code></td><td>Stop</td><td>コンテキスト使用量を監視し、上限接近を警告</td></tr>
@@ -708,13 +819,13 @@ flowchart LR
         <div class="mermaid-center">
           <pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#fef9c3', 'primaryTextColor': '#78350f', 'primaryBorderColor': '#fbbf24', 'lineColor': '#d97706', 'fontSize': '14px'}}}%%
 flowchart TD
-    G["Guarantee Layer\nralph — 完了まで停止しない"] --> E["Enhancement Layer\nultrawork, git-master, frontend-ui-ux …"]
-    E --> X["Execution Layer\ndefault, orchestrate, planner"]</pre>
+    G["Guarantee Layer\nralph — 完了まで停止しない"] --> E["Enhancement Layer\nultrawork, ultraqa, deep-interview …"]
+    E --> X["Execution Layer\nteam, autopilot, plan"]</pre>
         </div>
       </div>
       <div class="ve-callout">
-        <strong>例:</strong> <code>ultrawork: refactor API with proper commits</code><br>
-        → <code>ultrawork</code> + <code>default</code> + <code>git-master</code> の 3 スキルが同時活性化<br>
+        <strong>例:</strong> <code>ralph: refactor API</code><br>
+        → <code>ralph</code>（保証）が <code>ultrawork</code>（並列）を包含し、実行層スキルと合成<br>
         <strong>式:</strong> <code>[Execution Skill] + [0-N Enhancements] + [Optional Guarantee]</code>
       </div>
     </div>
@@ -742,7 +853,7 @@ flowchart LR
       </p>
     </div>
 
-    <!-- 5. Agents -->
+    <!-- 6. Agents -->
     <section id="agents" class="sec-head">エージェント一覧（19 専門エージェント）</section>
 
     <div class="ve-card">
@@ -775,7 +886,7 @@ flowchart LR
           <tbody>
             <tr>
               <td rowspan="2"><span class="lane-badge lane-badge--review">Review</span></td>
-              <td><code>security-reviewer</code></td><td>sonnet</td><td>脆弱性・トラストバウンダリ・認証/認可レビュー</td>
+              <td><code>security-reviewer</code></td><td>opus</td><td>脆弱性・トラストバウンダリ・認証/認可レビュー</td>
             </tr>
             <tr>
               <td><code>code-reviewer</code></td><td>opus</td><td>包括的コードレビュー・API 契約・後方互換性確認</td>
@@ -806,25 +917,28 @@ flowchart LR
           <tbody>
             <tr><td>LOW</td><td>haiku</td><td>高速・低コスト</td><td>explore, writer</td></tr>
             <tr><td>MEDIUM</td><td>sonnet</td><td>バランス</td><td>executor, debugger, test-engineer, designer, document-specialist, …</td></tr>
-            <tr><td>HIGH</td><td>opus</td><td>最高品質推論</td><td>architect, planner, critic, code-reviewer, analyst</td></tr>
+            <tr><td>HIGH</td><td>opus</td><td>最高品質推論</td><td>architect, planner, critic, code-reviewer, security-reviewer, analyst, code-simplifier</td></tr>
           </tbody>
         </table>
       </div>
 
       <div class="ve-callout" style="margin-top:0.875rem;">
         <strong>典型ワークフロー:</strong>
-        <code>explore</code> → <code>analyst</code> → <code>planner</code> → <code>critic</code> → <code>executor</code> → <code>verifier</code>
+        <code>explore</code> → <code>analyst</code> → <code>planner</code> → <code>critic</code> → <code>executor</code> → <code>verifier</code><br>
+        モデル×エージェントのプリセットは
+        <a href="https://github.com/Yeachan-Heo/oh-my-claudecode/blob/main/docs/agents/model-compatibility.md" target="_blank" rel="noopener">Model × Agent Compatibility Matrix</a>
+        を参照。
       </div>
     </div>
 
-    <!-- 6. Skills & Keywords -->
+    <!-- 7. Skills & Keywords -->
     <section id="skills" class="sec-head">スキル &amp; マジックキーワード</section>
 
     <div class="ve-card">
       <span class="ve-section-label"><span class="ve-dot"></span> カスタムスキル — 学習して再利用</span>
       <p style="font-size:0.875rem; margin-bottom:0.875rem; line-height:1.65;">
-        セッションで獲得したデバッグ知識をポータブルな YAML スキルファイルに抽出。
-        関連するときにコンテキストへ自動インジェクションされ、手動リコールは不要。
+        ビルトインは <strong>41 スキル</strong>（<code>skills/</code>）。セッションで獲得した知識はポータブルなスキルファイルに抽出し、関連時に自動インジェクション。
+        実行時は <code>.omc/skills/</code>・<code>~/.omc/skills/</code> に加え、<code>.claude/skills/</code> と <code>.agents/skills/</code> も読む。
       </p>
       <div class="ve-code-block">
         <pre><code># .omc/skills/fix-proxy-crash.md
@@ -840,7 +954,7 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pr
         <div class="ve-card ve-card--recessed">
           <div class="ve-section-label" style="margin-bottom:0.4rem;"><span class="ve-dot"></span> プロジェクトスコープ</div>
           <code>.omc/skills/</code>
-          <p style="font-size:0.8rem; margin-top:0.35rem; color:var(--muted-foreground);">バージョン管理・チーム共有。優先度 高（ユーザースコープを上書き）</p>
+          <p style="font-size:0.8rem; margin-top:0.35rem; color:var(--muted-foreground);">コミット対象の例外。<code>.omc/</code> 他はローカル運用状態として gitignore</p>
         </div>
         <div class="ve-card ve-card--recessed">
           <div class="ve-section-label" style="margin-bottom:0.4rem;"><span class="ve-dot"></span> ユーザースコープ</div>
@@ -851,7 +965,8 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pr
       <div style="margin-top:0.875rem; font-size:0.855rem; line-height:1.55;">
         <strong>管理コマンド:</strong> <code>/skill list | add | remove | edit | search</code><br>
         <strong>自動学習:</strong> <code>/learner</code> で厳格な品質ゲート付きパターン抽出<br>
-        <strong>Skillify:</strong> <code>/skillify</code> で再利用パターンを品質ゲート付き抽出
+        <strong>Skillify:</strong> <code>/skillify</code> で再利用パターンを品質ゲート付き抽出<br>
+        <strong>代表スキル:</strong> <code>team</code>, <code>ultraqa</code>, <code>ultragoal</code>, <code>ai-slop-cleaner</code>, <code>merge-readiness</code>, <code>wiki</code>, <code>sciomc</code>, <code>visual-verdict</code>
       </div>
     </div>
 
@@ -859,30 +974,32 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pr
       <span class="ve-section-label"><span class="ve-dot"></span> マジックキーワード一覧</span>
       <p style="font-size:0.855rem; margin-bottom:0.875rem; line-height:1.6;">
         プロンプトにキーワードを含めるだけで対応スキルが自動起動。
+        Team は bare keyword ではなく <strong>明示的に <code>/team</code></strong>（またはシェルの <code>omc team</code>）。
         <code>autopilot</code>・<code>ralph</code>・<code>ccg</code> はフックにハードコードされており config では変更不可。
       </p>
       <div class="ve-table-wrap">
         <table>
           <thead><tr><th>キーワード</th><th>効果</th><th>使用例</th></tr></thead>
           <tbody>
-            <tr><td><span class="mode-badge mode-badge--gold">team</span></td><td>Team オーケストレーション（正規 API）</td><td><code>/team 3:executor "fix TypeScript errors"</code></td></tr>
+            <tr><td><span class="mode-badge mode-badge--gold">/team</span></td><td>Team オーケストレーション（正規 API）</td><td><code>/team 3:executor "fix TypeScript errors"</code></td></tr>
             <tr><td><span class="mode-badge">omc team</span></td><td>tmux CLI ワーカー</td><td><code>omc team 2:codex "security review"</code></td></tr>
-            <tr><td><span class="mode-badge">ccg</span></td><td>3 モデル統合アドバイス</td><td><code>/ccg review this PR</code></td></tr>
-            <tr><td><span class="mode-badge">autopilot</span></td><td>完全自律実行パイプライン</td><td><code>autopilot: build a todo app</code></td></tr>
-            <tr><td><span class="mode-badge">ralph</span></td><td>永続モード（完了まで停止しない）</td><td><code>ralph: refactor auth</code></td></tr>
+            <tr><td><span class="mode-badge">ccg</span></td><td>codex + antigravity 助言の統合</td><td><code>/ccg review this PR</code></td></tr>
+            <tr><td><span class="mode-badge">autopilot</span></td><td>完全自律実行</td><td><code>/autopilot "build a todo app"</code></td></tr>
+            <tr><td><span class="mode-badge">ralph</span></td><td>永続モード（完了まで停止しない）</td><td><code>/ralph "refactor auth"</code></td></tr>
             <tr><td><span class="mode-badge">ulw</span></td><td>最大並列実行（ultrawork）</td><td><code>ulw fix all errors</code></td></tr>
             <tr><td><span class="mode-badge">ralplan</span></td><td>反復的計画コンセンサス</td><td><code>ralplan this feature</code></td></tr>
             <tr><td><span class="mode-badge">deepsearch</span></td><td>コードベース探索ルーティング</td><td><code>deepsearch for auth middleware</code></td></tr>
             <tr><td><span class="mode-badge">deep-interview</span></td><td>Socratic 式要件明確化</td><td><code>/deep-interview "vague idea"</code></td></tr>
             <tr><td><span class="mode-badge">ultrathink</span></td><td>深い推論モード</td><td><code>ultrathink about this architecture</code></td></tr>
-            <tr><td><span class="mode-badge">tdd</span></td><td>テスト駆動開発ワークフロー</td><td><code>tdd: implement payment flow</code></td></tr>
-            <tr><td><span class="mode-badge">stopomc</span></td><td>アクティブモードを即時停止</td><td><code>stopomc</code></td></tr>
+            <tr><td><span class="mode-badge">ai-slop / deslop</span></td><td>AI スロップ掃除（ai-slop-cleaner）</td><td><code>deslop this PR</code></td></tr>
+            <tr><td><span class="mode-badge">tdd</span></td><td>テスト駆動開発ワークフロー（HOOKS 拡張）</td><td><code>tdd: implement payment flow</code></td></tr>
+            <tr><td><span class="mode-badge">cancelomc / stopomc</span></td><td>アクティブモードを即時停止</td><td><code>stopomc</code></td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- 7. State & Utilities -->
+    <!-- 8. State & Utilities -->
     <section id="state" class="sec-head">状態管理 &amp; ユーティリティ</section>
 
     <div class="ve-card">
@@ -895,16 +1012,17 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pr
 │   └── sessions/{sessionId}/  # セッション別ステート
 ├── notepad.md                 # コンパクション耐性メモパッド
 ├── project-memory.json        # プロジェクト知識ストア (セッション横断)
-├── ultragoal/                 # Ultragoal 計画・台帳 (v4.14+)
+├── ultragoal/                 # Artifact Ultragoal 台帳
+├── skills/                    # プロジェクト共有スキル（gitignore 例外）
 ├── plans/                     # 実行計画ファイル
 ├── notepads/{plan-name}/
-│   ├── learnings.md           # 成功パターン・規約
-│   ├── decisions.md           # 設計判断と根拠
-│   ├── issues.md              # 問題・ブロッカー
-│   └── problems.md            # 技術的負債・注意点
-├── autopilot/spec.md          # autopilot 仕様書
+│   ├── learnings.md
+│   ├── decisions.md
+│   ├── issues.md
+│   └── problems.md
+├── autopilot/spec.md
 ├── artifacts/ask/             # omc ask の出力 Markdown
-└── logs/                      # 実行ログ</code></pre>
+└── logs/</code></pre>
       </div>
       <div class="ve-callout" style="margin-top:0.875rem;">
         <strong>コンパクション耐性:</strong> <code>PreCompact</code> フックが重要情報を <code>notepad.md</code> に保存。
@@ -913,7 +1031,7 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pr
       </div>
       <p style="font-size:0.82rem; margin-top:0.75rem; color:var(--muted-foreground); line-height:1.55;">
         ワークツリー削除後も状態を保持するには <code>export OMC_STATE_DIR="$HOME/.claude/omc"</code> を設定。
-        プロジェクト識別子は Git リモート URL のハッシュなので同リポジトリで共有される。
+        マルチリポジトリ作業ではルートに <code>.omc-workspace</code> マーカーを置き、各リポジトリの状態を分離する。
       </p>
     </div>
 
@@ -923,19 +1041,17 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pr
         <table>
           <thead><tr><th>コマンド</th><th>説明</th></tr></thead>
           <tbody>
-            <tr><td><code>omc ultragoal create-goals …</code></td><td>ブリーフからマルチゴール計画を生成し <code>.omc/ultragoal/</code> に保存</td></tr>
-            <tr><td><code>omc ultragoal complete-goals</code></td><td>次ストーリー用ハンドオフを出力（セッション内 <code>/goal</code> 連携）</td></tr>
-            <tr><td><code>/ask codex|gemini "…"</code></td><td>セッション内アドバイザー（CLI 版は <code>omc ask</code> と同系）</td></tr>
-            <tr><td><code>omc ask claude "..."</code></td><td>ローカル Claude CLI を呼び出し結果を <code>.omc/artifacts/ask/</code> に Markdown 保存</td></tr>
-            <tr><td><code>omc ask codex|gemini "..."</code></td><td>Codex / Gemini CLI へのプロキシ + 結果保存（v4.4.0 以降は MCP の x/g ではなく CLI 経路が主）</td></tr>
-            <tr><td><code>omc autoresearch</code></td><td><strong>非推奨 shim。</strong>自動調査は <code>/deep-interview --autoresearch …</code> と状態保持スキル側へ移行</td></tr>
+            <tr><td><code>omc ultragoal create-goals …</code></td><td>ブリーフからゴール台帳を生成し <code>.omc/ultragoal/</code> に保存（ループは起動しない）</td></tr>
+            <tr><td><code>omc ultragoal complete-goals</code></td><td>次ストーリー用ハンドオフを出力（Claude Code <code>/goal</code> 自体は操作しない）</td></tr>
+            <tr><td><code>/ask &lt;provider&gt; "…"</code></td><td>セッション内アドバイザー。<code>claude</code> / <code>codex</code> / <code>gemini</code> / <code>antigravity</code> / <code>grok</code> / <code>cursor</code></td></tr>
+            <tr><td><code>omc ask …</code></td><td>同上の CLI。結果を <code>.omc/artifacts/ask/</code> に Markdown 保存</td></tr>
+            <tr><td><code>omc autoresearch</code></td><td><strong>hard-deprecated shim。</strong>調査は <code>/deep-interview --autoresearch …</code> 側へ移行</td></tr>
             <tr><td><code>omc wait --start</code></td><td>レート制限リセット時の自動再開デーモン（tmux 必須）</td></tr>
-            <tr><td><code>omc hud</code></td><td>HUD ライブレンダリング。オーケストレーション状況をステータスバーに表示</td></tr>
-            <tr><td><code>omc team status &lt;name&gt;</code></td><td>実行中チームタスクの状態確認</td></tr>
-            <tr><td><code>omc team shutdown &lt;name&gt;</code></td><td>指定チームを停止</td></tr>
+            <tr><td><code>omc hud</code></td><td>HUD ライブレンダリング</td></tr>
+            <tr><td><code>omc team status|shutdown …</code></td><td>実行中チームの状態確認・停止</td></tr>
+            <tr><td><code>omc session search</code> / <code>omc teleport</code></td><td>セッション検索・復帰（CI 向け決定的コマンド）</td></tr>
             <tr><td><code>/omc-doctor</code></td><td>インストール診断・プラグインキャッシュクリア</td></tr>
-            <tr><td><code>/learner</code></td><td>セッションから再利用可能スキルを品質ゲート付きで抽出</td></tr>
-            <tr><td><code>/deepinit</code></td><td>プロジェクトの階層的 AGENTS.md を自動生成</td></tr>
+            <tr><td><code>/learner</code> / <code>/deepinit</code></td><td>スキル抽出 / 階層的 AGENTS.md 生成</td></tr>
           </tbody>
         </table>
       </div>
@@ -946,6 +1062,7 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pr
       <p style="font-size:0.875rem; line-height:1.65; margin-bottom:0.625rem;">
         セッション完了サマリーを Telegram・Discord・Slack へ自動送信。
         <code>omc config-stop-callback telegram --enable --token &lt;tok&gt; --chat &lt;id&gt; --tag-list "@alice"</code> で設定。
+        タグ付きプロフィールの増分更新は README の Notification Tags を参照。
       </p>
       <p style="font-size:0.875rem; line-height:1.65;">
         <strong>OpenClaw Gateway:</strong> Claude Code セッションイベント（session-start, stop, keyword-detector など 6 種）を
@@ -969,17 +1086,21 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...</code></pr
           <a href="https://yeachan-heo.github.io/oh-my-claudecode-website/docs/#cli-reference" target="_blank" rel="noopener">CLI Reference</a>
           ·
           <a href="https://yeachan-heo.github.io/oh-my-claudecode-website/docs/#workflows" target="_blank" rel="noopener">Workflows</a>
+          ·
+          <a href="https://yeachan-heo.github.io/oh-my-claudecode-website/docs/#execution-modes" target="_blank" rel="noopener">Execution Modes</a>
         </li>
         <li>
           <a href="https://github.com/Yeachan-Heo/oh-my-claudecode/blob/main/docs/MIGRATION.md" target="_blank" rel="noopener">Migration Guide</a>
           ·
           <a href="https://github.com/Yeachan-Heo/oh-my-claudecode/blob/main/docs/REFERENCE.md" target="_blank" rel="noopener">REFERENCE.md</a>
+          ·
+          <a href="https://github.com/Yeachan-Heo/oh-my-claudecode/blob/main/docs/HOOKS.md" target="_blank" rel="noopener">HOOKS.md</a>
         </li>
         <li>
           <a href="https://www.npmjs.com/package/oh-my-claude-sisyphus" target="_blank" rel="noopener">npm: oh-my-claude-sisyphus</a>
         </li>
         <li>
-          <a href="https://discord.gg/PUwSMR9XNk" target="_blank" rel="noopener">Discord</a>
+          <a href="https://discord.gg/jq6jnSGABY" target="_blank" rel="noopener">Discord</a>
           ·
           <a href="https://github.com/sponsors/Yeachan-Heo" target="_blank" rel="noopener">Sponsor</a>
         </li>
