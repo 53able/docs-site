@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>oh-my-pi（omp）— IDE 統合のコーディングエージェント</title>
-  <meta name="description" content="can1357/oh-my-pi（omp）は Pi 系のターミナル向けコーディングエージェント。32 組み込みツール、40+ プロバイダ、約 27k 行の Rust ネイティブ、LSP/DAP/MCP、サブエージェントと SDK/RPC/ACP を README から要約。">
+  <meta name="description" content="can1357/oh-my-pi（omp）は Pi 系のターミナル向けコーディングエージェント。32 組み込みツール、40+ プロバイダ、約 55k 行の Rust ネイティブ、LSP 14 / DAP 28、advisor・collab・SDK/RPC/ACP を README から要約。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="oh-my-pi（omp）— IDE 統合のコーディングエージェント">
-  <meta property="og:description" content="モノレポ構成、ネイティブ層、ツール一覧、プロバイダルーティング、4 つの起動面（TUI / SDK / RPC / ACP）の技術概要。">
+  <meta property="og:description" content="モノレポ構成、ネイティブ層、ツール一覧、プロバイダルーティング、起動面（TUI / SDK / RPC / ACP）の技術概要。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/oh-my-pi.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
@@ -194,6 +194,8 @@
     .feat-card:nth-child(2) { border-top-color: var(--chart-2); }
     .feat-card:nth-child(3) { border-top-color: var(--chart-3); }
     .feat-card:nth-child(4) { border-top-color: var(--chart-4); }
+    .feat-card:nth-child(5) { border-top-color: var(--chart-5); }
+    .feat-card:nth-child(6) { border-top-color: var(--chart-1); }
     .feat-title { font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; margin-bottom: 0.45rem; }
     .feat-body { color: var(--muted-foreground); font-size: 0.92rem; line-height: 1.58; margin: 0; }
     .mermaid-wrap { display: flex; justify-content: center; overflow-x: auto; margin: 1rem 0; padding: 1rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
@@ -236,20 +238,20 @@
     <div class="kpi-row">
       <div class="ve-kpi-card" style="--i:0"><div class="ve-kpi-card__value">40+</div><div class="ve-kpi-card__label">LLM プロバイダ</div></div>
       <div class="ve-kpi-card" style="--i:1"><div class="ve-kpi-card__value">32</div><div class="ve-kpi-card__label">組み込みツール</div></div>
-      <div class="ve-kpi-card" style="--i:2"><div class="ve-kpi-card__value">~27k</div><div class="ve-kpi-card__label">Rust コア行数</div></div>
-      <div class="ve-kpi-card" style="--i:3"><div class="ve-kpi-card__value">4</div><div class="ve-kpi-card__label">起動面（TUI/SDK/RPC/ACP）</div></div>
+      <div class="ve-kpi-card" style="--i:2"><div class="ve-kpi-card__value">~55k</div><div class="ve-kpi-card__label">Rust コア行数</div></div>
+      <div class="ve-kpi-card" style="--i:3"><div class="ve-kpi-card__value">14 / 28</div><div class="ve-kpi-card__label">LSP ops · DAP ops</div></div>
     </div>
 
     <div class="hero-grid">
       <div class="ve-card ve-card--hero hero-copy" style="--i:0">
         <span class="ve-section-label"><span class="ve-dot"></span> プロダクトの一文</span>
-        <p><strong>omp</strong>（<code>@oh-my-pi/pi-coding-agent</code>）は、対話型 TUI を既定とするコーディングエージェント。編集・検索・LSP・DAP・ブラウザ・サブエージェント・長期記憶まで、ハーネス側に寄せた実装が同梱されている。</p>
+        <p><strong>omp</strong>（<code>@oh-my-pi/pi-coding-agent</code>）は、対話型 TUI を既定とするコーディングエージェント。編集・検索・LSP・DAP・ブラウザ・サブエージェント・長期記憶・advisor・collab まで、ハーネス側に寄せた実装が同梱されている。</p>
         <p>公開サイト <a href="https://omp.sh">omp.sh</a>、ランタイムは <strong>Bun</strong>（推奨 <code>bun ≥ 1.3.14</code>）、ネイティブ処理は <strong>Rust</strong> の N-API アドオン（<code>pi-natives</code>）経由でプロセス内実行する。</p>
       </div>
       <div class="stack-sheet" aria-label="レイヤ概要">
         <div class="stack-line"><strong>TUI</strong> — pi-tui · 差分描画・Markdown</div>
         <div class="stack-line"><strong>coding-agent</strong> — セッション・ツール・MCP・拡張</div>
-        <div class="stack-line"><strong>agent</strong> — ループ・コンパクション</div>
+        <div class="stack-line"><strong>agent / catalog</strong> — ループ・モデルカタログ</div>
         <div class="stack-line"><strong>ai</strong> — 40+ プロバイダ・ストリーム</div>
         <div class="stack-line"><strong>pi-natives</strong> — grep · shell · ast · PTY …</div>
       </div>
@@ -261,9 +263,11 @@
       <p>ベースは <a href="https://github.com/badlogic/pi-mono">pi-mono</a> の思想（ターミナルファースト・TypeScript・MIT）を継承しつつ、<strong>実運用で足りない層を同梱</strong>する方針。代表例は次のとおり。</p>
       <ul>
         <li><strong>編集</strong> — Hashline（コンテンツハッシュ錨）、<code>ast_edit</code> のプレビュー＋<code>resolve</code> 確定</li>
-        <li><strong>IDE 連携</strong> — LSP（13 操作相当）、DAP（27 操作相当）、ACP で Zed 等から同一エージェントを駆動</li>
-        <li><strong>並列</strong> — <code>task</code> による worktree 分離サブエージェント、スキーマ検証済み <code>yield</code></li>
-        <li><strong>記憶</strong> — Hindsight（<code>retain</code> / <code>recall</code> / <code>reflect</code>）</li>
+        <li><strong>IDE 連携</strong> — LSP（14 ops）、DAP（28 ops）、ACP で Zed 等から同一エージェントを駆動</li>
+        <li><strong>並列</strong> — <code>task</code> による worktree 分離サブエージェント、<code>hub</code> でライブ監視、スキーマ検証済み <code>yield</code></li>
+        <li><strong>監視</strong> — advisor ロール（別モデルが毎ターン note / concern / blocker を注入）</li>
+        <li><strong>共有</strong> — <code>/collab</code> でリレー＋リンク/QR、<code>omp join</code> またはブラウザで参加（RW / view）</li>
+        <li><strong>記憶</strong> — Hindsight（<code>retain</code> / <code>recall</code> / <code>reflect</code>）、ローカル SQLite（<code>pi-mnemopi</code>）</li>
         <li><strong>ルール</strong> — TTSR（ストリーム途中のルール注入・コンパクション後も維持）</li>
         <li><strong>設定の継承</strong> — Cursor / Claude / Codex / Copilot 等の既存ルール・スキル・MCP を初回起動時に読み込み</li>
       </ul>
@@ -276,15 +280,23 @@
       </div>
       <div class="ve-card feat-card" style="--i:3">
         <div class="feat-title">内部 URL スキーム</div>
-        <p class="feat-body"><code>pr://</code>、<code>issue://</code>、<code>skill://</code>、<code>agent://</code> など。FS 系ツールから PR 差分・サブエージェント JSON をパス指定で読める。</p>
+        <p class="feat-body">12 種（<code>pr://</code>、<code>issue://</code>、<code>skill://</code>、<code>agent://</code>、<code>rule://</code>、<code>conflict://</code> 等）。FS 系ツールから PR 差分・サブエージェント JSON・マージ競合をパス指定で扱える。</p>
       </div>
       <div class="ve-card feat-card" style="--i:4">
         <div class="feat-title">Python / JS eval</div>
         <p class="feat-body">永続 Python と Bun ワーカー。どちらもループバック経由で <code>read</code> や <code>search</code> を再入可能。</p>
       </div>
       <div class="ve-card feat-card" style="--i:5">
-        <div class="feat-title">omp commit</div>
-        <p class="feat-body">作業ツリーを hunk 単位で分析し、依存順にアトミック分割。循環依存はコミット前に拒否。</p>
+        <div class="feat-title">/review と omp commit</div>
+        <p class="feat-body"><code>/review</code> は P0–P3 と verdict 付きでレビュアサブエージェントを並列起動。<code>omp commit</code> は hunk 単位で依存順にアトミック分割し、循環依存はコミット前に拒否。</p>
+      </div>
+      <div class="ve-card feat-card" style="--i:6">
+        <div class="feat-title">advisor</div>
+        <p class="feat-body">メインとは別モデルを advisor ロールに載せ、毎ターンを監視してインライン注記を注入する。独自コンテキストで「急ぎ過ぎた判断」を拾う。</p>
+      </div>
+      <div class="ve-card feat-card" style="--i:7">
+        <div class="feat-title">/collab</div>
+        <p class="feat-body">ライブセッションをリレーへ載せ、リンクと QR を返す。フレームはクライアント側で暗号化。リレーは鍵を見ない。</p>
       </div>
     </div>
 
@@ -301,9 +313,13 @@ flowchart TB
   subgraph ts["TypeScript ワークスペース"]
     CA["@oh-my-pi/pi-coding-agent"]
     AG["@oh-my-pi/pi-agent-core"]
+    CAT["@oh-my-pi/pi-catalog"]
     AI["@oh-my-pi/pi-ai"]
     TUIL["@oh-my-pi/pi-tui"]
-    UT["@oh-my-pi/pi-utils"]
+    HL["@oh-my-pi/hashline"]
+    MEM["@oh-my-pi/pi-mnemopi"]
+    WIRE["@oh-my-pi/pi-wire"]
+    CW["@oh-my-pi/collab-web"]
   end
   subgraph rust["Rust / N-API"]
     NAT["@oh-my-pi/pi-natives"]
@@ -317,7 +333,11 @@ flowchart TB
   RPC --> CA
   ACP --> CA
   CA --> AG --> AI
+  CA --> CAT
   CA --> TUIL
+  CA --> HL
+  CA --> MEM
+  CA --> WIRE --> CW
   CA --> NAT --> PN
   PN --> PS
   PN --> PA
@@ -333,8 +353,14 @@ flowchart TB
           <tr><td><code>@oh-my-pi/pi-coding-agent</code></td><td>CLI・SDK・セッション・ツール・MCP・拡張の本体</td></tr>
           <tr><td><code>@oh-my-pi/pi-agent-core</code></td><td>ツール呼び出しとエージェント状態</td></tr>
           <tr><td><code>@oh-my-pi/pi-ai</code></td><td>マルチプロバイダ LLM クライアント・ストリーミング</td></tr>
+          <tr><td><code>@oh-my-pi/pi-catalog</code></td><td>バンドル済みモデル DB・プロバイダ記述・identity</td></tr>
           <tr><td><code>@oh-my-pi/pi-tui</code></td><td>ターミナル UI（差分レンダリング）</td></tr>
           <tr><td><code>@oh-my-pi/pi-natives</code></td><td>grep / shell / 画像 / ハイライト等の N-API バインディング</td></tr>
+          <tr><td><code>@oh-my-pi/hashline</code></td><td><code>edit</code> 用の行錨パッチ言語と適用器</td></tr>
+          <tr><td><code>@oh-my-pi/pi-mnemopi</code></td><td>ローカル SQLite メモリエンジン</td></tr>
+          <tr><td><code>@oh-my-pi/pi-wire</code> / <code>collab-web</code></td><td>collab ライブセッションのプロトコルとブラウザゲスト</td></tr>
+          <tr><td><code>@oh-my-pi/snapcompact</code></td><td>ビットマップフレーム型コンテキスト圧縮</td></tr>
+          <tr><td><code>@oh-my-pi/pi-utils</code></td><td>共有ユーティリティ（ログ・ストリーム・dirs 等）</td></tr>
           <tr><td><code>@oh-my-pi/omp-stats</code></td><td>ローカル利用統計ダッシュボード</td></tr>
           <tr><td><code>@oh-my-pi/swarm-extension</code></td><td>スウォーム拡張（任意）</td></tr>
         </tbody>
@@ -342,26 +368,30 @@ flowchart TB
     </div>
 
     <h3>Rust モジュール（README 抜粋）</h3>
-    <p>他ハーネスが <code>rg</code> や <code>bash</code> を子プロセス起動するのに対し、ホットパスは <strong>libuv スレッドプール上の in-process</strong> 実装。プラットフォーム別バイナリ（linux/darwin/win × x64/arm64）。</p>
+    <p>他ハーネスが <code>rg</code> や <code>bash</code> を子プロセス起動するのに対し、ホットパスは <strong>libuv スレッドプール上の in-process</strong> 実装。プラットフォーム別バイナリ（linux/darwin/win × x64/arm64）。見出し合計は約 <strong>55,000</strong> 行（glue / tests 除外のモジュール表）。</p>
     <div class="ve-table-wrap">
       <table>
         <thead><tr><th>モジュール</th><th>内容</th><th>概算 LoC</th></tr></thead>
         <tbody>
           <tr><td>shell</td><td>組み込み bash（brush ベンダ）、永続セッション</td><td>3,700</td></tr>
           <tr><td>grep</td><td>並列 regex 検索・glob</td><td>1,900</td></tr>
-          <tr><td>summarize / ast</td><td>tree-sitter 要約・ast-grep</td><td>~2,000</td></tr>
+          <tr><td>keys</td><td>Kitty キーボードプロトコル・PHF ルックアップ</td><td>1,490</td></tr>
+          <tr><td>text</td><td>ANSI 幅・切り詰め・SGR 保持ラップ</td><td>1,450</td></tr>
+          <tr><td>summary / ast</td><td>tree-sitter 要約・ast-grep</td><td>1,040 / 1,000</td></tr>
+          <tr><td>fs_cache</td><td>read / grep / lsp 共有の mtime キャッシュ</td><td>840</td></tr>
           <tr><td>pty</td><td>ネイティブ PTY（sudo 等）</td><td>455</td></tr>
           <tr><td>iso</td><td>worktree 分離（APFS / btrfs / overlay 等）</td><td>245</td></tr>
         </tbody>
       </table>
     </div>
+    <p><small>README には highlight / glob / workspace / appearance / power / task / fd / prof / ps / clipboard / tokens / sixel / html なども含む。詳細は upstream README の Rust 表を参照。</small></p>
 
     <div class="ve-callout">
       <strong>補足:</strong> <code>python/robomp</code> は GitHub イベント連携など別系統の Python ホスト。<code>python/omp-rpc</code> は RPC クライアント用。エージェント本体の TypeScript ツリーとは責務が分かれている。
     </div>
 
     <section id="tools" class="sec-head">4 — 組み込みツール（32）</section>
-    <p>README のカテゴリ分けに沿った一覧。<code>--tools</code> で表示セットを絞り、<code>search_tool_bm25</code> で隠れたツールをセッション中に復帰できる。</p>
+    <p>README のカテゴリ分けに沿った一覧。<code>--tools</code> で表示セットを絞り、稀に使うツールは <code>xd://</code> デバイスとして発見できる（<code>tools.xdev</code> 有効時）。</p>
     <div class="tool-cols">
       <div class="ve-card ve-card--recessed" style="--i:6">
         <div class="feat-title">ファイル・検索</div>
@@ -372,27 +402,36 @@ flowchart TB
         </ul>
         <div class="feat-title" style="margin-top:1rem">ランタイム</div>
         <ul>
-          <li><code>bash</code> · <code>eval</code> · <code>recipe</code> · <code>ssh</code></li>
+          <li><code>bash</code> · <code>eval</code> · <code>ssh</code></li>
         </ul>
-      </div>
-      <div class="ve-card ve-card--recessed" style="--i:7">
-        <div class="feat-title">コードインテリジェンス</div>
+        <div class="feat-title" style="margin-top:1rem">コードインテリジェンス</div>
         <ul>
           <li><code>lsp</code> — 診断・定義・リネーム等</li>
           <li><code>debug</code> — DAP（lldb / dlv / debugpy 等）</li>
         </ul>
-        <div class="feat-title" style="margin-top:1rem">協調・外部</div>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:7">
+        <div class="feat-title">協調</div>
         <ul>
-          <li><code>task</code> · <code>irc</code> · <code>todo_write</code> · <code>ask</code></li>
+          <li><code>task</code> · <code>hub</code> · <code>todo</code> · <code>ask</code></li>
+        </ul>
+        <div class="feat-title" style="margin-top:1rem">外部・メディア</div>
+        <ul>
           <li><code>browser</code> · <code>web_search</code> · <code>github</code></li>
+          <li><code>generate_image</code> · <code>inspect_image</code> · <code>tts</code></li>
+        </ul>
+        <div class="feat-title" style="margin-top:1rem">記憶・状態</div>
+        <ul>
+          <li><code>checkpoint</code> · <code>rewind</code></li>
           <li><code>retain</code> / <code>recall</code> / <code>reflect</code>（Hindsight）</li>
+          <li><code>resolve</code> — プレビューの確定 / 破棄</li>
         </ul>
       </div>
     </div>
-    <p><small>設定でデフォルト OFF の例: <code>github</code>, <code>calc</code>, <code>inspect_image</code>, <code>render_mermaid</code>, <code>checkpoint</code>, <code>rewind</code>, Hindsight 系など（README 記載）。</small></p>
+    <p><small>設定でデフォルト OFF: <code>github</code>, <code>inspect_image</code>, <code>tts</code>, <code>checkpoint</code>, <code>rewind</code>, <code>retain</code>, <code>recall</code>, <code>reflect</code>（README 記載）。</small></p>
 
     <section id="providers" class="sec-head">5 — モデルとルーティング</section>
-    <p>ロール <code>default</code> / <code>smol</code> / <code>slow</code> / <code>plan</code> / <code>commit</code> で用途別モデルを切替。<code>/model</code> スラッシュコマンドと <code>Ctrl+P</code> でセッション中に変更できる。</p>
+    <p>ロール <code>default</code> / <code>smol</code> / <code>slow</code> / <code>plan</code> / <code>commit</code> で用途別モデルを切替。<code>/model</code> スラッシュコマンドと <code>Ctrl+P</code> でセッション中に変更できる。モデルカタログは <code>@oh-my-pi/pi-catalog</code> が担う。</p>
     <div class="ve-table-wrap">
       <table>
         <thead><tr><th>区分</th><th>例（README）</th></tr></thead>
@@ -403,10 +442,10 @@ flowchart TB
         </tbody>
       </table>
     </div>
-    <p><code>web_search</code> は最大 14 バックエンドのチェーン（<code>auto</code>）と、GitHub / arXiv / 各種レジストリ向けの構造化抽出ハンドラを持つ（README の表参照）。</p>
+    <p><code>web_search</code> は <code>auto</code> が <strong>25</strong> プロバイダのチェーンを歩き、GitHub / レジストリ / arXiv / フォーラム向けの構造化抽出と NVD / OSV / CISA KEV の脆弱性ルックアップを持つ（README の Search providers 表）。</p>
     <p>カスタム定義は <code>~/.omp/agent/models.yml</code>。フォールバックチェーンは <code>retry.fallbackChains</code>、パス別ロールは <code>modelRoles.paths</code>。</p>
 
-    <section id="surfaces" class="sec-head">6 — 4 つの起動面</section>
+    <section id="surfaces" class="sec-head">6 — 起動面</section>
     <div class="ve-table-wrap">
       <table>
         <thead><tr><th>面</th><th>入口</th><th>用途</th></tr></thead>
@@ -446,10 +485,18 @@ await session.prompt("list .ts files");</code></pre>
       <pre><code>curl -fsSL https://omp.sh/install | sh</code></pre>
     </div>
     <div class="ve-code-block">
+      <div class="code-label">Homebrew</div>
+      <pre><code>brew install can1357/tap/omp</code></pre>
+    </div>
+    <div class="ve-code-block">
       <div class="code-label">Bun（推奨）</div>
       <pre><code>bun install -g @oh-my-pi/pi-coding-agent</code></pre>
     </div>
-    <p>Windows は <code>irm https://omp.sh/install.ps1 | iex</code>。バージョン固定は <code>mise use -g github:can1357/oh-my-pi</code>（README）。</p>
+    <div class="ve-code-block">
+      <div class="code-label">Shell completions（zsh 例）</div>
+      <pre><code>eval "$(omp completions zsh)"</code></pre>
+    </div>
+    <p>Windows は <code>irm https://omp.sh/install.ps1 | iex</code>。バージョン固定は <code>mise use -g github:can1357/oh-my-pi</code>。bash / fish も <code>omp completions</code> で生成できる（README）。</p>
 
     <section id="refs" class="sec-head">8 — 参照</section>
     <ul>
