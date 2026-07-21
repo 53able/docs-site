@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>img2threejs — 参照画像から手続き的 Three.js モデルを生成するスキル</title>
+  <meta name="description" content="hoainho/img2threejs の解説。1 枚の参照画像から品質ゲート付きの手続き的 Three.js 工場関数を段階生成する Agent Skill。フォトグラメトリではなくコード再構築。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="img2threejs — 参照画像から手続き的 Three.js モデルを生成するスキル">
+  <meta property="og:description" content="品質ゲート付きの段階スカルプトで、参照画像をコードのみの Three.js Group 工場関数に再構築する。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/img2threejs.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="img2threejs — 参照画像から手続き的 Three.js モデルを生成するスキル">
+  <meta name="twitter:description" content="品質ゲート付きの段階スカルプトで、参照画像をコードのみの Three.js Group 工場関数に再構築する。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Code+Pro:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.008 250);
+      --foreground: oklch(0.18 0.03 255);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.18 0.03 255);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.18 0.03 255);
+      --primary: oklch(0.32 0.08 255);
+      --primary-foreground: oklch(0.98 0.01 90);
+      --secondary: oklch(0.96 0.012 250);
+      --secondary-foreground: oklch(0.28 0.05 255);
+      --muted: oklch(0.955 0.01 250);
+      --muted-foreground: oklch(0.48 0.03 250);
+      --accent: oklch(0.96 0.014 250);
+      --accent-foreground: oklch(0.28 0.05 255);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.90 0.02 250);
+      --input: oklch(0.90 0.02 250);
+      --ring: oklch(0.68 0.05 250);
+      --chart-1: oklch(0.38 0.12 248);
+      --chart-2: oklch(0.72 0.15 76);
+      --chart-3: oklch(0.48 0.08 230);
+      --chart-4: oklch(0.70 0.12 55);
+      --chart-5: oklch(0.55 0.08 200);
+      --code-bg: var(--muted);
+      --code-text: #0b2a55;
+      --font-body: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'Source Code Pro', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.14 0.02 255);
+        --foreground: oklch(0.95 0.01 90);
+        --card: oklch(0.19 0.025 255);
+        --card-foreground: oklch(0.95 0.01 90);
+        --popover: oklch(0.19 0.025 255);
+        --popover-foreground: oklch(0.95 0.01 90);
+        --primary: oklch(0.88 0.04 90);
+        --primary-foreground: oklch(0.18 0.03 255);
+        --secondary: oklch(0.24 0.03 255);
+        --secondary-foreground: oklch(0.95 0.01 90);
+        --muted: oklch(0.24 0.03 255);
+        --muted-foreground: oklch(0.72 0.03 250);
+        --accent: oklch(0.24 0.035 250);
+        --accent-foreground: oklch(0.95 0.01 90);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.50 0.06 250);
+        --chart-1: oklch(0.68 0.12 245);
+        --chart-2: oklch(0.80 0.14 80);
+        --chart-3: oklch(0.72 0.08 220);
+        --chart-4: oklch(0.75 0.12 55);
+        --chart-5: oklch(0.65 0.10 200);
+        --code-bg: #0c1220;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); font-family: var(--font-mono); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--border) 55%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.5rem; line-height: 1.15; font-weight: 600; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; font-family: var(--font-mono); }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 18% 0%, oklch(0.38 0.12 248 / 0.08) 0%, transparent 48%),
+        radial-gradient(ellipse at 88% 8%, oklch(0.72 0.15 76 / 0.07) 0%, transparent 42%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 18% 0%, oklch(0.68 0.12 245 / 0.10) 0%, transparent 48%),
+          radial-gradient(ellipse at 88% 8%, oklch(0.80 0.14 80 / 0.07) 0%, transparent 42%);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; font-family: var(--font-mono); }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.65rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.55; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .pass-strip {
+      display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;
+      font-family: var(--font-mono); font-size: 0.75rem; margin: 1rem 0;
+    }
+    .pass-strip .pass {
+      background: color-mix(in oklch, var(--chart-1) 10%, var(--muted));
+      color: var(--chart-1); border: 1px solid color-mix(in oklch, var(--chart-1) 28%, var(--border));
+      padding: 0.3rem 0.55rem; border-radius: var(--radius-sm); font-weight: 500;
+    }
+    .pass-strip .arrow { color: var(--text-dim); }
+
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem; margin: 1rem 0; }
+    @media (max-width: 720px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.15rem; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; color: var(--chart-2); margin-bottom: 0.35rem; }
+    .step-card__title { font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.35rem; }
+    .step-card__body { font-size: 0.8125rem; line-height: 1.55; color: var(--text-dim); }
+
+    .structure-tree .dir { color: var(--chart-1); }
+    .structure-tree .file-main { color: var(--chart-2); }
+    .structure-tree .comment { color: var(--text-dim); }
+
+    .mermaid-wrap {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin: 1rem 0;
+      overflow: auto;
+      min-height: 12rem;
+    }
+    .mermaid-wrap .mermaid { font-family: var(--font-body) !important; }
+    .mermaid-zoom {
+      position: absolute; top: 0.5rem; right: 0.5rem; display: flex; gap: 0.25rem; z-index: 2;
+    }
+    .mermaid-zoom button {
+      font-family: var(--font-mono); font-size: 0.7rem; padding: 0.2rem 0.45rem;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--muted); color: var(--foreground); cursor: pointer;
+    }
+    .mermaid-zoom button:hover { border-color: var(--chart-1); color: var(--chart-1); }
+
+    .src-note { margin-top: 1.5rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#pipeline">パイプライン</a>
+    <a href="#passes">ビルドパス</a>
+    <a href="#gates">ゲート</a>
+    <a href="#tokens">トークン効率</a>
+    <a href="#start">クイックスタート</a>
+    <a href="#output">成果物と限界</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>img2threejs</h1>
+  <p class="subtitle">hoainho/img2threejs — 参照画像をコードのみの手続き的 Three.js モデルへ再構築する Agent Skill（v1.2.0）</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <p><strong>img2threejs</strong> は、オブジェクト（またはキャラクター）の参照画像 1 枚から、<code>THREE.Group</code> を返す TypeScript 工場関数を段階生成するスキル。フォトグラメトリ・メッシュ抽出・外部アセットパックは使わない。プリミティブ、手続きシェーダ、生成ジオメトリで再構築する。</p>
+    <p>Claude Code / Codex / OpenCode で動く。エージェント非依存で、「エージェント vision」「ブラウザツール」と書いてある箇所はホストが提供する手段（ネイティブ画像読み取り、ブラウザ MCP、プレビュー、ユーザー提供スクショ）を使う。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">v1.2.0</div>
+        <div class="ve-kpi-card__label">Skill version</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">Python 3.10+</div>
+        <div class="ve-kpi-card__label">stdlib only</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">Three.js</div>
+        <div class="ve-kpi-card__label">Runtime target</div>
+      </div>
+      <div class="ve-kpi-card">
+        <div class="ve-kpi-card__value">MIT</div>
+        <div class="ve-kpi-card__label">License</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 対象と精度</span>
+    <ul>
+      <li><strong>object / character / hybrid</strong> に分類。オブジェクトは hard-surface、キャラクターは解剖トラック（頭単位比率・顔ランドマーク・ポーズ）へ分岐する。</li>
+      <li>コード生成前に <code>detailInventory</code> で同一性を決める細部（gloss、bevel、ネジ、線画、ステイン等）を列挙し、厳格品質ゲートが完了を要求する。</li>
+      <li>特定人物・キャラの最大類似度は opt-in の投影パス（ランドマーク適合 → de-light → カメラマッチ → 投影）。1 枚では 100% 保証はせず、領域別 confidence を出す。</li>
+    </ul>
+  </div>
+
+  <div class="ve-code-block structure-tree">
+    <pre><code><span class="dir">img2threejs/</span>
+├── <span class="file-main">SKILL.md</span>          <span class="comment"># スキル入口・手順・ゲート</span>
+├── <span class="file-main">README.md</span>         <span class="comment"># 概要・デモ・クイックスタート</span>
+├── <span class="dir">forge/</span>             <span class="comment"># 決定論スクリプト（stage1–4）</span>
+│   ├── stage1_intake/  <span class="comment"># probe / PBR / landmarks / detail</span>
+│   ├── stage2_spec/    <span class="comment"># assessment / ObjectSculptSpec</span>
+│   ├── stage3_build/   <span class="comment"># pass 制御 / factory 生成</span>
+│   └── stage4_review/  <span class="comment"># 比較シート / review 記録</span>
+└── <span class="dir">grimoire/</span>          <span class="comment"># ルーブリック・レシピ・語彙</span></code></pre>
+  </div>
+
+  <section id="pipeline" class="sec-head">2 — パイプライン</section>
+  <div class="ve-card ve-card--elevated" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> 役割分担</span>
+    <p><strong>スクリプトが強制し、エージェント vision が判定する。</strong> Python は検証・ゲート・仕様作成・比較シート打包・状態管理を担う。見た目スコアは付けない。モデルのトークンは「参照とレンダの横並び 1 枚を見て continue / refine を決める」ことに使う。</p>
+  </div>
+
+  <div class="mermaid-wrap" id="pipeline-diagram">
+    <div class="mermaid-zoom">
+      <button type="button" data-zoom="in" aria-label="拡大">+</button>
+      <button type="button" data-zoom="out" aria-label="縮小">−</button>
+      <button type="button" data-zoom="reset" aria-label="リセット">1x</button>
+    </div>
+    <pre class="mermaid">
+flowchart TD
+  A["参照画像"] --> B["Probe / 適性ゲート"]
+  B --> C["Pre-Spec Assessment\nclass / complexity / quality contract"]
+  C --> D["ObjectSculptSpec 作成\ncomponents / materials / sockets"]
+  D --> E{"Validate +\nstrict-quality"}
+  E -- "浅い" --> D
+  E -- "ok" --> F["ロック済みビルドパス"]
+  F --> G["Three.js factory 生成\n現在パスのみ"]
+  G --> H["ブラウザ描画 + スクショ"]
+  H --> I["比較シート 1 枚"]
+  I --> J{"Agent vision レビュー"}
+  J -- "閾値未満" --> K["Self-correct\nrefine-spec / refine-code"]
+  K --> F
+  J -- "pass" --> L{"次のパスあり?"}
+  L -- "yes" --> F
+  L -- "no" --> M["アニメーション準備済み\nThree.js モデル"]
+    </pre>
+  </div>
+
+  <div class="ve-callout">
+    <strong>Self-correction:</strong> 各パス後に取る行動はちょうど 1 つ — <code>continue</code> / <code>refine-spec</code> / <code>refine-code</code> / <code>request-input</code> / <code>stop</code>。<code>refine-spec</code> は浅い・誤った仕様を直して再検証し、<code>refine-code</code> は健全な仕様に合わないジオメトリ／マテリアル／ライティングを直す。
+  </div>
+
+  <section id="passes" class="sec-head">3 — ビルドパス</section>
+  <div class="ve-card" style="--i:3">
+    <span class="ve-section-label"><span class="ve-dot"></span> 固定順</span>
+    <p>モデルは固定順序でスカルプトする。前パスがレビュー受け入れされるまで次はアンロックされない。ジェネレータは<strong>現在アンロックされたパスだけ</strong>を出力する。</p>
+    <div class="pass-strip" aria-label="build passes">
+      <span class="pass">blockout</span><span class="arrow">→</span>
+      <span class="pass">structural</span><span class="arrow">→</span>
+      <span class="pass">form-refinement</span><span class="arrow">→</span>
+      <span class="pass">material</span><span class="arrow">→</span>
+      <span class="pass">surface</span><span class="arrow">→</span>
+      <span class="pass">lighting</span><span class="arrow">→</span>
+      <span class="pass">interaction</span><span class="arrow">→</span>
+      <span class="pass">optimization</span>
+    </div>
+    <p><code>continue</code> には実レンダ、比較シート、エージェント vision の全体スコアが閾値以上、かつ同一性を決める各 feature が個別閾値以上、が必要。</p>
+  </div>
+
+  <section id="gates" class="sec-head">4 — ゲート</section>
+  <div class="ve-table-wrap">
+    <table>
+      <thead>
+        <tr><th>ゲート</th><th>内容</th><th>主な参照</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Suitability</td>
+          <td>画像が 3D 再構築の対象として成立するか（pass / conditional / reject）。</td>
+          <td><code>grimoire/intake/validation_rubric.md</code></td>
+        </tr>
+        <tr>
+          <td>Pre-spec / strict-quality</td>
+          <td>複雑さに見合う深さになるまでコード生成をブロック（複合オブジェクトの単一ルート仕様は不可）。</td>
+          <td><code>grimoire/intake/quality_contract.md</code></td>
+        </tr>
+        <tr>
+          <td>Detail inventory</td>
+          <td><code>moderate</code> 以上では <code>targetMinDetails</code> 到達と、各 detail → component/material への実マッピングが必須。</td>
+          <td><code>grimoire/intake/detail_inventory.md</code></td>
+        </tr>
+        <tr>
+          <td>Screenshot feedback</td>
+          <td>レンダ + 比較シート + 全体スコア（既定 ≥ 0.7）+ critical feature 個別閾値。</td>
+          <td><code>grimoire/feedback/render_capture.md</code></td>
+        </tr>
+        <tr>
+          <td>Action-ready</td>
+          <td>ピボット・ソケット・コライダ・破壊グループを持つ実行時階層。<code>root.userData.sculptRuntime</code>。</td>
+          <td><code>grimoire/readiness/action_rigging.md</code></td>
+        </tr>
+        <tr>
+          <td>Attachment</td>
+          <td>持ち手・四肢・チューブ等は親ソケットと接触パラメータを宣言。空中浮遊パーツ禁止。</td>
+          <td><code>grimoire/readiness/joint_attachment.md</code></td>
+        </tr>
+        <tr>
+          <td>Material / lighting</td>
+          <td>独立した PBR チャネルと実ライト。albedo を roughness へエイリアスしない。</td>
+          <td><code>grimoire/feedback/shading_realism.md</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <section id="tokens" class="sec-head">5 — トークン効率</section>
+  <div class="ve-card" style="--i:4">
+    <span class="ve-section-label"><span class="ve-dot"></span> 設計意図</span>
+    <p>典型的な image-to-3D ループは、毎回モデル全体を読み直し、ピクセル採点や JSON 手検証にトークンを燃やす。img2threejs はその機械仕事を決定論スクリプトへ押し出し、モデルは判断が要るところだけ使う。</p>
+    <div class="step-flow">
+      <div class="step-card">
+        <div class="step-card__num">01</div>
+        <div class="step-card__title">Scripts enforce</div>
+        <div class="step-card__body">検証・ゲート・仕様・PBR 証拠・比較シート・パス状態。見た目スコアは付けない。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">02</div>
+        <div class="step-card__title">Zero install</div>
+        <div class="step-card__body">Python 3.10+ 標準ライブラリのみ。pip / PIL / numpy / Playwright なし。PNG は <code>struct</code> + <code>zlib</code>。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">03</div>
+        <div class="step-card__title">Pass-gated codegen</div>
+        <div class="step-card__body">現在パスだけ生成。毎イテレーションでモデル全体を再生成・再読しない。</div>
+      </div>
+      <div class="step-card">
+        <div class="step-card__num">04</div>
+        <div class="step-card__title">Fail before codegen</div>
+        <div class="step-card__body">strict-quality が浅い仕様を先に落とす。仕様不足のままレンダしてトークンを捨てない。</div>
+      </div>
+    </div>
+    <p>成果は差分可能な TypeScript + JSON 仕様。多 MB のメッシュバイナリではない。段階別の内訳は <code>docs/TOKEN_COST.md</code>。</p>
+  </div>
+
+  <section id="start" class="sec-head">6 — クイックスタート</section>
+  <div class="ve-card" style="--i:5">
+    <span class="ve-section-label"><span class="ve-dot"></span> インストールと呼び出し</span>
+    <div class="ve-code-block">
+      <pre><code>git clone https://github.com/hoainho/img2threejs.git ~/.claude/skills/img2threejs
+
+# Claude Code などで画像を添付し:
+# /img2threejs Rebuild this object as a Three.js model,
+# keep the proportions, angles, and colours.</code></pre>
+    </div>
+    <h3>主要スクリプト（スキルルートから）</h3>
+    <div class="ve-code-block">
+      <pre><code>python3 forge/stage1_intake/probe_image.py &lt;image&gt;
+python3 forge/stage2_spec/new_pre_spec_assessment.py "Name" --image &lt;image&gt; --out assessment.json
+python3 forge/stage2_spec/new_sculpt_spec.py "Name" --image &lt;image&gt; --assessment assessment.json --out spec.json
+python3 forge/stage2_spec/validate_sculpt_spec.py spec.json --strict-quality
+python3 forge/stage3_build/generate_threejs_factory.py spec.json --out src/createObjectModel.ts</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-table-wrap">
+    <table>
+      <thead>
+        <tr><th>スクリプト</th><th>役割</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>stage1_intake/probe_image.py</code></td><td>画像メタデータと明らかな技術問題（見た目判定ではない）</td></tr>
+        <tr><td><code>stage2_spec/new_pre_spec_assessment.py</code></td><td>クラス分類・複雑さ・quality contract</td></tr>
+        <tr><td><code>stage2_spec/new_sculpt_spec.py</code></td><td>ObjectSculptSpec の作成</td></tr>
+        <tr><td><code>stage2_spec/validate_sculpt_spec.py</code></td><td>検証。<code>--strict-quality</code> で浅い仕様をブロック</td></tr>
+        <tr><td><code>stage3_build/orchestrate_passes.py</code></td><td>パス状態: status / check / sync</td></tr>
+        <tr><td><code>stage3_build/generate_threejs_factory.py</code></td><td>現在パスの Three.js Group 工場関数を出力</td></tr>
+        <tr><td><code>stage4_review/make_comparison_sheet.py</code></td><td>参照 vs レンダの比較シート 1 枚</td></tr>
+        <tr><td><code>stage4_review/append_review.py</code></td><td>パスごとのスコア・決定・証拠を記録</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <section id="output" class="sec-head">7 — 成果物と限界</section>
+  <div class="ve-card" style="--i:6">
+    <span class="ve-section-label"><span class="ve-dot"></span> 得られるもの</span>
+    <ul>
+      <li><strong>ObjectSculptSpec</strong>（JSON）— コンポーネントツリー、マテリアル、反復系、ソケット、パスごとの review 履歴</li>
+      <li><strong><code>createObjectNameModel(spec, options)</code></strong> — <code>THREE.Group</code> を返し、<code>root.userData.sculptRuntime</code> に nodes / sockets / colliders / destruction groups</li>
+      <li>各パスのレンダと比較シート</li>
+    </ul>
+  </div>
+  <div class="ve-callout">
+    <strong>限界:</strong> 1 枚では隠れた面や厳密幾何は保証できない。見え方は近似・スタイライズ・ローポリと明示し、見えない面は可視側のミラー推論に留める。hard-surface 向きで、キャラクターはスタイライズ再構築（フォトリアル顔コピーではない）。「この画像では要求 fidelity に届かない」は正しい結果。
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:7">
+    <span class="ve-section-label"><span class="ve-dot"></span> ロードマップ（要約）</span>
+    <ul>
+      <li><strong>v1.0–1.2</strong> shipped — オブジェクト段階スカルプト、detail-first、ヒューマノイド・キャラクター生成</li>
+      <li><strong>v1.3</strong> planned — likeness maximization（投影ファースト、領域別 confidence）</li>
+      <li><strong>v1.4</strong> planned — SkinnedMesh / morph / glTF 出力</li>
+    </ul>
+  </div>
+
+  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <div class="ve-card" style="--i:8">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・デモ</span>
+    <ul>
+      <li><a href="https://github.com/hoainho/img2threejs" target="_blank" rel="noopener">GitHub: hoainho/img2threejs</a> — スキル本体</li>
+      <li><a href="https://hoainho.github.io/img2threejs-showcase/" target="_blank" rel="noopener">Live Demo Gallery</a> — 生成コードのブラウザ実行デモ</li>
+      <li><a href="https://github.com/hoainho/img2threejs-showcase" target="_blank" rel="noopener">hoainho/img2threejs-showcase</a> — ギャラリーソース</li>
+      <li><a href="https://github.com/hoainho/img2threejs/blob/main/SKILL.md" target="_blank" rel="noopener">SKILL.md</a> — 手順・ゲート・実装ルール</li>
+      <li><a href="https://github.com/hoainho/img2threejs/blob/main/docs/TOKEN_COST.md" target="_blank" rel="noopener">docs/TOKEN_COST.md</a> — 段階別トークン内訳</li>
+      <li><a href="https://github.com/hoainho/img2threejs/blob/main/ROADMAP.md" target="_blank" rel="noopener">ROADMAP.md</a> — マイルストーン</li>
+    </ul>
+  </div>
+
+  <p class="src-note">出典: hoainho/img2threejs の README.md / SKILL.md（公開リポジトリ）</p>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+<script>
+(function() {
+  var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: isDark
+      ? {
+          primaryColor: '#1a2740',
+          primaryTextColor: '#e8eef8',
+          primaryBorderColor: '#6b9bff',
+          lineColor: '#8ab0e8',
+          secondaryColor: '#243048',
+          tertiaryColor: '#2a2418',
+          background: '#121826',
+          mainBkg: '#1a2740',
+          nodeBorder: '#6b9bff',
+          clusterBkg: '#1a2740',
+          titleColor: '#e8eef8',
+          fontFamily: 'Space Grotesk, system-ui, sans-serif',
+          fontSize: '15px'
+        }
+      : {
+          primaryColor: '#dce6f8',
+          primaryTextColor: '#12203a',
+          primaryBorderColor: '#2f4f8f',
+          lineColor: '#5a7399',
+          secondaryColor: '#f4f7fc',
+          tertiaryColor: '#fff6df',
+          background: '#ffffff',
+          mainBkg: '#dce6f8',
+          nodeBorder: '#2f4f8f',
+          clusterBkg: '#f4f7fc',
+          titleColor: '#12203a',
+          fontFamily: 'Space Grotesk, system-ui, sans-serif',
+          fontSize: '15px'
+        }
+  });
+
+  var wrap = document.getElementById('pipeline-diagram');
+  if (!wrap) return;
+  var scale = 1;
+  var mermaidEl = wrap.querySelector('.mermaid');
+  wrap.querySelectorAll('[data-zoom]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var action = btn.getAttribute('data-zoom');
+      if (action === 'in') scale = Math.min(2.2, scale + 0.15);
+      else if (action === 'out') scale = Math.max(0.6, scale - 0.15);
+      else scale = 1;
+      if (mermaidEl) {
+        mermaidEl.style.transform = 'scale(' + scale + ')';
+        mermaidEl.style.transformOrigin = 'center center';
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
