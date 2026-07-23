@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Synthadoc — ローカル Markdown wiki を編成する知識コンパイラ</title>
+  <meta name="description" content="Synthadoc が多様な資料を取り込み、出典付きのローカル Markdown wiki へ編成する流れ、構成、品質管理、主要インターフェイスを図解します。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Synthadoc — ローカル Markdown wiki を編成する知識コンパイラ">
+  <meta property="og:description" content="資料の取り込みから wiki 編成、検索、検証、出力まで。Synthadoc の処理フローと運用境界を図解します。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/synthadoc.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Synthadoc — ローカル Markdown wiki を編成する知識コンパイラ">
+  <meta name="twitter:description" content="Synthadoc の知識コンパイル、wiki ライフサイクル、CLI・Web・Obsidian・MCP の関係を図解します。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&amp;family=Martian+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + paper/ink palette) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.976 0.018 78);
+      --foreground: oklch(0.245 0.025 48);
+      --card: oklch(0.992 0.009 78);
+      --card-foreground: oklch(0.245 0.025 48);
+      --popover: var(--card);
+      --popover-foreground: var(--card-foreground);
+      --primary: oklch(0.39 0.11 42);
+      --primary-foreground: oklch(0.985 0.006 78);
+      --secondary: oklch(0.93 0.025 78);
+      --secondary-foreground: oklch(0.31 0.035 48);
+      --muted: oklch(0.94 0.018 78);
+      --muted-foreground: oklch(0.49 0.035 52);
+      --accent: oklch(0.915 0.035 69);
+      --accent-foreground: oklch(0.29 0.04 46);
+      --destructive: oklch(0.54 0.19 28);
+      --border: oklch(0.85 0.035 68);
+      --input: var(--border);
+      --ring: oklch(0.57 0.12 42);
+      --chart-1: oklch(0.55 0.16 42);
+      --chart-2: oklch(0.56 0.10 153);
+      --chart-3: oklch(0.43 0.08 222);
+      --chart-4: oklch(0.68 0.13 82);
+      --chart-5: oklch(0.52 0.10 18);
+      --code-bg: oklch(0.25 0.025 48);
+      --code-text: oklch(0.91 0.035 80);
+      --font-body: 'Fraunces', Georgia, serif;
+      --font-mono: 'Martian Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.19 0.018 48);
+        --foreground: oklch(0.92 0.018 78);
+        --card: oklch(0.235 0.02 48);
+        --card-foreground: oklch(0.93 0.016 78);
+        --popover: var(--card);
+        --popover-foreground: var(--card-foreground);
+        --primary: oklch(0.76 0.11 55);
+        --primary-foreground: oklch(0.18 0.02 48);
+        --secondary: oklch(0.285 0.025 48);
+        --secondary-foreground: oklch(0.92 0.018 78);
+        --muted: oklch(0.285 0.02 48);
+        --muted-foreground: oklch(0.71 0.025 72);
+        --accent: oklch(0.31 0.035 54);
+        --accent-foreground: oklch(0.94 0.018 78);
+        --destructive: oklch(0.69 0.17 28);
+        --border: oklch(0.96 0.02 78 / 13%);
+        --input: oklch(0.96 0.02 78 / 18%);
+        --ring: oklch(0.72 0.11 55);
+        --chart-1: oklch(0.72 0.13 50);
+        --chart-2: oklch(0.72 0.10 153);
+        --chart-3: oklch(0.72 0.09 222);
+        --chart-4: oklch(0.78 0.12 82);
+        --chart-5: oklch(0.69 0.12 18);
+        --code-bg: oklch(0.145 0.014 48);
+        --code-text: oklch(0.88 0.035 80);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(61, 43, 27, 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(61, 43, 27, 0.05); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%);
+      box-shadow: 0 10px 35px rgba(61, 43, 27, 0.09);
+      border-color: color-mix(in oklch, var(--border) 52%, var(--chart-1) 48%);
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 24rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow: auto; padding: 1rem 1.125rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.75; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-x: auto; }
+    .ve-table-wrap table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 0.82rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-size: 0.67rem; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.07em; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: 0; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 70%, transparent); }
+    .ve-kpi-card { background: color-mix(in oklch, var(--accent) 82%, var(--card) 18%); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(61, 43, 27, 0.05); }
+    .ve-kpi-card__value { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1rem; line-height: 1.25; color: var(--chart-1); }
+    .ve-kpi-card__label { display: block; font-size: 0.72rem; line-height: 1.45; color: var(--muted-foreground); margin-top: 0.5rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.9rem 1.125rem; font-size: 0.83rem; line-height: 1.65; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.72rem; background: color-mix(in oklch, var(--chart-2) 12%, transparent); color: var(--foreground); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(color-mix(in oklch, var(--border) 35%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in oklch, var(--border) 35%, transparent) 1px, transparent 1px),
+        radial-gradient(ellipse at 20% 0%, color-mix(in oklch, var(--chart-4) 12%, transparent) 0%, transparent 45%);
+      background-size: 32px 32px, 32px 32px, auto;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    .wrap { width: 100%; max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: 190px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 76rem; }
+
+    /* ============ TOC ============ */
+    .toc { position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1; max-height: calc(100dvh - 48px); overflow-y: auto; }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 5px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+
+    /* ============ Typography + layout ============ */
+    h1 { font-size: clamp(2.6rem, 7vw, 5.4rem); font-weight: 600; line-height: 0.96; letter-spacing: -0.045em; margin-bottom: 0.85rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.83rem; line-height: 1.65; margin-bottom: 2rem; max-width: 62rem; }
+    .sec-head { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 700; margin: 3rem 0 1rem; padding-bottom: 0.55rem; border-bottom: 1px solid var(--border); letter-spacing: 0.035em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.25rem; font-weight: 600; margin: 1.4rem 0 0.7rem; }
+    p { font-size: 1rem; line-height: 1.75; margin-bottom: 0.85rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.25rem; }
+    li { font-size: 0.93rem; line-height: 1.65; margin-bottom: 0.4rem; }
+    a { color: var(--chart-1); text-underline-offset: 3px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.78rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+    .card-stack { display: grid; gap: 1rem; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.8rem; margin-top: 1.25rem; }
+    .two-col { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 1rem; }
+    .three-col { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    .interface-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
+    .interface-card { min-width: 0; padding: 1rem; border: 1px solid var(--border); border-top: 3px solid var(--chart-3); border-radius: var(--radius-md); background: var(--card); }
+    .interface-card:nth-child(2) { border-top-color: var(--chart-1); }
+    .interface-card:nth-child(3) { border-top-color: var(--chart-2); }
+    .interface-card:nth-child(4) { border-top-color: var(--chart-4); }
+    .interface-card strong { display: block; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 0.45rem; }
+    .interface-card span { display: block; color: var(--text-dim); font-size: 0.82rem; line-height: 1.5; }
+
+    /* ============ Process + architecture ============ */
+    .process { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; align-items: stretch; overflow-x: auto; padding-bottom: 0.25rem; }
+    .process-step { min-width: 138px; position: relative; padding: 1rem 0.9rem; border: 1px solid var(--border); background: var(--card); }
+    .process-step:first-child { border-radius: var(--radius-lg) 0 0 var(--radius-lg); }
+    .process-step:last-child { border-radius: 0 var(--radius-lg) var(--radius-lg) 0; }
+    .process-step + .process-step { border-left: 0; }
+    .process-step:not(:last-child)::after { content: ''; position: absolute; z-index: 2; right: -5px; top: 50%; width: 8px; height: 8px; background: var(--card); border-top: 1px solid var(--chart-1); border-right: 1px solid var(--chart-1); transform: translateY(-50%) rotate(45deg); }
+    .process-num { display: block; font-family: var(--font-mono); font-size: 0.62rem; color: var(--chart-1); margin-bottom: 0.45rem; }
+    .process-title { display: block; font-size: 0.95rem; font-weight: 600; margin-bottom: 0.35rem; }
+    .process-detail { display: block; color: var(--text-dim); font-size: 0.76rem; line-height: 1.45; }
+    .architecture { display: grid; grid-template-columns: 0.82fr 1.35fr 0.82fr; gap: 1rem; align-items: stretch; }
+    .arch-column { min-width: 0; display: grid; gap: 0.75rem; align-content: center; }
+    .arch-node { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.9rem 1rem; }
+    .arch-node strong { display: block; font-family: var(--font-mono); font-size: 0.72rem; color: var(--chart-3); margin-bottom: 0.35rem; }
+    .arch-node span { display: block; color: var(--text-dim); font-size: 0.78rem; line-height: 1.45; }
+    .arch-core { display: grid; gap: 0.75rem; border: 2px solid color-mix(in oklch, var(--chart-1) 55%, var(--border)); border-radius: var(--radius-lg); padding: 1rem; background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%); }
+    .arch-core-label { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; color: var(--chart-1); text-align: center; text-transform: uppercase; letter-spacing: 0.1em; }
+    .arch-core .arch-node { background: color-mix(in oklch, var(--card) 93%, var(--chart-4) 7%); }
+    .arch-arrow { align-self: center; color: var(--chart-1); font-family: var(--font-mono); font-size: 0.65rem; text-align: center; }
+    .state-line { display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; margin: 1rem 0; }
+    .state { font-family: var(--font-mono); font-size: 0.68rem; padding: 0.4rem 0.55rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--card); }
+    .state-arrow { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.7rem; }
+    .source-note { margin-top: 1.25rem; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.38s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; } }
+    @media (max-width: 1000px) {
+      body { padding: 24px; }
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      .toc { position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto; -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 24px; margin: 0 -24px; grid-row: auto; }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 24px; }
+      .sec-head { scroll-margin-top: 58px; }
+      .interface-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 720px) {
+      .kpi-row, .two-col, .three-col, .architecture { grid-template-columns: 1fr; }
+      .architecture { gap: 0.65rem; }
+      .arch-arrow { padding: 0.15rem 0; }
+      .interface-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 3rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="ページ内目次">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#model">知識コンパイル</a>
+    <a href="#flow">処理の流れ</a>
+    <a href="#architecture">構成</a>
+    <a href="#quality">品質とライフサイクル</a>
+    <a href="#interfaces">操作面</a>
+    <a href="#start">始め方</a>
+    <a href="#links">参照</a>
+  </nav>
+
+  <main class="main">
+    <h1>Synthadoc</h1>
+    <p class="subtitle">多様な資料を、出典・リンク・状態を持つローカル Markdown wiki へ編成する LLM knowledge compilation engine。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 成果物が主役</span>
+      <p><strong>Synthadoc</strong> は、PDF、表計算、スライド、Web ページ、画像、動画、Word、テキスト、AI セッション記録を読み、相互参照された wiki に編成する。検索時だけ断片を集めるのではなく、取り込み時に内容を統合するため、サーバーを止めても Markdown の知識成果物が残る。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Python 3.11+</span><span class="ve-kpi-card__label">pip で導入する Python エンジン</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Markdown</span><span class="ve-kpi-card__label">編集・閲覧できるローカル成果物</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">5 states</span><span class="ve-kpi-card__label">ページ品質を追跡するライフサイクル</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">v1.1.0</span><span class="ve-kpi-card__label">参照した Community Edition</span></div>
+      </div>
+    </div>
+
+    <section id="model" class="sec-head">2 — 知識コンパイル</section>
+    <div class="two-col">
+      <div class="ve-card ve-card--elevated" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Synthadoc</span>
+        <h3>取り込み時に wiki を更新</h3>
+        <p>新しい資料を要約するだけでなく、既存ページとの関係を調べ、<code>[[wikilinks]]</code>、出典、矛盾、ページ状態を更新する。wiki 自体が検索・編集・監査できる成果物になる。</p>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> 典型的な RAG</span>
+        <h3>質問時に断片を検索</h3>
+        <p>保存したチャンクから質問に近い断片を取り出し、その場で回答を合成する。Synthadoc はこの query-time synthesis を主役にせず、先に知識を編成しておく。</p>
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>保護境界:</strong> 人が確認して <code>active</code> にしたページは、矛盾する新規ソースで自動上書きしない。矛盾をレビュー対象として残す。
+    </div>
+
+    <section id="flow" class="sec-head">3 — 処理の流れ</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> source → wiki → answer</span>
+      <div class="process" aria-label="Synthadoc の処理フロー">
+        <div class="process-step"><span class="process-num">01</span><span class="process-title">取り込む</span><span class="process-detail">ローカルファイル、URL、Web 検索、YouTube を受け付ける</span></div>
+        <div class="process-step"><span class="process-num">02</span><span class="process-title">安全化する</span><span class="process-detail">隠し文字や命令上書き表現を LLM 呼び出し前に除去</span></div>
+        <div class="process-step"><span class="process-num">03</span><span class="process-title">編成する</span><span class="process-detail">内容を統合し、ページ・wikilink・出典を生成</span></div>
+        <div class="process-step"><span class="process-num">04</span><span class="process-title">検証する</span><span class="process-detail">矛盾、孤立ページ、誇張、切れた引用を lint</span></div>
+        <div class="process-step"><span class="process-num">05</span><span class="process-title">使う</span><span class="process-detail">BM25 検索、ストリーミング回答、context pack、export</span></div>
+      </div>
+    </div>
+    <div class="three-col" style="margin-top:1rem">
+      <div class="ve-card" style="--i:1"><span class="ve-section-label"><span class="ve-dot"></span> Retrieval</span><p>BM25 を基準にし、小規模コーパス向け TF fallback と任意の semantic re-ranking を組み合わせる。</p></div>
+      <div class="ve-card" style="--i:2"><span class="ve-section-label"><span class="ve-dot"></span> Context</span><p>質問を分解し、関連抜粋をトークン予算内へまとめた context pack を生成できる。</p></div>
+      <div class="ve-card" style="--i:3"><span class="ve-section-label"><span class="ve-dot"></span> Cache</span><p>質問と wiki version で回答をキャッシュし、取り込みや状態変更時に無効化する。</p></div>
+    </div>
+
+    <section id="architecture" class="sec-head">4 — 構成</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 1 つの runtime、4 つの操作面</span>
+      <div class="architecture">
+        <div class="arch-column">
+          <div class="arch-node"><strong>CLI</strong><span>install、serve、ingest、query、lint、export などを Typer から実行</span></div>
+          <div class="arch-node"><strong>Obsidian plugin</strong><span>vault 内で取り込み、質問、状態変更、出典確認、graph 表示</span></div>
+          <div class="arch-node"><strong>Web UI</strong><span>会話履歴、ストリーミング回答、knowledge graph をブラウザで操作</span></div>
+          <div class="arch-node"><strong>MCP clients</strong><span>Claude Desktop、Claude Code などから tool として呼び出す</span></div>
+        </div>
+        <div class="arch-column">
+          <div class="arch-arrow">requests ⇄ events</div>
+          <div class="arch-core">
+            <div class="arch-core-label">Shared runtime</div>
+            <div class="arch-node"><strong>HTTP / SSE / MCP</strong><span>長い処理をジョブ化し、ストリーミングと外部連携を提供</span></div>
+            <div class="arch-node"><strong>Orchestrator</strong><span>ingest、query、lint agent を調整し、retry、cost guard、cache を管理</span></div>
+            <div class="arch-node"><strong>Skills + providers</strong><span>資料形式ごとの抽出と複数 LLM provider を遅延選択</span></div>
+          </div>
+          <div class="arch-arrow">reads ⇄ writes</div>
+        </div>
+        <div class="arch-column">
+          <div class="arch-node"><strong>wiki/*.md</strong><span>本文、YAML frontmatter、wikilink、claim citation</span></div>
+          <div class="arch-node"><strong>audit.db</strong><span>ジョブ、コスト、状態遷移、監査イベント</span></div>
+          <div class="arch-node"><strong>config.toml</strong><span>provider、port、並列数、予算、候補 staging を wiki ごとに分離</span></div>
+          <div class="arch-node"><strong>indexes + cache</strong><span>検索、graph、再利用可能な LLM 応答を保持</span></div>
+        </div>
+      </div>
+    </div>
+
+    <section id="quality" class="sec-head">5 — 品質とライフサイクル</section>
+    <div class="two-col">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> ページ状態</span>
+        <div class="state-line" aria-label="ページのライフサイクル">
+          <span class="state">draft</span><span class="state-arrow">→</span><span class="state">active</span><span class="state-arrow">→</span><span class="state">stale</span><span class="state-arrow">/</span><span class="state">contradicted</span><span class="state-arrow">→</span><span class="state">archived</span>
+        </div>
+        <p>lint と人のレビューで状態を動かし、変更履歴を immutable event log に残す。archived ページへの wikilink は関連ページから連鎖的に除去される。</p>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> 信頼の仕組み</span>
+        <ul>
+          <li>各 claim に元ファイルと行を示す citation を付ける</li>
+          <li>矛盾、孤立、切れた citation を構造 lint で検出する</li>
+          <li>別の LLM pass で誇張や根拠の弱い主張を確認する</li>
+          <li>token と cost を job 単位で記録し、hard gate を設定できる</li>
+        </ul>
+      </div>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>ネットワーク境界:</strong> server の既定 bind は <code>127.0.0.1</code>。外部 interface へ bind する場合、組み込み認証がないため別途保護が必要になる。
+    </div>
+
+    <section id="interfaces" class="sec-head">6 — 操作面</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 同じ wiki を用途別に操作</span>
+      <div class="interface-grid">
+        <div class="interface-card"><strong>CLI</strong><span>自動化、batch ingest、status、backup、schedule に向く。</span></div>
+        <div class="interface-card"><strong>Obsidian</strong><span>Markdown の編集、citation 確認、候補レビューに向く。</span></div>
+        <div class="interface-card"><strong>Web</strong><span>会話型 query、session history、graph 探索に向く。</span></div>
+        <div class="interface-card"><strong>MCP / HTTP</strong><span>agent、workflow、外部アプリから knowledge service として使う。</span></div>
+      </div>
+    </div>
+    <div class="ve-table-wrap" style="margin-top:1rem">
+      <table>
+        <thead><tr><th>目的</th><th>主要コマンド</th><th>結果</th></tr></thead>
+        <tbody>
+          <tr><td>wiki を作る</td><td><code>synthadoc install</code> / <code>use</code></td><td>独立した config、port、audit、wiki directory</td></tr>
+          <tr><td>資料を編成する</td><td><code>ingest</code> / <code>scaffold</code></td><td>出典付き Markdown pages と index</td></tr>
+          <tr><td>知識を使う</td><td><code>query</code> / <code>context build</code></td><td>cited answer または token-budget evidence pack</td></tr>
+          <tr><td>品質を管理する</td><td><code>lint</code> / <code>lifecycle</code> / <code>audit</code></td><td>findings、状態変更、検証履歴</td></tr>
+          <tr><td>持ち出す</td><td><code>export</code> / <code>backup</code></td><td>llms.txt、GraphML、JSON、OKF、portable zip</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section id="start" class="sec-head">7 — 始め方</section>
+    <div class="two-col">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 最短の確認経路</span>
+        <p>Python package を入れ、LLM 呼び出しなしで閲覧できる History of Computing demo を作る。server を起動したら CLI、Obsidian、Web UI が同じ wiki を参照する。</p>
+        <div class="ve-code-block">
+          <pre><code>pip install synthadoc
+synthadoc install history-of-computing --target ~/wikis --demo
+synthadoc use history-of-computing
+synthadoc serve</code></pre>
+        </div>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> 自分の wiki</span>
+        <p>domain を指定して空の wiki を作り、provider を設定してから資料を取り込む。</p>
+        <div class="ve-code-block">
+          <pre><code>synthadoc install market-notes \
+  --target ~/wikis \
+  --domain "Market research"
+synthadoc use market-notes
+synthadoc serve
+synthadoc ingest report.pdf
+synthadoc query "What changed?"</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <section id="links" class="sec-head">8 — 参照</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 公式資料</span>
+      <ul>
+        <li><a href="https://github.com/axoviq-ai/synthadoc" target="_blank" rel="noopener">axoviq-ai/synthadoc</a> — README、source、release</li>
+        <li><a href="https://github.com/axoviq-ai/synthadoc/blob/main/docs/design.md" target="_blank" rel="noopener">Design document</a> — orchestrator、agents、storage、HTTP / MCP、設定</li>
+        <li><a href="https://github.com/axoviq-ai/synthadoc/blob/main/docs/user-quick-start-guide.md" target="_blank" rel="noopener">User Quick-Start Guide</a> — demo から lifecycle、audit、export までの実行手順</li>
+      </ul>
+      <p class="source-note">Source snapshot: Synthadoc Community Edition v1.1.0. 機能名と既定値は参照時点の公式リポジトリに基づく。</p>
+    </div>
+  </main>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
