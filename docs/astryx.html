@@ -206,9 +206,23 @@
 
     .mermaid-wrap {
       position: relative; border: 1px solid var(--border); border-radius: var(--radius-lg);
-      background: var(--card); overflow: hidden; margin: 1rem 0;
+      background: var(--card); overflow: auto; margin: 1rem 0; min-height: 24rem;
+      display: flex; justify-content: center; align-items: flex-start; cursor: grab;
     }
-    .mermaid { min-width: 0; padding: 1.25rem; }
+    .mermaid-wrap.is-panning { cursor: grabbing; user-select: none; }
+    .mermaid { min-width: 760px; padding: 2.5rem 1.25rem 1.25rem; zoom: 1.5; }
+    .mermaid .nodeLabel { color: var(--text) !important; }
+    .mermaid .edgeLabel { color: var(--text-dim) !important; background-color: var(--bg) !important; }
+    .mermaid .edgeLabel rect { fill: var(--bg) !important; }
+    .zoom-controls {
+      position: absolute; top: 8px; right: 8px; display: flex; gap: 2px; z-index: 10;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 2px;
+    }
+    .zoom-controls button {
+      width: 28px; height: 28px; border: 0; border-radius: 4px; background: transparent;
+      color: var(--text-dim); font-family: var(--font-mono); font-size: 14px; cursor: pointer;
+    }
+    .zoom-controls button:hover { background: var(--border); color: var(--text); }
 
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
@@ -252,7 +266,7 @@
   <section id="structure" class="sec-head">2 — モノレポ構成</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> pnpm ワークスペース</span>
-    <p>ルートは pnpm 10（Corepack）で管理。公開 npm パッケージは <code>packages/</code>、検証用アプリは <code>apps/</code>、eslint プラグインや vibe-tests などは <code>internal/</code> に分かれる。</p>
+    <p>ルートは Node.js 22+ と pnpm 11（Corepack）で管理。公開 npm パッケージは <code>packages/</code>、検証用アプリは <code>apps/</code>、eslint プラグインや vibe-tests などは <code>internal/</code> に分かれる。</p>
     <div class="ve-code-block structure-tree">
       <pre><code>astryx/
 ├── <span class="dir">packages/</span>
@@ -260,8 +274,9 @@
 │   ├── <span class="file-main">cli/</span>       <span class="comment"># @astryxdesign/cli</span>
 │   ├── <span class="file-main">build/</span>     <span class="comment"># StyleX ビルドプラグイン</span>
 │   ├── <span class="file-main">themes/</span>    <span class="comment"># @astryxdesign/theme-*</span>
-│   ├── <span class="dir">lab/</span>       <span class="comment"># 実験コンポーネント（未公開）</span>
-│   └── <span class="dir">vega/</span>      <span class="comment"># Vega チャート（未公開）</span>
+│   ├── <span class="dir">lab/</span>       <span class="comment"># 実験コンポーネント（内部利用）</span>
+│   ├── <span class="dir">vega/</span>      <span class="comment"># Vega / Vega-Lite（@canary）</span>
+│   └── <span class="dir">charts/</span>    <span class="comment"># D3 ベースのチャート（@canary）</span>
 ├── <span class="dir">apps/</span>
 │   ├── <span class="file-main">docsite/</span>   <span class="comment"># 公式ドキュメント</span>
 │   ├── <span class="file-main">storybook/</span> <span class="comment"># コンポーネントカタログ</span>
@@ -290,7 +305,12 @@
         <p>テーブルページ、詳細レイアウト、フォームウィザードなど実戦的なページパターン。<code>astryx template</code> でソース注入できる。</p>
       </div>
     </div>
-    <div class="mermaid-wrap">
+    <div class="mermaid-wrap" id="architecture-diagram">
+      <div class="zoom-controls" aria-label="図の表示倍率">
+        <button type="button" onclick="zoomDiagram(this, 1.2)" title="拡大" aria-label="拡大">+</button>
+        <button type="button" onclick="zoomDiagram(this, 0.8)" title="縮小" aria-label="縮小">&minus;</button>
+        <button type="button" onclick="resetZoom(this)" title="倍率をリセット" aria-label="倍率をリセット">&#8634;</button>
+      </div>
       <pre class="mermaid">
 flowchart TB
   subgraph consumer["利用者アプリ"]
@@ -349,9 +369,14 @@ flowchart TB
             <td>neutral, butter, chocolate, matcha, stone, gothic, y2k</td>
           </tr>
           <tr>
-            <td><code>@astryxdesign/lab</code> / <code>vega</code></td>
-            <td>実験コンポーネント / Vega チャート</td>
-            <td>Storybook・sandbox 内部用。npm 未公開</td>
+            <td><code>@astryxdesign/lab</code></td>
+            <td>実験コンポーネント</td>
+            <td>Storybook・sandbox の内部利用。npm 未公開</td>
+          </tr>
+          <tr>
+            <td><code>@astryxdesign/vega</code> / <code>charts</code></td>
+            <td>Vega / Vega-Lite ラッパー、D3 ベースのチャート</td>
+            <td><code>@canary</code> dist-tag のみ。安定版は未公開</td>
           </tr>
         </tbody>
       </table>
@@ -361,7 +386,7 @@ flowchart TB
   <section id="cli" class="sec-head">5 — CLI / JSON API</section>
   <div class="ve-card ve-card--elevated" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 主要コマンド</span>
-    <p><code>@astryxdesign/cli</code> は Design System の一次インターフェース。コンポーネント名が分からないときは <code>astryx search</code> が component / hook / doc / template を横断検索し、続くコマンドを結果に付ける。</p>
+    <p><code>@astryxdesign/cli</code> は Design System の一次インターフェース。初回や単発実行は、同名の別 npm パッケージを避けるため <code>npx @astryxdesign/cli</code> を使う。devDependency に追加した後は <code>npx astryx</code> または <code>pnpm exec astryx</code> へ短縮できる。コンポーネント名が分からないときは <code>astryx search</code> が component / hook / doc / template を横断検索し、続くコマンドを結果に付ける。</p>
     <div class="ve-table-wrap" style="margin-top:1rem">
       <table>
         <thead>
@@ -370,9 +395,12 @@ flowchart TB
         <tbody>
           <tr><td><code>astryx search &lt;query&gt;</code></td><td>横断検索（関連度順、ドメインタグ付き）</td></tr>
           <tr><td><code>astryx component Button</code></td><td>props・使用例・ソースを出力</td></tr>
+          <tr><td><code>astryx hook useMediaQuery</code></td><td>hooks の一覧とリファレンスを出力</td></tr>
           <tr><td><code>astryx docs tokens</code></td><td>spacing / color / typography 等の参照</td></tr>
           <tr><td><code>astryx template dashboard</code></td><td>ページ / ブロックテンプレート注入</td></tr>
           <tr><td><code>astryx swizzle Button</code></td><td>コンポーネントソースをプロジェクトへ eject</td></tr>
+          <tr><td><code>astryx theme build &lt;file&gt;</code></td><td><code>defineTheme</code> ファイルを CSS / JS へコンパイル</td></tr>
+          <tr><td><code>astryx discover &lt;query&gt;</code></td><td>外部パッケージとコンポーネントを探索</td></tr>
           <tr><td><code>astryx init</code></td><td>パッケージ導入・テーマ・エージェント向け docs セットアップ</td></tr>
           <tr><td><code>astryx upgrade --apply</code></td><td>バージョン間 codemod</td></tr>
           <tr><td><code>astryx doctor</code></td><td>セットアップ診断（CI 向け exit code）</td></tr>
@@ -411,7 +439,7 @@ flowchart TB
     <div class="step-card">
       <div class="step-card__num">Step 4</div>
       <div class="step-card__title">CLI で参照</div>
-      <div class="step-card__body"><code>astryx component Button</code> や <code>astryx template --list</code> でページ骨格から着手。</div>
+      <div class="step-card__body">初回は <code>npx @astryxdesign/cli component Button</code>、導入後は <code>npx astryx template --list</code> で参照・ページ骨格から着手。</div>
     </div>
   </div>
   <div class="ve-card" style="--i:1">
@@ -455,13 +483,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
   <div class="ve-card ve-card--recessed" style="--i:0">
     <ul>
       <li><a href="https://github.com/facebook/astryx" rel="noopener noreferrer">GitHub — facebook/astryx</a></li>
-      <li><a href="https://facebook.github.io/astryx/" rel="noopener noreferrer">Component Storybook</a></li>
+      <li><a href="https://astryx.atmeta.com" rel="noopener noreferrer">公式ドキュメント</a></li>
+      <li><a href="https://facebook.github.io/astryx/storybook/" rel="noopener noreferrer">Component Storybook</a></li>
+      <li><a href="https://facebook.github.io/astryx/sandbox/" rel="noopener noreferrer">Sandbox</a></li>
       <li><a href="https://github.com/facebook/astryx/blob/main/README.md" rel="noopener noreferrer">README.md</a></li>
       <li><a href="https://github.com/facebook/astryx/blob/main/packages/core/README.md" rel="noopener noreferrer">@astryxdesign/core README（Quick Start）</a></li>
       <li><a href="https://github.com/facebook/astryx/blob/main/packages/cli/README.md" rel="noopener noreferrer">@astryxdesign/cli README</a></li>
       <li><a href="https://stylexjs.com" rel="noopener noreferrer">StyleX</a></li>
     </ul>
-    <p style="margin-top:1rem; font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim)">出典: README.md · packages/core/README.md · packages/cli/README.md</p>
+    <p style="margin-top:1rem; font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim)">出典: README.md · packages/core/README.md · packages/cli/README.md · packages/{lab,vega,charts}/package.json（source snapshot: d762f825, 2026-07-22）</p>
   </div>
   </div>
 </div>
@@ -480,8 +510,59 @@ mermaid.initialize({
     secondaryColor: isDark ? '#1e2820' : '#eef5ee',
     tertiaryColor: isDark ? '#242018' : '#faf6f0',
     fontFamily: 'Literata, Georgia, serif',
-    fontSize: '13px'
+    fontSize: '18px'
   }
+});
+</script>
+<script>
+var INITIAL_ZOOM = 1.5;
+
+function zoomDiagram(btn, factor) {
+  var wrap = btn.closest('.mermaid-wrap');
+  var target = wrap.querySelector('.mermaid');
+  var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM);
+  var next = Math.min(Math.max(current * factor, 0.5), 5);
+  target.dataset.zoom = next;
+  target.style.zoom = next;
+}
+
+function resetZoom(btn) {
+  var wrap = btn.closest('.mermaid-wrap');
+  var target = wrap.querySelector('.mermaid');
+  target.dataset.zoom = INITIAL_ZOOM;
+  target.style.zoom = INITIAL_ZOOM;
+}
+
+document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
+  var target = wrap.querySelector('.mermaid');
+  target.dataset.zoom = INITIAL_ZOOM;
+  wrap.addEventListener('wheel', function(e) {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM);
+    var factor = e.deltaY < 0 ? 1.1 : 0.9;
+    var next = Math.min(Math.max(current * factor, 0.5), 5);
+    target.dataset.zoom = next;
+    target.style.zoom = next;
+  }, { passive: false });
+
+  var startX, startY, scrollLeft, scrollTop;
+  wrap.addEventListener('mousedown', function(e) {
+    if (e.target.closest('.zoom-controls')) return;
+    wrap.classList.add('is-panning');
+    startX = e.clientX;
+    startY = e.clientY;
+    scrollLeft = wrap.scrollLeft;
+    scrollTop = wrap.scrollTop;
+  });
+  window.addEventListener('mousemove', function(e) {
+    if (!wrap.classList.contains('is-panning')) return;
+    wrap.scrollLeft = scrollLeft - (e.clientX - startX);
+    wrap.scrollTop = scrollTop - (e.clientY - startY);
+  });
+  window.addEventListener('mouseup', function() {
+    wrap.classList.remove('is-panning');
+  });
 });
 </script>
 <script>
