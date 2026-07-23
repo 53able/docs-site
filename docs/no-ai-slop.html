@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>No AI slop — 個人の文体を残して AI 文体パターンを削る Agent Skill</title>
+  <meta name="description" content="petergyang/no-ai-slop の Edit・Detect モード、編集フロー、検出パターン、自己評価ループをソースに基づいて解説します。">
+
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="No AI slop — 個人の文体を残して AI 文体パターンを削る Agent Skill">
+  <meta property="og:description" content="Edit と Detect を分け、書き手の声を保ったまま定型的な AI 文体パターンを扱うスキルの設計を解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/no-ai-slop.html">
+  <meta property="og:site_name" content="docs-site">
+
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="No AI slop — 個人の文体を残して AI 文体パターンを削る Agent Skill">
+  <meta name="twitter:description" content="petergyang/no-ai-slop の2つの仕事、編集フロー、検出パターン、評価基準を図解。">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <style>
+    :root,
+    [data-theme="light"] {
+      color-scheme: light;
+      --bg: #f4f0e8;
+      --surface: #fffdf8;
+      --surface-2: #ebe4d9;
+      --surface-3: #ded6c8;
+      --text: #292621;
+      --text-dim: #716b61;
+      --border: #d7cfc2;
+      --border-bright: #aaa093;
+      --chart-1: #a53e4d;
+      --chart-1-dim: rgba(165, 62, 77, 0.10);
+      --chart-2: #3f7357;
+      --chart-2-dim: rgba(63, 115, 87, 0.11);
+      --warning: #9a681e;
+      --warning-dim: rgba(154, 104, 30, 0.11);
+      --shadow: 0 14px 35px rgba(56, 44, 30, 0.08);
+    }
+
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #171512;
+      --surface: #211e1a;
+      --surface-2: #2b2722;
+      --surface-3: #39332c;
+      --text: #f1eadf;
+      --text-dim: #aaa197;
+      --border: #403a33;
+      --border-bright: #675e53;
+      --chart-1: #e27988;
+      --chart-1-dim: rgba(226, 121, 136, 0.12);
+      --chart-2: #79b895;
+      --chart-2-dim: rgba(121, 184, 149, 0.12);
+      --warning: #d5a450;
+      --warning-dim: rgba(213, 164, 80, 0.12);
+      --shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      padding: 28px 40px 72px;
+      background:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        var(--bg);
+      background-size: 100% 32px;
+      color: var(--text);
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: 17px;
+      line-height: 1.65;
+    }
+
+    a { color: var(--chart-1); }
+    a:hover { color: var(--chart-2); }
+
+    code {
+      border-radius: 4px;
+      background: var(--surface-2);
+      color: var(--chart-1);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.82em;
+      padding: 2px 5px;
+    }
+
+    .wrap {
+      display: grid;
+      grid-template-columns: 176px minmax(0, 1fr);
+      gap: 0 44px;
+      max-width: 1220px;
+      margin: 0 auto;
+    }
+
+    .main { min-width: 0; }
+
+    .toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px);
+      overflow-y: auto;
+      padding: 14px 0;
+    }
+
+    .toc-title {
+      margin-bottom: 8px;
+      padding: 0 0 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .toc a {
+      display: block;
+      margin-bottom: 2px;
+      padding: 5px 8px;
+      border-left: 2px solid transparent;
+      border-radius: 4px;
+      color: var(--text-dim);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      line-height: 1.45;
+      text-decoration: none;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+
+    .toc a:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    .toc a.active {
+      border-left-color: var(--chart-1);
+      color: var(--text);
+    }
+
+    .theme-toggle {
+      position: fixed;
+      z-index: 300;
+      top: 18px;
+      right: 18px;
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .theme-toggle svg { width: 18px; height: 18px; }
+    [data-theme="light"] .theme-toggle__moon { display: none; }
+    [data-theme="dark"] .theme-toggle__sun { display: none; }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 36px;
+      padding: clamp(32px, 6vw, 72px);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .hero::before {
+      position: absolute;
+      top: 22px;
+      right: -34px;
+      width: 210px;
+      height: 42px;
+      transform: rotate(8deg);
+      background: var(--chart-1-dim);
+      content: "";
+    }
+
+    .eyebrow,
+    .ve-section-label,
+    .hero-meta,
+    .kpi-label,
+    .mode-label,
+    .step-num {
+      font-family: "IBM Plex Mono", monospace;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      margin: 0 0 16px;
+      color: var(--chart-1);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.8px;
+    }
+
+    h1 {
+      max-width: 850px;
+      margin: 0;
+      font-size: clamp(48px, 9vw, 104px);
+      font-weight: 700;
+      letter-spacing: -0.055em;
+      line-height: 0.88;
+    }
+
+    .hero-lead {
+      max-width: 720px;
+      margin: 28px 0 0;
+      color: var(--text-dim);
+      font-size: clamp(18px, 2.2vw, 24px);
+      line-height: 1.55;
+    }
+
+    .hero-lead strong { color: var(--text); }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      margin-top: 28px;
+      color: var(--text-dim);
+      font-size: 10px;
+      letter-spacing: 0.4px;
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--border);
+      border-top: 0;
+    }
+
+    .kpi {
+      min-width: 0;
+      padding: 18px 20px;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .kpi:last-child { border-right: 0; }
+
+    .kpi-value {
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+    }
+
+    .kpi-label {
+      margin-top: 5px;
+      color: var(--text-dim);
+      font-size: 9px;
+      letter-spacing: 1px;
+    }
+
+    .sec-head {
+      margin: 56px 0 18px;
+      padding-bottom: 9px;
+      border-bottom: 1px solid var(--border-bright);
+      font-size: clamp(24px, 3vw, 36px);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      scroll-margin-top: 24px;
+    }
+
+    .sec-head span {
+      margin-right: 8px;
+      color: var(--chart-1);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.36em;
+      font-weight: 600;
+      letter-spacing: 1px;
+      vertical-align: middle;
+    }
+
+    .ve-card {
+      margin-bottom: 16px;
+      padding: clamp(22px, 3.5vw, 34px);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: 0 2px 0 var(--surface-3);
+      animation: fade-up 0.4s ease-out both;
+      animation-delay: calc(var(--i, 0) * 0.05s);
+    }
+
+    .ve-card--recessed {
+      background: var(--surface-2);
+      box-shadow: none;
+    }
+
+    .ve-card p:first-of-type { margin-top: 10px; }
+    .ve-card p:last-child { margin-bottom: 0; }
+
+    .ve-section-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-dim);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+    }
+
+    .ve-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--chart-1);
+    }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.85fr);
+      gap: 16px;
+    }
+
+    .mode {
+      position: relative;
+      min-width: 0;
+      padding: 30px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .mode--edit { border-top: 4px solid var(--chart-2); }
+    .mode--detect { border-top: 4px solid var(--chart-1); }
+
+    .mode-label {
+      color: var(--text-dim);
+      font-size: 10px;
+      letter-spacing: 1.3px;
+    }
+
+    .mode h3 {
+      margin: 10px 0 8px;
+      font-size: 32px;
+      line-height: 1.1;
+    }
+
+    .mode p { color: var(--text-dim); }
+
+    .mode ul {
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .mode li {
+      position: relative;
+      padding: 9px 0 9px 18px;
+      border-top: 1px solid var(--border);
+    }
+
+    .mode li::before {
+      position: absolute;
+      left: 0;
+      color: var(--chart-2);
+      content: "→";
+    }
+
+    .mode--detect li::before {
+      color: var(--chart-1);
+      content: "×";
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .step {
+      position: relative;
+      min-width: 0;
+      padding: 18px 16px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .step:not(:last-child)::after {
+      position: absolute;
+      z-index: 2;
+      top: 50%;
+      right: -10px;
+      width: 10px;
+      transform: translateY(-50%);
+      background: var(--bg);
+      color: var(--border-bright);
+      content: "›";
+      font-size: 18px;
+      text-align: center;
+    }
+
+    .step-num {
+      color: var(--chart-1);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .step strong {
+      display: block;
+      margin: 9px 0 5px;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .ve-callout {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-left: 4px solid var(--warning);
+      background: var(--warning-dim);
+      color: var(--text);
+    }
+
+    .ve-callout strong { color: var(--warning); }
+
+    .ve-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+
+    th,
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--surface-2);
+      color: var(--text-dim);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    tbody tr:last-child td { border-bottom: 0; }
+
+    .pattern-name {
+      color: var(--chart-1);
+      font-weight: 700;
+    }
+
+    .pattern-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 5px;
+    }
+
+    .tag {
+      padding: 3px 7px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      background: var(--surface-2);
+      color: var(--text-dim);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+    }
+
+    .eval-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .check-list {
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .check-list li {
+      position: relative;
+      padding: 11px 0 11px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .check-list li:last-child { border-bottom: 0; }
+
+    .check-list li::before {
+      position: absolute;
+      left: 0;
+      color: var(--chart-2);
+      content: "✓";
+      font-family: "IBM Plex Mono", monospace;
+      font-weight: 600;
+    }
+
+    .check-list--never li::before {
+      color: var(--chart-1);
+      content: "×";
+    }
+
+    .ve-code-block {
+      overflow: hidden;
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      background: #191715;
+      color: #eee7dc;
+    }
+
+    .code-label {
+      padding: 8px 13px;
+      border-bottom: 1px solid #39342e;
+      color: #aaa197;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .ve-code-block pre {
+      margin: 0;
+      padding: 17px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    .ve-code-block pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .usage-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .source-note {
+      margin-top: 16px;
+      color: var(--text-dim);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 1000px) {
+      body { padding-top: 0; }
+
+      .wrap {
+        grid-template-columns: 1fr;
+        padding-top: 0;
+      }
+
+      .toc {
+        position: sticky;
+        z-index: 200;
+        top: 0;
+        grid-row: auto;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        max-height: none;
+        margin: 0 -40px;
+        padding: 10px 40px;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+
+      .toc a {
+        flex-shrink: 0;
+        padding: 6px 10px;
+        border-bottom: 2px solid transparent;
+        border-left: 0;
+        white-space: nowrap;
+      }
+
+      .toc a.active {
+        border-bottom-color: var(--chart-1);
+        border-left: 0;
+        background: var(--surface);
+      }
+
+      .main { padding-top: 22px; }
+      .sec-head { scroll-margin-top: 60px; }
+      .flow { grid-template-columns: repeat(3, 1fr); }
+      .step:nth-child(3)::after { display: none; }
+    }
+
+    @media (max-width: 720px) {
+      body { padding-right: 18px; padding-left: 18px; }
+
+      .toc {
+        margin-right: -18px;
+        margin-left: -18px;
+        padding-right: 18px;
+        padding-left: 18px;
+      }
+
+      .theme-toggle { top: 54px; right: 12px; }
+      .hero { padding: 30px 22px; }
+      h1 { font-size: clamp(44px, 19vw, 72px); }
+
+      .kpi-row { grid-template-columns: 1fr 1fr; }
+      .kpi:nth-child(2) { border-right: 0; }
+      .kpi:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+
+      .mode-grid,
+      .eval-grid,
+      .usage-grid { grid-template-columns: 1fr; }
+
+      .flow { grid-template-columns: 1fr; }
+      .step::after { display: none !important; }
+
+      th,
+      td { min-width: 150px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" type="button" aria-label="テーマを切り替える" onclick="toggleTheme()">
+    <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <circle cx="12" cy="12" r="4"></circle>
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"></path>
+    </svg>
+    <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"></path>
+    </svg>
+  </button>
+
+  <div class="wrap">
+    <nav class="toc" id="toc" aria-label="ページ内ナビゲーション">
+      <div class="toc-title">Contents</div>
+      <a href="#overview">1. 概要</a>
+      <a href="#jobs">2. Edit / Detect</a>
+      <a href="#workflow">3. 編集フロー</a>
+      <a href="#patterns">4. 検出パターン</a>
+      <a href="#eval">5. 評価と制約</a>
+      <a href="#usage">6. 使い方</a>
+    </nav>
+
+    <main class="main">
+      <header class="hero">
+        <p class="eyebrow">Agent Skill · petergyang/no-ai-slop</p>
+        <h1>No AI slop</h1>
+        <p class="hero-lead">
+          定型的な AI 文体を削る。ただし、<strong>書き手の声まで消さない。</strong>
+          このスキルは文章を直す Edit と、名前の付くパターンだけを報告する Detect を分けている。
+        </p>
+        <div class="hero-meta">
+          <span>Source snapshot: 61c21c3</span>
+          <span>Reviewed: 2026-07-22</span>
+          <span>Files: README.md · SKILL.md · eval.md</span>
+        </div>
+      </header>
+
+      <div class="kpi-row" aria-label="主要な特徴">
+        <div class="kpi">
+          <div class="kpi-value">2</div>
+          <div class="kpi-label">Jobs</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-value">20+</div>
+          <div class="kpi-label">Named patterns</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-value">6</div>
+          <div class="kpi-label">Edit steps</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-value">1</div>
+          <div class="kpi-label">Self-check loop</div>
+        </div>
+      </div>
+
+      <section id="overview" class="sec-head"><span>01</span>概要</section>
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 目的</span>
+        <p>
+          <code>no-ai-slop</code> は、下書きを明確で直接的な文章に整える Agent Skill。
+          目標は「人間らしさ」の演出ではなく、書き手がもともと持つ語彙、リズム、ユーモア、迷いを残しながら、
+          冗長なセットアップや誇張、機械的なリズムを減らすことにある。
+        </p>
+        <div class="ve-callout">
+          <strong>AI 判定器ではない。</strong>
+          Detect は文章の出自を推測せず、読者が確認できる具体的な文体パターンだけを名前・引用・修正案とともに示す。
+        </div>
+      </div>
+
+      <section id="jobs" class="sec-head"><span>02</span>2つの仕事</section>
+      <div class="mode-grid">
+        <article class="mode mode--edit">
+          <div class="mode-label">Default job</div>
+          <h3>Edit</h3>
+          <p>下書き全体を読み、意味と声を守ったまま必要最小限の編集を入れる。</p>
+          <ul>
+            <li>全文を編集して返す</li>
+            <li>「What changed」を短く添える</li>
+            <li>最後に eval を通して失敗箇所を直す</li>
+          </ul>
+        </article>
+        <article class="mode mode--detect">
+          <div class="mode-label">Audit only</div>
+          <h3>Detect</h3>
+          <p>文章は書き換えず、見つかったパターンを検査結果として返す。</p>
+          <ul>
+            <li>パターン名と該当箇所を示す</li>
+            <li>短い修正方針を添える</li>
+            <li>点数化・AI 著者判定はしない</li>
+          </ul>
+        </article>
+      </div>
+
+      <section id="workflow" class="sec-head"><span>03</span>Edit の処理フロー</section>
+      <div class="flow" aria-label="編集フロー">
+        <div class="step">
+          <span class="step-num">Step 01</span>
+          <strong>全文を読む</strong>
+          <p>文脈を切らず、下書き全体を先に把握する。</p>
+        </div>
+        <div class="step">
+          <span class="step-num">Step 02</span>
+          <strong>核をつかむ</strong>
+          <p>主張、読者、残すべき声の信号を内部で特定する。</p>
+        </div>
+        <div class="step">
+          <span class="step-num">Step 03</span>
+          <strong>最小編集</strong>
+          <p>意味を変えず、効果のある箇所だけを直す。</p>
+        </div>
+        <div class="step">
+          <span class="step-num">Step 04</span>
+          <strong>eval 実行</strong>
+          <p>原則、禁止語、パターン、最終読解を確認する。</p>
+        </div>
+        <div class="step">
+          <span class="step-num">Step 05</span>
+          <strong>失敗を修正</strong>
+          <p>評価で落ちた箇所に限定して再編集する。</p>
+        </div>
+        <div class="step">
+          <span class="step-num">Step 06</span>
+          <strong>全文を返す</strong>
+          <p>編集後の全文と短い変更要約を出力する。</p>
+        </div>
+      </div>
+      <div class="ve-callout">
+        <strong>不明点は一度だけ確認する。</strong>
+        読者や形式が分からない場合は質問を1つに絞る。狙いが曖昧なら、読者に何を考え、感じ、してほしいかを聞く。
+      </div>
+
+      <section id="patterns" class="sec-head"><span>04</span>検出するパターン</section>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>分類</th>
+              <th>検出対象</th>
+              <th>編集の方向</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="pattern-name">構造</span></td>
+              <td>
+                <div class="pattern-list">
+                  <span class="tag">binary contrast</span>
+                  <span class="tag">negative listing</span>
+                  <span class="tag">throat-clearing</span>
+                  <span class="tag">colon reveal</span>
+                  <span class="tag">rhetorical setup</span>
+                </div>
+              </td>
+              <td>前置きを削り、主張や具体例から始める。</td>
+            </tr>
+            <tr>
+              <td><span class="pattern-name">誇張</span></td>
+              <td>
+                <div class="pattern-list">
+                  <span class="tag">superficial analysis</span>
+                  <span class="tag">importance puffery</span>
+                  <span class="tag">weasel attribution</span>
+                  <span class="tag">fake-strong verbs</span>
+                </div>
+              </td>
+              <td>根拠のない重要性を外し、誰が何をしたかを書く。</td>
+            </tr>
+            <tr>
+              <td><span class="pattern-name">声とリズム</span></td>
+              <td>
+                <div class="pattern-list">
+                  <span class="tag">synonym cycling</span>
+                  <span class="tag">dramatic fragments</span>
+                  <span class="tag">robotic rhythm</span>
+                  <span class="tag">fake-profound kicker</span>
+                  <span class="tag">summary recap</span>
+                </div>
+              </td>
+              <td>語彙を無理に散らさず、文の長さと終わり方を自然に戻す。</td>
+            </tr>
+            <tr>
+              <td><span class="pattern-name">書式</span></td>
+              <td>
+                <div class="pattern-list">
+                  <span class="tag">emoji headings</span>
+                  <span class="tag">bold sprinkle</span>
+                  <span class="tag">unnecessary bullets</span>
+                  <span class="tag">header sprawl</span>
+                  <span class="tag">em-dash overuse</span>
+                </div>
+              </td>
+              <td>装飾を情報構造に合わせ、段落で読める内容は段落に戻す。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <section id="eval" class="sec-head"><span>05</span>評価基準と制約</section>
+      <div class="eval-grid">
+        <div class="ve-card" style="--i:0">
+          <span class="ve-section-label"><span class="ve-dot"></span> 最終チェック</span>
+          <ul class="check-list">
+            <li>中心となる主張と意味が残っている</li>
+            <li>能動態と直接的な動詞を使っている</li>
+            <li>抽象語より具体的な詳細を優先している</li>
+            <li>文のリズムに単調さがない</li>
+            <li>声に合うユーモア、強さ、迷いが残っている</li>
+          </ul>
+        </div>
+        <div class="ve-card ve-card--recessed" style="--i:1">
+          <span class="ve-section-label"><span class="ve-dot"></span> やらないこと</span>
+          <ul class="check-list check-list--never">
+            <li>事実、統計、例、意見を新しく作らない</li>
+            <li>文章を無理に短く、無難に、上品にしない</li>
+            <li>Detect で文章を書き換えたり採点したりしない</li>
+            <li>AI が書いたと断定しない</li>
+            <li>別の evaluator agent に最終確認を委ねない</li>
+          </ul>
+        </div>
+      </div>
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> 語彙チェックの例</span>
+        <p>
+          評価表は <code>delve</code>、<code>foster</code>、<code>leverage</code>、<code>utilize</code>、
+          <code>facilitate</code>、<code>empower</code>、<code>streamline</code>、<code>robust</code>、
+          <code>cutting-edge</code>、<code>paradigm shift</code>、<code>game changer</code> などを要注意語として挙げる。
+          単語を機械的に置換するのではなく、文が具体的で直接的かを最終的に読み直す。
+        </p>
+      </div>
+
+      <section id="usage" class="sec-head"><span>06</span>使い方と出力</section>
+      <div class="usage-grid">
+        <div class="ve-card" style="--i:0">
+          <span class="ve-section-label"><span class="ve-dot"></span> Edit</span>
+          <div class="ve-code-block">
+            <div class="code-label">Prompt</div>
+            <pre><code>/no-ai-slop
+
+[編集したい下書き]</code></pre>
+          </div>
+          <p>返却: 編集後の全文 + 短い <code>What changed</code>。</p>
+        </div>
+        <div class="ve-card" style="--i:1">
+          <span class="ve-section-label"><span class="ve-dot"></span> Detect</span>
+          <div class="ve-code-block">
+            <div class="code-label">Prompt</div>
+            <pre><code>/no-ai-slop is this AI slop?
+
+[検査したい文章]</code></pre>
+          </div>
+          <p>返却: パターン名 + 引用 + 短い修正方針。本文は変更しない。</p>
+        </div>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> Source</span>
+        <p>
+          <a href="https://github.com/petergyang/no-ai-slop" target="_blank" rel="noopener">GitHub: petergyang/no-ai-slop</a>
+          — スキル本体、README、評価基準を公開しているソースリポジトリ。
+        </p>
+        <div class="source-note">README.md · SKILL.md · eval.md · source snapshot 61c21c3 (2026-07-22)</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      var root = document.documentElement;
+      var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+    }
+
+    (function() {
+      var toc = document.getElementById('toc');
+      if (!toc) return;
+      var links = toc.querySelectorAll('a[href^="#"]');
+      var sections = [];
+      links.forEach(function(a) {
+        var id = a.getAttribute('href').slice(1);
+        var el = document.getElementById(id);
+        if (el) sections.push({ link: a, head: el });
+      });
+      function updateActive() {
+        var top = window.scrollY + 24;
+        var current = sections[0] || null;
+        sections.forEach(function(s) {
+          var rect = s.head.getBoundingClientRect();
+          var docTop = rect.top + window.scrollY;
+          if (docTop <= top) current = s;
+        });
+        sections.forEach(function(s) {
+          s.link.classList.toggle('active', s === current);
+        });
+      }
+      window.addEventListener('scroll', updateActive, { passive: true });
+      updateActive();
+    })();
+  </script>
+</body>
+</html>
