@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ego lite — 人と AI エージェントが並行作業するブラウザと ego-browser</title>
+  <meta name="description" content="ego lite は人とエージェントが並行して使う Chromium ベースのブラウザ。エージェントは隔離された Space で作業し、ユーザーのログイン状態を再利用する。オープンソースの ego-browser ハーネスと SKILL、ランタイム、Task Space、既存ツールとの比較をまとめる。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="ego lite — 人と AI エージェントが並行作業するブラウザと ego-browser">
+  <meta property="og:description" content="ego lite は人とエージェントが並行して使う Chromium ベースのブラウザ。エージェントは隔離された Space で作業し、ログイン状態を再利用する。オープンソースの ego-browser ハーネスとランタイムを整理する。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/ego-lite.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="ego lite — 人と AI エージェントが並行作業するブラウザと ego-browser">
+  <meta name="twitter:description" content="人とエージェントが同じブラウザを共有する ego lite と、任意のエージェント CLI から呼べる ego-browser ハーネスの技術概要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      /* Teal + amber palette (technical, distinct from existing pages) */
+      --chart-1: oklch(0.48 0.11 200);
+      --chart-2: oklch(0.66 0.15 80);
+      --chart-3: oklch(0.40 0.09 210);
+      --chart-4: oklch(0.72 0.13 165);
+      --chart-5: oklch(0.62 0.14 55);
+      --code-bg: var(--muted);
+      --code-text: #0b4f56;
+      --font-body: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'Space Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.72 0.11 200);
+        --chart-2: oklch(0.78 0.14 82);
+        --chart-3: oklch(0.66 0.10 210);
+        --chart-4: oklch(0.75 0.13 165);
+        --chart-5: oklch(0.70 0.14 55);
+        --code-bg: #0f0f0f;
+        --code-text: #7fd6dd;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--text-dim); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 26rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.85rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    /* Cancel the global inline-code chrome inside code blocks */
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .code-label { font-family: var(--font-mono); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-x: auto; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.8rem 1rem; border-bottom: 2px solid var(--ring); white-space: nowrap; }
+    .ve-table-wrap td { padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.9rem; line-height: 1.1; font-weight: 600; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.48 0.11 200 / 0.07) 0%, transparent 52%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.72 0.11 200 / 0.09) 0%, transparent 52%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 210px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.0625rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.4rem; font-size: 0.9375rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    strong { font-weight: 600; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+    .stack { display: flex; flex-direction: column; gap: 1rem; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Two-column card grid */
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    /* Numbered step cards */
+    .step-card { position: relative; padding-left: 3rem; }
+    .step-card .step-num { position: absolute; left: 1.25rem; top: 1.25rem; font-family: var(--font-mono); font-weight: 700; font-size: 0.9rem; color: var(--chart-1); }
+
+    /* Pipeline */
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 0.5rem 0; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    /* Comparison markers */
+    .mark-yes { color: var(--chart-4); font-weight: 700; }
+    .mark-no { color: var(--text-dim); }
+    .cmp th, .cmp td { text-align: center; }
+    .cmp th:first-child, .cmp td:first-child { text-align: left; white-space: normal; }
+    .cmp td:first-child { font-weight: 500; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">仕組み</a>
+    <a href="#setup">セットアップと最初のタスク</a>
+    <a href="#runtime">ego-browser ランタイム</a>
+    <a href="#rules">実行の原則</a>
+    <a href="#spaces">Task Space と制御ハンドオフ</a>
+    <a href="#compare">既存プロダクトとの比較</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>ego lite</h1>
+  <p class="subtitle">人と AI エージェントが並行作業する Chromium ブラウザと、任意のエージェント CLI から呼べる ego-browser ハーネス — citrolabs/ego-lite</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
+    <p><strong>ego lite</strong> は、ユーザーと AI エージェントが並行して使えるように設計された Chromium ベースのブラウザ。エージェントは自分専用の隔離された <strong>Space</strong> で複数のブラウザタスクを走らせ、ユーザーのタブはそのまま維持される。エージェントはユーザーの実際のログイン状態やタブに <code>ego-browser</code> 経由で常時到達できる。</p>
+    <p>従来の browser-use や agent-browser はブラウザ自動化フレームワークで、駆動用に別のブラウザを必要とし、ログインがうまく引き継がれず、ユーザーとエージェントが同じタブを奪い合いがちだった。ego lite は最初から「2 者が 1 つのブラウザを共有する」前提で作られている。macOS で動作し、Windows と Linux はロードマップ上にある。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">最大 2.5×</span><span class="ve-kpi-card__label">agent-browser 比の高速化</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">1 回</span><span class="ve-kpi-card__label">Bash 実行に処理をまとめる</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Space</span><span class="ve-kpi-card__label">エージェントごとに隔離</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ハーネスとスキルのライセンス</span></div>
+    </div>
+    <p>公開されているこのリポジトリは、ego lite アプリ本体ではなく、オープンソースの <code>ego-browser</code> ハーネスとエージェント向けスキルパッケージを含む。ブラウザ本体（クローズドソース）は自前の <code>ego-browser</code> バイナリを同梱し、そこにこのランタイムが埋め込まれている。</p>
+  </div>
+
+  <div class="grid-2" style="margin-top:1rem">
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> コードベースで速い</span>
+      <p>ego lite がエージェントに公開する機能は、エージェントが直接呼ぶ JavaScript 関数として提供される。エージェントは複数ステップのタスクを 1 つの出力に構成でき、「2 コマンド叩いて結果を見てまた 2 コマンド」というループに陥らない。複雑なワークフローは従来の CLI 型より最大 2.5× 速く、成功率が高く、タスクあたりのツール呼び出しが大幅に少ない。</p>
+    </div>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> 高品質な Snapshot</span>
+      <p>カーネルレベルのカスタマイズにより、テキストモデルがページを「見て」操作するための Snapshot を高品質に生成する。深くネストした iframe のような難しいケースでも安定して扱える。</p>
+    </div>
+    <div class="ve-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> 並行する Space</span>
+      <p>各 Space はそれぞれ別のエージェントやタスクを持ち、同時に走る。10 個の Space で 10 件のリードを処理しつつ、別の 5 Space で 5 サイトを収集、といった並行作業でも互いに衝突せず、ユーザーのタブやマウス位置を奪わない。</p>
+    </div>
+    <div class="ve-card" style="--i:4">
+      <span class="ve-section-label"><span class="ve-dot"></span> 任意のエージェントから駆動</span>
+      <p><code>ego-browser</code> は、任意のエージェント CLI（Claude Code、Codex、Cursor、独自実装）と ego lite をつなぐ接続層。ブラウザをページ内 JavaScript ツール群（snapshot / fill / click / wait / navigate / capture）として公開し、エージェントが書いた JavaScript を 1 パスでページ上に実行する。</p>
+    </div>
+  </div>
+
+  <section id="architecture" class="sec-head">2 — 仕組み</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> データフロー</span>
+    <p><code>ego-browser</code> は Node.js の CDP ブラウザ自動化ハーネスで、ego lite アプリが提供する <code>globalThis.ego</code> バインディングを通してブラウザを駆動する。エージェントの heredoc から入った JavaScript は、ヘルパー群を経由してブラウザランタイム／CDP に渡り、Snapshot や DOM/AX 解決、必要なら site ツールを通って <code>console.log(...)</code> で出力される。</p>
+    <div class="pipeline">
+      <span class="step">stdin の JS</span>
+      <span class="arrow">→</span>
+      <span class="step">runMain()</span>
+      <span class="arrow">→</span>
+      <span class="step">helperContext() ヘルパー</span>
+      <span class="arrow">→</span>
+      <span class="step">ブラウザランタイム / CDP</span>
+      <span class="arrow">→</span>
+      <span class="step">Snapshot・DOM/AX 解決</span>
+      <span class="arrow">→</span>
+      <span class="step">site ツール（任意）</span>
+      <span class="arrow">→</span>
+      <span class="step">console.log()</span>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 主なモジュール</span>
+    <ul>
+      <li><code>src/index.ts</code> — エントリポイント。CLI として直接実行すると <code>runMain()</code>（stdin の JS を実行）、モジュールとして読み込まれると <code>installEgoSdk(globalThis)</code>（アプリが埋め込む経路）。両経路とも同じヘルパー面を公開する。</li>
+      <li><code>src/helpers.ts</code> — <code>helperContext()</code> がエージェントの呼べる面（<code>help()</code> や <code>agent_helpers.js</code> 拡張を含む）を組み立てる単一の正。</li>
+      <li><code>src/browser-runtime.ts</code> — <code>ego.sendCDPMessage</code> 上の CDP トランスポート、セッションの attach とキャッシュ（2 秒 TTL・自動再 attach）、バッファ付きイベントキュー（1 万件上限）、JS ダイアログ追跡を担う。</li>
+      <li><code>src/element-resolver.ts</code> — <code>@N</code> ref、<code>loc=css:</code>／<code>loc=role:</code>／<code>loc=href:</code>、<code>xpath=</code>、生 CSS のすべてを解決し、失敗を <code>transient</code>（再試行可）／<code>permanent</code> に分類する。</li>
+      <li><code>src/ref-map.ts</code> + <code>src/ref-state.ts</code> — ref は数値の <code>backendNodeId</code>（<code>@21</code> であって <code>@e21</code> ではない）。マップは Snapshot ごとに再構築され、空のときに ref を使うと自動再 Snapshot が走る。これが heredoc をまたいで ref を機能させる。</li>
+      <li><code>src/driver/</code> — <code>nav</code>（タブ・遷移）、<code>pointer</code>（クリック・スクロール・ドラッグ）、<code>keyboard</code>、<code>observe</code>（snapshot・screenshot）、<code>waits</code>、<code>files</code>（アップロード）、<code>element-ops</code>、<code>load</code>。</li>
+      <li><code>src/learning/</code> — サイト別スキルの発見・検証・実行。<code>learnings/&lt;site&gt;/manifest.json</code> から <code>runSiteTool</code>／<code>runSiteBrowserTool</code>／<code>learnContext</code> を提供する。</li>
+    </ul>
+    <div class="ve-callout">
+      <strong>ドキュメントは JSDoc 由来:</strong> <code>src/help-runtime.ts</code> がビルド済みバンドルの JSDoc を acorn で実行時にパースして <code>help()</code> を駆動する。公開ヘルパーの JSDoc はそのままユーザー向けドキュメントになる。
+    </div>
+  </div>
+
+  <section id="setup" class="sec-head">3 — セットアップと最初のタスク</section>
+  <p>インストール方法は 3 通り。どれを選んでも、ego lite は自分のマシン上の各エージェントの skills ディレクトリに <code>ego-browser</code> スキルを追加する。</p>
+  <div class="grid-2">
+    <div class="ve-card step-card" style="--i:0">
+      <span class="step-num">1</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> macOS アプリを入れる</span>
+      <p>Apple Silicon / Intel 版の <code>.dmg</code> をダウンロードして開き、インストールする。初回起動時に Chrome データを移行するか一度だけ聞かれ、はいと答えると既存のログイン・Cookie・拡張・ブックマークをエージェントが引き継ぐ。</p>
+    </div>
+    <div class="ve-card step-card" style="--i:1">
+      <span class="step-num">2</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> npx でスキルだけ入れる</span>
+      <div class="ve-code-block">
+        <div class="code-label">shell</div>
+        <pre><code>npx skills add citrolabs/ego-lite</code></pre>
+      </div>
+      <p>エージェントが初めてブラウザタスクを走らせるとき、ego lite アプリのインストールを案内する。</p>
+    </div>
+    <div class="ve-card step-card" style="--i:2">
+      <span class="step-num">3</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> エージェントに任せる</span>
+      <p>エージェントに ego lite のセットアップを依頼し、<code>skills/ego-browser/references/install.md</code> を読ませて手順どおりに導入させる。</p>
+    </div>
+    <div class="ve-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> 最初のタスクを走らせる</span>
+      <p>エージェント CLI で <code>/ego-browser</code> に続けて、やりたいことを自然言語で書く。エージェントは <code>ego-browser</code> スキルを拾い、専用の Space でページを開き、Snapshot を読み、操作して結果を報告する。その間ユーザーのタブは触られない。閲覧データは端末に残り、ego lite が記録するのは Chrome 移行に同意したかどうかだけ。</p>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:4">
+    <span class="ve-section-label"><span class="ve-dot"></span> 基本の呼び出し形</span>
+    <p>ブラウザ作業は <code>Bash</code> ツールから <code>ego-browser nodejs &lt;&lt;'EOF' ... EOF</code> の形で実行する。heredoc に JavaScript を直接置き、<code>.js</code> ファイルを作らず、Playwright を import せず、別のブラウザを起動しない。<code>page</code>・<code>page.locator(...)</code>・<code>browser</code>・<code>taskSpaces</code>・<code>site</code>・<code>fetch</code>・<code>cdp</code> がプリロード済みで使える。</p>
+    <div class="ve-code-block">
+      <div class="code-label">ego-browser nodejs（heredoc）</div>
+      <pre><code>ego-browser nodejs &lt;&lt;'EOF'
+const task = await taskSpaces.useOrCreate('inspect example page')
+await browser.openOrReuseTab('https://example.com', { wait: true, timeout: 20000 })
+
+const heading = await page.getByRole('heading').first().innerText()
+const info = await page.info()
+if (!heading || !('url' in info)) throw new Error('Example page was not ready')
+
+const result = { taskSpaceId: task.id, heading, url: info.url }
+console.log(JSON.stringify(result, null, 2))
+EOF</code></pre>
+    </div>
+    <p>予測できる観測・操作・待機・抽出・検証は、すべてスクリプト内に書ききってからタスクを完了させる。最終結果は <code>console.log(...)</code> で出す。</p>
+  </div>
+
+  <section id="runtime" class="sec-head">4 — ego-browser ランタイム</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ファサード一覧</span>
+    <p>プリロードされるファサードは Playwright スタイルの名前と呼び出し形に従う。<code>taskSpaces</code>・<code>site</code>・<code>fetch</code>・<code>cdp</code> は ego-browser 固有の機能を提供する。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ファサード</th><th>主な責務</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>page</code></td><td>遷移と状態（<code>goto</code>, <code>reload</code>, <code>url</code>, <code>title</code>, <code>info</code>）、セマンティックロケータ、待機、<code>snapshot</code>, <code>screenshot</code>, <code>screencast</code>, <code>evaluate</code>, <code>keyboard</code>, <code>mouse</code>, ダウンロード、イベント排出。</td></tr>
+          <tr><td><code>page.locator(selector)</code></td><td>チェーンとフィルタ、<code>first</code>/<code>nth</code>/<code>last</code>、click・hover・<code>dragTo</code>・<code>scrollIntoViewIfNeeded</code>、フォーム、キーボード、アップロード、状態読み取り、コレクション、要素評価、スクリーンショット、待機。</td></tr>
+          <tr><td><code>browser</code></td><td><code>listTabs</code>, <code>currentTab</code>, <code>switchTab</code>, <code>openOrReuseTab</code>, <code>closeTab</code>, <code>ensureRealTab</code>, <code>iframeTarget</code>。</td></tr>
+          <tr><td><code>taskSpaces</code></td><td><code>list</code>, <code>switch</code>, <code>new</code>, <code>useOrCreate</code>, <code>claim</code>, <code>complete</code>, <code>handOff</code>, <code>takeOver</code>, <code>waitForAgentControl</code>。</td></tr>
+          <tr><td><code>fetch</code></td><td><code>fetch.server</code> は Node 側リクエスト、<code>fetch.browser</code> は現在ページのオリジンでのリクエスト。</td></tr>
+          <tr><td><code>cdp</code></td><td>ファサードで覆えない機能のためのエスケープハッチ。</td></tr>
+          <tr><td><code>console.log</code></td><td>出力チャネル。署名が不明なときは <code>help('page')</code> や <code>help('locator')</code> を出力して確認する。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 相互作用の 3 経路</span>
+    <ul>
+      <li><strong>セマンティック（snapshot + ロケータ）:</strong> 通常の DOM ページ向け。<code>page.snapshot()</code> で観測し、セマンティックロケータ・現コマンドの <code>@N</code> ref・安定した <code>loc=...</code> 値で操作する。</li>
+      <li><strong>ビジュアル（screenshot + mouse/keyboard）:</strong> canvas・仮想化エディタ・表計算・地図・AX の弱い面向け。本格編集の前に小さな書き込みプローブを打ち、スクリーンショットや readback で検証する。</li>
+      <li><strong>直接 DOM/CDP:</strong> 要素コレクションは <code>locator.evaluateAll(fn, arg)</code>、ページ全体の状態は <code>page.evaluate(fn, arg)</code>。ファサードで覆えない能力にだけ生 CDP を使う。</li>
+    </ul>
+    <p>次の入力がスクリプト内で得られる限り、これらの経路は同じ Bash 実行の中で組み合わせる。</p>
+  </div>
+
+  <section id="rules" class="sec-head">5 — 実行の原則</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 1 回の Bash 実行にまとめる</span>
+    <p>heredoc は JavaScript の容器にすぎず、Bash の呼び出しが実行の 1 ラウンド。ブラウザタスク全体を既定で 1 回の Bash 実行にまとめる。各 <code>await</code> は内部操作でありステップ境界ではない。起動前に、予測できる観測・操作・待機・抽出・検証・限定的な代替手段をすべてスクリプトに書き込む。中間出力を見たり次の手を計画したりするためだけに抜けない。別コマンドを始めるのは、ユーザー／外部制御が要るとき、スクリプト内でできない目視検査が要るとき、スクリプトが回復できないプロセスレベルの失敗のときに限る。</p>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 待機と検証</span>
+    <ul>
+      <li><code>page.url()</code> は非同期。常に <code>await page.url()</code> を使う。<code>page.waitForURL(...)</code> の述語は <code>URL</code> オブジェクトを受け取るので <code>url.href</code> / <code>url.pathname</code> / <code>url.searchParams</code> を見る。</li>
+      <li><code>waitForURL</code> / <code>waitForLoadState</code> / <code>waitForSelector</code> / ロケータの <code>waitFor</code> / <code>waitForFunction</code> はタイムアウト時に falsy を返す。結果を確認するか、続行前に必要な状態を検証する。</li>
+      <li>request / response / navigation の待機は、それを引き起こすアクションの<strong>前</strong>に登録する。状態ベースの待機を優先し、<code>waitForTimeout(...)</code> は軽い表示落ち着き用にとどめ 2000ms 以下にする。</li>
+      <li>安定したセマンティックロケータを優先する。構造が不明なときは <code>evaluateAll</code> / <code>allInnerTexts</code> で候補を一度に集め、次の手を JavaScript で導き、同じ heredoc 内で続ける。</li>
+    </ul>
+  </div>
+  <div class="ve-callout">
+    <strong>すでに満たされた事後条件は完了扱い:</strong> 「set」「select」「ensure」などは、ユーザーが遷移そのものを要求しているか操作自体がテスト対象でない限り、必要な<strong>最終状態</strong>を指す。一致していれば、エディタを開き直したり操作を再生したりしない。<code>@N</code> ref は最新 Snapshot 以降のみ有効で、コマンドが終わると再 Snapshot が必要。
+  </div>
+
+  <section id="spaces" class="sec-head">6 — Task Space と制御ハンドオフ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 隔離コンテキストと所有権</span>
+    <p>Task Space は自分のタブを持つ隔離ブラウジングコンテキストで、ユーザーのログイン状態を継承する。最初のスクリプト冒頭で <code>taskSpaces.useOrCreate(nameOrId)</code> により一度選ぶ。以降のコマンドでは同じ数値 <code>task.id</code> か同一の短いゴール名を使い、別ゴールのときだけ新規に作る。各 Space は <code>ownership: 'agent' | 'agentDelegatedToUser' | 'user'</code> を持つ。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>user 所有 Space への操作</th><th>挙動</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>taskSpaces.switch</code></td><td>throw する（agent 所有の Space だけ切り替える）</td></tr>
+          <tr><td><code>taskSpaces.claim</code></td><td>所有権を agent へ移し、その Space を選ぶ</td></tr>
+          <tr><td><code>handOff</code> / <code>complete(..., { keep: true })</code></td><td><code>{ done: false, skipped: 'user-owned' }</code> でスキップ</td></tr>
+          <tr><td><code>complete(..., { keep: false })</code></td><td>claim してから Space を閉じる</td></tr>
+          <tr><td><code>takeOver</code> / <code>waitForAgentControl</code></td><td>所有権チェックを行わない</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 完了はブラウザ実行と分ける</span>
+    <p>完了はブラウザ実行とは別の終端コミットとして扱う。作業側の Bash 実行は、最終 URL・値・その他の証拠を出力してから完了させずに終える。その出力を見て、要求された事後条件と必要な範囲・網羅境界がすべて<strong>証明</strong>されていれば、<code>page</code> や <code>browser</code> を触らない専用の最終 Bash 実行で <code>taskSpaces.complete(nameOrId, { keep })</code> を一度だけ呼び、<code>done</code> を確認する。未達・未証明なら、同じ Task Space で作業を続ける。<code>keep</code> は必須で既定は <code>false</code>、ユーザーが完成ページを残したい・手動操作が要る・URL やファイルで結果を渡せないときだけ <code>true</code> にする。</p>
+    <div class="ve-callout">
+      <strong>制御ハンドオフ:</strong> 「user is controlling」「inactive」「not assigned」エラーはタスク全体のハードストップ。自動で <code>takeOver</code> せずユーザーに尋ねて待つ。ログインや captcha などの手動ステップでは、安全な準備を済ませて <code>taskSpaces.handOff([nameOrId])</code> を呼び、<code>done</code> を確認し、ユーザーに手順を伝える。明示的な確認の後にだけ <code>takeOver</code>／<code>claim</code> で再開する。
+    </div>
+  </div>
+
+  <section id="compare" class="sec-head">7 — 既存プロダクトとの比較</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何が違うのか</span>
+    <p>多くのツールはブラウザを自動化できる。問われるのは、エージェントが得るブラウザは何か、ユーザーが同時に作業を続けられるか、そのツールが手持ちのエージェント向けか組み込みエージェント向けか、である。ブラウザ自動化フレームワーク（Browser-Use、Vercel の agent-browser）はエージェントが呼ぶライブラリで、自前のブラウザを持たず駆動用に別ブラウザが要りログインが引き継がれにくい。AI ブラウザ（ChatGPT Atlas、Perplexity Comet）は組み込みエージェントを積み、そのエージェントしか駆動できない。ego lite は、最初から人と任意のエージェントが共有する 1 つのブラウザ。</p>
+    <div class="ve-table-wrap">
+      <table class="cmp">
+        <thead>
+          <tr><th>能力</th><th>ego lite</th><th>Browser-Use</th><th>agent-browser</th><th>ChatGPT Atlas</th><th>Perplexity Comet</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>並行マルチタスク</td><td><span class="mark-yes">✓</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td></tr>
+          <tr><td>再利用できるスキル</td><td><span class="mark-yes">✓</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td></tr>
+          <tr><td>Chrome データを継承</td><td><span class="mark-yes">✓</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
+          <tr><td>同じブラウザ・別ワークスペース</td><td><span class="mark-yes">✓</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td></tr>
+          <tr><td>圧縮したセマンティック入力</td><td><span class="mark-yes">✓</span></td><td><span class="mark-no">—</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td></tr>
+          <tr><td>外部エージェントから制御可</td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td></tr>
+          <tr><td>データをローカル保存</td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td></tr>
+          <tr><td>ログイン摩擦なし</td><td><span class="mark-yes">✓</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
+          <tr><td>日常使いのブラウザ</td><td><span class="mark-yes">✓</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td></tr>
+          <tr><td>無料</td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-yes">✓</span></td><td><span class="mark-no">—</span></td><td><span class="mark-no">—</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>ベンチマーク:</strong> 4 つの複雑なブラウザ自動化タスクで Vercel の agent-browser と比較し、ego lite は各タスクを最大 2.5× 速く、トークン消費も大幅に少なく完了した。タスクが難しいほど差が広がる。
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/citrolabs/ego-lite" target="_blank" rel="noopener">GitHub: citrolabs/ego-lite</a> — オープンソースの ego-browser ハーネスとスキルパッケージ</li>
+      <li><a href="https://lite.ego.app/document/" target="_blank" rel="noopener">lite.ego.app/document</a> — チュートリアル・ツールリファレンス・連携ガイド</li>
+      <li><a href="https://lite.ego.app/roadmap" target="_blank" rel="noopener">ロードマップ</a> — Windows / Linux 対応など</li>
+      <li><a href="https://github.com/citrolabs/ego-lite/discussions" target="_blank" rel="noopener">GitHub Discussions</a> — アイデアと長めのスレッド</li>
+      <li><a href="https://discord.gg/5eGZVvHbTq" target="_blank" rel="noopener">Discord</a> — セットアップ相談とスキル共有</li>
+      <li><a href="https://x.com/ego_agent" target="_blank" rel="noopener">X / @ego_agent</a> — アップデートとリリース</li>
+    </ul>
+    <p>スキルの正は ego lite リポジトリ内の <code>skills/ego-browser/SKILL.md</code>（エージェント向けの利用契約）。ハーネスの構成やヘルパー面は <code>package/ego-browser/README.md</code> と <code>AGENTS.md</code> に詳しい。</p>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
