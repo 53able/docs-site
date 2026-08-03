@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM — エージェントが動かす open-source CRM</title>
+  <meta name="description" content="agentic-first CRM。エージェントが調査とフォローアップを自律実行し、NestJS API は事実の発生を durable queue に記録する。">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="CRM — エージェントが動かす open-source CRM">
+  <meta property="og:description" content="CRM はエージェントのノートブック。調査、証拠、フォローアップを durable agent と evidence ledger で扱う。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/crm.html">
+  <meta name="twitter:card" content="summary">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root { --bg:#f7faf8; --card:#fff; --ink:#15231e; --muted:#61716a; --line:#dce7e1; --green:#006b4f; --mint:#e3f2eb; --amber:#f2b84b; --mono:'Fira Code',monospace; --body:'DM Sans',system-ui,sans-serif; }
+    @media(prefers-color-scheme:dark){:root{--bg:#101916;--card:#17221e;--ink:#edf6f0;--muted:#9db0a6;--line:#2b3d35;--mint:#1c3a30;--green:#63d3ae}}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.7} a{color:var(--green)} code,pre{font-family:var(--mono)} code{font-size:.88em;background:var(--mint);padding:.12em .35em;border-radius:4px}.wrap{max-width:1080px;margin:auto;padding:0 22px}.hero{padding:70px 0 36px}.hero-card,.card,.ve-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;box-shadow:0 8px 24px #006b4f0b}.hero-card{background:linear-gradient(135deg,var(--card),var(--mint));padding:42px}.eyebrow,.label{color:var(--green);font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.ve-section-label{display:inline-flex;align-items:center;gap:8px}.ve-section-label:before{content:'';width:8px;height:8px;background:var(--green);border-radius:50%}.eyebrow{display:inline-flex;align-items:center;gap:8px}.eyebrow:before{content:'';width:9px;height:9px;background:var(--green);border-radius:50%}h1{font-size:clamp(2.6rem,7vw,5.8rem);line-height:.98;letter-spacing:-.06em;margin:18px 0 20px;max-width:850px}h2{font-size:1.8rem;letter-spacing:-.03em;margin:0 0 18px}h3{font-size:1.05rem;margin:22px 0 8px}.lead{font-size:1.15rem;max-width:710px;color:var(--muted)}.meta{display:flex;flex-wrap:wrap;gap:9px;margin-top:24px}.pill{border:1px solid var(--line);border-radius:99px;padding:5px 11px;font-size:.75rem;color:var(--muted)}.toc{position:sticky;top:0;z-index:2;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}.toc .wrap{display:flex;gap:16px;overflow:auto;padding-top:12px;padding-bottom:12px}.toc a{white-space:nowrap;text-decoration:none;font-size:.8rem;color:var(--muted)}.toc a:hover,.toc a.active{color:var(--green);font-weight:700}section{padding:30px 0}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.kpi{font-family:var(--mono);font-size:1.7rem;color:var(--green);font-weight:700}.kpi small{display:block;color:var(--muted);font:600 .68rem var(--body);letter-spacing:.08em;text-transform:uppercase}.flow,.mermaid-wrap{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;overflow:auto;display:flex;justify-content:center}.mermaid{min-width:650px}.split{display:grid;grid-template-columns:1fr 1fr;gap:18px}.shot{width:100%;border:1px solid var(--line);border-radius:12px;display:block}.caption{font-size:.8rem;color:var(--muted);margin:8px 2px 0}.callout{border-left:4px solid var(--amber);background:var(--mint);padding:14px 18px;border-radius:0 12px 12px 0;color:var(--muted)}table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line);vertical-align:top}th{background:var(--mint);color:var(--green)}.code,.ve-code-block{background:#10201a;color:#d9f5e7;padding:16px;border-radius:12px;overflow:auto;font-size:.78rem}.code code,.ve-code-block code{background:none;padding:0;color:inherit}.ve-code-block pre code{display:block;background:transparent;border-radius:0;color:inherit;padding:0;tab-size:2}footer{padding:40px 0 70px;color:var(--muted);font-size:.85rem}@media(max-width:720px){.hero{padding-top:35px}.hero-card{padding:25px}.grid,.split{grid-template-columns:1fr}h1{font-size:3.4rem}.card,.ve-card{padding:20px}}
+  </style>
+</head>
+<body>
+  <header class="hero wrap"><div class="hero-card">
+    <span class="eyebrow">agentic-first CRM / open source</span>
+    <h1>CRM は、<br>エージェントのノートブック。</h1>
+    <p class="lead">人がフォームへ入力する CRM ではなく、エージェントが調査し、フォローアップを予約し、確かな証拠だけを記録する CRM。データベースはその作業結果を保持する場所に徹する。</p>
+    <div class="meta"><span class="pill">eve durable agent</span><span class="pill">Next.js 16</span><span class="pill">NestJS + tRPC</span><span class="pill">Postgres / Prisma</span><span class="pill">MIT</span></div>
+  </div></header>
+  <nav class="toc"><div class="wrap"><a href="#thesis">設計思想</a><a href="#architecture">構成</a><a href="#agent">エージェント</a><a href="#evidence">証拠</a><a href="#product">プロダクト</a><a href="#stack">スタック</a><a href="#run">起動</a></div></nav>
+  <main class="wrap">
+    <section id="thesis"><span class="label">01 / thesis</span><h2>「AI 機能付き CRM」ではない</h2><div class="grid"><div class="card"><div class="kpi">agent ≠ feature</div><p>エージェントは画面横のチャットではない。独立したデプロイで、キューから仕事を取り、ブラウザを閉じても調査を続ける。</p></div><div class="card"><div class="kpi">API = signal</div><p>API は判断しない。スレッド取込や未知の参加者を <code>AgentTask</code> として記録し、意味づけは agent 側へ渡す。</p></div><div class="card"><div class="kpi">no guesses</div><p>人物情報に confidence score を付けない。観測した evidence と、人が判断すべき suggestion を分ける。</p></div></div><div class="callout"><strong>単一テナント。</strong> Google sign-in と allow-list が認証モデルの全体。社内利用を前提に、認可の複雑さを増やさない。</div></section>
+    <section id="architecture"><span class="label">02 / architecture</span><h2>イベントを置く API と、意味を読む agent</h2><div class="flow"><div class="mermaid">flowchart LR
+      B[Browser] --> APP[Next.js app\nRSC + TanStack Query]
+      APP -->|tRPC| API[NestJS API\nHTTP / auth / sync]
+      API -->|writes event| Q[(Postgres\nAgentTask queue)]
+      AG[Durable eve agent\nown schedule + budget] -->|leases| Q
+      AG -->|facts / suggestions| Q
+      API --> DB[(Prisma / Postgres)]
+      AG --> EXT[Optional outside sources\nGmail / Calendar / research]
+      </div></div><p>API と agent の境界は「HTTP の中で同期的に enrich しない」。キューの行は agent が停止していても残り、lease が切れれば再実行できる。</p></section>
+    <section id="agent"><span class="label">03 / agent runtime</span><h2>仕事を自分で取り、予算が尽きたら止まる</h2><div class="split"><div class="card"><h3>Durable work queue</h3><p><code>claimDue</code> は <code>FOR UPDATE SKIP LOCKED</code> で期限の来たタスクを lease。複数 dispatcher が同じ仕事を取らず、死んだ run は lease expiry で戻る。</p><h3>Evidence-aware tools</h3><p><code>read_crm_history</code>、<code>search_crm</code>、<code>identify_contact</code>、<code>research_person</code>、<code>record_fact</code> など、観測・照合・記録を分離した tool 群。</p></div><div class="card"><h3>Schedule is a decision</h3><p>cron は「毎 N 分」ではなく、タスクの <code>dueAt</code>。再確認には理由を残す <code>schedule_recheck</code> を使う。</p><div class="code"><code>agent → lease task → inspect evidence
+      → strong evidence: write fact
+      → weak evidence: human suggestion
+      → schedule next look with reason</code></div></div></div></section>
+    <section id="evidence"><span class="label">04 / truth model</span><h2>確信度ではなく、証拠の価格</h2><div class="card"><p>モデル自身に確信度を採点させると、便利そうに見える方向へ誤る。CRM は <code>crm.signature-block</code> や <code>github.account-identity</code> のような provenance を保存し、evidence ledger が強さを評価する。</p><div class="ve-table-wrap"><table><thead><tr><th>入力</th><th>扱い</th><th>書き込み</th></tr></thead><tbody><tr><td>署名ブロック、直接の履歴</td><td>強い観測</td><td>record に反映</td></tr><tr><td>外部プロフィールの候補</td><td>弱い / 衝突の可能性</td><td>suggestion として人へ</td></tr><tr><td>モデルの「たぶん」</td><td>証拠ではない</td><td>人物情報に書かない</td></tr></tbody></table></div><p class="caption">「空欄」は「自信満々に間違っている」より安全。誰も誤りに気づけないデータを作らない。</p></div></section>
+    <section id="product"><span class="label">05 / product surface</span><h2>画面は作業のために薄く保つ</h2><div class="split"><div><img class="shot" src="https://raw.githubusercontent.com/53able/crm/main/docs/images/overview.png" alt="CRM overview dashboard"><p class="caption">Overview — closed-won、open pipeline、stage 別の案件を一画面で把握。</p></div><div><img class="shot" src="https://raw.githubusercontent.com/53able/crm/main/docs/images/deals.png" alt="CRM deals list"><p class="caption">Deals — filter・sort・pagination を URL に保持し、ビューをリンクとして共有。</p></div></div><div class="card" style="margin-top:18px"><h3>Sheets, not nested pages</h3><p>行をクリックすると URL param で detail sheet を開く。戻るボタンで閉じ、深い route tree を作らない。全リストは同じ server-side paginated <code>DataTable</code> を使う。</p></div></section>
+    <section id="stack"><span class="label">06 / stack</span><h2>境界を説明できるモノレポ</h2><div class="ve-table-wrap"><table><thead><tr><th>層</th><th>役割</th><th>代表パス</th></tr></thead><tbody><tr><td>apps/app</td><td>RSC prefetch、画面、URL state</td><td><code>components/crm</code></td></tr><tr><td>apps/api</td><td>auth、health、tRPC routers、sync</td><td><code>src/*</code></td></tr><tr><td>apps/agent</td><td>durable session、tools、skills、schedule</td><td><code>agent/</code></td></tr><tr><td>packages/db</td><td>Prisma schema と safe client</td><td><code>packages/db</code></td></tr><tr><td>packages/ui</td><td>共有 UI primitives / DataTable</td><td><code>packages/ui</code></td></tr></tbody></table></div><p class="callout">外部 API の vendor client は <code>apps/agent</code> に置く。Nest service が enrichment を呼び出したら、境界違反として扱う。</p></section>
+    <section id="run"><span class="label">07 / quick start</span><h2>ローカルで動かす</h2><div class="code"><code>cp .env.example .env
+bun install
+bun run dev</code></div><p>Google sign-in、Postgres、必要に応じて Gmail / Calendar の credentials を設定する。詳細は source repository の <code>docs/environment.md</code> と <code>README.md</code> を参照。</p><p><a href="https://github.com/53able/crm" target="_blank" rel="noopener">GitHub: 53able/crm ↗</a></p></section>
+  </main>
+  <footer class="wrap">Source: <code>53able/crm</code> · README / docs / source tree をもとに構成 · Visual documentation page</footer>
+  <script>mermaid.initialize({startOnLoad:true,theme:'base',themeVariables:{primaryColor:'#e3f2eb',primaryTextColor:'#15231e',primaryBorderColor:'#006b4f',lineColor:'#61716a',secondaryColor:'#fff'}});(function(){var links=document.querySelectorAll('.toc a'),sections=[];links.forEach(function(a){var h=document.getElementById(a.getAttribute('href').slice(1));if(h)sections.push({link:a,head:h});});function update(){var top=scrollY+80,current=sections[0];sections.forEach(function(s){if(s.head.getBoundingClientRect().top+scrollY<=top)current=s;});sections.forEach(function(s){s.link.classList.toggle('active',s===current);});}addEventListener('scroll',update,{passive:true});update();})();</script>
+</body>
+</html>
