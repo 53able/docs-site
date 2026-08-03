@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Code Router — ローカルモデルゲートウェイとルーティング基盤</title>
+  <meta name="description" content="Claude Code Router の構成、リクエスト経路、主要機能、導入方法、安全な運用境界を図解します。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Claude Code Router — ローカルモデルゲートウェイとルーティング基盤">
+  <meta property="og:description" content="Claude Code Router の構成、リクエスト経路、主要機能、導入方法、安全な運用境界を図解します。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/claude-code-router.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Claude Code Router — ローカルモデルゲートウェイとルーティング基盤">
+  <meta name="twitter:description" content="Claude Code Router の構成、リクエスト経路、主要機能、導入方法、安全な運用境界を図解します。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.5rem;
+      --radius-sm: calc(var(--radius) - 3px);
+      --radius-lg: calc(var(--radius) + 3px);
+      --background: oklch(0.985 0.009 92);
+      --foreground: oklch(0.22 0.025 52);
+      --card: oklch(0.997 0.004 92);
+      --card-foreground: var(--foreground);
+      --primary: oklch(0.39 0.1 176);
+      --primary-foreground: oklch(0.985 0.008 92);
+      --secondary: oklch(0.94 0.025 89);
+      --secondary-foreground: oklch(0.28 0.035 58);
+      --muted: oklch(0.955 0.014 88);
+      --muted-foreground: oklch(0.49 0.025 58);
+      --accent: oklch(0.91 0.045 165);
+      --accent-foreground: oklch(0.25 0.065 176);
+      --border: oklch(0.86 0.026 83);
+      --ring: oklch(0.62 0.11 176);
+      --chart-1: oklch(0.43 0.11 176);
+      --chart-2: oklch(0.62 0.14 61);
+      --chart-3: oklch(0.52 0.12 32);
+      --chart-4: oklch(0.56 0.08 236);
+      --chart-5: oklch(0.45 0.055 80);
+      --code-bg: oklch(0.19 0.02 58);
+      --code-text: oklch(0.91 0.035 87);
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      --font-body: 'Archivo', 'Noto Sans JP', sans-serif;
+      --font-mono: 'Spline Sans Mono', 'SFMono-Regular', Consolas, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.17 0.018 57);
+        --foreground: oklch(0.93 0.018 89);
+        --card: oklch(0.21 0.022 58);
+        --card-foreground: var(--foreground);
+        --primary: oklch(0.73 0.11 168);
+        --primary-foreground: oklch(0.16 0.025 176);
+        --secondary: oklch(0.25 0.025 59);
+        --secondary-foreground: var(--foreground);
+        --muted: oklch(0.25 0.022 58);
+        --muted-foreground: oklch(0.73 0.025 84);
+        --accent: oklch(0.28 0.055 170);
+        --accent-foreground: oklch(0.86 0.08 164);
+        --border: oklch(0.34 0.025 62);
+        --ring: oklch(0.67 0.1 170);
+        --chart-1: oklch(0.72 0.12 168);
+        --chart-2: oklch(0.74 0.13 70);
+        --chart-3: oklch(0.69 0.13 39);
+        --chart-4: oklch(0.7 0.09 230);
+        --chart-5: oklch(0.72 0.055 86);
+        --code-bg: oklch(0.125 0.013 58);
+        --code-text: oklch(0.89 0.03 88);
+      }
+    }
+
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 8px 24px oklch(0.2 0.02 60 / 0.08); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px oklch(0.2 0.02 60 / 0.05); }
+    .ve-card--hero { background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%); border-color: color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%); box-shadow: 0 12px 32px oklch(0.3 0.06 176 / 0.09); }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-code-block__label { color: var(--code-text); border-bottom: 1px solid oklch(1 0 0 / 12%); font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; padding: 0.625rem 0.875rem; text-transform: uppercase; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; padding: 0.9rem 1rem; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.7; white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-x: auto; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.82rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.8rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: 0; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 65%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; }
+    .ve-kpi-card__value { display: block; font-family: var(--font-mono); font-size: 1.45rem; font-weight: 600; line-height: 1.1; }
+    .ve-kpi-card__label { display: block; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); margin-top: 0.45rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.9rem 1.1rem; font-size: 0.84rem; line-height: 1.65; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background-color: var(--bg);
+      background-image: linear-gradient(oklch(0.45 0.05 80 / 0.045) 1px, transparent 1px), linear-gradient(90deg, oklch(0.45 0.05 80 / 0.045) 1px, transparent 1px);
+      background-size: 28px 28px;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    .wrap { width: 100%; max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 0 48px; }
+    .main { min-width: 0; max-width: 74rem; }
+    .toc { position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1; max-height: calc(100dvh - 48px); overflow-y: auto; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding-bottom: 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 5px 8px; border-radius: 4px; border-left: 2px solid transparent; line-height: 1.4; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+
+    h1 { font-size: clamp(2.2rem, 6vw, 4.8rem); font-weight: 650; font-stretch: condensed; line-height: 0.96; letter-spacing: -0.055em; max-width: 13ch; margin-bottom: 1rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 1rem; line-height: 1.7; max-width: 52rem; margin-bottom: 2rem; }
+    .sec-head { font-family: var(--font-mono); font-size: 1rem; font-weight: 600; margin: 3rem 0 1rem; padding-bottom: 0.65rem; border-bottom: 1px solid var(--border); letter-spacing: -0.02em; }
+    h3 { font-size: 1rem; font-weight: 650; margin: 1.25rem 0 0.6rem; }
+    p { font-size: 0.94rem; line-height: 1.7; margin-bottom: 0.8rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.4rem; }
+    li { margin-bottom: 0.4rem; line-height: 1.6; }
+    a { color: var(--chart-1); text-underline-offset: 3px; }
+    code { font-family: var(--font-mono); font-size: 0.8em; background: var(--muted); padding: 2px 5px; border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+
+    .hero { padding: 2rem 2rem 1.5rem; margin-bottom: 1.25rem; }
+    .hero-note { font-family: var(--font-mono); color: var(--chart-1); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1.2rem; overflow-wrap: anywhere; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin-top: 1.4rem; }
+    .flow { display: grid; grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1.35fr) 28px minmax(0, 1fr); align-items: stretch; gap: 0.5rem; margin: 1rem 0; }
+    .flow-stage { position: relative; min-width: 0; padding: 1.15rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+    .flow-stage--router { background: color-mix(in oklch, var(--accent) 75%, var(--card)); border-color: var(--ring); }
+    .flow-stage__tag { display: block; font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.55rem; }
+    .flow-stage strong { display: block; font-size: 0.95rem; margin-bottom: 0.45rem; }
+    .flow-stage p { color: var(--text-dim); font-size: 0.78rem; line-height: 1.55; margin: 0; }
+    .flow-arrow { display: grid; place-items: center; color: var(--chart-2); font-family: var(--font-mono); font-size: 1.25rem; }
+    .package-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 0.85rem; }
+    .package-grid .ve-card { min-width: 0; }
+    .package-name { display: block; color: var(--chart-1); font-family: var(--font-mono); font-size: 0.76rem; margin-bottom: 0.5rem; }
+    .cap-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.8rem; }
+    .cap-grid .ve-card { min-width: 0; padding: 1rem; }
+    .cap-grid h3 { margin-top: 0; }
+    .cap-grid p { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0; }
+    .steps { counter-reset: step; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
+    .step { counter-increment: step; position: relative; padding: 1.1rem 1.1rem 1.1rem 3.4rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); min-width: 0; }
+    .step::before { content: counter(step, decimal-leading-zero); position: absolute; left: 1rem; top: 1.05rem; font-family: var(--font-mono); color: var(--chart-2); font-weight: 600; }
+    .step strong { display: block; margin-bottom: 0.35rem; }
+    .step p { color: var(--text-dim); font-size: 0.8rem; margin: 0; }
+    .card-stack { display: grid; gap: 0.85rem; }
+    .source-note { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.72rem; margin-top: 1rem; }
+
+    @media (max-width: 1000px) {
+      body { padding: 24px; background-size: 22px 22px; }
+      .wrap { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+      .toc { position: sticky; top: 0; z-index: 20; width: calc(100% + 48px); min-width: 0; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto; background: var(--bg); border-bottom: 1px solid var(--border); margin: 0 -24px; padding: 10px 24px; grid-row: auto; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: 0; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; }
+      .toc a.active { border-left: 0; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 22px; }
+      .sec-head { scroll-margin-top: 54px; }
+    }
+    @media (max-width: 760px) {
+      .kpi-row, .package-grid, .cap-grid, .steps { grid-template-columns: 1fr 1fr; }
+      .flow { grid-template-columns: 1fr; }
+      .flow-arrow { transform: rotate(90deg); min-height: 22px; }
+      .hero { padding: 1.4rem; }
+    }
+    @media (max-width: 520px) {
+      body { padding: 16px; }
+      .toc { width: calc(100% + 32px); margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+      .kpi-row, .package-grid, .cap-grid, .steps { grid-template-columns: 1fr; }
+      .ve-card { padding: 1rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="ページ内ナビゲーション">
+    <div class="toc-title">Contents</div>
+    <a href="#overview">概要</a>
+    <a href="#request-flow">リクエスト経路</a>
+    <a href="#packages">モノレポ構成</a>
+    <a href="#capabilities">主要機能</a>
+    <a href="#setup">導入手順</a>
+    <a href="#operations">運用境界</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <main class="main">
+    <header class="ve-card ve-card--hero hero">
+      <div class="hero-note">Local gateway · control plane · observability</div>
+      <h1>Claude Code Router</h1>
+      <p class="subtitle">複数のコーディングエージェントに安定したローカル接続先を提供し、その背後でプロバイダー、モデル、認証情報、ルーティング、拡張機能、ログをまとめて管理するゲートウェイです。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">:3456</span><span class="ve-kpi-card__label">Model gateway</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">:3458</span><span class="ve-kpi-card__label">Management UI</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node 22+</span><span class="ve-kpi-card__label">CLI requirement</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">License</span></div>
+      </div>
+    </header>
+
+    <section id="overview" class="sec-head">1 — 何を一元化するか</section>
+    <div class="ve-card ve-card--elevated">
+      <span class="ve-section-label"><span class="ve-dot"></span>役割</span>
+      <p>Claude Code Router（CCR）は、Claude Code、Claude Design、Codex、Grok CLI、Kimi CLI、Kilo Code、OpenCode、Pi、ZCode、互換 API クライアントと、実際に推論を行うプロバイダーの間に入ります。クライアント側の接続先を固定したまま、CCR 側でモデルやアカウントを差し替えられます。</p>
+      <p>設定は Agent Profiles、Providers、Models、Routing、API Keys、Extensions などの画面に分かれ、処理結果は Logs で解決済みプロバイダー、モデル、認証情報、レイテンシ、トークン、推定コストまで追跡できます。</p>
+    </div>
+
+    <section id="request-flow" class="sec-head">2 — リクエストが通る経路</section>
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span>Request lifecycle</span>
+      <div class="flow" role="img" aria-label="エージェントから CCR を経由してプロバイダーへ届く流れ">
+        <div class="flow-stage">
+          <span class="flow-stage__tag">Clients</span>
+          <strong>コーディングエージェント</strong>
+          <p>プロファイルが接続先、環境変数、モデル既定値を適用します。</p>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-stage flow-stage--router">
+          <span class="flow-stage__tag">CCR :3456</span>
+          <strong>認証 → ルール評価 → 変換</strong>
+          <p>プロファイル固有ルールを先に評価し、続いてグローバルルール、書き換え、認証情報選択、リトライ、順序付きフォールバックを適用します。</p>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-stage">
+          <span class="flow-stage__tag">Upstream</span>
+          <strong>選択済みモデル</strong>
+          <p>OpenAI、Anthropic、Gemini 系などのプロトコルへ適合し、応答と利用情報を CCR に戻します。</p>
+        </div>
+      </div>
+      <div class="ve-callout"><strong>先勝ちのルール:</strong> カスタムルートは一覧順で評価され、最初に一致した有効ルールがリクエストを書き換えます。プロファイル固有ルールは、そのプロファイルの API キーで認証されたリクエストにだけ適用され、グローバル一覧より先に評価されます。</div>
+    </div>
+
+    <section id="packages" class="sec-head">3 — モノレポの責務</section>
+    <div class="package-grid">
+      <article class="ve-card ve-card--hero">
+        <span class="package-name">@claude-code-router/core</span>
+        <h3>ゲートウェイの中核</h3>
+        <p>ルーティング、プロバイダー、認証情報、ストレージ、MCP、観測、プロファイル起動を担います。CLI とデスクトップの両方がこの中核を利用します。</p>
+      </article>
+      <article class="ve-card">
+        <span class="package-name">@musistudio/claude-code-router</span>
+        <h3>CLI 配布物</h3>
+        <p><code>ccr</code> コマンド、ブラウザ管理 UI、ローカルゲートウェイ、プロファイル起動を Electron なしで提供します。</p>
+      </article>
+      <article class="ve-card">
+        <span class="package-name">@claude-code-router/ui</span>
+        <h3>管理画面</h3>
+        <p>React ベースの Web UI。プロバイダー、モデル、ルート、ログ、利用量、エージェント設定を操作します。</p>
+      </article>
+      <article class="ve-card ve-card--recessed">
+        <span class="package-name">@claude-code-router/electron</span>
+        <h3>デスクトップシェル</h3>
+        <p>トレイ、通知、自動更新、OS 統合、デスクトップ専用ブラウザー機能を Web UI と中核サービスに加えます。</p>
+      </article>
+    </div>
+
+    <section id="capabilities" class="sec-head">4 — 主要機能</section>
+    <div class="cap-grid">
+      <article class="ve-card"><h3>Agents</h3><p>クライアント別プロファイル、モデル上書き、スコープ、環境設定、CLI / App 起動を管理します。</p></article>
+      <article class="ve-card"><h3>Providers</h3><p>プリセットと互換エンドポイント、プロトコル検査、モデル探索、接続確認、認証情報プールを扱います。</p></article>
+      <article class="ve-card ve-card--elevated"><h3>Routing</h3><p>ヘッダー・本文条件、プレフィックス、パラメーター書き換え、リトライ、順序付きフォールバックを組み合わせます。</p></article>
+      <article class="ve-card"><h3>Tools</h3><p>Fusion モデル、ToolHub、MCP、ブラウザー自動化、プラグイン、ローカルルート、仮想モデルを追加します。</p></article>
+      <article class="ve-card"><h3>Access</h3><p>CCR クライアントキーごとに有効期限とリクエスト、トークン、画像のローカル上限を設定します。</p></article>
+      <article class="ve-card"><h3>Observability</h3><p>要求・応答、解決済み経路、状態、遅延、トークン、推定コスト、ツール呼び出し、エージェントトレースを記録します。</p></article>
+    </div>
+
+    <section id="setup" class="sec-head">5 — 最短の導入手順</section>
+    <div class="card-stack">
+      <div class="ve-code-block">
+        <div class="ve-code-block__label">CLI · Node.js 22+</div>
+        <pre><code>npm install -g @musistudio/claude-code-router
+ccr ui</code></pre>
+      </div>
+      <div class="steps">
+        <div class="step"><strong>プロバイダーを追加</strong><p>Providers でプリセットまたはカスタム接続先を選び、API キー、プロトコル、モデルを保存します。</p></div>
+        <div class="step"><strong>クライアントキーを作成</strong><p>API Keys で、エージェントからゲートウェイへ送る要求を認証するキーを用意します。</p></div>
+        <div class="step"><strong>ゲートウェイを開始</strong><p>Server で起動し、既定の <code>http://127.0.0.1:3456</code> が利用可能になったことを確認します。</p></div>
+        <div class="step"><strong>Agent Profile を適用</strong><p>対象エージェントとモデルを選び、起動後に Logs で解決済み経路と結果を確認します。</p></div>
+      </div>
+      <div class="ve-callout"><strong>Desktop / CLI / Docker:</strong> デスクトップ版は OS 統合を含む推奨経路、CLI は開発マシンやヘッドレス環境向け、Docker は管理 UI とゲートウェイを既定で <code>127.0.0.1:3458</code> に公開します。</div>
+    </div>
+
+    <section id="operations" class="sec-head">6 — 認証と運用境界</section>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>境界</th><th>守るもの</th><th>運用上の要点</th></tr></thead>
+        <tbody>
+          <tr><td>管理トークン</td><td>ブラウザ UI と RPC API</td><td><code>ccr_web_token</code> を含む管理 URL はパスワードとして扱い、ログやチケットへ貼らない。</td></tr>
+          <tr><td>CCR クライアントキー</td><td>モデルゲートウェイへの要求</td><td>管理トークンとは別物。ゲートウェイを外部へ公開する前に必ず作成する。</td></tr>
+          <tr><td>プロバイダー認証情報</td><td>上流 API とアカウント</td><td>CCR のローカルデータディレクトリとバックアップを保護する。</td></tr>
+          <tr><td>リスナー</td><td>管理画面とゲートウェイ</td><td>意図的なリモート利用でなければ <code>127.0.0.1</code> にバインドする。外部公開時はファイアウォール、プライベートネットワーク、TLS を併用する。</td></tr>
+          <tr><td>SQLite</td><td>設定・利用量・ログなど</td><td>稼働中の DB を直接コピー・編集せず、UI の export を使うか CCR を停止してからバックアップする。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="ve-card ve-card--recessed">
+      <ul>
+        <li><a href="https://github.com/musistudio/claude-code-router" target="_blank" rel="noopener">GitHub: musistudio/claude-code-router</a> — ソース、リリース、Issue</li>
+        <li><a href="https://ccrdesk.top/" target="_blank" rel="noopener">Claude Code Router Documentation</a> — インストール、設定、CLI、Docker、トラブルシュート</li>
+        <li><a href="https://ccrdesk.top/en/configuration/routing/" target="_blank" rel="noopener">Routing Config</a> — 組み込みルート、カスタムルール、フォールバック</li>
+        <li><a href="https://github.com/musistudio/claude-code-router/releases" target="_blank" rel="noopener">Desktop releases</a> — macOS、Windows、Linux 向け配布物</li>
+      </ul>
+      <p class="source-note">Source: musistudio/claude-code-router README.md, package manifests, CLI reference, routing documentation.</p>
+    </div>
+  </main>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
