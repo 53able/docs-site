@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloudflare Computer — Durable Object の仮想ファイルシステムと実行基盤</title>
+  <meta name="description" content="Cloudflare Computer の SQLite 永続ファイルシステム、3 種類の実行バックエンド、同期経路、公開 API と preview 制約を図解します。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Cloudflare Computer — Durable Object の仮想ファイルシステムと実行基盤">
+  <meta property="og:description" content="SQLite を正とする Workspace と、Container・Isolate shell・Isolate JavaScript の実行経路を図解します。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/computer.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Cloudflare Computer — Durable Object の仮想ファイルシステムと実行基盤">
+  <meta name="twitter:description" content="Cloudflare Computer の永続ストレージ、実行バックエンド、同期と制約を視覚的に整理します。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=B612+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.5rem;
+      --radius-sm: calc(var(--radius) - 3px);
+      --radius-md: calc(var(--radius) - 1px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.975 0.012 78);
+      --foreground: oklch(0.22 0.025 252);
+      --card: oklch(0.995 0.006 78);
+      --card-foreground: oklch(0.22 0.025 252);
+      --popover: oklch(0.995 0.006 78);
+      --popover-foreground: oklch(0.22 0.025 252);
+      --primary: oklch(0.39 0.12 251);
+      --primary-foreground: oklch(0.985 0.005 78);
+      --secondary: oklch(0.94 0.022 76);
+      --secondary-foreground: oklch(0.28 0.04 251);
+      --muted: oklch(0.94 0.018 76);
+      --muted-foreground: oklch(0.48 0.035 248);
+      --accent: oklch(0.93 0.045 54);
+      --accent-foreground: oklch(0.29 0.055 40);
+      --destructive: oklch(0.56 0.2 27);
+      --border: oklch(0.84 0.025 73);
+      --input: oklch(0.84 0.025 73);
+      --ring: oklch(0.62 0.16 48);
+      --chart-1: oklch(0.61 0.19 48);
+      --chart-2: oklch(0.43 0.13 251);
+      --chart-3: oklch(0.57 0.11 173);
+      --chart-4: oklch(0.67 0.14 84);
+      --chart-5: oklch(0.52 0.12 25);
+      --code-bg: oklch(0.22 0.025 252);
+      --code-text: oklch(0.92 0.035 83);
+      --font-body: 'Atkinson Hyperlegible', system-ui, sans-serif;
+      --font-mono: 'B612 Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.155 0.025 252);
+        --foreground: oklch(0.94 0.012 78);
+        --card: oklch(0.205 0.03 251);
+        --card-foreground: oklch(0.94 0.012 78);
+        --popover: oklch(0.205 0.03 251);
+        --popover-foreground: oklch(0.94 0.012 78);
+        --primary: oklch(0.76 0.14 60);
+        --primary-foreground: oklch(0.17 0.025 252);
+        --secondary: oklch(0.25 0.03 250);
+        --secondary-foreground: oklch(0.94 0.012 78);
+        --muted: oklch(0.25 0.03 250);
+        --muted-foreground: oklch(0.72 0.025 77);
+        --accent: oklch(0.29 0.055 46);
+        --accent-foreground: oklch(0.95 0.018 77);
+        --destructive: oklch(0.67 0.18 25);
+        --border: oklch(1 0 0 / 12%);
+        --input: oklch(1 0 0 / 16%);
+        --ring: oklch(0.72 0.17 58);
+        --chart-1: oklch(0.72 0.18 54);
+        --chart-2: oklch(0.7 0.12 244);
+        --chart-3: oklch(0.7 0.12 167);
+        --chart-4: oklch(0.78 0.13 85);
+        --chart-5: oklch(0.7 0.13 28);
+        --code-bg: oklch(0.115 0.02 252);
+        --code-text: oklch(0.9 0.04 83);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero { background: color-mix(in oklch, var(--card) 91%, var(--chart-1) 9%); box-shadow: 0 8px 28px rgba(25, 35, 54, 0.1); border-color: color-mix(in oklch, var(--border) 52%, var(--chart-1) 48%); }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 26rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow: auto; padding: 1rem 1.125rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-x: auto; }
+    .ve-table-wrap table { width: 100%; min-width: 700px; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 700; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: color-mix(in oklch, var(--muted) 55%, transparent); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { display: block; font-variant-numeric: tabular-nums; font-size: 1.5rem; line-height: 1.1; font-weight: 700; }
+    .ve-kpi-card__label { display: block; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 700; }
+
+    /* ============ Reset + layout ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: var(--bg);
+      background-image: linear-gradient(color-mix(in oklch, var(--chart-2) 7%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklch, var(--chart-2) 7%, transparent) 1px, transparent 1px);
+      background-size: 32px 32px;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    .wrap { width: 100%; max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: 190px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc { position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1; max-height: calc(100dvh - 48px); overflow-y: auto; }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 5px 8px; border-radius: 4px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+
+    /* ============ Typography ============ */
+    h1 { font-size: clamp(2rem, 5vw, 3.35rem); line-height: 1.02; font-weight: 700; letter-spacing: -0.035em; margin-bottom: 0.75rem; max-width: 14ch; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); line-height: 1.65; }
+    .sec-head { font-size: 1.2rem; font-weight: 700; margin: 3rem 0 1rem; padding-bottom: 0.55rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 0 0 0.5rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul { margin: 0; padding-left: 1.35rem; }
+    li { line-height: 1.6; margin-bottom: 0.4rem; }
+    a { color: var(--chart-2); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-1); }
+    code { font-family: var(--font-mono); font-size: 0.78rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .code-label { padding: 0.6rem 1rem; color: color-mix(in oklch, var(--code-text) 70%, transparent); border-bottom: 1px solid color-mix(in oklch, var(--code-text) 15%, transparent); font: 700 0.65rem/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    /* ============ Content components ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin: 1.25rem 0 0.25rem; }
+    .architecture { display: grid; gap: 1rem; }
+    .architecture__store { border-left: 4px solid var(--chart-1); }
+    .architecture__router { border-left: 4px solid var(--chart-2); }
+    .flow-label { display: flex; align-items: center; gap: 0.75rem; color: var(--text-dim); font: 700 0.68rem/1.4 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; }
+    .flow-label::before, .flow-label::after { content: ''; height: 1px; background: var(--border); flex: 1; }
+    .backend-grid, .package-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .backend-card { min-width: 0; position: relative; padding-top: 2.8rem; }
+    .backend-card::before { position: absolute; top: 1rem; left: 1.5rem; color: var(--chart-1); font: 700 0.64rem/1 var(--font-mono); letter-spacing: 0.11em; text-transform: uppercase; }
+    .backend-card--container::before { content: 'Linux / FUSE'; }
+    .backend-card--shell::before { content: 'Dynamic Worker'; }
+    .backend-card--javascript::before { content: 'ES Module'; }
+    .backend-card p, .package-card p { color: var(--text-dim); font-size: 0.84rem; margin: 0; }
+    .route-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: stretch; margin: 1rem 0; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .route-step { min-width: 0; padding: 1rem 0.75rem; background: var(--card); border-right: 1px solid var(--border); text-align: center; }
+    .route-step:last-child { border-right: 0; }
+    .route-step strong { display: block; font: 700 0.75rem/1.35 var(--font-mono); overflow-wrap: anywhere; }
+    .route-step span { display: block; color: var(--text-dim); font-size: 0.72rem; line-height: 1.4; margin-top: 0.35rem; }
+    .route-step--accent { background: color-mix(in oklch, var(--card) 84%, var(--chart-1) 16%); }
+    .section-stack { display: grid; gap: 1rem; }
+    .badge { display: inline-block; border: 1px solid var(--border); border-radius: 3px; padding: 0.18rem 0.4rem; font: 700 0.62rem/1 var(--font-mono); white-space: nowrap; }
+    .badge--sync { color: var(--chart-1); background: color-mix(in oklch, var(--chart-1) 10%, transparent); }
+    .badge--direct { color: var(--chart-3); background: color-mix(in oklch, var(--chart-3) 10%, transparent); }
+    .source-note { color: var(--text-dim); font-size: 0.78rem; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; scroll-behavior: auto !important; } }
+
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc { position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto; -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 24px; margin: 0 -24px; grid-row: auto; }
+      .toc::-webkit-scrollbar, .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 24px; }
+      .sec-head { scroll-margin-top: 56px; }
+    }
+    @media (max-width: 760px) {
+      .kpi-row, .backend-grid, .package-grid { grid-template-columns: 1fr 1fr; }
+      .route-strip { grid-template-columns: 1fr; }
+      .route-step { border-right: 0; border-bottom: 1px solid var(--border); text-align: left; }
+      .route-step:last-child { border-bottom: 0; }
+    }
+    @media (max-width: 520px) {
+      body { padding: 18px; }
+      .toc { margin: 0 -18px; padding-left: 18px; padding-right: 18px; }
+      .kpi-row, .backend-grid, .package-grid { grid-template-columns: 1fr; }
+      .ve-card { padding: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">全体構成</a>
+    <a href="#backends">実行バックエンド</a>
+    <a href="#usage">公開 API</a>
+    <a href="#packages">パッケージ</a>
+    <a href="#limits">制約・参照</a>
+  </nav>
+
+  <main class="main">
+    <h1>Cloudflare Computer</h1>
+    <p class="subtitle">Durable Object の SQLite にファイルを保存し、同じ Workspace を 3 種類の実行環境から扱う。</p>
+
+    <section id="overview" class="sec-head">1 — 概要</section>
+    <div class="ve-card ve-card--hero" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 1 つの永続状態、選べる実行環境</span>
+      <p><strong>Cloudflare Computer</strong> は、Durable Object 内の SQLite を正とする仮想ファイルシステムです。<code>workspace.fs</code> が永続ファイルを操作し、<code>workspace.runtime.exec()</code> が登録済みバックエンドへ処理を振り分けます。ファイルだけを使う構成では、実行バックエンドを登録しなくても構いません。</p>
+      <div class="kpi-row">
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">SQLite</span><span class="ve-kpi-card__label">Authoritative store</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">Execution backends</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">1 API</span><span class="ve-kpi-card__label">runtime.exec</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">Preview</span><span class="ve-kpi-card__label">Unstable API</span></div>
+      </div>
+    </div>
+
+    <section id="architecture" class="sec-head">2 — 全体構成</section>
+    <div class="architecture">
+      <div class="ve-card architecture__store" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Durable Object</span>
+        <h3>Workspace.fs → DOFS → SQLite</h3>
+        <p>読み書き、ディレクトリ操作、検索、マウントを Durable Object のストレージ上で処理します。この SQLite 状態が Workspace の正です。</p>
+      </div>
+      <div class="flow-label">同じ Workspace を実行へ渡す</div>
+      <div class="ve-card architecture__router" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Runtime router</span>
+        <h3>workspace.runtime.exec(source, { backend })</h3>
+        <p>安定した ID でバックエンドを選びます。接続は初回利用時に作られ、コマンド型とモジュール型の違いは Runtime が吸収します。</p>
+      </div>
+      <div class="flow-label">用途に応じて 3 経路へ</div>
+      <div class="backend-grid">
+        <article class="ve-card backend-card backend-card--container" style="--i:2">
+          <h3>Container</h3>
+          <p><code>computerd</code> が FUSE で <code>/workspace</code> をマウント。Linux バイナリとネットワークを使えます。</p>
+        </article>
+        <article class="ve-card backend-card backend-card--shell" style="--i:3">
+          <h3>Isolate shell</h3>
+          <p><code>just-bash</code> を Dynamic Worker で実行。HOST proxy を通じて同じ SQLite を直接扱います。</p>
+        </article>
+        <article class="ve-card backend-card backend-card--javascript" style="--i:4">
+          <h3>Isolate JavaScript</h3>
+          <p>新しい Dynamic Worker で ES module を評価。構造化入力と <code>node:fs/promises</code> を利用できます。</p>
+        </article>
+      </div>
+    </div>
+
+    <section id="backends" class="sec-head">3 — 実行バックエンド</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 違いは実行能力と同期経路</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>バックエンド</th><th>実行するもの</th><th>ファイル経路</th><th>向いている処理</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Container</strong><br><span class="badge badge--sync">push / pull</span></td><td>Linux shell と実バイナリ</td><td>SQLite ↔ capnweb ↔ computerd ↔ FUSE</td><td>ネイティブ CLI、パッケージ処理、Linux userland が必要な作業</td></tr>
+            <tr><td><strong>Isolate shell</strong><br><span class="badge badge--direct">direct</span></td><td>just-bash コマンド</td><td>Workers RPC の HOST proxy から SQLite へ直接</td><td>軽量なファイル操作、コンテナを使わないシェル処理</td></tr>
+            <tr><td><strong>Isolate JavaScript</strong><br><span class="badge badge--direct">direct</span></td><td>ECMAScript module</td><td>host bridge から fs / git / artifacts へ接続</td><td>構造化入出力、相対 import、JavaScript の隔離実行</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="route-strip" aria-label="Container 実行時の同期フロー">
+      <div class="route-step"><strong>DO SQLite</strong><span>永続状態</span></div>
+      <div class="route-step route-step--accent"><strong>pre-exec push</strong><span>差分を送る</span></div>
+      <div class="route-step"><strong>computerd / FUSE</strong><span>/workspace で実行</span></div>
+      <div class="route-step route-step--accent"><strong>post-exec pull</strong><span>変更を戻す</span></div>
+      <div class="route-step"><strong>DO SQLite</strong><span>結果を永続化</span></div>
+    </div>
+    <div class="ve-callout">
+      <strong>同期対象:</strong> Container 内の変更で Workspace に戻るのは <code>/workspace</code> 配下です。Isolate shell と Isolate JavaScript は host 側の Workspace を直接使うため、第二のストアや同期往復を持ちません。
+    </div>
+
+    <section id="usage" class="sec-head">4 — 公開 API</section>
+    <div class="section-stack">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 最小構成</span>
+        <p><code>withWorkspace</code> で Durable Object に Workspace を組み込み、呼び出し側では <code>getWorkspace()</code> からファイル API を使います。Worker では <code>nodejs_compat</code> が必要です。</p>
+        <div class="ve-code-block">
+          <div class="code-label">TypeScript</div>
+          <pre><code>import { getWorkspace, withWorkspace } from "@cloudflare/computer";
+import { DurableObject } from "cloudflare:workers";
+
+export class Agent extends withWorkspace(
+  class extends DurableObject&lt;Env&gt; {},
+) {}
+
+export default {
+  async fetch(_request, env) {
+    const id = env.Agent.idFromName("demo");
+    using ws = await getWorkspace(env.Agent.get(id));
+
+    await ws.fs.writeFile("/notes.txt", "durable\n");
+    return new Response(await ws.fs.readFile("/notes.txt", "utf8"));
+  },
+};</code></pre>
+        </div>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> 実行を追加する</span>
+        <p><code>Workspace</code> に backend を登録すると、同じ <code>runtime.exec()</code> から選択できます。最初の backend が既定値になり、<code>{ backend: "stable-id" }</code> で明示的に切り替えられます。</p>
+        <div class="ve-code-block">
+          <div class="code-label">Runtime call</div>
+          <pre><code>const run = await ws.runtime.exec("cat /workspace/notes.txt", {
+  backend: "container",
+  encoding: "utf8",
+});
+
+const { stdout, exitCode } = await run.result();</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <section id="packages" class="sec-head">5 — パッケージ</section>
+    <div class="package-grid">
+      <article class="ve-card package-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> @cloudflare/computer</span>
+        <h3>利用者向け facade</h3>
+        <p><code>Workspace</code>、fs、runtime、各 backend、git、assets、artifacts、AI SDK tools を公開します。</p>
+      </article>
+      <article class="ve-card package-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> @cloudflare/dofs</span>
+        <h3>SQLite ファイルシステム</h3>
+        <p>スキーマ、ファイル操作、同期部品、computerd が利用する VFS provider を担います。</p>
+      </article>
+      <article class="ve-card package-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> @cloudflare/computer-rpc</span>
+        <h3>capnweb 契約</h3>
+        <p>Durable Object と computerd の wire types、server / client、同期 driver を共有します。</p>
+      </article>
+      <article class="ve-card package-card" style="--i:3">
+        <span class="ve-section-label"><span class="ve-dot"></span> @cloudflare/computerd</span>
+        <h3>Container 内 daemon</h3>
+        <p>FUSE mount、HTTP / WebSocket RPC、shell 実行を提供し、Container 内の状態を Workspace と同期します。</p>
+      </article>
+      <article class="ve-card package-card" style="--i:4">
+        <span class="ve-section-label"><span class="ve-dot"></span> examples</span>
+        <h3>実際の利用経路</h3>
+        <p>Container、worker-shell、worker-javascript、agent、tutorial、assets の構成例を収録します。</p>
+      </article>
+      <article class="ve-card package-card ve-card--elevated" style="--i:5">
+        <span class="ve-section-label"><span class="ve-dot"></span> filesystem only</span>
+        <h3>backend は省略可能</h3>
+        <p>実行が不要なら、永続ファイルシステムだけの Workspace として構築できます。</p>
+      </article>
+    </div>
+
+    <section id="limits" class="sec-head">6 — 制約・参照</section>
+    <div class="section-stack">
+      <div class="ve-callout">
+        <strong>Preview:</strong> API は不安定で、実験・探索・prototype 向けです。現時点では production 用途を想定していません。リポジトリの <code>docs/</code> は将来仕様であり、現在の <code>main</code> の実装説明とは区別してください。
+      </div>
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> 現在の上限</span>
+        <ul>
+          <li>容量は Durable Object ストレージと共有し、目安は約 10 GB です。</li>
+          <li>Container 側のファイルシステムはメモリ上にあり、大規模ツリーには向きません。</li>
+          <li>FUSE は metadata-heavy な処理に強い一方、大きな連続 I/O や大規模な package install には負荷があります。</li>
+          <li>R2 mount は読み取り専用です。書き込みは <code>EROFS</code> になります。</li>
+          <li>Isolate shell は完全な Linux userland ではありません。JavaScript backend も外向き通信を既定で持ちません。</li>
+        </ul>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> 公式資料</span>
+        <ul>
+          <li><a href="https://github.com/cloudflare/computer" target="_blank" rel="noopener">cloudflare/computer</a> — ソース、README、examples</li>
+          <li><a href="https://github.com/cloudflare/computer/tree/main/packages/computer" target="_blank" rel="noopener">@cloudflare/computer package</a> — install、entrypoints、公開 API</li>
+          <li><a href="https://github.com/cloudflare/computer/tree/main/packages/computerd" target="_blank" rel="noopener">computerd package</a> — FUSE daemon と RPC endpoint</li>
+        </ul>
+        <p class="source-note">このページは 2026-08-03 時点の <code>main</code>（commit <code>63d3636</code>）を基に整理しています。</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
