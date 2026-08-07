@@ -244,7 +244,7 @@ agent-browser install   # 初回: Chrome for Testing を取得</code></pre>
     <section id="architecture" class="sec-head">2 — アーキテクチャ</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 実行モデル</span>
-      <p>ユーザーまたはエージェントが <code>bin/agent-browser.js</code> 経由で Rust バイナリを起動し、バックグラウンドの <strong>daemon</strong> が Chrome セッションを保持する。連続コマンドは同一 daemon を再利用するため、起動コストを抑えられる。</p>
+      <p>ユーザーまたはエージェントが <code>bin/agent-browser.js</code> 経由で Rust バイナリを起動し、バックグラウンドの <strong>daemon</strong> が Chrome セッションを保持する。連続コマンドは同一 daemon を再利用するため、起動コストを抑えられる。非アクティブな daemon は標準で 1 時間後に終了し、<code>--idle-timeout</code> または <code>AGENT_BROWSER_IDLE_TIMEOUT_MS</code> で調整できる。</p>
       <div class="mermaid-wrap">
         <pre class="mermaid">%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#dce6f5", "primaryTextColor": "#1b365d", "primaryBorderColor": "#1b365d", "lineColor": "#3d5a8a", "secondaryColor": "#f5f0e0", "tertiaryColor": "#eef3fa", "fontFamily": "Outfit, system-ui, sans-serif", "fontSize": "13px"}}}%%
 flowchart LR
@@ -428,6 +428,25 @@ agent-browser --session "$SESSION" snapshot -i</code></pre>
         <li><strong>React / vitals:</strong> <code>--enable react-devtools</code> 起動時に fiber tree・Web Vitals 計測</li>
         <li><strong>プラグイン:</strong> 認証 vault・cloud browser provider・カスタム command.run</li>
       </ul>
+    </div>
+
+    <div class="ve-card ve-card--elevated" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> ブラウザプレビューのストリーミング</span>
+      <p>各セッションは WebSocket のビューポート配信を持ち、AI エージェントの操作を人が見ながら介入する「ペアブラウジング」に使える。画質とフレームサイズは daemon 単位、配信頻度はクライアント単位で設定する。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>設定</th><th>標準値</th><th>役割</th></tr></thead>
+          <tbody>
+            <tr><td><code>AGENT_BROWSER_STREAM_QUALITY</code></td><td><code>80</code></td><td>JPEG 品質（0〜100）</td></tr>
+            <tr><td><code>AGENT_BROWSER_STREAM_MAX_WIDTH</code></td><td>ビューポート幅</td><td>エンコードするフレーム幅の上限</td></tr>
+            <tr><td><code>AGENT_BROWSER_STREAM_MAX_HEIGHT</code></td><td>ビューポート高</td><td>エンコードするフレーム高の上限</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-code-block"><pre><code>AGENT_BROWSER_STREAM_QUALITY=20 agent-browser open example.com
+agent-browser stream status
+agent-browser stream disable</code></pre></div>
+      <div class="ve-callout"><strong>配信の挙動:</strong> サーバーは最新フレームを優先し、遅いクライアント向けに古いフレームをキューへ積まない。クライアントは <code>maxFps</code>（1〜120、<code>0</code> は無制限）や <code>pacing=ack</code> を指定できる。入力イベントはフレーム送信とは別に処理され、マウス・キーボード操作の応答性を保つ。</div>
     </div>
 
     <section id="links" class="sec-head">6 — 参考リンク</section>
