@@ -224,7 +224,19 @@
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">API</span><span class="ve-kpi-card__label">MarkItDown クラス</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">MCP</span><span class="ve-kpi-card__label">markitdown-mcp</span></div>
     </div>
+    <h3>主な入力形式（README より）</h3>
+    <ul>
+      <li>PDF / PowerPoint / Word / Excel</li>
+      <li>画像（EXIF・OCR 系オプション）/ 音声（メタデータ・文字起こし）</li>
+      <li>HTML・CSV / JSON / XML などテキスト系・ZIP（中身を列挙）</li>
+      <li>YouTube URL・EPub など（詳細は <a href="https://github.com/microsoft/markitdown/blob/main/README.md" target="_blank" rel="noopener">公式 README</a>）</li>
+    </ul>
     <p>textract に近い「なんでもテキスト化」だが、出力は Markdown 中心。GPT 系モデルが Markdown を強く理解しているという前提に沿い、トークン効率も意識されている。</p>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:0; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> なぜ Markdown か</span>
+    <p>プレーンテキストに近くトークン効率がよく、見出し・リスト・表・リンクで構造を表現できる。多くの LLM が Markdown を前提に学習・応答しており、RAG や後段のテキスト解析に載せやすい、という README の位置づけ。</p>
   </div>
 
   <div class="ve-callout ve-callout--warn" style="margin-top:1rem">
@@ -296,6 +308,9 @@ docker run --rm -i markitdown:latest &lt; ~/your-file.pdf &gt; output.md</code><
     <div class="ve-code-block"><pre><code>markitdown path-to-file.pdf &gt; document.md
 markitdown path-to-file.pdf -o document.md
 cat path-to-file.pdf | markitdown</code></pre></div>
+    <h3>Docker（README より）</h3>
+    <div class="ve-code-block"><pre><code>docker build -t markitdown:latest .
+docker run --rm -i markitdown:latest &lt; ~/your-file.pdf &gt; output.md</code></pre></div>
     <p>プラグイン一覧: <code>markitdown --list-plugins</code>。有効化: <code>markitdown --use-plugins path-to-file.pdf</code>。</p>
   </div>
   <div class="ve-card" style="--i:1">
