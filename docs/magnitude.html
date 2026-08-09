@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magnitude — 推論エンジン同梱のローカルモデル・エージェント</title>
+  <meta name="description" content="Rust + llama.cpp 製の推論エンジンを内蔵し、ローカルモデルだけで動くオープンソースのコーディングエージェント Magnitude の解説。ハードウェアプロファイリング、モデル推薦、ACN デーモン、event-core によるイベントソーシング構成をまとめる。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Magnitude — 推論エンジン同梱のローカルモデル・エージェント">
+  <meta property="og:description" content="Rust + llama.cpp 製の推論エンジンを内蔵し、ローカルモデルだけで動くオープンソースのコーディングエージェント Magnitude の構成と使い方。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/magnitude.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Magnitude — 推論エンジン同梱のローカルモデル・エージェント">
+  <meta name="twitter:description" content="Rust + llama.cpp 製の推論エンジンを内蔵し、ローカルモデルだけで動くオープンソースのコーディングエージェント Magnitude の構成と使い方。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Sometype+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.922 0 0);
+      --chart-1: oklch(0.50 0.13 148);
+      --chart-2: oklch(0.58 0.12 95);
+      --chart-3: oklch(0.42 0.09 148);
+      --chart-4: oklch(0.60 0.10 30);
+      --chart-5: oklch(0.45 0.05 250);
+      --code-bg: var(--muted);
+      --code-text: #123f2b;
+      --font-body: 'Instrument Sans', 'Helvetica Neue', system-ui, sans-serif;
+      --font-mono: 'Sometype Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.74 0.14 148);
+        --chart-2: oklch(0.80 0.13 95);
+        --chart-3: oklch(0.62 0.11 148);
+        --chart-4: oklch(0.74 0.11 30);
+        --chart-5: oklch(0.68 0.05 250);
+        --code-bg: #0e1310;
+        --code-text: #a9dbbd;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 24rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-x: auto; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--chart-1); white-space: nowrap; }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: break-word; }
+    .ve-table-wrap tbody tr:hover { background: var(--muted); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.5rem; line-height: 1.15; font-weight: 600; display: block; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; display: block; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 18% 0%, oklch(0.50 0.13 148 / 0.07) 0%, transparent 52%),
+        repeating-linear-gradient(0deg, transparent 0 39px, oklch(0.50 0.13 148 / 0.03) 39px 40px);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          radial-gradient(ellipse at 18% 0%, oklch(0.74 0.14 148 / 0.09) 0%, transparent 52%),
+          repeating-linear-gradient(0deg, transparent 0 39px, oklch(0.74 0.14 148 / 0.035) 39px 40px);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 210px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2.125rem; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.8125rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .lead { font-size: 1.0625rem; line-height: 1.7; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); letter-spacing: -0.01em; }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    ul:last-child, ol:last-child { margin-bottom: 0; }
+    li { margin-bottom: 0.35rem; line-height: 1.65; font-size: 0.9375rem; overflow-wrap: break-word; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); overflow-wrap: break-word; }
+    strong { font-weight: 600; }
+    .ve-code-block { margin: 1rem 0; }
+    .card-stack { display: flex; flex-direction: column; gap: 1rem; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* 手順フロー */
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; margin-top: 0.5rem; }
+    @media (max-width: 720px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.875rem 1rem; background: var(--muted); min-width: 0; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; letter-spacing: 0.12em; color: var(--chart-1); display: block; margin-bottom: 0.25rem; }
+    .step-card__title { font-weight: 600; font-size: 0.875rem; display: block; margin-bottom: 0.25rem; }
+    .step-card__body { font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); display: block; }
+
+    /* パッケージ階層 */
+    .layer-flow { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 0.5rem 0 1rem; }
+    .layer-flow .layer { background: var(--muted); border: 1px solid var(--border); padding: 0.35rem 0.65rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .layer-flow .arrow { color: var(--chart-1); font-family: var(--font-mono); }
+
+    .badge { display: inline-block; font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 4px; background: color-mix(in oklch, var(--muted) 60%, var(--chart-2) 40%); color: var(--foreground); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#install">インストールと初回起動</a>
+    <a href="#inference">ローカル推論エンジン</a>
+    <a href="#models">モデル推薦とカタログ</a>
+    <a href="#skills">スキルによる拡張</a>
+    <a href="#architecture">リポジトリ構成</a>
+    <a href="#runtime">イベントソーシングと表示</a>
+    <a href="#reference">操作リファレンス</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>Magnitude</h1>
+  <p class="subtitle">magnitudedev/magnitude — 推論エンジンを内蔵し、ローカルモデルだけで完結するオープンソース・エージェント</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何をするものか</span>
+    <p class="lead"><strong>Magnitude</strong> はターミナルで動くコーディング／作業エージェントです。特徴は、エージェント本体だけでなく <strong>推論エンジンそのものを同梱している</strong>点にあります。モデルはあなたのマシン上で動き、プロンプトもファイルも外部 API に送られません。API キー、トークン課金、レート制限がありません。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Local</span><span class="ve-kpi-card__label">100% オフライン動作</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Rust</span><span class="ve-kpi-card__label">llama.cpp 上の自前エンジン</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Bun</span><span class="ve-kpi-card__label">TypeScript モノレポ</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Apache&nbsp;2.0</span><span class="ve-kpi-card__label">ライセンス</span></div>
+    </div>
+    <p>公式ドキュメントの表現を借りると、「今日のエージェントはローカルにあるが、モデルはそうではない」という問題意識から出発しています。Magnitude はスタック全体を自前で持つことで、モデルの選定・ダウンロード・メモリ配置・実行までを 1 つのアプリケーションの中で完結させます。</p>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 想定用途</span>
+    <p>標準状態でシェルの実行、ファイルの編集、スクリプトの実行ができます。README では次のような日常業務が例に挙げられています。</p>
+    <ul>
+      <li>外部に出したくないデータの分析</li>
+      <li>プライベートなノートの管理</li>
+      <li>コードやログのレビュー</li>
+      <li>ファイルの検索と整理</li>
+      <li>ドキュメントやスライドの作成</li>
+      <li>自動化スクリプトの作成</li>
+    </ul>
+    <p>対応プラットフォームは macOS と Linux です。Windows では WSL 経由で利用します。</p>
+  </div>
+
+  <section id="install" class="sec-head">2 — インストールと初回起動</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 導入手順</span>
+    <p>CLI をグローバルにインストールし、作業したいディレクトリで <code>magnitude</code> を実行します。npm 以外に bun / pnpm / yarn でも導入できます。</p>
+    <div class="ve-code-block">
+      <pre><code>npm install -g @magnitudedev/cli
+
+cd your-project
+magnitude</code></pre>
+    </div>
+    <div class="step-flow">
+      <div class="step-card">
+        <span class="step-card__num">STEP 01</span>
+        <span class="step-card__title">ハードウェアの検出</span>
+        <span class="step-card__body">初回起動時に CPU・メモリ・アーキテクチャ・Metal / CUDA などのアクセラレーションを検出します。</span>
+      </div>
+      <div class="step-card">
+        <span class="step-card__num">STEP 02</span>
+        <span class="step-card__title">短時間のプロファイリング</span>
+        <span class="step-card__body">重みを丸ごとダウンロードせずに、短いローカル推論テストで「収まるか」「どれくらい速いか」を推定します。</span>
+      </div>
+      <div class="step-card">
+        <span class="step-card__num">STEP 03</span>
+        <span class="step-card__title">モデルの選択</span>
+        <span class="step-card__body">Balanced / Best Quality / Fastest / Lightweight から選びます。推薦は機種ごとに変わります。</span>
+      </div>
+      <div class="step-card">
+        <span class="step-card__num">STEP 04</span>
+        <span class="step-card__title">ダウンロードとロード</span>
+        <span class="step-card__body">選んだモデルの取得・準備・メモリへのロードまで Magnitude が自動で行います。</span>
+      </div>
+    </div>
+    <div class="ve-callout">
+      <strong>ターミナル環境:</strong> Ghostty や Kitty のような色表現の豊かなターミナルを推奨しています。macOS 標準のターミナルは色数が限られるため見え方が変わります。Windows では <code>wsl --install</code> の後、WSL 内で同じ手順を実行します。
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Web 検索を有効にする</span>
+    <p>Exa の API キーを環境変数に設定してから起動すると、エージェントが Web 検索を使えるようになります。</p>
+    <div class="ve-code-block">
+      <pre><code>export EXA_API_KEY="your-api-key"
+magnitude</code></pre>
+    </div>
+  </div>
+
+  <section id="inference" class="sec-head">3 — ローカル推論エンジン</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 設計の要点</span>
+    <p>推論ランタイムは <strong>llama.cpp の上に Rust で書かれた自前エンジン</strong>で、アプリケーションの一部として同梱されます。別途モデルサーバーを立てたりランタイムを設定したりする必要はありません。モデルの起動・ロード・保持・停止という一連のライフサイクルを Magnitude が握っている点が、外部サーバーを呼ぶ構成との最大の違いです。</p>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> モデルの状態</span>
+    <p>ドキュメントでは「ダウンロード済み」と「ロード済み」を明確に区別しています。状態は <code>/settings → Hardware</code> から確認し、手動でロード・停止することもできます。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>状態</th><th>意味</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Downloaded</strong></td><td>モデルファイルがディスク上に保存されている</td></tr>
+          <tr><td><strong>Loading</strong></td><td>モデルと実行時データをメモリへ配置している最中</td></tr>
+          <tr><td><strong>Running</strong></td><td>応答できる状態になっている</td></tr>
+          <tr><td><strong>Unloaded</strong></td><td>選択もダウンロードもされているが、推論用メモリは使っていない</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:0.75rem;">しばらく使われないモデルは自動的にアンロードされますが、ファイルが削除されるわけではありません。</p>
+  </div>
+
+  <div class="ve-card" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> ハードウェアに合わせた実行時設定</span>
+    <ul>
+      <li><strong>アクセラレーション・配置・コンテキスト・メモリ:</strong> その時点のマシンに合わせて設定されます。ロード直前にもう一度メモリを確認するため、普段は収まる設定でも他のアプリがメモリを使いすぎていれば起動しません。</li>
+      <li><strong>コンテキストと並列度:</strong> リクエストごとに設定されたコンテキストを維持したうえで、マシンに余力があるときだけ同時実行に追加のメモリを使います。余力がない場合はコンテキストを黙って削るのではなく、同時実行数を減らします。</li>
+      <li><strong>キャッシュの再利用:</strong> 長い会話では、実行中のモデルが既に処理した一致部分を再利用し、新しい入力だけを処理します。</li>
+      <li><strong>メモリ保護:</strong> ロード中・実行中は継続的にメモリを監視し、危険な水準まで空きが減るとマシンが不安定になる前にモデルを停止します。停止後もモデルの選択は保持され、<code>/settings</code> から再ロードできます。</li>
+    </ul>
+    <div class="ve-callout">
+      <strong>モデル差の吸収:</strong> ローカルモデルは推論フォーマット、ツール呼び出し形式、チャットテンプレート、会話履歴の慣習がそれぞれ異なります。Magnitude はこれらを 1 つのインターフェイスへ正規化するため、モデルを切り替えてもシステム側の再設定が要りません。
+    </div>
+  </div>
+
+  <section id="models" class="sec-head">4 — モデル推薦とカタログ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 4 つの推薦軸</span>
+    <p>ハードウェアプロファイルとキュレーション済みのモデルデータを組み合わせ、そのマシン向けの少数の構成を提示します。1 件の推薦は「モデル・量子化・コンテキストサイズ」の具体的な組み合わせです。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>推薦</th><th>優先するもの</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Balanced</strong></td><td>能力・速度・メモリ使用量の総合バランス</td></tr>
+          <tr><td><strong>Best Quality</strong></td><td>モデルの能力や忠実度</td></tr>
+          <tr><td><strong>Fastest</strong></td><td>応答速度</td></tr>
+          <tr><td><strong>Lightweight</strong></td><td>メモリとディスクの使用量を抑えること</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:0.75rem;">評価にはエージェントとしての能力、推定速度、コンテキスト、実行時メモリ、ダウンロードサイズ、量子化による品質の保持率が使われます。速度は <code>~36–48 tok/s</code> のような範囲で表示され、実際の値はプロンプト長や他の負荷で変動します。</p>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> カタログと保存場所</span>
+    <p>推薦はあくまで短いリストで、カタログにはそのマシンで評価対象になる完全なキュレーション済みセットが並びます。<code>/settings</code> から <strong>catalog</strong> を開くと、推薦度・メモリ・知能・量子化品質・速度・コンテキスト・ライセンスを比較できます。</p>
+    <ul>
+      <li>Magnitude が管理するモデルは <code>~/.magnitude/models</code> に保存されます。</li>
+      <li>Hugging Face Hub のキャッシュも走査し、互換性のある GGUF モデルを取り込みます。</li>
+      <li>キャッシュ位置は <code>HF_HUB_CACHE</code> → <code>HUGGINGFACE_HUB_CACHE</code> → <code>HF_HOME</code> → <code>XDG_CACHE_HOME</code> の順に確認し、いずれも無ければ <code>~/.cache/huggingface/hub</code> を見ます。</li>
+    </ul>
+    <h3>カタログ外のモデルを使う</h3>
+    <p>カタログに無い GGUF モデルも、Hugging Face CLI で正規のキャッシュへ配置すれば利用できます。任意のディレクトリではなくキャッシュに置くのがポイントです。</p>
+    <div class="ve-code-block">
+      <pre><code>hf download &lt;owner&gt;/&lt;repository&gt; --include "&lt;model-and-quantization&gt;*.gguf"</code></pre>
+    </div>
+    <p>ダウンロードは一致するファイル（選択したセットの全シャードを含む）をすべて取得します。完了後に Magnitude を再起動すると、モデル一覧が更新されます。</p>
+  </div>
+
+  <section id="skills" class="sec-head">5 — スキルによる拡張</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> インストールと利用</span>
+    <p>スキルはエージェントに追加できる再利用可能な機能です。Magnitude を使うディレクトリで <code>npx skills add</code> を実行します。プロジェクト単位でも、グローバルでも導入できます。README が推奨しているものは次のとおりです。</p>
+    <div class="ve-code-block">
+      <pre><code>npx skills add vercel-labs/agent-browser   # ログイン済み Chrome を操作する
+npx skills add anthropics/skills/xlsx      # Excel の読み書き
+npx skills add anthropics/skills/pptx      # PowerPoint の作成
+npx skills add anthropics/skills/docx      # Word の読み書き
+npx skills add anthropics/skills/pdf       # PDF の読み取り・入力・作成</code></pre>
+    </div>
+    <p>導入したスキルはスラッシュコマンドのメニューに現れます。<code>/</code> を入力して一覧から選ぶか、スキルの説明に合う作業を依頼すると、Magnitude がその指示を読み込んで実行します。現在のセッションに出てこない場合は、新しいセッションを開始してください。</p>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 読み込み場所と優先順位</span>
+    <p>グローバルスキルは以下から読み込まれます。</p>
+    <div class="ve-code-block">
+      <pre><code>~/.claude/skills
+~/.agents/skills
+~/.magnitude/skills</code></pre>
+    </div>
+    <p>加えて、カレントディレクトリ内の <code>.claude/skills</code> / <code>.agents/skills</code> / <code>.magnitude/skills</code> も読み込まれます。同名の場合はカレントディレクトリ側が優先されます。</p>
+    <div class="ve-callout">
+      <strong>導入前に中身を確認してください:</strong> スキルはコマンドの実行、依存関係のインストール、Web サイトの操作、外部サービスとのやり取りを指示できます。機微なファイルやログイン済みブラウザを扱うときは特に、ソースと指示内容を読んでから導入することが推奨されています。
+    </div>
+  </div>
+
+  <section id="architecture" class="sec-head">6 — リポジトリ構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> パッケージの階層</span>
+    <p>Bun ワークスペースのモノレポで、<code>cli</code> / <code>desktop</code> / <code>web</code> / <code>inference</code> / <code>packages/*</code> が並びます。<code>AGENTS.md</code> は依存方向を次のように定めています。</p>
+    <div class="layer-flow">
+      <span class="layer">clients (cli / web)</span>
+      <span class="arrow">→</span>
+      <span class="layer">client-common</span>
+      <span class="arrow">→</span>
+      <span class="layer">sdk</span>
+      <span class="arrow">→</span>
+      <span class="layer">acn (daemon)</span>
+    </div>
+    <p>クライアントは <code>client-common</code> と <code>sdk</code> だけを import し、<code>acn</code> / <code>agent</code> / <code>acn-protocol</code> / <code>ai</code> / <code>providers</code> を直接参照しません。クライアントに新しい機能が必要な場合は、<code>acn-protocol</code> に RPC を追加し、<code>acn</code> にハンドラを実装します。SDK 側は自動的にそれを公開します。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>パッケージ</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>client-common</code></td><td>共有ステート、フック、表示同期。<code>AgentClient</code> を利用する</td></tr>
+          <tr><td><code>sdk</code></td><td>型付き RPC クライアント、デーモンのライフサイクル、バイナリ解決</td></tr>
+          <tr><td><code>acn</code></td><td>エージェントランタイム・セッション・ファイル操作・表示ストリームをホストするデーモン</td></tr>
+          <tr><td><code>acn-protocol</code></td><td>SDK と ACN が共有するワイヤ契約（RPC とスキーマ）</td></tr>
+          <tr><td><code>ai</code></td><td>プロバイダ非依存の契約（<code>Provider</code>, <code>ModelCatalog</code>, <code>BoundModel</code> など）</td></tr>
+          <tr><td><code>providers</code></td><td>具体的なプロバイダ実装とレジストリ</td></tr>
+          <tr><td><code>agent</code></td><td>エージェントランタイム、プロジェクション、ワーカー、ツール、表示のマテリアライズ</td></tr>
+          <tr><td><code>event-core</code></td><td>イベントソーシング、プロジェクション、アドレス付きステート</td></tr>
+          <tr><td><code>icn</code> / <code>icn-protocol</code></td><td>推論エンジンのライフサイクルと OpenAPI 由来の型</td></tr>
+          <tr><td><code>storage</code></td><td>セッション・設定・認証の永続化</td></tr>
+          <tr><td><code>roles</code></td><td>ワーカー特化のためのロール／スロット定義</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> ドキュメントの置き場所</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ディレクトリ</th><th>位置づけ</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>design/</code></td><td>アーキテクチャと挙動の恒久的なソース・オブ・トゥルース。<code>bun design-docs</code> で該当文書を引ける</td></tr>
+          <tr><td><code>info/</code></td><td>人間と LLM 向けの簡潔な高レベル文書。壊れやすいファイル名やコード片に依存しない記述を保つ</td></tr>
+          <tr><td><code>docs/</code></td><td>公開ドキュメントサイトのソース（Get Started、Models、Skills、Reference など）</td></tr>
+          <tr><td><code>inference/</code></td><td>Rust の推論クレート、カタログ、ベンチマーク、パリティ検証</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>ICN のライフサイクル:</strong> ACN はローカルのデーモンで、クライアントは SDK の JIT ensurance を通じて、データルートごとに 1 つの正規の ACN を得ます。別のコーディネータープロセスは存在せず、同時起動はプロセスセーフなマシンステートで調停されます。公開・停滞・起動上限の 3 つのタイムアウトは互いに独立して設計されています。
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> 技術方針</span>
+    <ul>
+      <li><strong>Effect-TS ネイティブ:</strong> 新規コードは Effect-TS で書き、Effect に触れる TypeScript コードは effectful なまま保ちます。逆方向（脱 Effect 化）は行いません。</li>
+      <li><strong>DI はサービスに分割:</strong> サービスは同名のインターフェイスを持つ <code>Context.Tag</code> として定義します。</li>
+      <li><strong>シリアライズ対象は Effect Schema:</strong> 任意値は <code>Schema.optionalWith(..., { as: 'Option', exact: true })</code> を使い、<code>undefined</code> を持ち込まないようにします。</li>
+      <li><strong>ブランド型:</strong> ID など意味を持つ文字列には Effect のブランド型を使います。</li>
+      <li><strong>不要な後方互換を作らない:</strong> 明示的に求められない限り、レガシー互換のシムは残しません。</li>
+    </ul>
+  </div>
+
+  <section id="runtime" class="sec-head">7 — イベントソーシングと表示</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> イベントとシグナル</span>
+    <p><code>event-core</code> は Effect ベースのイベントソーシング基盤です。永続化される「イベント」と、プロジェクションからのみ発生する揮発的な「シグナル」を明確に分けています。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>観点</th><th>Events</th><th>Signals</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>永続化</td><td>EventSink に保存される</td><td>保存されない</td></tr>
+          <tr><td>リプレイ</td><td>ハイドレーション時に再生される</td><td>再生されない</td></tr>
+          <tr><td>発生元</td><td>ワーカー（非同期）、外部</td><td>プロジェクションのみ（同期）</td></tr>
+          <tr><td>意味</td><td>起きた事実</td><td>派生した通知</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:0.75rem;">プロジェクションはステートフルかつ同期で、イベントを発行できませんがシグナルを出せます。ワーカーはステートレスで非同期に fork され、イベントを発行できますがハイドレーション中は動きません。</p>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 表示は「交渉」される</span>
+    <p>表示（Display）はイベントソースドなセッション状態に対する、ウィンドウ付きのランタイムビューとして設計されています。<strong>クライアントは表示の意図を持ち、エージェントは受理された表示の真実を持ちます。</strong></p>
+    <ul>
+      <li><strong>Requested shape</strong> — クライアントの表示意図（選択中のセッション、表示するワーカースタック、タイムラインのウィンドウなど）から導かれる要求。</li>
+      <li><strong>Accepted shape</strong> — 要求のうち、その時点のプロジェクション状態で解決できる部分だけを含むエージェント側の答え。</li>
+      <li><strong>Accepted snapshot</strong> — <code>{ shape, state }</code>。UI が描画するのは要求ではなくこのスナップショットです。</li>
+    </ul>
+    <p>形状の書き込み経路が 1 本で、受理された真実の所有者も 1 つ、常駐管理は UI キャッシュではなく <code>event-core</code> が担当するため、競合が起きにくい構造になっています。<code>DisplayViewRuntime</code> はランタイム状態であり、プロジェクションでもイベントログでもありません。</p>
+    <span class="badge">DisplayTimelineProjection</span>
+    <span class="badge">ModelRequestActivityProjection</span>
+    <span class="badge">ProjectionConsumer</span>
+  </div>
+
+  <div class="ve-card" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> セッションの調査</span>
+    <p>過去のセッションは <code>~/.magnitude/sessions/</code> に UTC タイムスタンプのフォルダ名で保存され、<code>bun session</code> で検査できます。イベントは 0 始まりのインデックスを持ち、出力は JSON なので <code>jq</code> に流せます。</p>
+    <div class="ve-code-block">
+      <pre><code>bun session list                       # 直近のセッション一覧
+bun session events &lt;id&gt;                # 全イベントを index / type / timestamp で列挙
+bun session event &lt;id&gt; &lt;index&gt;         # 1 イベントのペイロードを JSON で表示
+bun session search &lt;keyword&gt; &lt;id&gt;      # ペイロードをキーワード検索
+bun session projection &lt;id&gt; Window     # イベントを再生して指定プロジェクションを出力</code></pre>
+    </div>
+    <p>利用できるプロジェクションは <code>Window</code>、<code>Fork</code>、<code>TaskGraph</code>、<code>Turn</code>、<code>Display</code>、<code>Compaction</code>、<code>WorkingState</code>、<code>SessionContext</code>、<code>Proposal</code>、<code>AgentRegistry</code>、<code>Artifact</code>、<code>ChatTitle</code>、<code>Replay</code> などです。</p>
+  </div>
+
+  <section id="reference" class="sec-head">8 — 操作リファレンス</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> スラッシュコマンド</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>別名</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>/new</code></td><td>—</td><td>新しい会話を開始する</td></tr>
+          <tr><td><code>/resume</code></td><td>—</td><td>最近の会話を開く</td></tr>
+          <tr><td><code>/models</code></td><td>—</td><td>準備済みのモデルを選ぶ</td></tr>
+          <tr><td><code>/catalog</code></td><td>—</td><td>ローカルモデルを探してダウンロードする</td></tr>
+          <tr><td><code>/hardware</code></td><td>—</td><td>ローカル推論のハードウェアを確認する</td></tr>
+          <tr><td><code>/settings</code></td><td><code>/s</code></td><td>モデル設定を開く</td></tr>
+          <tr><td><code>/bash</code></td><td>—</td><td>bash モードに入る</td></tr>
+          <tr><td><code>/init</code></td><td>—</td><td>プロジェクト用の <code>AGENTS.md</code> を生成する</td></tr>
+          <tr><td><code>/transcript</code></td><td>—</td><td>トランスクリプト表示を切り替える</td></tr>
+          <tr><td><code>/exit</code></td><td><code>/quit</code>, <code>/q</code></td><td>Magnitude を終了する</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:0.75rem;"><code>/</code> を入力すると補完付きで一覧が出ます。導入したスキルも同じメニューにコマンドを追加できます。</p>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> キーボードと入力</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>キー</th><th>動作</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>Enter</code> / <code>Shift+Enter</code></td><td>送信・確定 / 改行の挿入</td></tr>
+          <tr><td><code>Ctrl+T</code></td><td>推論レベルのセレクタを開く（もう一度押すと選択肢を移動）</td></tr>
+          <tr><td><code>Ctrl+R</code></td><td>最近の会話を開閉する</td></tr>
+          <tr><td><code>Esc</code></td><td>開いているメニューを閉じる、または実行中の作業を中断する</td></tr>
+          <tr><td><code>Ctrl+C</code></td><td>入力欄をクリア（空でアイドル時は終了）</td></tr>
+          <tr><td><code>Ctrl+A</code> / <code>Ctrl+E</code></td><td>行頭 / 行末へ移動</td></tr>
+          <tr><td><code>Ctrl+U</code> / <code>Ctrl+K</code></td><td>カーソルより前 / 後を削除</td></tr>
+          <tr><td><code>Ctrl+W</code> / <code>Ctrl+D</code></td><td>前の単語 / 次の単語を削除</td></tr>
+          <tr><td><code>Ctrl+Y</code></td><td>最後に削除したテキストを復元</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:0.75rem;">入力欄で <code>@</code> を打つとファイルやディレクトリを参照でき、その内容がコンテキストに含まれます。画像は貼り付けやドラッグで渡せます。長いテキストの貼り付けは入力欄を埋め尽くさず、ペーストセグメントに畳まれます。<code>!</code> で始めるとシェルコマンドを直接実行できます。</p>
+  </div>
+
+  <div class="ve-card" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> 環境変数とファイル配置</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>パス</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>~/.magnitude/models/</code></td><td>Magnitude が管理するローカルモデル</td></tr>
+          <tr><td><code>~/.magnitude/cache/</code></td><td>モデルのメタデータ、プロファイリング結果などの破棄可能なキャッシュ</td></tr>
+          <tr><td><code>~/.magnitude/sessions/</code></td><td>会話履歴</td></tr>
+          <tr><td><code>~/.magnitude/logs/</code></td><td>アプリケーションログ</td></tr>
+          <tr><td><code>~/.magnitude/traces/</code></td><td>トレース有効時のローカルトレースデータ</td></tr>
+          <tr><td><code>~/.magnitude/config.json</code></td><td>ユーザー設定とモデル選択</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>キャッシュの削除:</strong> <code>~/.magnitude/cache</code> を消すとハードウェアのプロファイリングとモデル評価がやり直しになりますが、ダウンロード済みモデルは消えません。モデルは <code>~/.magnitude/models</code> に分けて保存されています。
+    </div>
+    <p style="margin-top:0.75rem;">環境変数は <code>EXA_API_KEY</code>（Web 検索）のほか、<code>HF_HUB_CACHE</code>、<code>HUGGINGFACE_HUB_CACHE</code>、<code>HF_HOME</code>、<code>XDG_CACHE_HOME</code> が Hugging Face キャッシュの探索に使われます。会話がモデルのコンテキストに収まらなくなると、古い部分を要約に圧縮してセッションを継続します。</p>
+  </div>
+
+  <section id="links" class="sec-head">9 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/magnitudedev/magnitude" target="_blank" rel="noopener">GitHub: magnitudedev/magnitude</a> — 本体リポジトリ（TypeScript / Rust モノレポ）</li>
+      <li><a href="https://docs.magnitude.dev" target="_blank" rel="noopener">Magnitude Documentation</a> — 公式ドキュメント</li>
+      <li><a href="https://docs.magnitude.dev/reference" target="_blank" rel="noopener">CLI Reference</a> — コマンド・ショートカット・環境変数</li>
+      <li><a href="https://www.skills.sh" target="_blank" rel="noopener">skills.sh</a> — Vercel によるスキルディレクトリ</li>
+      <li><a href="https://exa.ai" target="_blank" rel="noopener">Exa</a> — Web 検索を有効にするための API</li>
+      <li><a href="https://github.com/magnitudedev/magnitude/blob/main/LICENSE" target="_blank" rel="noopener">Apache License 2.0</a> — ライセンス</li>
+    </ul>
+    <div class="ve-callout">
+      <strong>解説の出典:</strong> このページは magnitudedev/magnitude リポジトリの <code>README.md</code>、<code>AGENTS.md</code>、<code>docs/</code> 配下のドキュメント（<code>why-magnitude</code>、<code>get-started</code>、<code>inference-engine</code>、<code>models</code>、<code>skills</code>、<code>reference</code>）、および <code>info/</code>・<code>packages/event-core/ARCHITECTURE.md</code> の記述をもとに構成しています。
+    </div>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
