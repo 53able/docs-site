@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>just-bash — サンドボックス化された bash 互換シェル</title>
+  <meta name="description" content="TypeScript で実装された bash インタプリタと仮想ファイルシステム。AI エージェント向けに、ネットワーク既定オフ・シンボリックリンク既定拒否・実行リミット・多層防御を備える。構成、設定、脅威モデルの技術概要。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="just-bash — サンドボックス化された bash 互換シェル">
+  <meta property="og:description" content="TypeScript 実装の bash インタプリタと仮想ファイルシステム。ネットワーク既定オフ、実行リミット、多層防御を備えた AI エージェント向けサンドボックス。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/just-bash.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="just-bash — サンドボックス化された bash 互換シェル">
+  <meta name="twitter:description" content="TypeScript 実装の bash インタプリタと仮想ファイルシステム。多層防御と実行リミットを備えたエージェント向けサンドボックス。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Reddit+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.86 0.02 232);
+      --chart-1: oklch(0.47 0.10 232);
+      --chart-2: oklch(0.60 0.15 48);
+      --chart-3: oklch(0.36 0.08 232);
+      --chart-4: oklch(0.55 0.09 155);
+      --chart-5: oklch(0.55 0.19 25);
+      --code-bg: oklch(0.975 0.006 232);
+      --code-text: oklch(0.30 0.07 232);
+      --font-body: 'Jost', 'Avenir Next', system-ui, sans-serif;
+      --font-mono: 'Reddit Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      --grid-line: oklch(0.47 0.10 232 / 0.055);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(0.222 0 0);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.50 0.07 232);
+        --chart-1: oklch(0.70 0.11 232);
+        --chart-2: oklch(0.72 0.15 55);
+        --chart-3: oklch(0.80 0.07 232);
+        --chart-4: oklch(0.70 0.11 155);
+        --chart-5: oklch(0.68 0.17 25);
+        --code-bg: oklch(0.16 0.012 232);
+        --code-text: oklch(0.86 0.06 232);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+        --grid-line: oklch(0.70 0.11 232 / 0.06);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 24rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.75; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-code-block__label { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); padding: 0.5rem 1rem 0; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; display: block; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; display: block; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-2) 14%, transparent); color: var(--chart-2); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+      background-size: 32px 32px;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 208px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; background-size: 24px 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2.125rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; line-height: 1.65; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .stack > * + * { margin-top: 1rem; }
+    .ve-code-block { margin: 1rem 0; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Pipeline */
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; margin: 0.5rem 0 1rem; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.65rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.75rem; }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    /* Boundary map */
+    .boundary { border: 1px dashed color-mix(in oklch, var(--chart-1) 45%, var(--border)); border-radius: var(--radius-lg); padding: 0.9rem 1rem; }
+    .boundary + .boundary { margin-top: 0.65rem; }
+    .boundary__name { font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--chart-1); display: block; margin-bottom: 0.35rem; }
+    .boundary p { font-size: 0.875rem; margin-bottom: 0; }
+
+    /* Badges */
+    .badge { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+    .badge--good { background: color-mix(in oklch, var(--chart-4) 18%, transparent); color: var(--chart-4); }
+    .badge--warn { background: color-mix(in oklch, var(--chart-2) 18%, transparent); color: var(--chart-2); }
+    .badge--off { background: var(--muted); color: var(--text-dim); }
+
+    .cmd-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.75rem; }
+    .cmd-group { background: var(--muted); border-radius: var(--radius-md); padding: 0.75rem 0.9rem; min-width: 0; }
+    .cmd-group__name { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 0.4rem; }
+    .cmd-group__items { font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.8; overflow-wrap: break-word; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#start">導入と基本 API</a>
+    <a href="#commands">対応コマンドと構文</a>
+    <a href="#pipeline">実行パイプラインと構成</a>
+    <a href="#fs">ファイルシステムの選択肢</a>
+    <a href="#optional">オプション機能</a>
+    <a href="#limits">実行制限</a>
+    <a href="#security">セキュリティ設計</a>
+    <a href="#risks">残存リスクと運用上の注意</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>just-bash</h1>
+  <p class="subtitle">A virtual bash environment with an in-memory filesystem, written in TypeScript and designed for AI agents.</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何をするものか</span>
+    <p><strong>just-bash</strong> は、bash インタプリタと仮想ファイルシステムを TypeScript で実装した npm パッケージ。実プロセスを起動せず、パーサからコマンド実装まですべて JavaScript のコードとして動く。AI エージェントに bash を渡したいが、ホストのファイルシステムやネットワークには触れさせたくない、という用途を想定している。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">約 79</span><span class="ve-kpi-card__label">組み込みコマンド</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">0</span><span class="ve-kpi-card__label">子プロセス起動</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">OFF</span><span class="ve-kpi-card__label">ネットワーク既定値</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node 20.18.1+</span><span class="ve-kpi-card__label">動作要件</span></div>
+    </div>
+    <p>設計上の中心は「スクリプトは完全に信用しない」という前提。ファイルアクセスは仮想 FS に閉じ、ネットワークは既定で無効、Python と JavaScript の実行は明示的に有効化しないと存在しない。防御は 1 枚ではなく、アーキテクチャ・FS・ネットワーク・実行リミット・グローバル遮蔽の複数層で構成される。</p>
+    <div class="ve-callout">
+      <strong>ベータ版:</strong> パッケージの README は beta software と明記している。ライセンスは Apache-2.0。フル VM が必要な場合は Vercel Sandbox など別手段を使うよう案内されている。
+    </div>
+  </div>
+
+  <section id="start" class="sec-head">2 — 導入と基本 API</section>
+  <div class="ve-card stack" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> インストールと最小構成</span>
+    <div class="ve-code-block">
+      <span class="ve-code-block__label">bash</span>
+      <pre><code>npm install just-bash</code></pre>
+    </div>
+    <div class="ve-code-block">
+      <span class="ve-code-block__label">typescript</span>
+      <pre><code>import { Bash } from "just-bash";
+
+const bash = new Bash();
+await bash.exec('echo "Hello" &gt; greeting.txt');
+const result = await bash.exec("cat greeting.txt");
+console.log(result.stdout);   // "Hello\n"
+console.log(result.exitCode); // 0</code></pre>
+    </div>
+    <p><code>exec()</code> の呼び出しごとにシェル状態（環境変数・関数・カレントディレクトリ）はリセットされる。一方で<strong>ファイルシステムは呼び出し間で共有される</strong>ため、前の <code>exec()</code> で書いたファイルは次の <code>exec()</code> から見える。</p>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> exec() のオプション</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>オプション</th><th>型</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>env</code></td><td><code>Record&lt;string, string&gt;</code></td><td>この実行だけに適用する環境変数</td></tr>
+          <tr><td><code>cwd</code></td><td><code>string</code></td><td>この実行だけに適用する作業ディレクトリ</td></tr>
+          <tr><td><code>stdin</code></td><td><code>string</code></td><td>スクリプトへ渡す標準入力</td></tr>
+          <tr><td><code>args</code></td><td><code>string[]</code></td><td>先頭コマンドへ直接渡す argv。シェルのパースを経由しない（<code>$1</code>, <code>$2</code> は変わらない）</td></tr>
+          <tr><td><code>replaceEnv</code></td><td><code>boolean</code></td><td>既存 env とマージせず空から始める（既定 <code>false</code>）</td></tr>
+          <tr><td><code>signal</code></td><td><code>AbortSignal</code></td><td>協調的キャンセル。次のステートメント境界で停止する</td></tr>
+          <tr><td><code>rawScript</code></td><td><code>boolean</code></td><td>先頭空白の正規化をスキップする（既定 <code>false</code>）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> カスタムコマンドの追加</span>
+    <p><code>defineCommand</code> で独自コマンドを登録すると、パイプ・リダイレクト・その他のシェル機能とそのまま組み合わせて使える。コールバックは <code>fs</code>、<code>cwd</code>、<code>env</code>、<code>stdin</code>、解決済みの <code>limits</code>、サブコマンド用の <code>exec</code> を持つコンテキストを受け取る。</p>
+    <div class="ve-code-block">
+      <span class="ve-code-block__label">typescript</span>
+      <pre><code>import { Bash, decodeBytesToUtf8, defineCommand } from "just-bash";
+
+const upper = defineCommand("upper", async (args, ctx) =&gt; {
+  // ctx.stdin は ByteString。文字列操作の前にデコードする。
+  return {
+    stdout: decodeBytesToUtf8(ctx.stdin).toUpperCase(),
+    stderr: "",
+    exitCode: 0,
+  };
+});
+
+const bash = new Bash({ customCommands: [upper] });
+await bash.exec("echo 'test' | upper"); // "TEST\n"</code></pre>
+    </div>
+    <p>ホスト提供コマンドは既定で trusted 扱いになる。制限付きの拡張境界を選ぶ場合は <code>trusted: false</code> を指定する。trusted なコマンドは埋め込み側のプロセスで動くため、ゲスト由来の JavaScript を実行してはいけない。</p>
+    <div class="ve-callout">
+      <strong>キャンセル時の挙動:</strong> 呼び出しは <code>maxExecutionTimeMs</code> に拘束される。キャンセルされるとコマンドコンテキストは即座に無効化され、遅れて動き出した継続処理は <code>ctx.fs</code> / <code>ctx.env</code> / <code>ctx.exec</code> を使えない。スコープ終了時に必ず走らせたい後始末は <code>ctx.executionScope.registerCleanup()</code> に登録する。
+    </div>
+  </div>
+
+  <section id="commands" class="sec-head">3 — 対応コマンドと構文</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 組み込みコマンド</span>
+    <p>いずれも JavaScript による再実装であり、ホストのバイナリは呼ばない。すべてのコマンドが <code>--help</code> に対応する。</p>
+    <div class="cmd-groups">
+      <div class="cmd-group">
+        <span class="cmd-group__name">ファイル操作</span>
+        <div class="cmd-group__items">cat, cp, file, ln, ls, mkdir, mv, readlink, rm, rmdir, split, stat, touch, tree</div>
+      </div>
+      <div class="cmd-group">
+        <span class="cmd-group__name">テキスト処理</span>
+        <div class="cmd-group__items">awk, base64, column, comm, cut, diff, expand, fold, grep (egrep, fgrep), head, join, md5sum, nl, od, paste, printf, rev, rg, sed, sha1sum, sha256sum, sort, strings, tac, tail, tr, unexpand, uniq, wc, xargs</div>
+      </div>
+      <div class="cmd-group">
+        <span class="cmd-group__name">データ処理</span>
+        <div class="cmd-group__items">jq (JSON), sqlite3 (SQLite), xan (CSV), yq (YAML/XML/TOML/CSV)</div>
+      </div>
+      <div class="cmd-group">
+        <span class="cmd-group__name">圧縮・アーカイブ</span>
+        <div class="cmd-group__items">gzip (gunzip, zcat), tar</div>
+      </div>
+      <div class="cmd-group">
+        <span class="cmd-group__name">環境・ナビゲーション</span>
+        <div class="cmd-group__items">basename, cd, dirname, du, echo, env, export, find, hostname, printenv, pwd, tee</div>
+      </div>
+      <div class="cmd-group">
+        <span class="cmd-group__name">シェルユーティリティ</span>
+        <div class="cmd-group__items">alias, bash, chmod, clear, date, expr, false, help, history, seq, sh, sleep, time, timeout, true, unalias, which, whoami</div>
+      </div>
+      <div class="cmd-group">
+        <span class="cmd-group__name">要設定</span>
+        <div class="cmd-group__items">curl, html-to-markdown（ネットワーク設定時）<br>js-exec（<code>javascript: true</code>）<br>python3 / python（<code>python: true</code>）</div>
+      </div>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> サポートするシェル構文</span>
+    <ul>
+      <li><strong>パイプ・リダイレクト:</strong> <code>cmd1 | cmd2</code>、<code>&gt;</code>、<code>&gt;&gt;</code>、<code>2&gt;</code>、<code>2&gt;&amp;1</code>、<code>&lt;</code></li>
+      <li><strong>連結:</strong> <code>&amp;&amp;</code>、<code>||</code>、<code>;</code></li>
+      <li><strong>変数展開:</strong> <code>$VAR</code>、<code>${VAR}</code>、<code>${VAR:-default}</code>、位置パラメータ <code>$1</code> <code>$@</code> <code>$#</code></li>
+      <li><strong>glob:</strong> <code>*</code>、<code>?</code>、<code>[...]</code></li>
+      <li><strong>制御構文:</strong> <code>if</code> / <code>elif</code> / <code>else</code>、<code>for</code>、<code>while</code>、<code>until</code></li>
+      <li><strong>関数とローカル変数:</strong> <code>name() { ... }</code>、<code>local VAR=value</code></li>
+      <li><strong>リンク:</strong> シンボリックリンク <code>ln -s</code>、ハードリンク <code>ln</code></li>
+    </ul>
+    <p>タイムゾーンは既定で UTC に固定され、ホストのタイムゾーンは漏れない。特定のゾーンを使いたい場合のみ、初期環境変数として <code>TZ</code> を渡す。</p>
+  </div>
+
+  <section id="pipeline" class="sec-head">4 — 実行パイプラインと構成</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 処理の流れ</span>
+    <div class="pipeline">
+      <span class="step">入力スクリプト</span>
+      <span class="arrow">→</span>
+      <span class="step">Parser（Lexer）</span>
+      <span class="arrow">→</span>
+      <span class="step">AST</span>
+      <span class="arrow">→</span>
+      <span class="step">Interpreter</span>
+      <span class="arrow">→</span>
+      <span class="step">ExecResult</span>
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>モジュール</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>src/parser/</code></td><td>再帰下降パーサ。<code>lexer.ts</code> がヒアドキュメント・クォート・展開を含む bash 固有のトークナイズを担当し、<code>parser.ts</code> が専用サブパーサ（展開・複合コマンド）を束ねる</td></tr>
+          <tr><td><code>src/interpreter/</code></td><td>AST の実行エンジン。コマンドディスパッチ、単語展開、算術評価（<code>$((...))</code>）、条件式（<code>[[ ]]</code> / <code>[ ]</code>）、制御構文、シェル組み込みを持つ</td></tr>
+          <tr><td><code>src/commands/</code></td><td>外部コマンド相当の実装。1 コマンド 1 ディレクトリで、実装とテストを同居させる。レジストリパターンで登録される</td></tr>
+          <tr><td><code>src/fs/</code></td><td>仮想ファイルシステム群と、実 FS を触る実装向けの共通セキュリティヘルパ</td></tr>
+          <tr><td><code>src/network/</code></td><td>許可リストとリダイレクト検証を含む fetch 経路</td></tr>
+          <tr><td><code>src/security/</code></td><td>グローバル遮蔽、多層防御、ファジング一式</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>AST トランスフォームプラグイン</h3>
+    <p>スクリプトを AST にパースし、変換してから bash 文字列に戻せる。コマンドごとの stdout/stderr を採取する計装や、実行前のメタデータ抽出に使う。</p>
+    <div class="ve-code-block">
+      <span class="ve-code-block__label">typescript</span>
+      <pre><code>import { Bash, BashTransformPipeline, TeePlugin, CommandCollectorPlugin } from "just-bash";
+
+// 単体パイプライン — 出力は任意のシェルで実行できる
+const pipeline = new BashTransformPipeline()
+  .use(new TeePlugin({ outputDir: "/tmp/logs" }))
+  .use(new CommandCollectorPlugin());
+const result = pipeline.transform("echo hello | grep hello");
+result.script;            // 変換後の bash 文字列
+result.metadata.commands; // ["echo", "grep", "tee"]
+
+// 統合 API — exec() が変換を自動適用し metadata を返す
+const bash = new Bash();
+bash.registerTransformPlugin(new CommandCollectorPlugin());
+const execResult = await bash.exec("echo hello | grep hello");
+execResult.metadata?.commands; // ["echo", "grep"]</code></pre>
+    </div>
+  </div>
+
+  <section id="fs" class="sec-head">5 — ファイルシステムの選択肢</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 4 種類の実装</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>実装</th><th>読み取り元</th><th>書き込み先</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>InMemoryFs</code>（既定）</td><td>メモリ</td><td>メモリ</td><td>ディスクに一切触れない。初期ファイルは文字列・同期関数・非同期関数で与えられ、遅延読み込みされる</td></tr>
+          <tr><td><code>OverlayFs</code></td><td>実ディレクトリ</td><td>メモリ（copy-on-write）</td><td>既存プロジェクトを読ませたいが変更は残したくないとき</td></tr>
+          <tr><td><code>ReadWriteFs</code></td><td>実ディレクトリ</td><td>実ディレクトリ</td><td>エージェントに実際のディスク書き込みを許すとき</td></tr>
+          <tr><td><code>MountableFs</code></td><td>マウントごと</td><td>マウントごと</td><td>読み取り専用と読み書きを 1 つの名前空間に組み合わせる</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-code-block">
+      <span class="ve-code-block__label">typescript — OverlayFs</span>
+      <pre><code>import { Bash } from "just-bash";
+import { OverlayFs } from "just-bash/fs/overlay-fs";
+
+const overlay = new OverlayFs({
+  root: "/path/to/project",
+  // copy-on-write のデータ量は実ファイル読み取りとは独立に制限される
+  maxMemoryBytes: 256 * 1024 * 1024,
+});
+const env = new Bash({ fs: overlay, cwd: overlay.getMountPoint() });
+
+await env.exec("cat package.json");            // ディスクから読む
+await env.exec('echo "modified" &gt; package.json'); // メモリに留まる</code></pre>
+    </div>
+    <div class="ve-code-block">
+      <span class="ve-code-block__label">typescript — MountableFs</span>
+      <pre><code>import { Bash, MountableFs, InMemoryFs } from "just-bash";
+import { OverlayFs } from "just-bash/fs/overlay-fs";
+import { ReadWriteFs } from "just-bash/fs/read-write-fs";
+
+const fs = new MountableFs({ base: new InMemoryFs() });
+
+// 読み取り専用のナレッジベースをマウント
+fs.mount("/mnt/knowledge", new OverlayFs({ root: "/path/to/knowledge", readOnly: true }));
+
+// 読み書き可能なワークスペースをマウント
+fs.mount("/workspace", new ReadWriteFs({ root: "/path/to/workspace" }));
+
+const bash = new Bash({ fs, cwd: "/workspace" });
+await bash.exec("cp /mnt/knowledge/doc.txt ./"); // マウントをまたぐコピー</code></pre>
+    </div>
+    <div class="ve-callout">
+      <strong><code>ReadWriteFs</code> を使うときの前提:</strong> ルートはワークスペース用ディレクトリに向け、インストール済みの just-bash パッケージや他の信頼済みコードと分離する。ハードリンク経由の書き込みを防ぐため、複数リンクされた通常ファイルへの追記・メタデータ変更はコピーしてサンドボックス側のディレクトリエントリだけを差し替える。この暗黙のコピーは <code>maxCopyOnWriteSize</code>（既定 100 MB）で制限される。
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> シンボリックリンクは既定で拒否</span>
+    <p><code>OverlayFs</code> と <code>ReadWriteFs</code> はどちらも <code>allowSymlinks: false</code> を既定値にしている。この状態では <code>symlink()</code> は EPERM を返し、実 FS のシンボリックリンクを経由するパスは拒否される。<code>lstat()</code> と <code>readlink()</code> は追跡せずに検査するだけなので動作し、<code>readdir()</code> はエントリを列挙するが、そこを経由する操作は失敗する。</p>
+    <p>判定は中央のゲート関数（<code>ReadWriteFs</code> の <code>resolveAndValidate</code>、<code>OverlayFs</code> の <code>validateRealPath_</code>）に集約され、ルートを除いた実パスと正規化パスを比較するだけで済むため追加 I/O が発生しない。新しい FS メソッドを足すときにこのゲートを通せば、保護は自動的に効く。読み書きは <code>O_NOFOLLOW</code> 付きの <code>open()</code> を使い、検証と I/O の間にリンクを差し替える TOCTOU 攻撃を塞いでいる。</p>
+  </div>
+
+  <section id="optional" class="sec-head">6 — オプション機能</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 既定の状態</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>機能</th><th>既定</th><th>有効化</th><th>備考</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ネットワーク（<code>curl</code>）</td><td><span class="badge badge--off">無効</span></td><td><code>network</code> オプション</td><td>未設定時 <code>curl</code> は command not found になる</td></tr>
+          <tr><td>JavaScript / TypeScript（<code>js-exec</code>）</td><td><span class="badge badge--off">無効</span></td><td><code>javascript: true</code></td><td>QuickJS WASM。メモリ上限 64 MB</td></tr>
+          <tr><td>Python（<code>python3</code>）</td><td><span class="badge badge--off">無効</span></td><td><code>python: true</code></td><td>CPython を Emscripten でビルドしたもの</td></tr>
+          <tr><td>SQLite（<code>sqlite3</code>）</td><td><span class="badge badge--good">有効</span></td><td>—</td><td>sql.js。ワーカースレッドで実行</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>ブラウザ環境ではコア（パース・実行・仮想 FS・組み込みコマンド）が動作する。<code>python3</code> / <code>python</code>、<code>sqlite3</code>、<code>js-exec</code>、実 FS を触る <code>OverlayFs</code> / <code>ReadWriteFs</code> は Node.js が必要になる。</p>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> ネットワーク許可リスト</span>
+    <div class="ve-code-block">
+      <span class="ve-code-block__label">typescript</span>
+      <pre><code>// URL プレフィックスを限定し、メソッドは GET / HEAD のみ（最も安全）
+const env = new Bash({
+  network: {
+    allowedUrlPrefixes: [
+      "https://api.github.com/orgs/myorg/",
+      "https://api.example.com",
+    ],
+  },
+});
+
+// 認証情報はヘッダ変換で注入する（シークレットはサンドボックスに入らない）
+const env2 = new Bash({
+  network: {
+    allowedUrlPrefixes: [
+      "https://public-api.com",
+      {
+        url: "https://ai-gateway.vercel.sh",
+        transform: [{ headers: { Authorization: "Bearer secret" } }],
+      },
+    ],
+  },
+});</code></pre>
+    </div>
+    <ul>
+      <li><strong>オリジン一致:</strong> スキーム・ホスト・ポートが完全に一致する必要がある。<code>new URL()</code> でパースしてから照合するため <code>https://evil.com@good.com</code> のような細工は通らない。</li>
+      <li><strong>パスプレフィックス:</strong> 指定した接頭辞で始まるパスだけを許可する。</li>
+      <li><strong>メソッド制限:</strong> 既定は <code>["GET", "HEAD"]</code>。追加は <code>allowedMethods</code> で明示する。</li>
+      <li><strong>リダイレクト保護:</strong> リダイレクトは手動で処理し、遷移のたびに許可リストへ照合する。</li>
+      <li><strong>ヘッダ変換:</strong> fetch 境界で注入され、同名のユーザ指定ヘッダを上書きする。リダイレクトごとに再評価されるため、変換対象外のホストへ認証情報が渡らない。</li>
+      <li><strong>レスポンス上限:</strong> <code>maxResponseSize</code>（10 MB）を Content-Length とストリーミングの両方で強制する。</li>
+    </ul>
+  </div>
+
+  <div class="ve-card" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> JavaScript 実行（js-exec）</span>
+    <p>QuickJS の WASM サンドボックスで動く。<code>require()</code> と <code>import</code> は <code>fs</code>、<code>path</code>、<code>child_process</code>、<code>process</code>、<code>os</code>、<code>url</code>、<code>assert</code>、<code>util</code>、<code>events</code>、<code>buffer</code>、<code>stream</code> などの互換シムに解決される（<code>fs</code> はサンドボックスの仮想 FS を指す）。タイムアウトは既定 <code>normal</code> プロファイルで 30 秒、<code>hardened</code> プロファイルで 10 秒。ネットワークを有効化してもこの期限は延びない。</p>
+    <p><code>javascript.invokeTool</code> を渡すと、スクリプト側からグローバルな <code>tools</code> プロキシ経由でホスト定義のツールを呼び出せる。フック自体は汎用で、素のマップ・MCP・Anthropic の tool-use など任意のツールフレームワークを接続できる。</p>
+    <div class="ve-code-block">
+      <span class="ve-code-block__label">typescript</span>
+      <pre><code>const bash = new Bash({
+  javascript: {
+    // path:     "math.add"（ドット区切り）
+    // argsJson: '{"a":1,"b":2}'（引数なしなら ""）
+    // 戻り値:   JSON 文字列。undefined なら ""
+    // throw:    サンドボックス内の例外として伝播する
+    invokeTool: async (path, argsJson) =&gt; {
+      const args = argsJson ? JSON.parse(argsJson) : undefined;
+      if (path === "math.add") return JSON.stringify({ sum: args.a + args.b });
+      throw new Error(`Unknown tool: ${path}`);
+    },
+  },
+});</code></pre>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:3">
+    <span class="ve-section-label"><span class="ve-dot"></span> Python 実行（python3）</span>
+    <p>CPython 3.13 を Emscripten でビルドした WASM を、実行ごとに新しいワーカースレッドで動かす。以前の Pyodide 方式と違い <strong>JS ブリッジのコードが存在しない</strong>ため、<code>import js</code> は <code>ModuleNotFoundError</code> になる。Python レベルのサンドボックスを別途用意する必要がなく、隔離はビルド構成そのもので成立している。</p>
+    <ul>
+      <li><strong>ビルド時に外した能力:</strong> 動的リンク（<code>dlopen</code>）、ホスト FS のマウント種別、<code>_ctypes</code>、<code>_emscripten_run_script</code>、テスト用モジュール群。<code>__emscripten_system</code> は -1 を返すようパッチされている</li>
+      <li><strong>実行時の制限:</strong> 30 秒タイムアウト（<code>maxPythonTimeoutMs</code>）、実行ごとに新しいワーカー、標準ライブラリは <code>.pyc</code> のみの zip としてメモリ FS に配置</li>
+      <li><strong>遮断される経路:</strong> 生の TCP/UDP ソケットは到達不能、<code>os.system()</code> は -1、<code>subprocess</code> と <code>os.popen()</code> は <code>OSError</code>、環境変数は明示的に渡したものだけ</li>
+      <li><strong>HTTP:</strong> 独自の HTTPFS マウント経由でのみ可能で、許可リスト付き fetch を必要とする</li>
+    </ul>
+  </div>
+
+  <section id="limits" class="sec-head">7 — 実行制限</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> プロファイルと個別上限</span>
+    <p>リミットには 2 つのプロファイルがある。<code>normal</code> は互換性を優先した緩めの既定値、<code>hardened</code> は信用できないワークロード向けの厳しめのポリシー。プロファイルを選んだうえで、リソース単位に上書きできる。どちらのプロファイルでも全リソースが有界のままである点は変わらない。</p>
+    <div class="ve-code-block">
+      <span class="ve-code-block__label">typescript</span>
+      <pre><code>const env = new Bash({
+  executionLimitProfile: "hardened",
+  executionLimits: {
+    maxCallDepth: 100,                    // 関数の再帰深度
+    maxCommandCount: 20000,               // ネストした実行と共有
+    maxSourceBytes: 8 * 1024 * 1024,      // パース前のシェルソース
+    maxFileSystemBytes: 256 * 1024 * 1024,// 既定 FS が保持するデータ
+    maxOutputSize: 32 * 1024 * 1024,      // stdout + stderr の合計
+    maxArchiveBytes: 256 * 1024 * 1024,   // 展開後のアーカイブ
+    maxDatabaseBytes: 128 * 1024 * 1024,  // SQLite イメージ
+    maxExecutionTimeMs: 30_000,           // 実行全体の壁時計期限
+    maxExtensionCleanupTimeMs: 25,        // キャンセル応答の猶予
+  },
+});</code></pre>
+    </div>
+    <p>値の検証は <code>Bash</code> の構築時に行われ、不正な値はその場で弾かれる。エラーメッセージには、どのリソースに当たったかが含まれる。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>攻撃ベクタ</th><th>防御</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>無限ループ <code>while true; do :; done</code></td><td><code>maxLoopIterations</code>（10K）</td></tr>
+          <tr><td>再帰によるフォークボム</td><td><code>maxCallDepth</code>（100）</td></tr>
+          <tr><td>ブレース展開ボム <code>{1..999999}</code></td><td><code>maxBraceExpansionResults</code>（10K）</td></tr>
+          <tr><td>コマンド置換の深いネスト</td><td><code>maxSubstitutionDepth</code>（50）</td></tr>
+          <tr><td>glob ボム <code>**/*</code></td><td><code>maxGlobOperations</code>（100K）、<code>**</code> セグメント数は最大 5</td></tr>
+          <tr><td>トークンボム・巨大入力</td><td>MAX_TOKENS（100K）、MAX_INPUT_SIZE（1MB）、パーサ深度 200</td></tr>
+          <tr><td>ヒアドキュメントボム</td><td><code>maxHeredocSize</code>（10MB）</td></tr>
+          <tr><td>文字列・配列の肥大化</td><td><code>maxStringLength</code>（10MB）、<code>maxArrayElements</code>（100K）</td></tr>
+          <tr><td>ファイルディスクリプタ枯渇</td><td><code>maxFileDescriptors</code>（1024）を set 前に毎回検査</td></tr>
+          <tr><td>自己 source によるループ</td><td><code>maxSourceDepth</code>（100）</td></tr>
+          <tr><td>正規表現の破滅的バックトラック</td><td>re2js（線形時間の正規表現エンジン）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="security" class="sec-head">8 — セキュリティ設計</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 信頼境界</span>
+    <p>脅威モデルは、スクリプトを書く相手（AI エージェントまたは利用者）とスクリプトが読み込む外部データの両方を、信頼度ゼロとして扱う。境界は 5 つに整理されている。</p>
+    <div class="boundary">
+      <span class="boundary__name">TB1 — スクリプト入力 → パーサ</span>
+      <p>入力は完全に信用しない。どんな入力でもクラッシュ・ハング・情報漏洩を起こさずに処理する。</p>
+    </div>
+    <div class="boundary">
+      <span class="boundary__name">TB2 — インタプリタ → ファイルシステム</span>
+      <p>すべてのアクセスをサンドボックスのルートに閉じ込め、シンボリックリンクの追跡を遮断し、実 FS への書き込みを防ぐ。</p>
+    </div>
+    <div class="boundary">
+      <span class="boundary__name">TB3 — インタプリタ → ネットワーク</span>
+      <p>既定で無効。有効化した場合も、すべての URL が許可リストを通過する必要がある。</p>
+    </div>
+    <div class="boundary">
+      <span class="boundary__name">TB4 — インタプリタ → ホストプロセス</span>
+      <p>子プロセスを起こさず、ホストの環境変数に触れず、Node.js 内部（<code>process.binding</code>、<code>require</code>、<code>import()</code>）へ到達しない。</p>
+    </div>
+    <div class="boundary">
+      <span class="boundary__name">TB5 — データ → 変数・キー空間</span>
+      <p>ユーザ由来のデータが JS オブジェクトのキーになる箇所（環境変数、AWK 変数、連想配列のキー）では、null プロトタイプのオブジェクトまたは Map を使い、プロトタイプ汚染を防ぐ。</p>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 防御層の一覧</span>
+    <p>防御は主系（primary）と副系（secondary）に分かれる。主系はアーキテクチャ上その経路が存在しないことに依拠し、副系はグローバルの差し替えによる補強なので、原理的な限界があると明記されている。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>層</th><th>種別</th><th>対象</th><th>回避の難度</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>アーキテクチャ（child_process を import しない）</td><td><span class="badge badge--good">primary</span></td><td>コード実行</td><td>非常に高い — 経路が存在しない</td></tr>
+          <tr><td>仮想ファイルシステム</td><td><span class="badge badge--good">primary</span></td><td>ファイルアクセス</td><td>高い — 中央ゲート関数に集約</td></tr>
+          <tr><td>シンボリックリンク既定拒否</td><td><span class="badge badge--good">primary</span></td><td>パストラバーサル</td><td>高い — 追加 I/O なしのパス比較</td></tr>
+          <tr><td>ネットワーク許可リスト</td><td><span class="badge badge--good">primary</span></td><td>ネットワーク</td><td>高い — 既定オフ、リダイレクト毎に検証</td></tr>
+          <tr><td>コマンドレジストリ</td><td><span class="badge badge--good">primary</span></td><td>コマンド実行</td><td>高い — 登録済み実装のみが動く</td></tr>
+          <tr><td>実行リミット</td><td><span class="badge badge--good">primary</span></td><td>DoS</td><td>高い — ループ・呼び出し・展開の各所で強制</td></tr>
+          <tr><td>プロトタイプ汚染ガード</td><td><span class="badge badge--good">primary</span></td><td>データ整合性</td><td>中 — 新規コードでも規律が要る</td></tr>
+          <tr><td>パーサリミット</td><td><span class="badge badge--good">primary</span></td><td>パーサ DoS</td><td>高い — トークン・深さ・サイズ・反復</td></tr>
+          <tr><td>re2js 正規表現エンジン</td><td><span class="badge badge--good">primary</span></td><td>ReDoS</td><td>高い — 線形時間を保証</td></tr>
+          <tr><td>多層防御（グローバル遮蔽）</td><td><span class="badge badge--warn">secondary</span></td><td>JS への脱出</td><td>中 — 差し替えには原理的限界がある</td></tr>
+          <tr><td>プロセス情報の仮想化</td><td><span class="badge badge--warn">secondary</span></td><td>情報漏洩</td><td>高い — 実値を出さない</td></tr>
+          <tr><td>エラーメッセージのサニタイズ</td><td><span class="badge badge--warn">secondary</span></td><td>情報漏洩</td><td>高い — FS 層と全エラー集約点で実施</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> 多層防御が遮断するもの</span>
+    <p>副系の防御は <code>AsyncLocalStorage</code> による文脈判定つきのグローバル差し替えで実装され、信用しない非同期コンテキストからの呼び出しだけを拒否する。プロセス全体を巻き込む deny-all ローダは設置しない。解決された保護レベルは <code>DefenseInDepthBox.getInstance().getStatus()</code> で確認でき、文脈依存の動的 <code>import()</code> 保護が要件なら <code>level: "full"</code> を要求する。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>分類</th><th>遮断対象</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>コード実行</td><td><code>Function</code> コンストラクタ、<code>eval</code>、<code>.constructor.constructor</code>、async/generator 系コンストラクタ、<code>setTimeout</code>、<code>WebAssembly</code>、<code>Proxy</code>、<code>Module._load</code> / <code>Module._resolveFilename</code></td></tr>
+          <tr><td>情報漏洩</td><td><code>process.env</code>、<code>process.argv</code>、<code>process.execPath</code>、<code>process.mainModule</code>、<code>Error.prepareStackTrace</code>、<code>hrtime</code> / <code>cpuUsage</code> / <code>memoryUsage</code>、<code>performance.now()</code></td></tr>
+          <tr><td>プロセス操作</td><td><code>process.exit()</code>、<code>process.abort()</code>、<code>process.kill()</code>、<code>process.chdir()</code>、<code>process.setuid()</code> / <code>setgid()</code> / <code>umask()</code></td></tr>
+          <tr><td>プロトタイプ汚染</td><td><code>__defineGetter__</code> / <code>__defineSetter__</code> / <code>__lookupGetter__</code> / <code>__lookupSetter__</code> を throw、<code>JSON</code> と <code>Math</code> を凍結</td></tr>
+          <tr><td>ワーカー限定</td><td><code>process.stdout</code> / <code>stderr</code>、<code>process.send</code> / <code>channel</code> / <code>connected</code>（メインスレッドはテストランナーやプロセス管理との干渉を避けるため対象外）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>ホスト情報は仮想化されている。PID と UID は既定値（pid=1、uid=1000）を返し、<code>hostname</code> / <code>whoami</code> / <code>uname</code> は汎用値を返す。FS 層の <code>sanitizeError()</code> は <code>ErrnoException</code> の <code>.path</code> を落とし、<code>sanitizeErrorMessage()</code> は OS のパス・<code>node:internal/</code> のパス・スタックトレースを、コマンドディスパッチ・<code>Bash.exec()</code>・CLI・Python ブリッジの各集約点で除去する。</p>
+  </div>
+
+  <section id="risks" class="sec-head">9 — 残存リスクと運用上の注意</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 明記されているギャップ</span>
+    <p>脅威モデルは、防げていない範囲も同じ粒度で書かれている。導入時に確認すべき主な項目は次のとおり。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>項目</th><th>リスク</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>動的 <code>import()</code></td>
+            <td><span class="badge badge--warn">ランタイム依存</span></td>
+            <td><code>import()</code> は言語キーワードであり Proxy でも <code>defineProperty</code> でも捕捉できない。<code>node:module.registerHooks()</code> が使えるランタイムでは文脈付きローダフックで拒否できるが、そうでないランタイムでは best-effort に留まる</td>
+          </tr>
+          <tr>
+            <td>事前取得された参照</td>
+            <td><span class="badge badge--off">低</span></td>
+            <td>多層防御を有効化する前に <code>Function</code> や <code>eval</code> の参照を掴んだコードは、その参照経由でプロキシを迂回できる。文書化・テスト済み</td>
+          </tr>
+          <tr>
+            <td><code>globalThis</code> の再代入</td>
+            <td><span class="badge badge--off">低</span></td>
+            <td>サンドボックス内から遮蔽用プロキシを上書きされうる。副系防御である以上、破られない前提には立っていない</td>
+          </tr>
+          <tr>
+            <td>Python 実行面</td>
+            <td><span class="badge badge--warn">中（オプトイン）</span></td>
+            <td>意図的に受け入れているリスク。CPython の WASM 線形メモリは Node ワーカーの <code>resourceLimits</code> で確実には抑えられず、強い封じ込めにはプロセス／コンテナ隔離が要る</td>
+          </tr>
+          <tr>
+            <td>シグナル・ジョブ制御</td>
+            <td><span class="badge badge--off">低</span></td>
+            <td><code>trap</code> のセキュリティテストは限定的で、バックグラウンドジョブ制御は体系的に検証されていない。実プロセスを起こさないため影響は仮想モデル内に閉じる</td>
+          </tr>
+          <tr>
+            <td>Unicode・エンコーディング</td>
+            <td><span class="badge badge--off">低</span></td>
+            <td>不正な UTF-8、ホモグラフ、RTL 上書き文字の体系的なテストがない。表示・混同に関わるもので、実行の脱出経路ではない</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>信頼するものとして扱われる範囲:</strong> ホストが渡す <code>fs</code>・<code>fetch</code>・<code>customCommands</code>・トランスフォームプラグインは信頼済みとして扱われる。just-bash が守るのは信用できない<em>スクリプト</em>であって、信用できない<em>ホスト</em>ではない。Node.js ランタイムと OS、依存パッケージのサプライチェーンも同様にランタイム防御の対象外で、ロックファイルや監査といったデプロイ側の対策に委ねられている。
+    </div>
+    <p>また、実行は VM 隔離なしで行われる。コードベースはプロトタイプ汚染やホスト JS エンジン・FS への脱出に対して堅牢になるよう設計されているが、この構成自体が追加のリスクを持つことは README に明記されている。任意のバイナリを動かせる完全な VM が必要なら、別のサンドボックス製品を使う。</p>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> CLI としての利用</span>
+    <p>グローバルインストールすると、OverlayFS を使うサンドボックス CLI が入る。読み取りは実ファイルシステムから行われ、書き込みはすべてメモリに留まり実行後に破棄される。プロジェクトルートはサンドボックス内の <code>~/project</code> 相当にマウントされるので、そのパスか既定の作業ディレクトリからの相対パスでファイルを参照する。</p>
+    <div class="ve-code-block">
+      <span class="ve-code-block__label">bash</span>
+      <pre><code># インラインスクリプトを実行
+just-bash -c 'ls -la &amp;&amp; cat package.json | head -5'
+
+# プロジェクトルートを指定して実行
+just-bash -c 'grep -r "TODO" src/' --root /path/to/project
+
+# 標準入力からスクリプトを渡す
+echo 'find . -name "*.ts" | wc -l' | just-bash
+
+# プログラムから扱いやすい JSON 出力
+just-bash -c 'echo hello' --json
+# {"stdout":"hello\n","stderr":"","exitCode":0}</code></pre>
+    </div>
+    <p>オプションは <code>-c &lt;script&gt;</code>（引数からスクリプトを実行）、<code>--root &lt;path&gt;</code>（ルートディレクトリ、既定はカレント）、<code>--cwd &lt;path&gt;</code>（サンドボックス内の作業ディレクトリ）、<code>-e, --errexit</code>（最初のエラーで終了）、<code>--json</code>（JSON 出力）。</p>
+  </div>
+
+  <section id="links" class="sec-head">10 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/vercel-labs/just-bash" target="_blank" rel="noopener">GitHub: vercel-labs/just-bash</a> — 本体リポジトリ（TypeScript モノレポ）。本ページは同リポジトリの README.md、パッケージの README.md、CLAUDE.md、THREAT_MODEL.md を出典としている</li>
+      <li><a href="https://www.npmjs.com/package/just-bash" target="_blank" rel="noopener">npm: just-bash</a> — パッケージ本体</li>
+      <li><a href="https://github.com/vercel-labs/bash-tool" target="_blank" rel="noopener">vercel-labs/bash-tool</a> — just-bash を AI SDK のツールとして包むラッパ。エージェント向けの追加ガイドを <code>AGENTS.md</code> に持つ</li>
+      <li><a href="https://ai-sdk.dev/" target="_blank" rel="noopener">AI SDK</a> — <code>bash-tool</code> が前提とするツール定義基盤</li>
+      <li><a href="https://vercel.com/docs/vercel-sandbox" target="_blank" rel="noopener">Vercel Sandbox</a> — <code>Sandbox</code> クラスが API 互換を取っている実 VM 側のサービス</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
