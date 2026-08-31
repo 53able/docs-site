@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Harness — Claude Code のチームアーキテクチャファクトリー</title>
-  <meta name="description" content="ドメイン記述からエージェントチームとスキルを生成する Claude Code 向け team-architecture factory。L3 Meta-Factory の位置づけ、3 つの実行モード、Quickstart、運用更新、実験結果を整理。">
+  <meta name="description" content="ドメイン記述からエージェントチームとスキルを生成する Claude Code 向け team-architecture factory。L3 Meta-Factory の位置づけ、隣接プロジェクトとの棲み分け、3 つの実行モード、Quickstart、重複検討フェーズ、実験結果と FAQ を整理。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Harness — Claude Code のチームアーキテクチャファクトリー">
-  <meta property="og:description" content="ドメイン記述からエージェントチームとスキルを生成する Claude Code 向け team-architecture factory。L3 Meta-Factory の位置づけ、3 つの実行モード、Quickstart、運用更新、実験結果を整理。">
+  <meta property="og:description" content="ドメイン記述からエージェントチームとスキルを生成する Claude Code 向け team-architecture factory。L3 Meta-Factory の位置づけ、隣接プロジェクトとの棲み分け、3 つの実行モード、Quickstart、重複検討フェーズ、実験結果と FAQ を整理。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/harness.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
@@ -802,6 +802,7 @@
     <a href="#s6">インストール</a>
     <a href="#s7">ユースケース</a>
     <a href="#s8">実験結果と開示</a>
+    <a href="#s9">FAQ — 数字と適用範囲</a>
     <div class="toc-gh">
       <a href="https://github.com/revfactory/harness" target="_blank" rel="noopener">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -908,6 +909,48 @@
       </div>
     </div>
 
+    <div style="margin-top:1.25rem">
+      <p style="font-size:0.8125rem;color:var(--text-dim);margin-bottom:0.5rem">隣接プロジェクトとの棲み分け（README「Coexistence」より）</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>プロジェクト</th>
+              <th>相手側の立ち位置</th>
+              <th>Harness との関係と選び方</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://github.com/coleam00/Archon" target="_blank" rel="noopener">coleam00/Archon</a></td>
+              <td>決定的で再現可能なランタイム構成を作る「harness builder」</td>
+              <td>同じ L3 の隣接サブ層。ランタイムの決定性が欲しければ Archon、チーム構造の設計が欲しければ Harness。Harness で設計して Archon で配備する併用も可能。</td>
+            </tr>
+            <tr>
+              <td><a href="https://github.com/SaehwanPark/meta-harness" target="_blank" rel="noopener">SaehwanPark/meta-harness</a></td>
+              <td>同じ発想を Codex ランタイムへ移植したもの</td>
+              <td>同じ L3・別ランタイム。Claude Code なら Harness、Codex なら meta-harness を使う。</td>
+            </tr>
+            <tr>
+              <td><a href="https://github.com/affaan-m/everything-claude-code" target="_blank" rel="noopener">affaan-m/ECC</a></td>
+              <td>既存ハーネスの上に載る性能・ワークフロー標準化層</td>
+              <td>層が違う。ECC は複数ハーネス横断の標準化、Harness はハーネスを生成する側。直列に組み合わせられる。</td>
+            </tr>
+            <tr>
+              <td><a href="https://github.com/wshobson/agents" target="_blank" rel="noopener">wshobson/agents</a></td>
+              <td>サブエージェント／スキルのカタログ（182 エージェント・149 スキル）</td>
+              <td>工場と部品供給の関係。カタログから部品を選び、Harness が組んだチームの中に取り込む。</td>
+            </tr>
+            <tr>
+              <td><a href="https://langchain-ai.github.io/langgraph/" target="_blank" rel="noopener">LangGraph</a></td>
+              <td>LLM 非依存の状態グラフオーケストレーション</td>
+              <td>路線が違う。長時間・状態復旧が要るワークフローは LangGraph、Claude Code 上の素早いチーム設計は Harness。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="mermaid-wrap">
       <div class="mermaid-controls">
         <button id="zi">+</button>
@@ -962,12 +1005,12 @@ flowchart TD
       <div class="phase-card highlight">
         <div class="phase-num">Phase 03</div>
         <h4>エージェント定義生成</h4>
-        <p><code>.claude/agents/{name}.md</code> に役割・原則・チーム通信プロトコルを生成。全エージェント <code>model: "opus"</code>。</p>
+        <p>3-0 で既存エージェントとの重複を検討してから <code>.claude/agents/{name}.md</code> に役割・原則・チーム通信プロトコルを生成。全エージェント <code>model: "opus"</code>。</p>
       </div>
       <div class="phase-card highlight">
         <div class="phase-num">Phase 04</div>
         <h4>スキル生成</h4>
-        <p><code>.claude/skills/{name}/SKILL.md</code> を Progressive Disclosure パターンで生成。JiT 参照構成。</p>
+        <p>4-0 で既存スキルとの重複を検討してから <code>.claude/skills/{name}/SKILL.md</code> を Progressive Disclosure パターンで生成。JiT 参照構成。</p>
       </div>
       <div class="phase-card">
         <div class="phase-num">Phase 05</div>
@@ -987,8 +1030,11 @@ flowchart TD
     </div>
 
     <div class="ve-callout info" style="margin-top:1rem">
-      <strong>Harness Evolution Mechanism:</strong> 生成直後のハーネスと、実運用を経たリリース版ハーネスとの差分をファクトリーへ戻し、
-      次回の同系統ドメイン生成をよりリリース状態に近いドラフトから始める、という考え方が README に追加されている。
+      <strong>Phase 3-0 / 4-0 の重複検討:</strong> CHANGELOG の Unreleased に、新規エージェント・新規スキルを作る前に
+      既存の <code>.claude/agents/</code> と <code>.claude/skills/</code> を突き合わせる工程が追加された。
+      ハーネスを繰り返し構築すると役割の重なるエージェントが別名で溜まるため、
+      判定基準は <code>agent-design-patterns.md</code> の「エージェント再利用設計」と
+      <code>skill-writing-guide.md</code> §9「スキル再利用設計」に置かれている。
     </div>
 
 
@@ -1117,7 +1163,7 @@ flowchart TD
           <tbody>
             <tr>
               <td><code>agent-design-patterns.md</code></td>
-              <td>6 種パターンの詳細・実行モード選択意思決定ツリー・エージェント分離基準</td>
+              <td>6 種パターンの詳細・実行モード選択意思決定ツリー・エージェント分離基準・エージェント再利用設計（Phase 3-0 の判定基準）</td>
             </tr>
             <tr>
               <td><code>orchestrator-template.md</code></td>
@@ -1129,7 +1175,7 @@ flowchart TD
             </tr>
             <tr>
               <td><code>skill-writing-guide.md</code></td>
-              <td>スキル作成ガイド・YAML frontmatter・Progressive Disclosure 実装例</td>
+              <td>スキル作成ガイド・YAML frontmatter・Progressive Disclosure 実装例・§9 スキル再利用設計（Phase 4-0 の判定基準）</td>
             </tr>
             <tr>
               <td><code>skill-testing-guide.md</code></td>
@@ -1254,23 +1300,42 @@ flowchart TD
 
     <div class="install-cols">
       <div class="install-method recommended">
-        <div class="install-tag">推奨 — Quickstart 5 分</div>
-        <h3>Marketplace + Experimental flag</h3>
-        <p>現行 Quickstart は <code>claude plugin</code> コマンドを使う。追加・インストール・flag 有効化までを同じシェルで続けて実行する。</p>
+        <div class="install-tag">README 記載 — セッション内のスラッシュコマンド</div>
+        <h3>Marketplace 追加 → インストール</h3>
+        <p>Claude Code のセッション内で 2 コマンド。マーケットプレイス ID は <code>.claude-plugin/marketplace.json</code> の <code>harness-marketplace</code>。</p>
+        <div class="ve-code-block">
+          <pre><code>/plugin marketplace add revfactory/harness
+/plugin install harness@harness-marketplace</code></pre>
+        </div>
+      </div>
+      <div class="install-method">
+        <div class="install-tag">Quickstart 記載 — シェルから</div>
+        <h3>CLI + Experimental flag</h3>
+        <p><code>docs/quickstart.md</code> は同じシェルで追加・インストール・flag 有効化を続けて実行する手順を示す。</p>
         <div class="ve-code-block">
           <pre><code>claude plugin marketplace add revfactory/harness
 claude plugin install harness@harness
 export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1</code></pre>
         </div>
       </div>
+    </div>
+
+    <div class="ve-callout warn" style="margin-top:1rem">
+      <strong>プラグイン ID の食い違い:</strong> README は <code>harness@harness-marketplace</code>、Quickstart は <code>harness@harness</code> を指定している。
+      <code>marketplace.json</code> の <code>name</code> は <code>harness-marketplace</code> なので、片方が通らなければ
+      <code>claude plugin list</code> で実際に登録された ID を確認して読み替える。
+    </div>
+
+    <div style="margin-top:1.25rem">
       <div class="install-method">
-        <div class="install-tag">確認 — 失敗時に見る項目</div>
-        <h3>Version / enable / active plugin</h3>
-        <p>何も生成されない時は、バージョン不足か、プラグインが現在のプロジェクトで有効になっていないことが多い。</p>
+        <div class="install-tag">確認 — 何も生成されない時</div>
+        <h3>Version / list / enable</h3>
+        <p>Agent Teams は Claude Code v2.0 で導入されたため、バージョン不足かプラグイン未有効が原因のことが多い。新しいターミナルを開いた場合は flag の再 export も要る。</p>
         <div class="ve-code-block">
           <pre><code>claude --version
 claude plugin list
-claude plugin enable harness@harness</code></pre>
+claude plugin enable harness@harness
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1</code></pre>
         </div>
       </div>
     </div>
@@ -1310,7 +1375,9 @@ Set up a harness
 │           ├── skill-writing-guide.md
 │           ├── skill-testing-guide.md
 │           └── qa-agent-guide.md
-└── README.md</code></pre>
+├── CONTRIBUTING.md                # 貢献ガイド（PR 初回応答 72h / Issue triage 48h）
+├── CHANGELOG.md                   # Semantic Versioning に沿った変更履歴
+└── README.md                      # EN、README_KO.md / README_JA.md も併設</code></pre>
       </div>
     </div>
 
@@ -1462,6 +1529,51 @@ Set up a harness
           revfactory/harness-100
         </a>
       </div>
+    </div>
+
+
+    <!-- ═══ [09] FAQ ═══ -->
+    <div id="s9" class="sec-head">
+      <span class="sec-num">09</span>
+      <h2>FAQ — 数字と適用範囲</h2>
+    </div>
+
+    <p style="font-size:0.875rem;color:var(--text-dim);margin-bottom:1rem;line-height:1.6">
+      README 末尾に、数値の出どころ・Archon との違い・ランタイムの狭さに答える 3 項目が追加された。いずれも根拠リンク付きで書かれている。
+    </p>
+
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:26%">問い</th>
+            <th>回答</th>
+            <th style="width:24%">根拠</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>「+60%」は盛りすぎではないか</strong></td>
+            <td>著者自身が測った A/B（n=15、姉妹リポジトリ <code>claude-code-harness</code> 上で計測）の値。README 内のすべての引用箇所で「n=15、著者測定、第三者再現は未実施」を同じ文に併記している。導入判断では 2〜4 週間の社内パイロットで自前の数値を取ることを推奨している。</td>
+            <td><a href="https://github.com/revfactory/claude-code-harness" target="_blank" rel="noopener">claude-code-harness</a> / Hwang, M. (2026)</td>
+          </tr>
+          <tr>
+            <td><strong>なぜ "harness builder" ではなく "harness factory" なのか。Archon と競合しないのか</strong></td>
+            <td>Archon が生成するのは決定的なランタイム構成（Runtime-Configuration Factory）。Harness が生成するのはチーム構造・メッセージプロトコル・レビューゲート（Team-Architecture Factory）。同じ L3 Meta-Factory の隣接サブ層で、Harness で設計 → Archon で配備という併用ができる。</td>
+            <td>README「Category — Where Harness Sits」/ <a href="https://github.com/coleam00/Archon" target="_blank" rel="noopener">coleam00/Archon</a></td>
+          </tr>
+          <tr>
+            <td><strong>Claude Code 専用では狭すぎないか</strong></td>
+            <td>公式にサポートするランタイムは現状 Claude Code のみ。Codex 向けには同じ発想の移植版が公開済みなので、Codex チームはそちらから始められる。Harness は「複数ランタイムを浅く」より「Claude Code に深く」を選んでおり、姉妹リポジトリとの相互運用はロードマップ上にある。</td>
+            <td><a href="https://github.com/SaehwanPark/meta-harness" target="_blank" rel="noopener">SaehwanPark/meta-harness</a> / <a href="https://github.com/Gizele1/harness-init" target="_blank" rel="noopener">Gizele1/harness-init</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ve-callout info" style="margin-top:1rem">
+      <strong>Quickstart のコスト注意:</strong> <code>docs/quickstart.md</code> は、マルチエージェントチームが 1 タスクで 5 本以上の並列呼び出しに広がり、
+      複雑なチケット 1 件で 50K〜200K トークンを消費しうると明記している。1 回の実行につき 1 タスクに絞ることが推奨されている。
     </div>
 
     <div style="height:3rem"></div>
