@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harness Open Source — コード・CI・レジストリ・Gitspaces を 1 バイナリに束ねる Go モノレポ</title>
+  <meta name="description" content="harness/harness（Gitness）のアーキテクチャ解説。単一 Go バイナリに git ホスティング・Drone 系パイプライン・11 種のアーティファクトレジストリ・Gitspaces を同居させる構成、ルーター分岐、認可モデル、React フロントエンドの合成方法を図と表で整理する。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Harness Open Source — コード・CI・レジストリ・Gitspaces を 1 バイナリに束ねる Go モノレポ">
+  <meta property="og:description" content="harness/harness（Gitness）のアーキテクチャ解説。ルーター分岐、git CLI 実行方式、Drone 系 CI、11 種のアーティファクトレジストリ、Gitspaces、認可モデル、React フロントエンドの合成を整理する。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/harness-harness.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Harness Open Source — コード・CI・レジストリ・Gitspaces を 1 バイナリに束ねる Go モノレポ">
+  <meta name="twitter:description" content="harness/harness（Gitness）のアーキテクチャ解説。ルーター分岐、git CLI 実行方式、Drone 系 CI、レジストリ、Gitspaces、認可モデルを整理する。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.995 0.004 90);
+      --foreground: oklch(0.165 0.012 60);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.165 0.012 60);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.165 0.012 60);
+      --primary: oklch(0.24 0.02 60);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.965 0.006 80);
+      --secondary-foreground: oklch(0.24 0.02 60);
+      --muted: oklch(0.962 0.008 80);
+      --muted-foreground: oklch(0.505 0.014 65);
+      --accent: oklch(0.958 0.012 78);
+      --accent-foreground: oklch(0.24 0.02 60);
+      --destructive: oklch(0.52 0.19 25);
+      --border: oklch(0.905 0.010 78);
+      --input: oklch(0.905 0.010 78);
+      --ring: oklch(0.72 0.03 70);
+      --chart-1: oklch(0.50 0.13 58);
+      --chart-2: oklch(0.45 0.08 196);
+      --chart-3: oklch(0.38 0.07 250);
+      --chart-4: oklch(0.66 0.14 84);
+      --chart-5: oklch(0.49 0.11 150);
+      --code-bg: oklch(0.968 0.010 80);
+      --code-text: oklch(0.32 0.09 250);
+      --font-body: 'Schibsted Grotesk', system-ui, sans-serif;
+      --font-mono: 'Geist Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.155 0.008 65);
+        --foreground: oklch(0.965 0.006 80);
+        --card: oklch(0.212 0.010 68);
+        --card-foreground: oklch(0.965 0.006 80);
+        --popover: oklch(0.212 0.010 68);
+        --popover-foreground: oklch(0.965 0.006 80);
+        --primary: oklch(0.92 0.010 80);
+        --primary-foreground: oklch(0.212 0.010 68);
+        --secondary: oklch(0.245 0.010 68);
+        --secondary-foreground: oklch(0.965 0.006 80);
+        --muted: oklch(0.272 0.012 70);
+        --muted-foreground: oklch(0.715 0.014 75);
+        --accent: oklch(0.278 0.016 68);
+        --accent-foreground: oklch(0.965 0.006 80);
+        --destructive: oklch(0.68 0.17 25);
+        --border: oklch(1 0 0 / 11%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.58 0.02 70);
+        --chart-1: oklch(0.74 0.14 62);
+        --chart-2: oklch(0.71 0.10 196);
+        --chart-3: oklch(0.68 0.09 250);
+        --chart-4: oklch(0.81 0.15 86);
+        --chart-5: oklch(0.72 0.12 150);
+        --code-bg: oklch(0.185 0.010 68);
+        --code-text: oklch(0.84 0.08 220);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; color: var(--muted-foreground); font-family: var(--font-mono); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 24rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.75rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: break-word; }
+    .ve-table-wrap tbody tr:hover { background: var(--muted); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.75rem; line-height: 1.1; display: block; font-weight: 600; letter-spacing: -0.02em; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; display: block; font-family: var(--font-mono); }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-4); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-4) 16%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 12% -4%, color-mix(in oklch, var(--chart-1) 12%, transparent) 0%, transparent 46%),
+        radial-gradient(ellipse at 88% 2%, color-mix(in oklch, var(--chart-2) 9%, transparent) 0%, transparent 40%);
+      background-repeat: no-repeat;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 210px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.65; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    strong { font-weight: 600; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); overflow-wrap: break-word; }
+    .ve-code-block { margin: 1rem 0; }
+    .lead { font-size: 1.0625rem; line-height: 1.7; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .card-grid > * { min-width: 0; }
+
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.75rem; margin: 0.75rem 0; }
+    .pipeline .step { background: color-mix(in oklch, var(--muted) 74%, var(--chart-1) 26%); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); border: 1px solid color-mix(in oklch, var(--border) 55%, var(--chart-1) 45%); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: 0.375rem; margin: 0.75rem 0; }
+    .tag { font-family: var(--font-mono); font-size: 0.6875rem; padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--muted); color: var(--text-dim); }
+    .tag--on { border-color: color-mix(in oklch, var(--border) 40%, var(--chart-5) 60%); color: var(--chart-5); background: color-mix(in oklch, var(--chart-5) 12%, transparent); }
+
+    .mermaid-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+    .mermaid-wrap .mermaid { display: flex; justify-content: center; }
+
+    .mini-title { font-family: var(--font-mono); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--chart-2); margin-bottom: 0.375rem; }
+    .ve-card--recessed p:last-child, .ve-card p:last-child, .ve-card ul:last-child { margin-bottom: 0; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#routing">入口とルーター</a>
+    <a href="#git">Git サービス</a>
+    <a href="#ci">パイプライン / CI</a>
+    <a href="#registry">Artifact Registry</a>
+    <a href="#gitspaces">Gitspaces</a>
+    <a href="#authz">認証と認可</a>
+    <a href="#infra">データと基盤</a>
+    <a href="#web">Web フロントエンド</a>
+    <a href="#build">ビルドと起動</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>Harness Open Source</h1>
+  <p class="subtitle">harness/harness — 1 つの Go バイナリに git ホスティング・CI・アーティファクトレジストリ・開発環境を同居させる</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何をするソフトウェアか</span>
+    <p class="lead">GitHub プロジェクト <strong>harness/harness</strong>（Go モジュール名は <code>github.com/harness/gitness</code>、ビルド成果物も <code>gitness</code>）は、開発プラットフォームの主要機能を 1 つのサーバープロセスにまとめたオープンソース実装である。扱う領域は 4 つ。</p>
+    <ul>
+      <li><strong>コードホスティング</strong> — ベアリポジトリ、smart HTTP と SSH、プルリクエスト、ブランチ保護、コードオーナー、LFS。</li>
+      <li><strong>パイプライン</strong> — Drone 由来の実行エンジンで、コミットやプルリクエストからコンテナベースの CI を回す。</li>
+      <li><strong>アーティファクトレジストリ</strong> — OCI/Docker を含む 11 種のパッケージ形式と、上流ミラーリング。</li>
+      <li><strong>Gitspaces</strong> — <code>devcontainer.json</code> を読んでコンテナ開発環境を起動し、VS Code や JetBrains Gateway から接続させる。</li>
+    </ul>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">1 バイナリ</span><span class="ve-kpi-card__label">gitness server</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">約 40 万行</span><span class="ve-kpi-card__label">Go 2,792 ファイル</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">11 形式</span><span class="ve-kpi-card__label">レジストリ対応</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Apache-2.0</span><span class="ve-kpi-card__label">ライセンス</span></div>
+    </div>
+    <p>Drone との関係は README に明記されている。Harness Open Source は Drone の次世代版という位置づけで、Drone 時点のコードは <code>drone</code> ブランチにスナップショットとして残され、開発は <code>main</code> で続いている。</p>
+  </div>
+
+  <div class="card-grid">
+    <div class="ve-card" style="--i:1">
+      <div class="mini-title">言語構成</div>
+      <p>バックエンドは Go（<code>go 1.26.6</code>）。フロントエンドは <code>web</code> ディレクトリの React 17 + TypeScript 4.7 + webpack 5 で、ビルド結果は Go バイナリに埋め込まれる。</p>
+    </div>
+    <div class="ve-card" style="--i:2">
+      <div class="mini-title">依存の少なさ</div>
+      <p>既定の永続化は SQLite、イベントバス・ロック・pub/sub は既定でインメモリ。Redis・PostgreSQL・S3・GCS はいずれも差し替え可能な選択肢として用意されている。</p>
+    </div>
+    <div class="ve-card" style="--i:3">
+      <div class="mini-title">設定方法</div>
+      <p>設定は環境変数 1 本槍で、プレフィックスは <code>GITNESS_</code>。<code>gitness server &lt;envfile&gt;</code> のように env ファイルを渡せる。</p>
+    </div>
+  </div>
+
+  <section id="routing" class="sec-head">2 — リクエストの入口とルーター</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 起動から待ち受けまで</span>
+    <p>エントリポイントは <code>cmd/gitness/main.go</code>。kingpin ベースの CLI（<code>cli/</code>）が <code>server</code> / <code>migrate</code> / <code>user</code> / <code>account</code> / <code>hooks</code> / <code>swagger</code> を登録する。<code>server</code> は env を読み込んでから Google Wire が生成した巨大なインジェクタ（<code>cmd/gitness/wire_gen.go</code>）を呼び、ストア・git サービス・イベント・全コントローラ・レジストリ・パイプライン・Gitspaces を 1 つの <code>System</code> に組み立てる。</p>
+    <p>組み立て後は初回ブートストラップ（管理者ユーザーと内部呼び出し用のサービスプリンシパル作成）を行い、<code>errgroup</code> で HTTP サーバー、SSH サーバー、ジョブスケジューラ、CI ポーラー、メトリクス収集を並行起動する。停止は SIGINT/SIGTERM でグレースフルに行う。</p>
+    <div class="pipeline">
+      <span class="step">main</span><span class="arrow">→</span>
+      <span class="step">CLI: server</span><span class="arrow">→</span>
+      <span class="step">env → Config</span><span class="arrow">→</span>
+      <span class="step">Wire injector</span><span class="arrow">→</span>
+      <span class="step">bootstrap</span><span class="arrow">→</span>
+      <span class="step">errgroup で常駐開始</span>
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--elevated" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 4 つのサブルーターを順に試す</span>
+    <p>HTTP の入口は 1 つだが、<code>app/router</code> の <code>Router.ServeHTTP</code> が登録順にサブルーターへ <code>IsEligibleTraffic</code> を尋ね、最初に引き受けたものへ渡す。内部はいずれも go-chi。</p>
+    <div class="mermaid-wrap">
+      <pre class="mermaid">flowchart TD
+  REQ["HTTP リクエスト :3000"] --> R{"Router.ServeHTTP<br/>登録順に IsEligibleTraffic"}
+  R -->|"git ホスト / git パス"| GIT["git ルーター<br/>info/refs, git-upload-pack,<br/>git-receive-pack, info/lfs"]
+  R -->|"レジストリ URL"| REG["registry ルーター<br/>/v2/* OCI, /pkg/*"]
+  R -->|"/api/ 前置"| API["API ルーター<br/>/api/v1/* + openapi.yaml"]
+  R -->|"それ以外"| WEB["web ルーター<br/>埋め込み SPA + /swagger"]
+  SSH["SSH :3022"] --> CTRL["repo / lfs コントローラ"]
+  GIT --> CTRL
+  API --> CTRL
+  CTRL --> GITSVC["git サービス"]</pre>
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>順</th><th>サブルーター</th><th>受け持つもの</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td>git</td><td>smart HTTP（<code>info/refs</code>、<code>git-upload-pack</code>、<code>git-receive-pack</code>）、LFS API、<code>go get</code> 用メタ。ホスト名でもパスでも判定できる。</td></tr>
+          <tr><td>1</td><td>registry</td><td>OCI distribution API（<code>/v2/*</code>）とパッケージ別 API（<code>/pkg/*</code>）、レジストリ用 Swagger。</td></tr>
+          <tr><td>2</td><td>api</td><td><code>/api/</code> 前置を剥がして <code>/api/v1</code> の REST API へ。認証ミドルウェアはここで適用される。</td></tr>
+          <tr><td>3</td><td>web</td><td>埋め込み SPA の配信、<code>/openapi.yaml</code>、Swagger UI。未知パスは <code>/</code> にフォールバックする。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>dumb git protocol は意図的に未実装。</strong> 該当パスにはスタブハンドラが割り当てられ、502 を返す。クライアントには smart HTTP か SSH を使わせる設計。
+    </div>
+  </div>
+
+  <section id="git" class="sec-head">3 — Git サービスとフック</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> git バイナリを叩く方式</span>
+    <p>Git 操作は libgit2 や go-git ではなく、<strong>OS の <code>git</code> コマンドを exec する</strong>方式で実装されている。層は 3 段。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>層</th><th>パッケージ</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>実行</td><td><code>git/command</code></td><td><code>Command{Globals, Name, Action, Flags, Args, PostSepArgs, Envs}</code> という型で git 起動を組み立てる。ユーザー入力は <code>--</code> 以降に置く <code>PostSepArgs</code> へ回し、フラグ注入を防ぐ。終了コードと stderr は型付きエラーへ変換する。</td></tr>
+          <tr><td>アダプタ</td><td><code>git/api</code></td><td>git の概念ごとに 1 ファイル（<code>commit.go</code>、<code>tree.go</code>、<code>diff.go</code>、<code>merge.go</code>、<code>blame.go</code>、<code>cat-file.go</code>、<code>pack-objects.go</code>、<code>gc.go</code> ほか）。<code>foreachref</code> や <code>parser</code> で出力を構造体に落とす。</td></tr>
+          <tr><td>サービス</td><td><code>git</code>（<code>interface.go</code> / <code>service.go</code>）</td><td>ベアリポジトリの配置場所、共有一時ディレクトリ、削除待ちの墓場ディレクトリを管理し、フッククライアントを持つ。Wire で in-process に注入されるため、ネットワーク境界はない。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>命名の名残に注意。</strong> <code>CreateRPCGitPushWriteParams</code> のような RPC 由来の型名が残っているが、このツリーでは git サービスは同一プロセス内の関数呼び出しである。別マイクロサービスとして説明しないこと。
+    </div>
+    <h3>サーバーサイドフックは同じバイナリ</h3>
+    <p>リポジトリ作成時に、<code>hooks/pre-receive</code> と <code>hooks/post-receive</code> が gitness 実行ファイル自身へのシンボリックリンクとして張られる（<code>update</code> は性能上コメントアウト）。push のたびに次の往復が起きる。</p>
+    <div class="pipeline">
+      <span class="step">git push</span><span class="arrow">→</span>
+      <span class="step">receive-pack</span><span class="arrow">→</span>
+      <span class="step">hook = gitness 実行ファイル</span><span class="arrow">→</span>
+      <span class="step">GIT_HOOK_PAYLOAD を復号</span><span class="arrow">→</span>
+      <span class="step">REST で /v1/internal/git-hooks</span><span class="arrow">→</span>
+      <span class="step">保護ルール・シークレット走査・マージキュー判定</span>
+    </div>
+    <p>ペイロード（リポジトリ ID、プリンシパル ID、リクエスト ID、操作種別、コールバック先 URL）は gob エンコード＋base64 で環境変数 <code>GIT_HOOK_PAYLOAD</code> 1 本に詰められる。<code>cli/cli.go</code> は起動時に argv を見てフック呼び出しだと判定すると <code>hooks</code> サブコマンドへ経路を切り替える。フック処理のタイムアウトは 3 分。</p>
+    <h3>SSH 側</h3>
+    <p><code>ssh/server.go</code> は gliderlabs/ssh のサーバーで、許可コマンドを <code>git-upload-pack</code> / <code>git-receive-pack</code> / <code>git-lfs-authenticate</code> / <code>git-lfs-transfer</code> の 4 つに限定する。公開鍵認証は <code>app/services/publickey</code> が担い、その先は HTTP と同じリポジトリコントローラへ合流する。</p>
+  </div>
+
+  <section id="ci" class="sec-head">4 — パイプライン / CI</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Drone の実行系をライブラリとして使う</span>
+    <p>CI は Drone のコードベースを依存ライブラリとして取り込む形で実装されている。ランナーは同一プロセス内で動き、ポーラーも HTTP ではなく in-process クライアント経由でジョブを受け取る。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>依存モジュール</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>drone-runners/drone-runner-docker</code></td><td>Docker 実行エンジン。レガシー Drone YAML 用の <code>engine</code> と v1 spec 用の <code>engine2</code> の両方を使う。</td></tr>
+          <tr><td><code>drone/runner-go</code></td><td>ランナーの骨格（クライアント、ポーラー、ランタイム、レポーター、アップローダ、シークレット）。</td></tr>
+          <tr><td><code>drone/spec</code></td><td>v1 パイプライン spec のパース・正規化・解決。</td></tr>
+          <tr><td><code>drone/drone-yaml</code>, <code>drone/drone-go</code></td><td>レガシー YAML のパースと lint、API 型。</td></tr>
+          <tr><td><code>drone/go-convert</code>, <code>go-generate</code>, <code>funcmap</code></td><td>変換とテンプレート展開。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>2 つの YAML 方言</h3>
+    <p>方言の判定は単純で、パイプラインファイルが <code>^spec:</code> にマッチすれば v1 spec、しなければレガシー Drone YAML として扱う（<code>app/pipeline/triggerer/trigger.go</code> の <code>isV1Yaml</code>）。レガシー側は jsonnet / starlark のコンバータと lint を通り、DAG を組んでからステージ化される。</p>
+  </div>
+
+  <div class="ve-card ve-card--elevated" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> push から step 実行までの流れ</span>
+    <div class="mermaid-wrap">
+      <pre class="mermaid">flowchart TD
+  EV["git / pullreq イベント<br/>（内部イベントバス）"] --> TS["trigger サービス<br/>app/services/trigger"]
+  TS -->|"有効トリガを突合"| TR["triggerer<br/>app/pipeline/triggerer"]
+  TR --> FS["file サービス<br/>指定 ref の YAML を取得"]
+  FS --> DIA{"^spec: か"}
+  DIA -->|"はい"| V1["drone/spec で parse<br/>→ ステージ生成"]
+  DIA -->|"いいえ"| LEG["converter → lint<br/>→ DAG → ステージ生成"]
+  V1 --> EXE["Execution + Stage を<br/>1 トランザクションで保存"]
+  LEG --> EXE
+  EXE --> SCH["scheduler<br/>ステージキュー"]
+  SCH --> POLL["poller（in-process）"]
+  POLL --> MGR["ExecutionManager<br/>Accept / Details / Watch / Write"]
+  MGR --> RUN["Docker エンジンで step 実行"]
+  RUN --> LOG["livelog でライブログ配信"]
+  RUN --> CHK["コミットチェックに結果書き戻し"]</pre>
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コンポーネント</th><th>場所</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>trigger サービス</td><td><code>app/services/trigger</code></td><td>ブランチ・タグ・プルリクの各イベントを購読し、リポジトリの有効トリガと突き合わせる。</td></tr>
+          <tr><td>triggerer</td><td><code>app/pipeline/triggerer</code></td><td>Hook を Execution と Stage 群に変換。<code>skip.go</code> がブランチ・イベント・アクション・ref・cron の除外条件を判定する。</td></tr>
+          <tr><td>file</td><td><code>app/pipeline/file</code></td><td>内部 git サービスから、指定 ref のパイプライン YAML を読む。</td></tr>
+          <tr><td>converter</td><td><code>app/pipeline/converter</code></td><td>jsonnet / starlark テンプレートを Drone YAML へ展開する。</td></tr>
+          <tr><td>manager</td><td><code>app/pipeline/manager</code></td><td>ランナー側から見た API。<code>Details</code> がリポジトリ・実行・ステージ・シークレット・netrc をまとめて渡す。</td></tr>
+          <tr><td>scheduler</td><td><code>app/pipeline/scheduler</code></td><td>ステージのキューイングとキャンセル通知。分散ロックを併用する。</td></tr>
+          <tr><td>runner</td><td><code>app/pipeline/runner</code></td><td>Docker エンジンとポーラーの組み立て。API バージョンをデーモンと自動ネゴシエートする。</td></tr>
+          <tr><td>resolver</td><td><code>app/pipeline/resolver</code></td><td>v1 spec のプラグイン・テンプレート解決。実行 → リポジトリ → スペースの順にスコープを広げて探す。</td></tr>
+          <tr><td>livelog</td><td><code>livelog</code></td><td>実行中の step ログをブラウザへ流す。実装はインメモリのみ。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>特権コンテナは許可リスト方式。</strong> <code>plugins/docker</code> と ACR / ECR / GCR / Heroku 系プラグインだけが privileged で動く。Docker ソケットの位置は <code>GITNESS_DOCKER_HOST</code> で変更でき、Rancher Desktop や Colima も README に手順がある。
+    </div>
+  </div>
+
+  <div class="ve-card ve-card--recessed" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> webhook と trigger の違い</span>
+    <p>同じ git イベントバスに、目的の異なる 2 つの購読者がぶら下がっている。<code>app/services/webhook</code> は<strong>外向き</strong>で、ユーザーが登録した HTTP エンドポイントを叩く。<code>app/services/trigger</code> は<strong>内向き</strong>で、イベントをパイプライン実行に変える。レジストリ側にも独立した webhook 実装がある。</p>
+  </div>
+
+  <section id="registry" class="sec-head">5 — Artifact Registry</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 別 Go モジュールとして同居</span>
+    <p>レジストリは <code>registry</code> ディレクトリ配下の<strong>別 Go モジュール</strong>で、ルート側の <code>go.mod</code> の <code>replace</code> でローカル参照されている。OCI distribution spec の適合テストがリポジトリに入っており、Makefile から <code>./gitness server</code> を立てて走らせられる。</p>
+    <h3>対応パッケージ形式</h3>
+    <div class="tag-row">
+      <span class="tag tag--on">DOCKER</span>
+      <span class="tag tag--on">HELM</span>
+      <span class="tag tag--on">MAVEN</span>
+      <span class="tag tag--on">NPM</span>
+      <span class="tag tag--on">NUGET</span>
+      <span class="tag tag--on">PYTHON</span>
+      <span class="tag tag--on">RPM</span>
+      <span class="tag tag--on">CARGO</span>
+      <span class="tag tag--on">GO</span>
+      <span class="tag tag--on">HUGGINGFACE</span>
+      <span class="tag tag--on">GENERIC</span>
+    </div>
+    <p>実装は <code>registry/app/pkg</code> の形式別ディレクトリに分かれる。ただし HELM は専用ディレクトリを持たず、Docker/OCI の経路で扱われる（<code>docker</code> のローカル・リモート実装がいずれも <code>DOCKER</code> と <code>HELM</code> を宣言する）。</p>
+    <h3>レジストリの種類とディスパッチ</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>種類</th><th>意味</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>VIRTUAL</code></td><td>ローカル保管に加え、順序付けした上流レジストリへフォールバックする。取得したアーティファクトはキャッシュされる。</td></tr>
+          <tr><td><code>UPSTREAM</code></td><td>外部レジストリを指す定義。Docker Hub、npmjs、PyPI、NuGet、Maven Central、crates.io、Go proxy、RPM、AWS ECR などのアダプタがある。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>ハンドラの選択は <code>(パッケージ形式, レジストリ種類)</code> をキーにしたファクトリ（<code>registry/app/pkg/base</code>）で行われ、プロキシ有無とチェック有無のラッパーが被せられる。</p>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 層と保管先</span>
+    <div class="pipeline">
+      <span class="step">router</span><span class="arrow">→</span>
+      <span class="step">handler</span><span class="arrow">→</span>
+      <span class="step">controller</span><span class="arrow">→</span>
+      <span class="step">pkg/&lt;形式&gt;</span><span class="arrow">→</span>
+      <span class="step">base + filemanager</span><span class="arrow">→</span>
+      <span class="step">storage</span><span class="arrow">→</span>
+      <span class="step">driver</span>
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ストレージドライバ</th><th>登録名</th><th>備考</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ファイルシステム</td><td><code>filesystem</code></td><td>既定。Docker イメージでは <code>/data/registry</code> に置かれる。</td></tr>
+          <tr><td>S3 互換</td><td><code>s3</code> と R2 名</td><td>同一ファクトリを 2 つの名前で登録している。</td></tr>
+          <tr><td>Google Cloud Storage</td><td><code>gcs</code></td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>ドライバのファクトリ構造は <code>distribution/distribution</code> を踏襲しており、OCI 側ハンドラは blob の resumable upload、manifest、tag 一覧、catalog、referrers（OCI 1.1）、トークン発行までカバーする。ガベージコレクタ（<code>registry/gc</code>）と隔離機構（<code>quarantine</code>）も別立てで用意されている。</p>
+    <div class="ve-callout">
+      <strong>隔離判定の出どころは外部。</strong> <code>quarantine</code> パッケージはアーティファクトの隔離状態を問い合わせて配布をブロックする仕組みで、スキャナ本体はこのリポジトリには含まれない。
+    </div>
+  </div>
+
+  <section id="gitspaces" class="sec-head">6 — Gitspaces（コンテナ開発環境）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> devcontainer を読んで環境を立てる</span>
+    <p>Gitspaces は <code>app/gitspace</code>（orchestrator / infrastructure / scm / secret / logutil）と <code>app/services/gitspace*</code>、そしてインフラ抽象の <code>infraprovider</code> で構成される。API は <code>app/api/controller/gitspace</code> と <code>infraprovider</code>。</p>
+    <h3>インフラプロバイダ</h3>
+    <p>抽象インターフェイスは <code>Provision</code> / <code>Find</code> / <code>Stop</code> / <code>CleanupInstanceResources</code> / <code>Deprovision</code> / パラメータ検証などを備え、列挙型には <code>docker</code>、<code>harness_gcp</code>、<code>harness_cloud</code>、<code>hybrid_vm_gcp</code>、<code>hybrid_vm_aws</code> が並ぶ。ただし<strong>この OSS ツリーで実装されているのは Docker だけ</strong>で、ファクトリにも <code>docker</code> しか登録されない。Kubernetes プロバイダは含まれない。</p>
+    <h3>イベント駆動で中断・再開する起動シーケンス</h3>
+    <div class="mermaid-wrap">
+      <pre class="mermaid">flowchart TD
+  API["API: start gitspace"] --> ACT["app/services/gitspace<br/>action_start"]
+  ACT --> SCM["SCM 詳細取得<br/>clone 認証 + devcontainer.json 解析"]
+  SCM --> PORT["必要ポート算出<br/>forwardPorts + IDE ポート"]
+  PORT --> PROV["infra provisioner に<br/>Provision イベントを投げて返る"]
+  PROV -.->|"完了イベント"| RES["ResumeStartGitspace"]
+  RES --> CONT["コンテナ orchestrator<br/>作成・起動・features 解決"]
+  CONT --> LC["lifecycle コマンド実行<br/>postCreate / postStart"]
+  LC --> SSHD["コンテナ内 sshd と IDE 準備"]
+  SSHD -.->|"操作完了イベント"| FIN["FinishResumeStartGitspace"]</pre>
+    </div>
+    <p>起動は同期的に完走せず、プロビジョニング完了とコンテナ操作完了がそれぞれイベントとして戻り、<code>ResumeStartGitspace</code> と <code>FinishResumeStartGitspace</code> が続きを引き受ける。停止・削除・クリーンアップも同じ形。状態は設定レベル（<code>running</code> / <code>stopped</code> / <code>starting</code> / <code>stopping</code> / <code>cleaning</code> / <code>error</code> / <code>uninitialized</code>）とインスタンスレベル（<code>resetting</code>、<code>pending_cleanup</code> などを含む 12 種）で二重管理される。</p>
+    <h3>接続できる IDE</h3>
+    <div class="tag-row">
+      <span class="tag">vs_code</span><span class="tag">vs_code_web</span><span class="tag">cursor</span><span class="tag">windsurf</span>
+      <span class="tag">intellij</span><span class="tag">pycharm</span><span class="tag">goland</span><span class="tag">webstorm</span>
+      <span class="tag">clion</span><span class="tag">phpstorm</span><span class="tag">rubymine</span><span class="tag">rider</span>
+    </div>
+    <p>各 IDE は <code>app/gitspace/orchestrator/ide</code> の実装をファクトリで選ぶ。VS Code Web はアセットを同梱し、デスクトップ IDE と JetBrains Gateway はコンテナ内で起動する sshd に接続する。</p>
+    <div class="ve-callout">
+      <strong>2 つの SSH を混同しない。</strong> トップレベルの <code>ssh</code> パッケージは git 用の SSH サーバーで、Gitspaces の接続先はコンテナ内で動く sshd である。後者にはプロバイダのポートマッピング経由で到達する。
+    </div>
+  </div>
+
+  <section id="authz" class="sec-head">7 — 認証と認可</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> プリンシパルとスペース階層</span>
+    <p>主体（プリンシパル）は <code>user</code> / <code>serviceaccount</code> / <code>service</code> の 3 種。<code>Admin</code> フラグを持つプリンシパルは検査をバイパスする。内部処理は起動時に作られるシステム・パイプライン・Gitspace のサービスプリンシパルとして自分自身の API を呼ぶ。</p>
+    <p>リソースはネストしたスペース（パスで表現）の下に並ぶ。認可はリソースをスペースパスに写し、祖先方向にメンバーシップを辿って判定する。公開アクセス設定が先に評価され、次に管理者バイパス、最後にメンバーシップという順序。</p>
+    <div class="card-grid">
+      <div class="ve-card ve-card--recessed" style="--i:0">
+        <div class="mini-title">リソース種別（13）</div>
+        <div class="tag-row">
+          <span class="tag">SPACE</span><span class="tag">REPOSITORY</span><span class="tag">PIPELINE</span><span class="tag">REGISTRY</span>
+          <span class="tag">GITSPACE</span><span class="tag">INFRAPROVIDER</span><span class="tag">SECRET</span><span class="tag">CONNECTOR</span>
+          <span class="tag">TEMPLATE</span><span class="tag">INTEGRATION</span><span class="tag">USER</span><span class="tag">SERVICEACCOUNT</span><span class="tag">SERVICE</span>
+        </div>
+      </div>
+      <div class="ve-card ve-card--recessed" style="--i:1">
+        <div class="mini-title">ロール（4）</div>
+        <div class="tag-row">
+          <span class="tag">reader</span><span class="tag">executor</span><span class="tag">contributor</span><span class="tag">space_owner</span>
+        </div>
+        <p>reader の権限集合を土台に、上位ロールが積み増す形で静的に定義されている。</p>
+      </div>
+    </div>
+    <h3>権限は 56 個の文字列</h3>
+    <p>権限は <code>&lt;リソース&gt;_&lt;動詞&gt;</code> 形式の文字列で、リポジトリ系だけでも <code>repo_view</code> / <code>repo_create</code> / <code>repo_edit</code> / <code>repo_push</code> / <code>repo_review</code> / <code>repo_delete</code> がある。レジストリ系は <code>registry_*</code> とアーティファクト操作系（<code>artifacts_upload</code> / <code>artifacts_download</code> / <code>artifacts_delete</code> / <code>artifacts_quarantine</code>）に分かれている。</p>
+    <h3>検査の位置</h3>
+    <p>認証（JWT の抽出と検証）はミドルウェアで常に試行されるが、<strong>強制はコントローラ側</strong>で行う。<code>app/api/auth</code> の <code>CheckRepo</code>、<code>CheckSpace</code>、<code>CheckPipeline</code>、<code>CheckRegistry</code>、<code>CheckGitspace</code> といったヘルパーを各コントローラが呼ぶ。トークンはヘッダの Bearer、HTTP Basic のパスワード、Cookie などから取り出す。git ルートではブラウザのセッショントークンをミドルウェアで弾く。</p>
+    <div class="ve-callout">
+      <strong>権限判定の実例。</strong> smart HTTP のサービス名から権限へ写す箇所が分かりやすい。<code>git-receive-pack</code> は <code>repo_push</code>、<code>git-upload-pack</code> は <code>repo_view</code> を要求する。
+    </div>
+  </div>
+
+  <section id="infra" class="sec-head">8 — データと基盤コンポーネント</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ストアとマイグレーション</span>
+    <p>永続化は <code>app/store/database.go</code> に並ぶ約 60 のストアインターフェイスと、その実装（<code>app/store/database</code>、sqlx + squirrel）で構成される。プレースホルダは PostgreSQL 形式（<code>$1</code>）に固定されており、SQLite でもそのまま通す方針。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>項目</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>対応 DB</td><td><code>sqlite3</code>（既定）と <code>postgres</code>。<code>GITNESS_DATABASE_DRIVER</code> / <code>GITNESS_DATABASE_DATASOURCE</code> で切り替える。</td></tr>
+          <tr><td>マイグレーション</td><td>goose ではなく、埋め込み SQL ディレクトリを走らせる方式。PostgreSQL 用と SQLite 用の SQL を <code>go:embed</code> で持ち、番号順に適用する。SQLite では外部キーを一時的に無効化して走らせる。</td></tr>
+          <tr><td>SQL の規模</td><td>PostgreSQL 用は up/down 合わせて約 390 ファイル、番号は 0189 付近まで。SQLite 用も同数規模。</td></tr>
+          <tr><td>Go 製の補助</td><td>データ変換が必要な移行は Go コードとして併存する（アーティファクト移行や RPM 移行など）。</td></tr>
+          <tr><td>CLI</td><td><code>gitness migrate current</code> / <code>gitness migrate to</code> で確認と巻き戻しができる。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 差し替え可能な基盤</span>
+    <p>単体起動をやりやすくするため、分散化が必要な部品はすべて「インメモリ既定 + 外部バックエンド任意」の形で抽象化されている。Redis を入れれば同じインターフェイスのまま複数インスタンス構成に寄せられる。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>パッケージ</th><th>用途</th><th>バックエンド</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>stream</code></td><td>ストリームの生産者・消費者プリミティブ</td><td>インメモリ / Redis Streams</td></tr>
+          <tr><td><code>events</code></td><td>型付きドメインイベント（at-least-once）。git・repo・pullreq・rule・pipeline・check・gitspace 系のイベントを定義</td><td>インメモリ / Redis</td></tr>
+          <tr><td><code>pubsub</code></td><td>投げっぱなしの pub/sub。SSE 配信の土台でもある</td><td>インメモリ / Redis</td></tr>
+          <tr><td><code>lock</code></td><td>分散ミューテックス</td><td>インメモリ / Redis</td></tr>
+          <tr><td><code>job</code></td><td>DB に永続化するバックグラウンドジョブ。ロックと pub/sub で協調する</td><td>DB のみ</td></tr>
+          <tr><td><code>blob</code></td><td>添付・アップロード用オブジェクトストア</td><td>ファイルシステム / GCS</td></tr>
+          <tr><td><code>cache</code></td><td>型付きキャッシュ（LRU / TTL / Redis / no-op）。git の last-commit キャッシュや権限キャッシュに使う</td><td>複数</td></tr>
+          <tr><td><code>livelog</code></td><td>CI のライブログ</td><td>インメモリのみ</td></tr>
+          <tr><td><code>app/sse</code></td><td>ブラウザへの Server-Sent Events</td><td>pubsub に追従</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="web" class="sec-head">9 — Web フロントエンド</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> スタック</span>
+    <p>フロントエンドは <code>web</code> ディレクトリの単一 yarn パッケージ（パッケージ名 <code>codeui</code>）。React 17 + webpack 5 で、Vite は使っていない。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ライブラリ</th><th>宣言バージョン</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>react</code> / <code>react-dom</code></td><td><code>^17.0.2</code></td><td>UI ランタイム</td></tr>
+          <tr><td><code>webpack</code></td><td><code>^5.58.0</code></td><td>バンドラ。Module Federation も担う</td></tr>
+          <tr><td><code>react-router-dom</code></td><td><code>^5.2.1</code></td><td>ルーティング（v5 API の <code>Switch</code> 系）</td></tr>
+          <tr><td><code>restful-react</code></td><td><code>15.6.0</code></td><td>データ取得と OpenAPI からのクライアント生成</td></tr>
+          <tr><td><code>@tanstack/react-query</code></td><td><code>4.20.4</code></td><td>レジストリ側モジュールのクエリキャッシュ</td></tr>
+          <tr><td><code>@blueprintjs/core</code></td><td><code>3.26.1</code></td><td>基礎ウィジェット</td></tr>
+          <tr><td><code>@harnessio/uicore</code> / <code>design-system</code> / <code>icons</code></td><td><code>^4.3.4</code> / <code>^2.1.1</code> / <code>2.1.22</code></td><td>自社コンポーネントとトークン</td></tr>
+          <tr><td><code>monaco-editor</code> + <code>monaco-yaml</code></td><td><code>^0.45.0</code> / <code>^4.0.4</code></td><td>パイプライン YAML とファイル編集</td></tr>
+          <tr><td><code>@codemirror/*</code></td><td><code>^6.x</code></td><td>Markdown 入力（コメント・PR 本文）</td></tr>
+          <tr><td><code>diff2html</code></td><td><code>3.4.22</code></td><td>差分表示</td></tr>
+          <tr><td><code>sass</code> + <code>typed-scss-modules</code></td><td><code>^1.32.8</code> / <code>^7.1.4</code></td><td>Sass CSS Modules と <code>.d.ts</code> 生成</td></tr>
+          <tr><td><code>jotai</code></td><td><code>^2.6.3</code></td><td>アトム状態（現在ユーザー、リポジトリメタ等）</td></tr>
+          <tr><td><code>highcharts</code></td><td><code>9.2.0</code></td><td>グラフ</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>i18n に i18next は使わず、YAML の文言ファイル（<code>strings.en.yaml</code> / <code>strings.es.yaml</code>）を独自フレームワークが読み、<code>useStrings()</code> と <code>&lt;String/&gt;</code> で参照する。型はビルド時に自動生成される。</p>
+  </div>
+
+  <div class="ve-card ve-card--elevated" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> OpenAPI 仕様は Go から出す</span>
+    <p>API 型定義の正は Go コードである。TypeScript クライアントはそこから 3 段で生成される。</p>
+    <div class="pipeline">
+      <span class="step">app/api/openapi の Go コード</span><span class="arrow">→</span>
+      <span class="step">gitness swagger で YAML 出力</span><span class="arrow">→</span>
+      <span class="step">restful-react import</span><span class="arrow">→</span>
+      <span class="step">生成 TSX（フックと型）</span>
+    </div>
+    <ol>
+      <li><code>app/api/openapi</code> の 26 ファイルが <code>openapi3.Reflector</code> にオペレーションを登録する。サーバーは <code>/api/v1</code>、認証スキームは bearer。</li>
+      <li>隠しコマンド <code>gitness swagger</code> が仕様を YAML で吐く。README の手順どおり、出力をフロントエンドの <code>swagger.yaml</code>（約 1.75 万行）へ流し込む。実行中のサーバーは同じ仕様を <code>/openapi.yaml</code> で配信し、<code>/swagger</code> に UI を置く。</li>
+      <li><code>yarn services</code> が <code>restful-react import</code> を走らせ、<code>useGet*</code> / <code>useMutate*</code> フックと型を含む約 1.13 万行の TSX を生成する。ベース URL はランタイム設定関数から解決する。</li>
+    </ol>
+    <div class="ve-callout">
+      <strong>レジストリ API は逆向き。</strong> こちらは手書きの OpenAPI YAML（約 3,600 行）が正で、そこから <code>oapi-codegen</code> で <strong>Go サーバー側</strong>のコードを生成する。TypeScript クライアントはリポジトリ内で生成せず、公開済み npm パッケージを取り込む。
+    </div>
+  </div>
+
+  <div class="ve-card" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> 3 つの Module Federation リモート</span>
+    <p>1 つの webpack プロジェクトから 3 つのリモートを出力し、<code>react</code> / <code>react-dom</code> / <code>react-router-dom</code> / <code>formik</code> をバージョン固定の singleton として共有する。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>リモート</th><th>中身</th><th>主な expose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>codeRemote</code></td><td>SCM 本体</td><td><code>./App</code>、<code>./Repositories</code>、<code>./PullRequests</code>、<code>./Compare</code>、<code>./Webhooks</code> ほか</td></tr>
+          <tr><td><code>harRemote</code></td><td>アーティファクトレジストリ UI</td><td><code>./HAREnterpriseApp</code>、<code>./HARCreateRegistryButton</code></td></tr>
+          <tr><td><code>cdeRemote</code></td><td>Gitspaces UI</td><td><code>./Gitspaces</code>、<code>./GitspaceInfra</code>、<code>./UsageDashboard</code> ほか</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>レジストリ UI の合成方法は 2 通り</h3>
+    <ul>
+      <li><strong>OSS バイナリで動くモード:</strong> メインアプリのルーティングが <code>lazy(() =&gt; import(...))</code> でレジストリアプリを読み込む。コード分割はされるがネットワーク越しではなく、同じ <code>dist</code> に同梱される。アダプタが <code>matchPath</code>、401 ハンドラ、トークン生成、ルート定義、ホスト側コンポーネントを注入する。</li>
+      <li><strong>プラットフォーム埋め込みモード:</strong> 同じコードを <code>./HAREnterpriseApp</code> として federated module で公開し、親シェルがコンテキストを与える。API クライアントはインターセプタでヘッダと base URL を差し替えるため、レジストリ UI 自体は接続先を知らないまま動く。</li>
+    </ul>
+  </div>
+
+  <section id="build" class="sec-head">10 — ビルドと起動</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> web を先に、Go を後に</span>
+    <p>Go バイナリは <code>web/dist.go</code> の <code>go:embed dist/*</code> でフロントエンドのビルド成果物を取り込む。<code>dist</code> は git 管理外なので、<strong>クリーンなチェックアウトでは <code>make web-build</code>（または Docker の web ステージ）が先に必要</strong>。<code>make build</code> は <code>web-build</code> に依存していない点に注意する。</p>
+    <div class="ve-code-block"><pre><code># 手元でひととおり動かす
+make dep && make tools          # wire, dbmate, goimports, protoc 系
+cd web && yarn install && yarn build && cd ..
+make build                      # wire 生成 → go build -o ./gitness
+./gitness server .local.env     # http://localhost:3000</code></pre></div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Makefile ターゲット</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>dep</code> / <code>tools</code></td><td>wire・dbmate の導入、goimports・govulncheck・protoc プラグイン・gci の導入</td></tr>
+          <tr><td><code>generate</code></td><td>Google Wire で DI コードを再生成する</td></tr>
+          <tr><td><code>web-build</code></td><td><code>yarn install && yarn build</code></td></tr>
+          <tr><td><code>build</code> / <code>run</code></td><td>バイナリ生成と、<code>./gitness server .local.env</code> による起動</td></tr>
+          <tr><td><code>test</code></td><td>一部レジストリ結合テストを除外して <code>go test</code> + カバレッジ HTML</td></tr>
+          <tr><td><code>lint</code> / <code>lint-full</code></td><td>golangci-lint。設定はスキーマ v2 で、既定オフの上に約 50 個を明示有効化している</td></tr>
+          <tr><td><code>ar-api-update</code></td><td>レジストリ OpenAPI から Go サーバーコードを生成</td></tr>
+          <tr><td><code>ar-conformance-test</code></td><td>サーバーを起動して OCI distribution spec 適合テストを走らせる</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>ビルドツールは実行時依存と分離され、<code>go.tool.mod</code> 側のモジュールとして <code>go tool -modfile=go.tool.mod</code> で呼ばれる。</p>
+  </div>
+
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> Docker イメージと既定値</span>
+    <p>公式イメージは 4 ステージ構成。node で <code>web</code> をビルド → golang-alpine で <code>make dep</code>・<code>make tools</code> の後にビルド成果物を <code>web/dist</code> へコピーして静的リンク（<code>CGO_ENABLED=1</code>、arm64 はクロスコンパイラを取得）→ CA 証明書ステージ → <code>alpine/git</code> ベースの最終イメージにバイナリだけを置く。バージョン情報は ldflags で埋め込まれる。</p>
+    <div class="ve-code-block"><pre><code>docker run -d \
+  -p 3000:3000 -p 3022:3022 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /tmp/harness:/data \
+  --name harness --restart always \
+  harness/harness</code></pre></div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>イメージ既定値</th><th>値</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>GITNESS_GIT_ROOT</code></td><td><code>/data</code></td></tr>
+          <tr><td><code>GITNESS_DATABASE_DRIVER</code> / <code>DATASOURCE</code></td><td><code>sqlite3</code> / <code>/data/database.sqlite</code></td></tr>
+          <tr><td><code>GITNESS_REGISTRY_FILESYSTEM_ROOT_DIRECTORY</code></td><td><code>/data/registry</code></td></tr>
+          <tr><td><code>GITNESS_SSH_ENABLE</code> / <code>GITNESS_GITSPACE_ENABLE</code></td><td>いずれも <code>true</code></td></tr>
+          <tr><td>公開ポート</td><td><code>3000</code>（HTTP）と <code>3022</code>（SSH）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Docker ソケットをマウントするのは、パイプラインの step と Gitspaces のコンテナをホストの Docker で動かすため。<code>/data</code> にはリポジトリ・SQLite・レジストリのブロブが入るので、名前付きボリュームかバインドマウントを当てないとコンテナ停止でデータが消える。</p>
+    <div class="ve-callout">
+      <strong>UI を差し替えるための別ルート。</strong> <code>Dockerfile.uiv2</code> は web ステージを「公開済み UI イメージからファイルをコピーする」だけに置き換える。Go 側は <code>go:embed</code> のままなので、次世代 UI を <code>web</code> に手を入れずに載せられる。開発中は <code>GITNESS_DEVELOPMENT_UI_SOURCE_OVERRIDE</code> で埋め込み FS をローカルディレクトリに差し替えられる。
+    </div>
+    <p>Kubernetes 向けには <code>charts/gitness</code> に Helm チャート（deployment / service / ingress / pvc / serviceaccount）がある。</p>
+  </div>
+
+  <section id="links" class="sec-head">11 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/harness/harness" target="_blank" rel="noopener">GitHub: harness/harness</a> — 本体リポジトリ。<code>main</code> が開発ブランチ</li>
+      <li><a href="https://github.com/harness/harness/tree/drone" target="_blank" rel="noopener">harness/harness の drone ブランチ</a> — Drone のスナップショット</li>
+      <li><a href="https://developer.harness.io/docs/open-source" target="_blank" rel="noopener">Harness Open Source ドキュメント</a> — 利用者向けガイド</li>
+      <li><a href="https://hub.docker.com/r/harness/harness" target="_blank" rel="noopener">Docker Hub: harness/harness</a> — 公開イメージ</li>
+      <li><a href="https://github.com/opencontainers/distribution-spec" target="_blank" rel="noopener">OCI Distribution Specification</a> — レジストリの <code>/v2/*</code> が準拠する仕様</li>
+      <li><a href="https://containers.dev/" target="_blank" rel="noopener">Development Containers</a> — Gitspaces が読む <code>devcontainer.json</code> の仕様</li>
+      <li><a href="https://github.com/google/wire" target="_blank" rel="noopener">google/wire</a> — 起動時 DI に使われるコード生成ツール</li>
+      <li><a href="https://www.drone.io/" target="_blank" rel="noopener">Drone</a> — パイプライン実装の出自</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  securityLevel: 'loose',
+  themeVariables: {
+    primaryColor: isDark ? '#31241a' : '#f6ecdf',
+    primaryBorderColor: isDark ? '#c08a52' : '#9b5f25',
+    primaryTextColor: isDark ? '#f4e9dc' : '#3a2413',
+    secondaryColor: isDark ? '#182a2e' : '#e5f0f2',
+    secondaryBorderColor: isDark ? '#5f9aa4' : '#2f6b76',
+    secondaryTextColor: isDark ? '#e6f2f4' : '#16323a',
+    tertiaryColor: isDark ? '#1d2a20' : '#e9f1e6',
+    tertiaryBorderColor: isDark ? '#6f9c6a' : '#3f6f3a',
+    tertiaryTextColor: isDark ? '#e7f2e5' : '#1d3319',
+    lineColor: isDark ? '#8a8377' : '#8d8478',
+    fontSize: '15px',
+    fontFamily: "'Schibsted Grotesk', system-ui, sans-serif",
+    noteBkgColor: isDark ? '#26221c' : '#fdf6e9',
+    noteTextColor: isDark ? '#efe7da' : '#3a2413',
+    noteBorderColor: isDark ? '#b78d4f' : '#b98a3f'
+  }
+});
+</script>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
