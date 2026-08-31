@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Archify — エージェント向け技術図スキル（tt-a1i/archify）</title>
-  <meta name="description" content="Archify は Claude / Codex / opencode 向け Agent Skill。architecture・workflow・sequence・dataflow・lifecycle を JSON IR から自己完結 HTML に描き、テーマ切替と 4× エクスポートを備える。">
+  <meta name="description" content="Archify は Cursor / Claude Code / Codex CLI / opencode 向けの Agent Skill。architecture・workflow・sequence・dataflow・lifecycle を型付き JSON IR から自己完結 HTML へ決定論的にコンパイルし、validate と deliver の受領書、Architecture Delta 差分レビュー、Share Card 書き出しを備える。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Archify — エージェント向け技術図スキル（tt-a1i/archify）">
-  <meta property="og:description" content="5 種の図を JSON IR → 検証 → レンダで生成。ダーク/ライト切替、PNG コピー、最大 4× ラスタと dual-theme SVG。">
+  <meta property="og:description" content="5 種の図を JSON IR → validate → deliver で生成。9 項目の showcase 検査、Architecture Delta、Route / Reach Share Card、テーマとプリセット切替。v2.16.0。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/archify.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Archify — エージェント向け技術図スキル（tt-a1i/archify）">
-  <meta name="twitter:description" content="JSON IR と 5 レンダラで、チャットから自己完結の技術図 HTML を作る Agent Skill。">
+  <meta name="twitter:description" content="型付き JSON IR と 5 レンダラで、チャットから自己完結の技術図 HTML を作る Agent Skill。検証受領書と差分レビュー付き。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,400&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -237,29 +237,30 @@
     <a href="#pipeline">処理の流れ</a>
     <a href="#layout">レイアウト原則</a>
     <a href="#cli">CLI と出力</a>
+    <a href="#delta">差分レビュー</a>
     <a href="#prompts">プロンプト例</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
     <h1>Archify</h1>
-    <p class="subtitle">agent skill for architecture · workflow · sequence · dataflow · lifecycle — tt-a1i/archify v2.11</p>
+    <p class="subtitle">agent skill for architecture · workflow · sequence · dataflow · lifecycle — tt-a1i/archify v2.16.0</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 何をするか</span>
-      <p><strong>Archify</strong> は Claude、Codex CLI、opencode 向けの Agent Skill。システムの説明や Mermaid 断片を受け取り、自己完結の HTML 技術図を返す。出力はブラウザで開き、ダーク / ライト切替（<kbd>T</kbd>）とエクスポート（<kbd>E</kbd>）が使える。リポジトリは <a href="https://github.com/tt-a1i/archify" target="_blank" rel="noopener">tt-a1i/archify</a>。</p>
+      <p><strong>Archify</strong> は Cursor、Claude Code、Codex CLI、opencode 向けの Agent Skill。システムの説明・リポジトリ・Mermaid 断片を受け取り、エージェントが型付き JSON IR を書き、Archify がそれを決定論的に自己完結 HTML へコンパイルする。出力はブラウザで開き、テーマ切替（<kbd>T</kbd>）・スタイル切替（<kbd>S</kbd>）・エクスポート（<kbd>E</kbd>）が使える。リポジトリは <a href="https://github.com/tt-a1i/archify" target="_blank" rel="noopener">tt-a1i/archify</a>、現行安定版は <code>v2.16.0</code>。</p>
       <div class="kpi-row">
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">5 modes</span><span class="ve-kpi-card__label">図タイプ</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">JSON IR</span><span class="ve-kpi-card__label">型付き中間表現</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">≤4×</span><span class="ve-kpi-card__label">ラスタ解像度</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">9 checks</span><span class="ve-kpi-card__label">showcase 合格条件</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">0 deps</span><span class="ve-kpi-card__label">検証もスタンドアロン</span></div>
       </div>
       <ul>
-        <li>一般的な描画エディタや Mermaid テーマではなく、ストーリーに合わせた配置判断をエージェントが行う</li>
-        <li>v2.11 で 5 スキーマをコミット済みスタンドアロンバリデータにコンパイル。インストール後は <code>npm install</code> なしでスキーマ契約を強制できる</li>
-        <li><code>postgres</code> / <code>aws.lambda</code> / <code>github-actions</code> などのセマンティックラベルで視覚カテゴリを決める</li>
-        <li>生成 HTML は依存ゼロ。dual-theme SVG は埋め込み先の <code>prefers-color-scheme</code> に追従</li>
+        <li>汎用 auto-layout や Mermaid テーマではなく、階層・間隔・経路・強調をエージェントが判断する。共有された自動接続点は決定論的に分散し、1 点に矢印が集まらない</li>
+        <li>納品前に schema・レイアウト・HTML/SVG・経路・ラベル余白の検査を全通過させる。失敗時は Node のスタックではなく、ルールコードと対象と実測値を含む修復用 JSON が返る</li>
+        <li>読者側の操作はすべて「書かれた事実」の範囲に閉じる。検索・上流/下流到達・経路プローブ・ロール比較・ガイド付きストーリーは、トポロジを創作せず実行時影響も主張しない</li>
+        <li>成果物は 1 枚の HTML。書き出しは常に図全体で、一時的なビューア状態を含まない</li>
       </ul>
     </div>
 
@@ -268,9 +269,12 @@
       <span class="ve-section-label"><span class="ve-dot"></span> skills CLI（推奨）</span>
       <div class="ve-code-block"><pre><code>npx skills add tt-a1i/archify -g
 
+# Cursor へ非対話で入れる（明示指定）
+npx -y skills add tt-a1i/archify --skill archify --agent cursor --global --copy --yes
+
 # 試し打ち（永続インストールなし）
 npx skills use tt-a1i/archify@archify --agent codex</code></pre></div>
-      <p><code>codex</code> の代わりに <code>claude-code</code> や <code>opencode</code> を指定できる。プロジェクトページは <a href="https://tt-a1i.github.io/archify/" target="_blank" rel="noopener">tt-a1i.github.io/archify</a>。</p>
+      <p><code>--agent</code> は <code>cursor</code> / <code>codex</code> / <code>claude-code</code> / <code>opencode</code> に対応する。エージェント別の正確なコマンドは <a href="https://tt-a1i.github.io/archify/start.html" target="_blank" rel="noopener">クイックスタートの切替ページ</a>で確認できる。プロジェクトページは <a href="https://tt-a1i.github.io/archify/" target="_blank" rel="noopener">tt-a1i.github.io/archify</a>。</p>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:1">
       <span class="ve-section-label"><span class="ve-dot"></span> 手動配置（archify.zip）</span>
@@ -282,32 +286,39 @@ npx skills use tt-a1i/archify@archify --agent codex</code></pre></div>
           <tbody>
             <tr><td>Claude Code</td><td><code>~/.claude/skills/</code> または <code>.claude/skills/</code></td><td>レンダラ + 検証フル</td></tr>
             <tr><td>Codex CLI</td><td><code>~/.agents/skills/</code> または <code>.agents/skills/</code></td><td>レンダラ + 検証フル</td></tr>
-            <tr><td>opencode</td><td><code>~/.config/opencode/skills/</code> など</td><td>レンダラ + 検証フル</td></tr>
+            <tr><td>opencode</td><td><code>~/.config/opencode/skills/</code>、<code>.opencode/skills/</code>、<code>.agents/skills/</code></td><td>レンダラ + 検証フル</td></tr>
+            <tr><td>Raven</td><td><code>archify.zip</code> を <code>~/.raven/workspace/skills</code> に展開</td><td>レンダラ + 検証フル。切替ページの対象外</td></tr>
+            <tr><td>DeepSeek Harness</td><td><code>dsh plugin --profile web add @tt-a1i/archify-dsh@0.1.0</code></td><td>コミュニティ統合。開発者プレビュー、Node <code>^22.19.0 || &gt;=24.0.0</code></td></tr>
             <tr><td>Claude.ai / Project Knowledge</td><td><code>archify.zip</code> をアップロード</td><td>サンドボックス次第。Node 無しなら architecture 手置きモード</td></tr>
           </tbody>
         </table>
       </div>
       <div class="ve-callout" style="margin-top: 1rem;">
-        <strong>初回確認:</strong> <code>node bin/archify.mjs doctor</code> でランタイム面を検査し、<code>node bin/archify.mjs demo [output-directory]</code> で開ける例と次の render コマンドを出す。ZIP 同梱のスタンドアロンバリデータは開発依存なしで不正入力を拒否する。
+        <strong>初回確認:</strong> <code>node bin/archify.mjs doctor</code> でランタイム面を検査し、<code>node bin/archify.mjs demo &lt;output-directory&gt;</code> で開ける例と次のコマンドを出す。ZIP 同梱のスタンドアロンバリデータは開発依存なしで不正入力を拒否する。
+      </div>
+      <div class="ve-callout" style="margin-top: 0.75rem;">
+        <strong>更新通知の扱い:</strong> スキルは固定 URL の安定版マニフェストを GET して更新の有無を知らせるだけで、ダウンロードもインストールもしない。成功した確認は約 72 時間キャッシュされ、失敗は 6 時間後・24 時間後に再試行する。送られるのは通常の HTTP メタデータ（IP と時刻）だけで、バージョン・エージェント・プロジェクト情報・プロンプト・アカウント ID は含まない。通信とローカル状態書き込みを止めるには <code>ARCHIFY_UPDATE_CHECK_DISABLED=1</code> を設定する。
       </div>
     </div>
 
     <section id="types" class="sec-head">3 — 図の種類</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 質問に合わせたモード選択</span>
-      <p>1 枚でリポジトリ全体を説明しようとせず、見たい観点を 1 つ選ぶ。トリガー語は SKILL.md に整理されている。</p>
+      <p>1 枚でリポジトリ全体を説明しようとせず、見たい観点を 1 つ選ぶ。どれを選ぶか迷ったら、CLI に聞ける。</p>
+      <div class="ve-code-block"><pre><code>node bin/archify.mjs guide "Show an API request with Redis cache miss"
+node bin/archify.mjs guide "Map Kafka topics, consumer groups, replay, and DLQ" --json</code></pre></div>
       <div class="type-grid">
         <div class="ve-card" style="--i:0">
           <h3>architecture</h3>
-          <p>コンポーネント・クラウド資源・境界。主経路と trust boundary。例: <code>examples/web-app.html</code>、<code>examples/archify-repo.html</code>。</p>
+          <p>コンポーネント・クラウド資源・境界。主経路と trust boundary。任意で <code>deployment-ownership</code> プロファイルを有効にすると、担当者・リージョン・DB のプライベート配置・境界越えラベルが揃わない限り fail closed になる。</p>
         </div>
         <div class="ve-card" style="--i:1">
           <h3>workflow</h3>
-          <p>CI/CD・承認・ツール呼び出し・ランブック。スイムレーンと happy path。例外レーンは <code>variant: "exception"</code>。</p>
+          <p>CI/CD・承認・ツール呼び出し・ランブック。新規は <code>schema_version: 2</code> の <code>readable-v2</code> 契約で、列 <code>0..5</code> は論理ランクのまま配置とラベル余白をコンパイラが決める。既存 v1 の固定座標は維持される。</p>
         </div>
         <div class="ve-card" style="--i:2">
           <h3>sequence</h3>
-          <p>API 呼び出し連鎖・キャッシュフォールバック・非同期トレース。参加者・メッセージ・activation。</p>
+          <p>API 呼び出し連鎖・キャッシュフォールバック・非同期トレース。既定は固定幅レイアウト。参加者ラベルが収まらないときだけ <code>meta.column_fit: "spread"</code> にする。</p>
         </div>
         <div class="ve-card" style="--i:3">
           <h3>dataflow</h3>
@@ -316,7 +327,7 @@ npx skills use tt-a1i/archify@archify --agent codex</code></pre></div>
       </div>
       <div class="ve-card ve-card--elevated" style="--i:4; margin-top: 0;">
         <h3 style="margin-top:0; font-family: var(--font-mono); font-size: 0.95rem; color: var(--chart-1);">lifecycle</h3>
-        <p style="margin-bottom:0; font-size:0.875rem; color: var(--text-dim);">状態機械・待機・リトライ・終端。レーン id は意味付き（必須 <code>main</code>、終端は <code>terminal</code>）。他レーンは中央イベント帯を共有する。</p>
+        <p style="margin-bottom:0; font-size:0.875rem; color: var(--text-dim);">状態機械・待機・リトライ・終端。フェーズ列 <code>0..4</code> が主レールを占め、イベント / 終端列 <code>N</code>（<code>0..2</code>）は主列 <code>N + 2</code> の真下に揃う。復帰可能な状態は <code>type: "failure"</code> に加えて、実際に稼働状態へ戻る遷移を持たせる。</p>
       </div>
       <h3>Mermaid 入力</h3>
       <p>貼られた Mermaid を機械パースして描画するのではなく、構造だけ読んで archify スタイルで置き直す。<code>flowchart</code> → workflow（またはコンポーネントなら architecture）、<code>sequenceDiagram</code> → sequence、<code>stateDiagram</code> → lifecycle。スタイル指定は捨て、トポロジと意味だけ残す。</p>
@@ -324,43 +335,51 @@ npx skills use tt-a1i/archify@archify --agent codex</code></pre></div>
 
     <section id="pipeline" class="sec-head">4 — 処理の流れ</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> JSON IR → 検証 → レンダ → 検査</span>
-      <p>5 モードとも同じループ。レンダラを直接いじらず、JSON を直して再実行する。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> JSON IR → validate → deliver → visual-check</span>
+      <p>5 モードとも同じループ。レンダラのソースを触らず、診断が指した箇所だけ JSON を直して再実行する。</p>
       <div class="mermaid-wrap">
         <pre class="mermaid">
 flowchart TD
-  A["Generate JSON IR"] --> B["Validate schema"]
-  B --> C["Render HTML/SVG"]
-  C --> D["Check layout &amp; artifact"]
-  D -->|fail| E["Fix JSON IR"]
+  A["Generate typed JSON IR"] --> B["validate --quality showcase --json"]
+  B -->|diagnostics| E["診断された subject だけ直す"]
   E --> B
-  D -->|pass| F["Deliver self-contained HTML"]
+  B -->|pass| P["preview（任意 / last-good ループ）"]
+  P --> D["deliver（原子的に置換 + 受領書）"]
+  B -->|pass| D
+  D --> V["visual-check（ブラウザ実測）"]
+  V --> R["人による知覚レビュー"]
         </pre>
       </div>
       <div class="step-flow">
         <div class="step-card">
           <div class="step-card__num">01</div>
           <div class="step-card__title">スキーマと例を読む</div>
-          <p class="step-card__body"><code>schemas/&lt;type&gt;.schema.json</code> と <code>examples/*.&lt;type&gt;.json</code> を先に見る。フィールド形状は推測しない。</p>
+          <p class="step-card__body">該当する <code>schemas/&lt;type&gt;.schema.json</code>、<code>schemas/common.schema.json</code>、そして <code>examples/</code> の同型 JSON を 1 本だけ読む。例はフィールド形状の参照で、事実の流用元ではない。</p>
         </div>
         <div class="step-card">
           <div class="step-card__num">02</div>
-          <div class="step-card__title">JSON を書く</div>
-          <p class="step-card__body"><code>&lt;name&gt;.&lt;type&gt;.json</code>。必須は <code>schema_version</code>（const 1）、<code>diagram_type</code>、<code>meta.title</code>、モード固有の配列。</p>
+          <div class="step-card__title">まず候補を書く</div>
+          <p class="step-card__body">レンダラ内部を覗く前に候補ファイルを書く。主経路 1 本、短い枝、疎なラベル、主要ノードは 12 個まで。<code>meta.quality_profile: "showcase"</code> を既定にする。</p>
         </div>
         <div class="step-card">
           <div class="step-card__num">03</div>
-          <div class="step-card__title">render / validate</div>
-          <p class="step-card__body"><code>node bin/archify.mjs render &lt;type&gt; …</code> と <code>validate … --json</code>。エラーは JSON path 付きで出る。</p>
+          <div class="step-card__title">毎回 validate する</div>
+          <p class="step-card__body"><code>validate &lt;type&gt; &lt;candidate&gt;.json --quality showcase --json</code>。artifact 検査 4 項目だけの受領書は基本検証で、showcase 合格ではない。9 項目すべてと composition エラー 0・警告 0 が条件。</p>
         </div>
         <div class="step-card">
           <div class="step-card__num">04</div>
-          <div class="step-card__title">check HTML</div>
-          <p class="step-card__body"><code>node bin/archify.mjs check &lt;out&gt;.html</code>。非有限 SVG、対角線矢印、凡例越えなどを検出する。</p>
+          <div class="step-card__title">deliver で確定する</div>
+          <p class="step-card__body"><code>deliver &lt;type&gt; &lt;candidate&gt;.json &lt;out&gt;.html --quality showcase --json</code>。仕様のバイト列を凍結し、検査を通った候補だけを原子的に置換して、双方の SHA-256 とバイト数を返す。</p>
         </div>
       </div>
       <div class="ve-callout">
-        <strong>手置きフォールバック:</strong> Node が使えないときは <code>assets/template.html</code> に SVG を手配置。色はインラインではなく CSS クラス（<code>c-backend</code> など）必須。テーマ切替が壊れない。スキーマ違反は path 付きで非ゼロ終了し、重なりや凡例越えはレンダラ側のレイアウト検査が担当する。
+        <strong>3 つの主張を混ぜない:</strong> <code>deliver</code> は決定論的な成果物検査を証明し、<code>visual-check &lt;out&gt;.html --json</code> は実ブラウザでの挙動を 1440×900 / 1600×1000 / 1920×1080 / 2048×1320 で実測する（受領書は <code>visualReview: "pending"</code> のまま、Chrome が無ければ <code>skipped</code>）。見た目の良否の判断は人間または画像を見られるレビュアーの担当。
+      </div>
+      <div class="ve-callout" style="margin-top: 0.75rem;">
+        <strong>失敗の扱い:</strong> 非ゼロ終了を成功と書かない。<code>deliver</code> が失敗したときは前の成果物がそのまま残るので、そのパスに <code>visual-check</code> をかけても古い last-good を見てしまう。診断の <code>subject</code> と <code>evidence</code> を確認し、<code>supportedFixes</code> の範囲だけ直す。2 ラウンド続けてエラー最小値が改善しなければ止めて未解決の診断を報告する。
+      </div>
+      <div class="ve-callout" style="margin-top: 0.75rem;">
+        <strong>手置きフォールバック:</strong> シェルが使えないときは <code>assets/template.html</code> に architecture の SVG を手配置。色はインラインではなく CSS のセマンティッククラスを使う。テーマ切替が壊れない。
       </div>
     </div>
 
@@ -369,21 +388,44 @@ flowchart TD
       <span class="ve-section-label"><span class="ve-dot"></span> 空間ナラティブ</span>
       <p>可読性は「全依存を矢印で描くこと」ではなく、1 本の物語が辿れる配置から来る。</p>
       <ol>
-        <li><strong>主経路は 1 本</strong> — architecture は左→右、workflow はレーン→列。happy path が交差せず追えること。</li>
-        <li><strong>ラベル付きエッジは少なく</strong> — 境界越えや非自明な遷移だけ。隣接ステップは無ラベルでよい。</li>
-        <li><strong>枝は短く上下へ</strong> — 権限・ストレージ・CI は主経路の最近傍から縦に繋ぐ。斜め横断は避ける。</li>
-        <li><strong>詳細はカードへ</strong> — ポリシーや技術メモは summary cards。矢印を増やさない。</li>
-        <li><strong>モード適合</strong> — プロセス系は workflow / sequence。コンポーネント ≤12 は architecture。エッジが 20+ なら削る。</li>
+        <li><strong>主経路は 1 本</strong> — 枝は主経路の最近傍ノードから出す。ルーティング制御を足す前に、価値の低いエッジを削る。</li>
+        <li><strong>ラベルは意味データ</strong> — 衝突したらまずラベルを移し、経路と間隔を調整し、最後に意味を保ったまま短くする。削除は幾何の修復ではない。両端点から完全に自明で、プロトコル・動作・方向・同期性・境界越えの情報を含まない場合だけ省く。</li>
+        <li><strong>間隔は「空き」で測る</strong> — 中心間距離ではなく実際のクリアランス。ラベルの空きは実測マスク幅を超えていること。</li>
+        <li><strong>自動経路は端点の面を所有する</strong> — 面は方向の契約で、最初と最後のセグメントはその面に垂直に出入りする。診断が求めるまで <code>via</code> / <code>channelX</code> / <code>channelY</code> / <code>labelAt</code> を書かない。1 回の修復で足す幾何制御は 1 つまで。</li>
+        <li><strong>詳細はカードへ</strong> — ポリシーや技術メモは summary cards に置き、矢印を増やさない。不透明な無関係ノードを横切るエッジ、曖昧な共有通路、他の経路を覆うラベルは受け入れない。</li>
       </ol>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> architecture の配置</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> 1 画面に収める</span>
+      <p>スタンドアロンのデスクトップビューアは「最初の 1 画面で完結する成果物」として作る。1 枚のレスポンシブ HTML で済ませ、デバイス別 HTML や別トポロジは作らない。ビューアが調整してよいのは外側の読み幅だけで、authored な SVG / viewBox・比率・意味的な配置・通常の文書フローは保つ。</p>
       <ul>
-        <li><strong>Free:</strong> <code>pos: [x, y]</code>（左上）、既定サイズ <code>[120, 60]</code>。</li>
-        <li><strong>Grid:</strong> <code>layout.mode: "grid"</code> と <code>row</code> / <code>col</code>。固定セル計算で、dagre 自動配置ではない。</li>
-        <li><strong>境界:</strong> <code>wraps</code> に囲む id を列挙。renderer が padding 付きボックスを計算する。</li>
-        <li><strong>検査:</strong> <code>node bin/archify.mjs inspect architecture …</code> で HTML を開かずに矩形をダンプできる。</li>
+        <li>納品前に実 HTML を 1440×900・1600×1000・1920×1080 で開く。大画面向けなら 2048×1320 も見る。各サイズで <code>scrollWidth &lt;= innerWidth</code> と <code>scrollHeight &lt;= innerHeight</code> を満たすこと。</li>
+        <li>あふれたら、ノード・ラベル・主パネルを縮める前に、本当に冗長な内容を削るか間隔を詰める。</li>
+        <li>最大サイズで下部に目立つ空き帯が残るなら、authored な Y 座標を再配分して viewBox の高さを比例して増やす。埋め草の文や装飾カードは足さない。</li>
+        <li><code>overflow: hidden</code>、内部スクローラ、SVG 高さの引き伸ばし、文字の縮小で合格を偽装しない。狭い画面では縦スクロールしてよい。</li>
       </ul>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> 既定は省略、明示だけ有効化</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>フィールド</th><th>既定の扱い</th><th>設定するとき</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>meta.visual_preset</code></td><td>省略して <code>classic</code> で開く。カラーモードとプリセットは独立</td><td><code>signal-flow</code> / <code>blueprint</code> / <code>editorial</code> を明示的に頼まれたとき</td></tr>
+            <tr><td><code>meta.subtitle</code></td><td>省略。タイトルやノードの言い換えを作らない</td><td>短い補足行を明示的に頼まれたとき</td></tr>
+            <tr><td><code>meta.legend</code></td><td>省略して <code>auto</code>。IR に存在するセマンティック種別だけを名指す</td><td><code>mode: auto|all|hidden</code> と <code>entries.&lt;kind&gt;.label|visible</code> のみ</td></tr>
+            <tr><td><code>meta.locale</code></td><td>省略で英語。翻訳されるのはビューア UI だけで、本文は翻訳されない</td><td><code>en</code> または <code>zh-CN</code>。それ以外の言語は省略し、UI と <code>&lt;html lang&gt;</code> が英語になることを明示する</td></tr>
+            <tr><td><code>meta.animation</code></td><td>省略で静的</td><td>デモや発表用に <code>"trace"</code>。<code>prefers-reduced-motion</code> を尊重する</td></tr>
+            <tr><td><code>meta.engineering_profile</code></td><td>省略。リージョンや境界の記述だけでは有効化しない</td><td>本番デプロイ構成・所有権の引き継ぎ・fail-closed レビューを明示的に求められ、事実が判明しているとき</td></tr>
+            <tr><td><code>brand</code></td><td>省略。「データベース」のような役割からブランドを推測しない</td><td>ノードが実在プロダクトを指すとき。プリセットが無ければ公式 URL から digest 固定でキャプチャする</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-callout" style="margin-top: 1rem;">
+        <strong>ブランド照会:</strong> <code>node bin/archify.mjs brands "&lt;name&gt;" --json</code> で組み込みマークを探し、未知のブランドは <code>brands capture "&lt;url&gt;" --json</code> の戻り値を <code>brand</code> に書く。render と validate は未固定のキャプチャを行わない。バッジはセマンティックな <code>type</code>・ラベル・関係の事実を置き換えない。
+      </div>
     </div>
 
     <section id="cli" class="sec-head">6 — CLI と出力</section>
@@ -392,33 +434,74 @@ flowchart TD
       <div class="ve-code-block"><pre><code>cd archify
 node bin/archify.mjs doctor
 node bin/archify.mjs demo /tmp/archify-demo
-node bin/archify.mjs render workflow examples/agent-tool-call.workflow.json /tmp/workflow.html
-node bin/archify.mjs validate workflow examples/agent-tool-call.workflow.json --json
-node bin/archify.mjs check /tmp/workflow.html
-node bin/archify.mjs examples</code></pre></div>
+node bin/archify.mjs guide "Show CI/CD checks, approval, deploy, and rollback"
+node bin/archify.mjs validate workflow examples/agent-tool-call.workflow.json --quality showcase --json
+node bin/archify.mjs preview workflow examples/agent-tool-call.workflow.json /tmp/workflow.html --quality showcase
+node bin/archify.mjs deliver workflow examples/agent-tool-call.workflow.json /tmp/workflow.html --quality showcase --open --json
+node bin/archify.mjs visual-check /tmp/workflow.html --json</code></pre></div>
+      <h3>コマンドの役割</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>コマンド</th><th>役割</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>validate</code></td><td>修復中に回す検査。<code>--quality showcase</code> で 9 項目、<code>--json</code> で安定したルールコードと修復候補を返す。workflow v2 の幾何診断は <code>--layout-json</code></td></tr>
+            <tr><td><code>deliver</code></td><td>最終受け入れ。仕様バイト列を凍結し、検査通過後に原子的に置換して SHA-256 とバイト数を返す。失敗時は前の成果物をそのまま保つ</td></tr>
+            <tr><td><code>preview</code></td><td>任意のデスクトップループ。ランダムな <code>127.0.0.1</code> ポートで JSON 1 本を監視し、全ゲート通過後だけ再読込。失敗中は last-good を表示し続ける。Ctrl-C で停止、<code>--no-open</code> で自動起動なし</td></tr>
+            <tr><td><code>visual-check</code></td><td>納品済み HTML を書き換えずにブラウザ実測を集める。測定値とスクリーンショットは知覚的な良否を承認しない</td></tr>
+            <tr><td><code>compare</code></td><td>検証済み architecture スナップショット 2 つを Before / Delta / After に並べ、機械可読な受領書を出す</td></tr>
+            <tr><td><code>migrate</code></td><td><code>migrate workflow &lt;src&gt; &lt;dst&gt; --to-schema 2 --json</code>。絶対座標を非破壊で写し、完全に検査を通った出力だけ書く</td></tr>
+            <tr><td><code>guide</code> / <code>brands</code> / <code>doctor</code> / <code>demo</code></td><td>図タイプの相談、ブランドマーク照会、ランタイム点検、動く例の生成</td></tr>
+          </tbody>
+        </table>
+      </div>
       <h3>生成 HTML の操作</h3>
       <div class="ve-table-wrap">
         <table>
           <thead>
-            <tr><th>操作</th><th>内容</th></tr>
+            <tr><th>操作</th><th>キー / 場所</th><th>内容</th></tr>
           </thead>
           <tbody>
-            <tr><td>Theme（<kbd>T</kbd>）</td><td>ダーク / ライト。localStorage に保存し <code>prefers-color-scheme</code> も尊重</td></tr>
-            <tr><td>Export（<kbd>E</kbd>）</td><td>PNG をクリップボードへコピー、または PNG / JPEG / WebP / SVG をダウンロード</td></tr>
-            <tr><td>ラスタ</td><td>最大 4× でネイティブ描画。巨大図は 3× / 2× に自動ステップダウン</td></tr>
-            <tr><td>SVG</td><td>両テーマ変数 + <code>@media (prefers-color-scheme)</code>。README 埋め込み向け</td></tr>
-            <tr><td>URL パラメータ</td><td><code>?theme=light|dark</code>、<code>?openExport=1</code></td></tr>
+            <tr><td>Diagram Guide</td><td><kbd>?</kbd></td><td>図の読み方を事実ベースで説明する</td></tr>
+            <tr><td>ノード検索・フォーカス</td><td><kbd>/</kbd></td><td>セマンティックノードを探して選択する</td></tr>
+            <tr><td>上流 / 下流の到達</td><td>フォーカス後 <code>Upstream</code> / <code>Downstream</code></td><td>書かれた関係の推移閉包。ノード数・リンク数・最大ホップを報告する。影響範囲や実行時因果ではない</td></tr>
+            <tr><td>経路プローブ</td><td><kbd>R</kbd> / <code>PATH</code></td><td>指定 2 点間の最短の authored 有向経路を辿る</td></tr>
+            <tr><td>ロール比較</td><td><kbd>L</kbd> / <code>LENS</code></td><td>セマンティックロール 1〜2 種の間の実トラフィックを比べる</td></tr>
+            <tr><td>全体マップ</td><td><kbd>M</kbd> / <code>MAP</code></td><td>現在位置を示すオーバービューレーダー</td></tr>
+            <tr><td>ガイド付きストーリー</td><td><kbd>P</kbd>、<kbd>[</kbd> <kbd>]</kbd></td><td>有限の名前付きチャプターを再生する。<code>meta.views</code> は 5 章まで</td></tr>
+            <tr><td>発表モード / スタイル / テーマ</td><td><kbd>F</kbd> / <kbd>S</kbd> / <kbd>T</kbd></td><td>Presentation Stage、4 プリセットの巡回、ダーク / ライト切替</td></tr>
+            <tr><td>Export</td><td><kbd>E</kbd></td><td>PNG をクリップボードへコピー、PNG / JPEG / WebP / SVG / WebM をダウンロード、1200×630 の Share Card をコピー。経路や到達を出した直後は Route / Reach Share Card も選べる</td></tr>
+            <tr><td>ズーム</td><td><kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd></td><td>拡大・縮小・リセット</td></tr>
           </tbody>
         </table>
       </div>
       <div class="ve-callout" style="margin-top: 1rem;">
-        <strong>アニメーション:</strong> <code>meta.animation: "trace"</code> はデモ時のみ。省略時は静的。<code>prefers-reduced-motion</code> を尊重する。
+        <strong>共有リンク:</strong> <code>#focus=&lt;id&gt;</code>、<code>#focus=&lt;id&gt;&amp;reach=upstream|downstream</code>、<code>#relation=&lt;id&gt;</code>、<code>#route=&lt;source&gt;~&lt;target&gt;</code>、<code>#lens=&lt;kind&gt;~&lt;kind&gt;</code>、<code>#view=&lt;view-id&gt;</code> で読み手の状態を復元できる。読者由来のモーションは有限で <code>prefers-reduced-motion</code> を尊重し、正規のエクスポートには入らない。
       </div>
     </div>
 
-    <section id="prompts" class="sec-head">7 — プロンプト例</section>
+    <section id="delta" class="sec-head">7 — 差分レビュー（Architecture Delta）</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> マージ前に構成変更を読む</span>
+      <p>設計レビューや PR レビューでは、検証済みの architecture スナップショット 2 つを比べる。<code>compare</code> は両方を独立に検証し、authored な安定 ID だけでコンポーネントと関係を対応付け、追加・削除・変更・移動・経路変更を分けて分類する。</p>
+      <div class="ve-code-block"><pre><code>node archify/bin/archify.mjs compare architecture base.json head.json architecture-delta.html --json</code></pre></div>
+      <ul>
+        <li>削除されたノードと関係は元の座標を保ち、移動したノードは <code>MOVE FROM</code> のファントムを残す。端点が変わった関係は旧経路と新経路の両方を出す。</li>
+        <li><code>+ / ~ / − / ↔</code> と線種で意味を示すので、色やモーションに依存せず読める。</li>
+        <li>整形・キー順・要素順・<code>wraps</code>・<code>sources</code> の集合的な変更はセマンティックハッシュと成果物バイト列を変えない。失敗時は前の成果物が残る。</li>
+        <li>リポジトリの不一致、共有コンポーネント ID がゼロ、関係 ID の欠落、境界キーの曖昧さは fail closed。</li>
+        <li>成果物は <code>AUTHORED SNAPSHOTS</code> と表示し、リポジトリ証拠のゲートを両方通ったときだけ <code>REVISION-PINNED INPUTS</code> になる。</li>
+      </ul>
+      <div class="ve-callout">
+        <strong>主張の境界:</strong> Delta は authored な事実の差分だけを述べる。リスク、影響範囲、安全性、マージ可否、検証済みの PR 影響は主張しない。Review 再生はビューア専用で、1 回の明示的な起動で安定順に 1 回だけ進み、ループしない。
+      </div>
+    </div>
+
+    <section id="prompts" class="sec-head">8 — プロンプト例</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> スコープを絞る</span>
+      <p>リポジトリは必須ではない。<code>Use Archify to draw: Browser -&gt; API -&gt; Redis cache -&gt; PostgreSQL fallback.</code> のように説明だけでも描ける。ソースを根拠にしたいときはリポジトリを開いて次のように頼む。</p>
       <div class="ve-code-block"><pre><code>Analyze this repository, then use archify to create a high-level runtime architecture diagram.
 Show 8–12 core components, one primary request or data path, external dependencies, and trust boundaries.
 Put supporting detail in cards instead of adding more edges.</code></pre></div>
@@ -431,18 +514,22 @@ Warehouse, and Feature Store to Dashboards and ML consumers. Mark the PII bounda
       <p>チャットでの修正は JSON IR を残したまま「add Redis」「move auth to the left」のように局所変更する。</p>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> ロードマップ上の非目標</span>
-      <p>v2.11 は zero-install 検証と <code>doctor</code> / <code>demo</code> を追加したうえで、5 モードすべてが型付き JSON IR。今後の焦点はローカル編集の安定化とレイアウト診断。自動 Mermaid パース、汎用 auto-layout、ホスティング共有、WYSIWYG エディタは現時点の目標ではない（<code>ROADMAP.md</code>）。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> 現行版と非目標</span>
+      <p>v2.16.0（2026-08-30）は workflow の制約駆動コンパイラ（schema v2 の <code>readable-v2</code> 契約と <code>--layout-json</code> 受領書）、5 レンダラの <code>meta.locale</code> による範囲限定ローカライズ、通知のみの組み込み更新チェックを追加した。自動 Mermaid パース、汎用 auto-layout、ホスティング共有、WYSIWYG 編集は意図的に現在のスコープ外（<code>ROADMAP.md</code>、<code>CHANGELOG.md</code>）。</p>
     </div>
 
-    <section id="links" class="sec-head">8 — 参考リンク</section>
+    <section id="links" class="sec-head">9 — 参考リンク</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 公式・由来</span>
       <ul>
         <li><a href="https://github.com/tt-a1i/archify" target="_blank" rel="noopener">GitHub: tt-a1i/archify</a> — 本体リポジトリ</li>
         <li><a href="https://tt-a1i.github.io/archify/" target="_blank" rel="noopener">プロジェクトページ</a></li>
+        <li><a href="https://tt-a1i.github.io/archify/gallery.html" target="_blank" rel="noopener">Proof Lab</a> — 検査済み 11 シナリオと JSON ソース、検証受領書</li>
+        <li><a href="https://tt-a1i.github.io/archify/guide.html" target="_blank" rel="noopener">シナリオガイド</a> — 図タイプの選び方</li>
         <li><a href="https://github.com/tt-a1i/archify/blob/main/archify/SKILL.md" target="_blank" rel="noopener">SKILL.md</a> — エージェント向け手順</li>
         <li><a href="https://github.com/tt-a1i/archify/blob/main/archify/schemas/README.md" target="_blank" rel="noopener">schemas/README.md</a> — JSON IR 契約</li>
+        <li><a href="https://github.com/tt-a1i/archify/blob/main/docs/authoring-cookbook.md" target="_blank" rel="noopener">authoring-cookbook.md</a> — 作図クックブック</li>
+        <li><a href="https://github.com/tt-a1i/archify/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> — v2.16.0 までの変更履歴</li>
         <li><a href="https://github.com/Cocoon-AI/architecture-diagram-generator" target="_blank" rel="noopener">Cocoon-AI/architecture-diagram-generator</a> — フォーク元（MIT v1.0）</li>
         <li><a href="https://github.com/vercel-labs/skills" target="_blank" rel="noopener">vercel-labs/skills</a> — インストールに使う skills CLI</li>
       </ul>
