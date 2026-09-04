@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>humanlayer/skills — CLAUDE.md 改善から反復エージェントループまでの Claude Code スキル集</title>
+  <meta name="description" content="HumanLayer が公開する Claude Code スキル 5 本（improve-claude-md / narrow-react-prop-types / build-iterated-agentic-loop / design-control-loop / show-me）の中身と、制御ループとして設計する定期実行エージェントの構成を読み解く。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="humanlayer/skills — CLAUDE.md 改善から反復エージェントループまでの Claude Code スキル集">
+  <meta property="og:description" content="HumanLayer の Claude Code スキル 5 本の中身と、センサー・コントローラー・アクチュエーターに分けて設計する定期実行エージェントの構成を読み解く。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/humanlayer-skills.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="humanlayer/skills — Claude Code スキル集">
+  <meta name="twitter:description" content="HumanLayer の Claude Code スキル 5 本の中身と、制御ループとして設計する定期実行エージェントの構成。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Asap:wght@400;500;600;700&family=Noto+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.922 0 0);
+      /* olive-brass + deep blue（既存ページ未使用の hue 帯） */
+      --chart-1: oklch(0.50 0.12 108);
+      --chart-2: oklch(0.45 0.12 252);
+      --chart-3: oklch(0.40 0.10 108);
+      --chart-4: oklch(0.62 0.14 62);
+      --chart-5: oklch(0.55 0.10 200);
+      --code-bg: oklch(0.975 0.008 108);
+      --code-text: oklch(0.30 0.06 108);
+      --font-body: 'Asap', system-ui, sans-serif;
+      --font-mono: 'Noto Sans Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(1 0 0 / 18%);
+        --chart-1: oklch(0.80 0.14 108);
+        --chart-2: oklch(0.72 0.11 252);
+        --chart-3: oklch(0.70 0.12 108);
+        --chart-4: oklch(0.78 0.13 62);
+        --chart-5: oklch(0.72 0.09 200);
+        --code-bg: oklch(0.17 0.012 108);
+        --code-text: oklch(0.87 0.07 108);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; font-family: var(--font-mono); }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 26rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    /* グローバル code の背景・padding を打ち消す（帯状表示の防止） */
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-x: auto; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); position: sticky; top: 0; }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); overflow-wrap: break-word; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.5rem; line-height: 1.15; display: block; font-weight: 600; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; display: block; font-family: var(--font-mono); }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--muted) 70%, var(--chart-2) 30%); color: var(--foreground); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 12% 0%, oklch(0.50 0.12 108 / 0.07) 0%, transparent 55%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 12% 0%, oklch(0.80 0.14 108 / 0.07) 0%, transparent 55%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 210px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.6rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; line-height: 1.65; overflow-wrap: break-word; }
+    a { color: var(--chart-3); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); overflow-wrap: break-word; }
+    .ve-code-block { margin: 1rem 0; }
+    .stack { display: grid; gap: 1rem; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0 1rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* 手順フロー */
+    .step-flow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin: 0.5rem 0 0; }
+    @media (max-width: 720px) { .step-flow { grid-template-columns: 1fr; } }
+    .step-card { min-width: 0; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.75rem 0.9rem; }
+    .step-card__num { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 600; letter-spacing: 0.12em; color: var(--chart-1); display: block; }
+    .step-card__title { font-weight: 600; font-size: 0.875rem; display: block; margin: 0.15rem 0 0.3rem; }
+    .step-card__body { font-size: 0.8125rem; line-height: 1.55; color: var(--text-dim); }
+
+    /* 語彙対応表 */
+    .term-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0.75rem; margin: 0.25rem 0 0; }
+    .term { min-width: 0; border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-md) var(--radius-md) 0; padding: 0.7rem 0.85rem; background: var(--surface); }
+    .term__k { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--chart-3); display: block; }
+    .term__v { font-size: 0.8125rem; line-height: 1.5; color: var(--text-dim); display: block; margin-top: 0.25rem; }
+
+    /* バッジ */
+    .badge { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border); }
+    .badge--good { background: color-mix(in oklch, var(--card) 78%, var(--chart-1) 22%); color: var(--foreground); }
+    .badge--bad { background: color-mix(in oklch, var(--card) 82%, var(--destructive) 18%); color: var(--foreground); }
+
+    /* Mermaid */
+    .mermaid-wrap {
+      position: relative; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 32px 24px; overflow: auto;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 400px; margin: 1rem 0 0;
+      scrollbar-width: thin; scrollbar-color: var(--border) transparent; cursor: grab;
+    }
+    .mermaid-wrap.is-panning { cursor: grabbing; user-select: none; }
+    .mermaid-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
+    .mermaid-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .mermaid-wrap .mermaid { zoom: 1.2; }
+    .mermaid .nodeLabel { color: var(--text) !important; }
+    .mermaid .edgeLabel { color: var(--text-dim) !important; background-color: var(--bg) !important; font-size: 0.75rem; }
+    .mermaid .edgeLabel rect { fill: var(--bg) !important; }
+    .mermaid .node rect, .mermaid .node polygon { stroke-width: 1.5px; }
+    .zoom-controls {
+      position: absolute; top: 8px; right: 8px; display: flex; gap: 2px; z-index: 10;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 2px;
+    }
+    .zoom-controls button {
+      width: 28px; height: 28px; border: none; background: transparent; color: var(--text-dim);
+      font-family: var(--font-mono); font-size: 14px; cursor: pointer; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center; transition: background 0.15s ease, color 0.15s ease;
+    }
+    .zoom-controls button:hover { background: var(--border); color: var(--text); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#catalog">収録スキル一覧</a>
+    <a href="#claude-md">CLAUDE.md の条件付き提示</a>
+    <a href="#props">React props 型の絞り込み</a>
+    <a href="#loop">反復エージェントループの構築</a>
+    <a href="#control">制御ループとしての設計</a>
+    <a href="#show-me">視覚化の型（show-me）</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>humanlayer/skills</h1>
+  <p class="subtitle">Claude Code skills from HumanLayer — 5 plugins, one marketplace</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何のリポジトリか</span>
+    <p><strong>humanlayer/skills</strong> は <a href="https://humanlayer.dev" target="_blank" rel="noopener">HumanLayer</a> が公開する Claude Code スキルのマーケットプレイスです。ルートの <code>.claude-plugin/marketplace.json</code> が 5 つのプラグインを列挙し、各プラグインが <code>plugins/&lt;名前&gt;/skills/&lt;名前&gt;/SKILL.md</code> に 1 本のスキルを持ちます。スキル本文は短く保ち、長いテンプレートは同じディレクトリの <code>references/</code> に置く構成です。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">5</span><span class="ve-kpi-card__label">plugins / skills</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">エージェント自動化系</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">4</span><span class="ve-kpi-card__label">対応コーディングエージェント</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
+    </div>
+    <p>スキルは 2 系統に分かれます。<strong>コード・設定に直接手を入れるもの</strong>（<code>improve-claude-md</code>、<code>narrow-react-prop-types</code>、<code>show-me</code>）と、<strong>定期実行のエージェント自動化を組み立てるもの</strong>（<code>build-iterated-agentic-loop</code>、<code>design-control-loop</code>）です。後者は GitHub Actions ワークフロー・リポジトリローカルスキル・エージェントメモリファイルの 3 点セットを生成します。</p>
+    <h3>インストール</h3>
+    <div class="ve-code-block">
+      <pre><code>npx skills add humanlayer/skills --skill improve-claude-md</code></pre>
+    </div>
+    <p>導入後はプロジェクト内でスキル名のスラッシュコマンドを呼び出します（例: <code>/improve-claude-md</code>、<code>/show-me</code>）。</p>
+  </div>
+
+  <section id="catalog" class="sec-head">2 — 収録スキル一覧</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> marketplace.json の 5 プラグイン</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>スキル</th><th>やること</th><th>主な生成物・変更対象</th><th>version</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>improve-claude-md</code></td>
+            <td>CLAUDE.md を条件付きブロックで書き直し、指示追従率を上げる</td>
+            <td>CLAUDE.md 本体</td>
+            <td>1.0.0</td>
+          </tr>
+          <tr>
+            <td><code>narrow-react-prop-types</code></td>
+            <td>React コンポーネントの props 型を実コードパスに合わせて狭める</td>
+            <td>props 型定義、子コンポーネント、ストーリー・テスト</td>
+            <td>1.0.0</td>
+          </tr>
+          <tr>
+            <td><code>build-iterated-agentic-loop</code></td>
+            <td>反復タスクをリポジトリローカルスキル＋定期実行ワークフローにする</td>
+            <td><code>.claude/skills/</code>、<code>.github/workflows/</code>、<code>.github/agent-memory/</code></td>
+            <td>1.0.0</td>
+          </tr>
+          <tr>
+            <td><code>design-control-loop</code></td>
+            <td>インタビューでセンサー・コントローラー・アクチュエーターを設計してから実装する</td>
+            <td>センサー／コントローラーのスクリプト、アクチュエータースキル、ワークフロー、メモリ</td>
+            <td>1.0.0</td>
+          </tr>
+          <tr>
+            <td><code>show-me</code></td>
+            <td>いま話している対象を図・コード形状スケッチ・HTML で見せる</td>
+            <td>会話内の図、単発 HTML ファイル</td>
+            <td>1.0.1</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>スキル名とディレクトリの一致:</strong> 自動化系スキルは生成するスキルについて「<code>SKILL.md</code> の frontmatter の <code>name</code> はディレクトリのスラグと一致していなければならない」と明示します。<code>fix-eslint-issues</code> という名前なら <code>.claude/skills/fix-eslint-issues/SKILL.md</code>（またはリポジトリの慣習に応じて <code>.agents/skills/...</code>）に置きます。
+    </div>
+  </div>
+
+  <section id="claude-md" class="sec-head">3 — CLAUDE.md の条件付き提示（improve-claude-md）</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 出発点の問題</span>
+    <p>Claude Code は CLAUDE.md を読み込むとき、「この文脈は関係あるかもしれないし、ないかもしれない。強く関係する場合を除いて反応しないこと」というシステムリマインダーを添えます。スキルはここを問題視します。無関係な記述が多いほど、モデルは CLAUDE.md 全体を無視しやすくなり、本当に守らせたい部分まで一緒に落ちる、という指摘です。</p>
+    <p>対策として、条件付きで関係する節を <code>&lt;important if="condition"&gt;</code> という XML タグで包みます。Claude Code 自身のシステムプロンプトが使う XML タグのパターンに乗ることで、「関係あるかどうか不明」という前提を越えた明示的な関連シグナルをモデルに与える狙いです。</p>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 包むもの・包まないもの</span>
+    <div class="term-grid">
+      <div class="term"><span class="term__k">bare（素のまま）</span><span class="term__v">プロジェクトの正体、ディレクトリマップ、技術スタック。ほぼすべてのタスクに関係する土台の文脈は先頭に素で置く。目安は「90% 以上のタスクに関係するか」。</span></div>
+      <div class="term"><span class="term__k">wrapped（条件付き）</span><span class="term__v">テストの書き方、API 規約、状態管理、i18n など特定の作業でしか効かないドメイン知識。個別の条件を付けて包む。</span></div>
+    </div>
+    <h3>条件は狭く、ルールごとに分ける</h3>
+    <p>すべてに当てはまる広い条件は避けます。下は同じ 3 行を、広い条件と狭い条件で書いた対比です。</p>
+    <div class="ve-code-block">
+      <pre><code>&lt;!-- BAD: 何にでもマッチする条件 --&gt;
+&lt;important if="you are writing or modifying any code"&gt;
+- Use absolute imports
+- Use functional components
+- Use camelCase filenames
+&lt;/important&gt;
+
+&lt;!-- GOOD: ルールごとに狭いトリガー --&gt;
+&lt;important if="you are adding or modifying imports"&gt;
+- Use `@/` absolute imports (see tsconfig.json for path aliases)
+&lt;/important&gt;
+
+&lt;important if="you are creating new components"&gt;
+- Use functional components with explicit prop interfaces
+&lt;/important&gt;
+
+&lt;important if="you are creating new files or directories"&gt;
+- Use camelCase for file and directory names
+&lt;/important&gt;</code></pre>
+    </div>
+    <h3>削る対象と残す対象</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>扱い</th><th>対象</th><th>理由</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge badge--bad">削る</span></td><td>リンター・フォーマッター・pre-commit フックで強制できる規約</td><td>ツールの担当。指示に載せる価値が低い</td></tr>
+          <tr><td><span class="badge badge--bad">削る</span></td><td>既存コードから推測できるパターン</td><td>LLM は文脈内学習をするため、数回の検索で追従する</td></tr>
+          <tr><td><span class="badge badge--bad">削る</span></td><td>コード片</td><td>古くなりファイルを膨らませる。ファイルパス参照に置き換える</td></tr>
+          <tr><td><span class="badge badge--bad">削る</span></td><td>「X エージェントを活用する」「ベストプラクティスに従う」のような曖昧な指示</td><td>具体的な行動に落ちない</td></tr>
+          <tr><td><span class="badge badge--good">残す</span></td><td>コマンド表（すべて）</td><td>土台のリファレンス。使用頻度が低いものも消さない</td></tr>
+          <tr><td><span class="badge badge--good">残す</span></td><td>プロジェクトマップ</td><td>あらゆるタスクに関係する土台の文脈</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>ファイル分割は控える:</strong> エージェントがツール呼び出しをして初めて見つかる別ファイルへの分割は、追加の文脈が極端に冗長・複雑な場合を除いて行いません。条件付きブロックの利点は「全部インラインにあるが、重み付けが条件で変わる」ことにあります。
+    </div>
+  </div>
+
+  <section id="props" class="sec-head">4 — React props 型の絞り込み（narrow-react-prop-types）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 型の正はどこにあるか</span>
+    <p>Storybook・テスト・モック・デモのために広げられた props 型が、実アプリでは起こらない状態まで表現できてしまっている、という状況を対象にします。方針は一貫しています。<strong>実コードパス（live code paths）を props 契約の正とし、ストーリーやテストの側を契約に合わせる</strong>。逆方向、つまりテストを楽にするために契約を緩めることは禁じます。</p>
+    <h3>呼び出し元の分類</h3>
+    <div class="term-grid">
+      <div class="term"><span class="term__k">live code paths</span><span class="term__v">アプリのルート、配線済みコンポーネント、プロバイダー、フック、本番パッケージの export、およびそれらが使う共有コンポーネント。</span></div>
+      <div class="term"><span class="term__k">support code</span><span class="term__v">Storybook のストーリー、テストファイル、フィクスチャ、モック、デモハーネス、見た目確認用の例。</span></div>
+    </div>
+    <h3>props の判定</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>判定</th><th>条件</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Required</td><td>support code 以外のすべての呼び出し元が渡している</td></tr>
+          <tr><td>Optional</td><td>support code 以外に省略する呼び出し元があり、その省略が意味のある実行時状態である</td></tr>
+          <tr><td>Removed</td><td>support code 以外のどこからも使われていない</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>optional と nullable は別物として扱います。実コードが常に渡すが値が空になり得る場合は、<code>focusedItem?: FocusedItem | null</code> ではなく <code>focusedItem: FocusedItem | null</code> のように required かつ nullable にします。</p>
+    <h3>手順</h3>
+    <div class="step-flow">
+      <div class="step-card"><span class="step-card__num">STEP 1-2</span><span class="step-card__title">対象の特定と全使用箇所の洗い出し</span><span class="step-card__body">optional が多い props、<code>onSelect?.(...)</code> のような optional 呼び出し、<code>items ?? []</code> のフォールバック、常に描画されるのにハンドラが optional な UI を手がかりにする。ストーリーやテスト単独を根拠に対象を選ばない。</span></div>
+      <div class="step-card"><span class="step-card__num">STEP 3-4</span><span class="step-card__title">実コードパスから型を導き、公開型を締める</span><span class="step-card__body">optional が 1 つ増えるたびにコンポーネントが扱う分岐が増える。防御的な描画ロジックを必要とする広い型より、不可能な状態を作れない厳しい型を選ぶ。</span></div>
+      <div class="step-card"><span class="step-card__num">STEP 5</span><span class="step-card__title">型は書き直さず導出する</span><span class="step-card__body"><code>Parameters&lt;typeof fn&gt;[0]</code>、<code>ReturnType&lt;typeof fn&gt;</code>、<code>Extract&lt;Union, Shape&gt;</code>、setter は <code>React.Dispatch&lt;React.SetStateAction&lt;T&gt;&gt;</code>。推論が広がる場面では <code>useState&lt;DialogState&gt;(...)</code> のように明示する。</span></div>
+      <div class="step-card"><span class="step-card__num">STEP 6-7</span><span class="step-card__title">子コンポーネントとフォールバックの整理</span><span class="step-card__body">親の広い型のせいで optional になっていた行・メニュー・ボタンの props も締める。<code>onRename?.(id, name)</code> は <code>onRename(id, name)</code> へ。<code>new Set(expandedIds ?? defaultExpandedIds ?? [])</code> は <code>new Set(expandedIds)</code> へ。</span></div>
+      <div class="step-card"><span class="step-card__num">STEP 8-9</span><span class="step-card__title">共有バリアントとテストを追従させる</span><span class="step-card__body">同じ型を共有する複数コンポーネントは同時に更新する。ストーリーやテストが壊れたら、現実的なハンドラと状態を与えて直す。冗長なら support code 側にヘルパーやフィクスチャを作る。</span></div>
+      <div class="step-card"><span class="step-card__num">STEP 10-11</span><span class="step-card__title">検証と応答整形</span><span class="step-card__body">変更したパッケージと、それを使う実アプリ・パッケージの両方で型チェックを走らせる。CI エージェントとして動く場合は <code>references/response-template.md</code> の形式で最終応答を出し、それが PR 本文になる。</span></div>
+    </div>
+    <div class="ve-callout">
+      <strong>アンチパターン:</strong> ストーリーで省略できるようにコールバックを optional にする／常に描画されるメニュー項目が <code>onAction?.(...)</code> を呼ぶ／Storybook のために <code>default*</code> props を足す／<code>?? []</code> や <code>?? 0</code> で欠けた実状態を隠す／実コードが 1 形だけなのに複数の API 形を受け入れる。
+    </div>
+  </div>
+
+  <section id="loop" class="sec-head">5 — 反復エージェントループの構築（build-iterated-agentic-loop）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 目標とする形</span>
+    <p>繰り返し可能なエージェントタスクを、スケジュール実行・手動実行・その両方で回る仕組みに変えます。構成要素は 4 つです。エージェントの判断を定義する<strong>焦点の狭いスキル</strong>、リポジトリ固有のプロンプトでコーディングエージェントを起動する<strong>ワークフロー</strong>、実行をまたいで残る<strong>エージェントメモリファイル</strong>、そしてループごとに開いている PR を 1 本に保つ<strong>ラベル</strong>。参照実装として <code>narrow-react-prop-types</code> が挙げられています。</p>
+    <h3>生成されるファイル</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>パス</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>.claude/skills/&lt;skill-name&gt;/SKILL.md</code></td><td>リポジトリローカルのエージェント挙動</td></tr>
+          <tr><td><code>.github/workflows/agent-&lt;task-name&gt;.yml</code></td><td>定期実行のコーディングエージェント自動化</td></tr>
+          <tr><td><code>.github/agent-memory/&lt;task-name&gt;.md</code></td><td>安定した feedback とスコープ制約</td></tr>
+          <tr><td><code>.claude/skills/&lt;skill-name&gt;/references/</code></td><td>テンプレート・例・長い補助資料（必要な場合のみ）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>設計の 3 問</h3>
+    <div class="term-grid">
+      <div class="term"><span class="term__k">What are we finding?</span><span class="term__v">対象の見つけ方。問題を報告する CLI（<code>eslint --format json</code> など）、検索パターン、diff や changelog、旧パターン、過去の CI から分かる不安定なテスト。</span></div>
+      <div class="term"><span class="term__k">What are we changing?</span><span class="term__v">各対象への変換。Fix（その場で解消）、Migrate（別パターンへ）、Generate（既存ソースから生成）、Refactor（挙動を変えない再構成）。</span></div>
+      <div class="term"><span class="term__k">How do we validate?</span><span class="term__v">正しさの根拠。ビルド／型チェック、テスト（一部でも可）、問題を見つけたツール自身が解消を報告する、lint・format の通過。</span></div>
+    </div>
+    <p>完了条件は「ジョブを 1 文で言える」ことです。例として <q>Find 5 react-doctor violations, fix them, and verify typecheck and quality pass.</q> が挙げられています。</p>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> セットアップ質問と流量制御</span>
+    <p>スキルは空欄のフォームを出さず、リポジトリの調査結果から既定値を推奨してから 9 項目を確認します。コーディングエージェント、実行頻度、タスク、変更を許すスコープ、コミット前に通す検証コマンド、PR の上限、PR メタデータ（ラベル・タイトル接頭辞・ブランチ接頭辞）、最終応答の書式、<code>/iterate</code> コメントの扱い。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>エージェント</th><th>必要なシークレット</th><th>導入方法</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Claude Code</td><td><code>ANTHROPIC_API_KEY</code></td><td><code>npm install -g @anthropic-ai/claude-code</code></td></tr>
+          <tr><td>Codex CLI</td><td><code>OPENAI_API_KEY</code></td><td><code>npm install -g @openai/codex</code> ＋ <code>codex login --with-api-key</code></td></tr>
+          <tr><td>OpenCode</td><td>プロバイダー依存（多くは <code>ANTHROPIC_API_KEY</code> か <code>OPENAI_API_KEY</code>）</td><td><code>--model</code> と env のシークレットを揃えて変更する</td></tr>
+          <tr><td>CodeLayer</td><td>Anthropic 経由なら <code>ANTHROPIC_API_KEY</code></td><td><code>bunx @humanlayer/cli@latest codelayer</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>開いている PR を 1 本に保つ</h3>
+    <p>推奨既定値は「ループごとに開いている PR は 1 本」です。上限を設けないと、日次のエージェントが 1 週間で 5 本以上のレビュー待ち PR を作り、レビュー疲れとコンフリクトを生みます。ワークフローはループごとのラベルで自分の PR を識別し、スケジュール実行のときだけ上限を確認して何もせず終了します。手動の <code>workflow_dispatch</code> は上限チェックを迂回します。</p>
+    <div class="ve-code-block">
+      <pre><code># ワークフロー冒頭のゲート（テンプレートより）
+EXISTING_PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open \
+  --label "$AGENT_LABEL" --json number,url --limit 1)
+
+# 実行後：ラベルを用意して PR を作り、ラベルを付ける
+gh label create "$AGENT_LABEL" --description "Recurring agent PR" --color "0E8A16" || true
+PR_URL=$(gh pr create --title "[$(date +%m/%d)] &lt;Task Title&gt;" --body-file /tmp/pr-body.md)
+gh pr edit "$PR_URL" --add-label "$AGENT_LABEL"</code></pre>
+    </div>
+    <p>PR タイトルの推奨形は <code>[MM/DD][Agent: &lt;Agent Name&gt;]: &lt;Concise Description&gt;</code>。エージェントの最終応答は出力形式が異なる（JSON、stream-json、プレーンテキスト）ため、エージェント別の抽出処理で <code>/tmp/pr-body.md</code> に落としてから PR 本文に使います。</p>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> メモリファイルに書くもの</span>
+    <div class="term-grid">
+      <div class="term"><span class="term__k">書く</span><span class="term__v">恒久的なスコープ除外。既知の false positive 領域。今後のエージェントの対象選択を変えるべきレビュー指摘。</span></div>
+      <div class="term"><span class="term__k">書かない</span><span class="term__v">単発のタスク指示。1 回の実行の検証出力。すでにスキル側に書いてあるルール。</span></div>
+    </div>
+    <p>完了条件は「このファイルを削除すると、単なる履歴ではなく今後の実行に役立つ文脈が失われる」状態です。</p>
+    <div class="ve-callout">
+      <strong>初回起動の手順:</strong> GitHub Actions のワークフローは一度も実行されるまで <code>workflow_dispatch</code> で手動起動できません。現在のブランチ向けの <code>push</code> トリガーを一時的に追加してファイル一式を push し、Actions タブで成功を確認したあとにトリガーを外します。以降は Actions UI か <code>gh workflow run</code> から起動できます。
+    </div>
+  </div>
+
+  <section id="control" class="sec-head">6 — 制御ループとしての設計（design-control-loop）</section>
+  <div class="ve-card ve-card--elevated" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 借りてくる考え方</span>
+    <p>コードベースのある性質を、小さく低リスクでレビュー可能な変更を定期的に積んで目標状態へ寄せたい、という要求に対して、制御理論の語彙で設計します。コードベースは同僚のコミット・依存関係の更新・生成コードによって常に変化する動的な系であり、それらを<strong>外乱</strong>として扱います。</p>
+    <div class="term-grid">
+      <div class="term"><span class="term__k">Set point</span><span class="term__v">目標状態。不変条件（「この境界を越えて import しない」）、閾値（「このパッケージのカバレッジ 80% 以上」）、方向（「毎回の実行で件数を減らす」）のいずれか。あわせてスコープ（変更を許すディレクトリ／読むだけのディレクトリ）も固定する。</span></div>
+      <div class="term"><span class="term__k">Sensor</span><span class="term__v">現状と目標の差を測る手段。静的解析や lint、構造検索・AST 検索、型チェッカー、テストスイート、テレメトリやエラー検索、自作スクリプト、あるいはコードを読むエージェント自身。測定の安定性・実行コスト・黙って無効化できてしまうかをトレードオフとして話し合う。</span></div>
+      <div class="term"><span class="term__k">Controller</span><span class="term__v">測定値から「今回やること」を決める部分。対象の優先順位、1 増分の大きさ、「1 つのレビュー可能な単位」の定義を扱う。完全に決定的なスクリプトから完全にエージェント的な判断まで幅がある。ループの出力を見ながら継続的に調整する部分なので、単純に始める。</span></div>
+      <div class="term"><span class="term__k">Actuator</span><span class="term__v">変更を適用する側。CLI コーディングエージェント＋リポジトリローカルスキルで、CI 上で走って PR を開く。自動化の前に「良い変更の見本」を既存コードから見つけ、スキルに書き込む。</span></div>
+    </div>
+    <p>センサーとコントローラー、あるいはコントローラーとアクチュエーターは融合することがあります。問題を報告しつつ影響度で並べるツールは両方の仕事をしており、対象選定と変更を 1 つのプロンプトで行うエージェントも同じです。スキルは「設計に存在しない分離を作り出さない」と明記します。</p>
+    <div class="mermaid-wrap">
+      <div class="zoom-controls">
+        <button type="button" onclick="zoomDiagram(this, 1.2)" title="拡大">+</button>
+        <button type="button" onclick="zoomDiagram(this, 0.8)" title="縮小">&minus;</button>
+        <button type="button" onclick="resetZoom(this)" title="リセット">&#8634;</button>
+      </div>
+      <pre class="mermaid">
+flowchart TD
+  SP["Set point<br/><small>目標状態</small>"] --> CMP{{"Compare<br/><small>差分をとる</small>"}}
+  MEA["Measured output<br/><small>件数・スコア</small>"] --> CMP
+  CMP -->|"measured error"| CTL["Controller<br/><small>今回の対象を選ぶ</small>"]
+  CTL -->|"1 reviewable unit"| ACT["Actuator<br/><small>エージェント + スキル</small>"]
+  ACT -->|"PR"| SYS["Repository"]
+  DIS["Disturbance<br/><small>同僚のコミット・依存更新</small>"] --> SYS
+  SYS --> SEN["Sensor<br/><small>lint / 型 / 検索</small>"]
+  SEN --> MEA
+  MEM["Memory + /iterate<br/><small>人が舵を取る</small>"] --> CTL
+      </pre>
+    </div>
+    <div class="ve-callout">
+      <strong>先にローカルで動かす:</strong> センサーを単体で走らせて出力を読み、その出力に対してコントローラーを走らせ、選ばれた対象に対してアクチュエーターをヘッドレス CLI で走らせる。ここまで手で通してから CI に載せます。ワークフローは「すでに手で動くもの」を並べる薄いオーケストレーターに留め、デバッグ可能な状態を保ちます。
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> 8 フェーズの進め方</span>
+    <div class="step-flow">
+      <div class="step-card"><span class="step-card__num">PHASE A</span><span class="step-card__title">系を理解する</span><span class="step-card__body">質問の前に既存 CI、パッケージマネージャー、検証スクリプト、既存スキル、既存のエージェントループ、静的解析・codegen・テストの道具立てを読む。完了条件はインストールコマンドと CI プラットフォーム、含まれるパッケージ／サービスを言えること。</span></div>
+      <div class="step-card"><span class="step-card__num">PHASE B</span><span class="step-card__title">ユーザーと一緒に設計する</span><span class="step-card__body">set point から順に、Phase A の証拠に基づく選択肢とトレードオフを出して合意する。外乱を名指しし、必要ならダンパー（基準値と比較して悪化を検出する PR チェック）を提案する。成果は短い設計メモ。</span></div>
+      <div class="step-card"><span class="step-card__num">PHASE C</span><span class="step-card__title">アクチュエータースキルを書く</span><span class="step-card__body">判断をリポジトリローカルスキルに落とす。確認可能な完了条件付きの手順を <code>SKILL.md</code> に、長いテンプレートは兄弟の参照ファイルに。ルールの正は 1 か所に置き、スキル・プロンプト・メモリで重複させない。</span></div>
+      <div class="step-card"><span class="step-card__num">PHASE D</span><span class="step-card__title">各部品をローカルで動かす</span><span class="step-card__body">CI を作る前に、センサーとコントローラーをバージョン管理されたコマンド／スクリプトとして着地させ、ループ全体を手で確認する。</span></div>
+      <div class="step-card"><span class="step-card__num">PHASE E</span><span class="step-card__title">CI に配線する</span><span class="step-card__body">sensor → controller → actuator の個別ステップとして走らせ、コミットしてエージェントの最終メッセージを本文に PR を開く。融合している部品は 1 ステップにまとめる。頻度はリスクとレビュー負荷から決める。</span></div>
+      <div class="step-card"><span class="step-card__num">PHASE F</span><span class="step-card__title">人をループに乗せる</span><span class="step-card__body">メモリファイル（コントローラーの後に決定的に読み込む）と PR 上の <code>/iterate</code> の 2 経路。どちらも今回の PR だけでなく将来の挙動を変えるものとして扱う。これがコントローラーとスキルの調整手段になる。</span></div>
+      <div class="step-card"><span class="step-card__num">PHASE G</span><span class="step-card__title">流量を制御する</span><span class="step-card__body">レビューできる速度を超えて PR を作らないよう、既定でループごとに開いている PR を 1 本に制限する。スケジュール実行は上限到達時に何もしない。</span></div>
+      <div class="step-card"><span class="step-card__num">PHASE H</span><span class="step-card__title">検証・試走・加速</span><span class="step-card__body">YAML をパースし、参照される全パスの存在を確認する。<code>push</code> トリガーで試走してから外す。出力が安定したら頻度を上げる、1 回の実行で N 件選ぶ、1 実行内で sense→control→actuate を N 回回す、といった加速に進む。</span></div>
+    </div>
+  </div>
+
+  <section id="show-me" class="sec-head">7 — 視覚化の型（show-me）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 一番小さい表現を選ぶ</span>
+    <p>会話中の話題を視覚的に理解させるスキルです。前置きを飛ばし、散文を短く保ち、要点が伝わる最小の表現を選びます。用意されている型は次のとおりです。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>見せたいもの</th><th>表現</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ロジック・アルゴリズム</td><td>疑似コード</td></tr>
+          <tr><td>実行時の制御フロー</td><td>呼び出しツリー</td></tr>
+          <tr><td>UI の構造（状態とモジュール境界を含む）</td><td>コンポーネントツリー</td></tr>
+          <tr><td>ファイルの責務・広範なリファクタ</td><td>浅いファイルツリー</td></tr>
+          <tr><td>コンポーネント間の相互作用・制御フロー・データフロー</td><td>Mermaid</td></tr>
+          <tr><td>周囲の形は既にあり、変わる箇所が要点</td><td><code>diff</code>（話題に合わせて diff の形も変える）</td></tr>
+          <tr><td>大半が新規、省略すると所有者や順序が隠れる、コピーできる目標形が要る</td><td>ブロック全体</td></tr>
+          <tr><td>Mermaid では密度が高すぎる UI・レイアウト・状態比較・概念</td><td>単発の HTML ファイル（図・インフォグラフィック・短いスライド）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>HTML を書く場合は、対象プロダクトの色・書体・余白・コンポーネントに合わせ、実際のラベルとデータを使い、デスクトップとモバイルの両方に対応させ、最後に開いて見せます。</p>
+    <div class="ve-code-block">
+      <pre><code>Bash(open path/to/show-me-{description}.html)</code></pre>
+    </div>
+    <div class="ve-callout">
+      <strong>使いすぎない:</strong> 各図はそれを支える短い文の隣に置き、いまの質問または議論中の選択肢に答えるために必要な呼び出し・ファイル・props・状態・境界だけを残します。複数使うことはあっても、全部を使うことはまずありません。
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/humanlayer/skills" target="_blank" rel="noopener">GitHub: humanlayer/skills</a> — 本リポジトリ（MIT）</li>
+      <li><a href="https://humanlayer.dev" target="_blank" rel="noopener">HumanLayer</a> — 公開元。CodeLayer は同社の軽量エージェントハーネス</li>
+      <li><a href="https://agentskills.io/specification" target="_blank" rel="noopener">Agent Skills Specification</a> — 生成スキルが参照する仕様</li>
+      <li><a href="https://docs.claude.com/en/docs/claude-code/overview" target="_blank" rel="noopener">Claude Code ドキュメント</a> — CLAUDE.md とスキルの前提</li>
+      <li><a href="https://docs.github.com/actions/using-workflows/events-that-trigger-workflows" target="_blank" rel="noopener">GitHub Actions: ワークフローのトリガー</a> — <code>schedule</code> / <code>workflow_dispatch</code> / <code>issue_comment</code></li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: isDark ? '#2a2b1c' : '#f0f2df',
+      primaryBorderColor: isDark ? '#b6c05f' : '#6b7524',
+      primaryTextColor: isDark ? '#f2f4e4' : '#232612',
+      secondaryColor: isDark ? '#1c2333' : '#e6ecf7',
+      secondaryBorderColor: isDark ? '#7d9cd4' : '#3f5f9e',
+      secondaryTextColor: isDark ? '#eef2f8' : '#16233b',
+      tertiaryColor: isDark ? '#2c2418' : '#f8f0e2',
+      tertiaryBorderColor: isDark ? '#c79a52' : '#a1712a',
+      tertiaryTextColor: isDark ? '#f8f0e2' : '#2c2418',
+      lineColor: isDark ? '#8a8f78' : '#8b9077',
+      fontSize: '15px',
+      fontFamily: "'Asap', system-ui, sans-serif",
+      noteBkgColor: isDark ? '#1c2333' : '#f8f0e2',
+      noteTextColor: isDark ? '#eef2f8' : '#2c2418',
+      noteBorderColor: isDark ? '#c79a52' : '#a1712a'
+    }
+  });
+})();
+
+var INITIAL_ZOOM = 1.2;
+
+function zoomDiagram(btn, factor) {
+  var wrap = btn.closest('.mermaid-wrap');
+  var target = wrap.querySelector('.mermaid');
+  var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM);
+  var next = Math.min(Math.max(current * factor, 0.5), 5);
+  target.dataset.zoom = next;
+  target.style.zoom = next;
+}
+
+function resetZoom(btn) {
+  var wrap = btn.closest('.mermaid-wrap');
+  var target = wrap.querySelector('.mermaid');
+  target.dataset.zoom = INITIAL_ZOOM;
+  target.style.zoom = INITIAL_ZOOM;
+}
+
+document.querySelectorAll('.mermaid-wrap').forEach(function(wrap) {
+  wrap.addEventListener('wheel', function(e) {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    var target = wrap.querySelector('.mermaid');
+    var current = parseFloat(target.dataset.zoom || INITIAL_ZOOM);
+    var factor = e.deltaY < 0 ? 1.1 : 0.9;
+    var next = Math.min(Math.max(current * factor, 0.5), 5);
+    target.dataset.zoom = next;
+    target.style.zoom = next;
+  }, { passive: false });
+
+  var startX, startY, scrollL, scrollT;
+  wrap.addEventListener('mousedown', function(e) {
+    if (e.target.closest('.zoom-controls')) return;
+    wrap.classList.add('is-panning');
+    startX = e.clientX;
+    startY = e.clientY;
+    scrollL = wrap.scrollLeft;
+    scrollT = wrap.scrollTop;
+  });
+  window.addEventListener('mousemove', function(e) {
+    if (!wrap.classList.contains('is-panning')) return;
+    wrap.scrollLeft = scrollL - (e.clientX - startX);
+    wrap.scrollTop = scrollT - (e.clientY - startY);
+  });
+  window.addEventListener('mouseup', function() {
+    wrap.classList.remove('is-panning');
+  });
+});
+
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
