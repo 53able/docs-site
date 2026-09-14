@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Code Review — 決定論的エンジニアリングとエージェントを組み合わせた AI コードレビュー CLI</title>
+  <meta name="description" content="Alibaba の AI コードレビュー CLI ocr の技術解説。差分取得から5ゲートのファイル選別、セマンティックグルーピング、plan/main の2フェーズループ、コメントの行アンカリングまでを図と表で追う。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Open Code Review — 決定論的エンジニアリングとエージェントを組み合わせた AI コードレビュー CLI">
+  <meta property="og:description" content="Alibaba の AI コードレビュー CLI ocr の技術解説。ファイル選別、セマンティックグルーピング、2 フェーズのエージェントループ、コメントの行アンカリングを図と表で追う。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/open-code-review.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Open Code Review — AI コードレビュー CLI の内部構造">
+  <meta name="twitter:description" content="差分取得、5 ゲートのファイル選別、セマンティックグルーピング、2 フェーズのエージェントループ、行アンカリングまで。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;500;600;700&family=Ubuntu+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.995 0.004 140);
+      --foreground: oklch(0.16 0.014 165);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.16 0.014 165);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.16 0.014 165);
+      --primary: oklch(0.24 0.03 168);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.965 0.008 155);
+      --secondary-foreground: oklch(0.24 0.03 168);
+      --muted: oklch(0.958 0.009 158);
+      --muted-foreground: oklch(0.50 0.018 165);
+      --accent: oklch(0.962 0.012 160);
+      --accent-foreground: oklch(0.22 0.03 168);
+      --destructive: oklch(0.55 0.20 27);
+      --border: oklch(0.905 0.012 162);
+      --input: oklch(0.905 0.012 162);
+      --ring: oklch(0.74 0.03 168);
+      --chart-1: oklch(0.44 0.09 172);
+      --chart-2: oklch(0.60 0.13 54);
+      --chart-3: oklch(0.34 0.06 176);
+      --chart-4: oklch(0.68 0.10 122);
+      --chart-5: oklch(0.52 0.14 28);
+      --code-bg: oklch(0.968 0.010 160);
+      --code-text: oklch(0.30 0.05 176);
+      --font-body: 'Geologica', 'Hiragino Sans', system-ui, sans-serif;
+      --font-mono: 'Ubuntu Sans Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.155 0.014 176);
+        --foreground: oklch(0.95 0.006 160);
+        --card: oklch(0.205 0.017 176);
+        --card-foreground: oklch(0.95 0.006 160);
+        --popover: oklch(0.205 0.017 176);
+        --popover-foreground: oklch(0.95 0.006 160);
+        --primary: oklch(0.90 0.01 160);
+        --primary-foreground: oklch(0.205 0.017 176);
+        --secondary: oklch(0.235 0.018 176);
+        --secondary-foreground: oklch(0.95 0.006 160);
+        --muted: oklch(0.265 0.018 176);
+        --muted-foreground: oklch(0.70 0.015 162);
+        --accent: oklch(0.262 0.020 176);
+        --accent-foreground: oklch(0.95 0.006 160);
+        --destructive: oklch(0.68 0.17 25);
+        --border: oklch(0.98 0.02 168 / 12%);
+        --input: oklch(0.98 0.02 168 / 16%);
+        --ring: oklch(0.55 0.03 172);
+        --chart-1: oklch(0.74 0.11 172);
+        --chart-2: oklch(0.76 0.13 58);
+        --chart-3: oklch(0.62 0.08 178);
+        --chart-4: oklch(0.78 0.12 124);
+        --chart-5: oklch(0.70 0.15 28);
+        --code-bg: oklch(0.185 0.016 178);
+        --code-text: oklch(0.85 0.07 168);
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 24rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-code-block pre code {
+      display: block;
+      background: transparent;
+      border-radius: 0;
+      color: var(--code-text);
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 1.875rem; line-height: 1.1; display: block; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; display: block; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-2) 14%, transparent); color: var(--chart-2); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 18% 0%, color-mix(in oklch, var(--chart-1) 12%, transparent) 0%, transparent 52%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 18% 0%, color-mix(in oklch, var(--chart-1) 14%, transparent) 0%, transparent 52%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 210px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.4rem; }
+    li { margin-bottom: 0.4rem; font-size: 0.9375rem; line-height: 1.65; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-2); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .stack > * + * { margin-top: 1rem; }
+    strong { font-weight: 600; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Two-column comparison */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .split > * { min-width: 0; overflow-wrap: break-word; }
+    @media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
+
+    /* Stage flow */
+    .flow { display: grid; gap: 0.5rem; margin: 1rem 0 0; }
+    .flow__stage {
+      display: grid; grid-template-columns: 2.25rem 1fr; gap: 0 1rem; align-items: start;
+      background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem 1rem;
+    }
+    .flow__num { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--chart-2); padding-top: 0.15rem; }
+    .flow__name { font-weight: 600; font-size: 0.9375rem; }
+    .flow__name code { background: transparent; padding: 0; color: var(--chart-1); font-size: 0.8125rem; margin-left: 0.4rem; }
+    .flow__body { font-size: 0.8125rem; line-height: 1.6; color: var(--text-dim); margin-top: 0.2rem; }
+    .flow__link { display: block; text-align: center; color: var(--text-dim); font-size: 0.875rem; line-height: 1; }
+
+    /* Gate list */
+    .gates { list-style: none; padding: 0; margin: 0; }
+    .gates li { position: relative; padding: 0.6rem 0 0.6rem 2.6rem; border-bottom: 1px solid var(--border); margin: 0; font-size: 0.875rem; }
+    .gates li:last-child { border-bottom: none; }
+    .gates li::before {
+      content: attr(data-n); position: absolute; left: 0; top: 0.55rem;
+      font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600;
+      width: 1.75rem; height: 1.75rem; display: grid; place-items: center;
+      border-radius: 50%; background: color-mix(in oklch, var(--chart-1) 16%, transparent); color: var(--chart-1);
+    }
+
+    .badge { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+    .badge--keep { background: color-mix(in oklch, var(--chart-4) 20%, transparent); color: var(--chart-4); }
+    .badge--drop { background: color-mix(in oklch, var(--chart-5) 18%, transparent); color: var(--chart-5); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc">
+    <div class="toc-title">目次</div>
+    <a href="#overview">概要</a>
+    <a href="#design">設計方針</a>
+    <a href="#pipeline">レビューの流れ</a>
+    <a href="#selection">ファイル選別とルール</a>
+    <a href="#loop">エージェントループ</a>
+    <a href="#comments">コメント生成と後処理</a>
+    <a href="#cli">CLI の使い方</a>
+    <a href="#integration">連携と運用</a>
+    <a href="#links">参考リンク</a>
+  </nav>
+
+  <div class="main">
+  <h1>Open Code Review</h1>
+  <p class="subtitle">ocr — Git 差分を読み、構造化されたレビューコメントを返す Go 製 CLI</p>
+
+  <section id="overview" class="sec-head">1 — 概要</section>
+  <div class="ve-card ve-card--hero" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 何をするツールか</span>
+    <p><strong>Open Code Review</strong>（コマンド名 <code>ocr</code>）は、Alibaba が社内の AI コードレビューアシスタントとして 2 年運用したものを OSS 化した CLI です。Git の差分を読み取り、変更ファイルをツール実行可能なエージェント経由で LLM に渡し、行単位で位置づけられたレビューコメントを生成します。</p>
+    <p>エージェントはファイル全文の読み取り、コードベースの検索、他の変更ファイルの差分参照ができるため、差分の表面だけを見た指摘に留まりません。差分レビューに加えて <code>ocr scan</code> はファイル全体をレビューするので、意味のある差分がない未知のコードベースやディレクトリの棚卸しにも使えます。</p>
+    <div class="kpi-row">
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Go</span><span class="ve-kpi-card__label">実装言語</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Apache-2.0</span><span class="ve-kpi-card__label">ライセンス</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">200 PR</span><span class="ve-kpi-card__label">AACR-Bench の評価対象</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">1/9</span><span class="ve-kpi-card__label">汎用エージェント比のトークン量</span></div>
+    </div>
+    <p>ベンチマーク AACR-Bench は 50 の人気 OSS リポジトリ・200 件の実 Pull Request・10 言語から構成され、80 名以上のシニアエンジニアが相互検証した 1,505 件の正解課題を持ちます。同じモデルを使った場合、汎用エージェントより Precision と F1 が高く、トークン消費は約 9 分の 1 です。Recall は汎用エージェントより低く、これはノイズを減らすために精度を優先した意図的なトレードオフです。</p>
+  </div>
+
+  <section id="design" class="sec-head">2 — 設計方針</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 汎用エージェントで起きること</span>
+    <p>README は、Skill を使った汎用エージェントによるレビューで繰り返し観測される問題として次の 3 点を挙げています。原因は、レビュー手順に対する強制力を言語モデルだけに委ねている点にあるとしています。</p>
+    <ul>
+      <li><strong>カバレッジの欠落</strong> — 変更量が大きいほど、一部のファイルだけを見て残りを飛ばす。</li>
+      <li><strong>位置のずれ</strong> — 指摘の行番号やファイル参照が実際のコード位置と合わない。</li>
+      <li><strong>品質の不安定さ</strong> — 自然言語で書かれた Skill はデバッグが難しく、プロンプトの小さな差で結果が揺れる。</li>
+    </ul>
+  </div>
+  <div class="split" style="margin-top:1rem">
+    <div class="ve-card ve-card--elevated" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> 決定論的エンジニアリング</span>
+      <p style="font-size:0.875rem">間違えてはいけない工程は、モデルではなくコードで保証します。</p>
+      <ul>
+        <li><strong>ファイル選別</strong> — レビュー対象と除外対象を規則で確定させ、重要な変更を取りこぼさない。</li>
+        <li><strong>ファイルのバンドル</strong> — 関連ファイルを 1 レビュー単位にまとめ、束ごとにサブエージェントを独立コンテキストで走らせる。大規模変更でも安定し、並列化しやすい。</li>
+        <li><strong>ルールのマッチング</strong> — ファイルの特徴に応じたレビュールールをテンプレートエンジンで割り当て、情報ノイズを入口で断つ。</li>
+        <li><strong>位置づけと再検証</strong> — コメント位置の解決と内容の再評価を独立モジュールとして持つ。</li>
+      </ul>
+    </div>
+    <div class="ve-card ve-card--elevated" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> エージェント</span>
+      <p style="font-size:0.875rem">動的な判断とコンテキスト収集にモデルの力を集中させます。</p>
+      <ul>
+        <li><strong>用途特化プロンプト</strong> — コードレビュー向けに調整したテンプレートで、効果を上げつつトークンを削る。</li>
+        <li><strong>用途特化ツールセット</strong> — 本番データのツール呼び出し履歴（呼び出し頻度分布、ツール別の反復率、新規ツールが呼び出し連鎖に与える影響）を分析して絞り込んだ 6 種類。</li>
+      </ul>
+      <div class="ve-callout">
+        <strong>効果の範囲:</strong> グルーピングは最適化であって正しさのゲートではありません。LLM 応答が失敗・空・解析不能なら警告を出して 1 ファイル 1 グループへフォールバックします。
+      </div>
+    </div>
+  </div>
+
+  <section id="pipeline" class="sec-head">3 — レビューの流れ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ocr review が実行する 6 段階</span>
+    <p><code>Enter</code> を押してから結果が出るまでに、次の順で処理が進みます。オーケストレーションは <code>internal/agent/</code>、ツール実行ループとメモリ圧縮は <code>internal/llmloop/</code> にあります。</p>
+    <div class="flow">
+      <div class="flow__stage">
+        <span class="flow__num">01</span>
+        <div>
+          <div class="flow__name">bootstrap</div>
+          <div class="flow__body">LLM エンドポイントを config → 環境変数 → シェルの rc ファイルの順で解決し、テンプレート・ツールレジストリ・システムルールを読み込む。</div>
+        </div>
+      </div>
+      <span class="flow__link">↓</span>
+      <div class="flow__stage">
+        <span class="flow__num">02</span>
+        <div>
+          <div class="flow__name">diff provider</div>
+          <div class="flow__body">Workspace / Commit / Range の 3 モードで <code>git diff</code>・<code>ls-files</code>・<code>show</code> を叩き、差分リストを作る。コンテキスト行数は Git 既定と同じ 3 行に固定。</div>
+        </div>
+      </div>
+      <span class="flow__link">↓</span>
+      <div class="flow__stage">
+        <span class="flow__num">03</span>
+        <div>
+          <div class="flow__name">filter &amp; rules</div>
+          <div class="flow__body">5 つのゲートでバイナリ・除外パス・非対応拡張子を落とし、残ったファイルごとにレビュールールを選ぶ。</div>
+        </div>
+      </div>
+      <span class="flow__link">↓</span>
+      <div class="flow__stage">
+        <span class="flow__num">04</span>
+        <div>
+          <div class="flow__name">semantic grouping</div>
+          <div class="flow__body">ファイルのメタデータ（パス・状態・増減行数）だけを渡す 1 回の LLM 呼び出しで、関連ファイルをグループにまとめる。差分本文は渡さない。</div>
+        </div>
+      </div>
+      <span class="flow__link">↓</span>
+      <div class="flow__stage">
+        <span class="flow__num">05</span>
+        <div>
+          <div class="flow__name">subtask dispatch</div>
+          <div class="flow__body">グループごとに goroutine を立て、並列度 <code>--concurrency</code>（既定 8）で走らせる。各サブタスクは plan フェーズ（条件付き）→ main ループ → コメント収集。</div>
+        </div>
+      </div>
+      <span class="flow__link">↓</span>
+      <div class="flow__stage">
+        <span class="flow__num">06</span>
+        <div>
+          <div class="flow__name">output writer</div>
+          <div class="flow__body">行位置の解決とレビューフィルタを同期実行し、<code>--format</code> と <code>--audience</code> に応じて text / json / sarif を書き出す。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 差分の 3 モード</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>モード</th><th>指定方法</th><th>返す差分</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>Workspace</code></td><td>フラグなし</td><td>ステージ済み + 未ステージ + 未追跡の変更</td></tr>
+          <tr><td><code>Commit</code></td><td><code>--commit &lt;sha&gt;</code> / <code>-c</code></td><td>そのコミットが導入した変更（<code>git show</code> 相当）</td></tr>
+          <tr><td><code>Range</code></td><td><code>--from &lt;a&gt; --to &lt;b&gt;</code></td><td><code>merge-base(a, b)..b</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>未追跡ファイルの扱い:</strong> ディスクから読み取って全文追加として扱うため、コミット前にレビューできます。モードフラグは相互排他で、混在させるとエラーになります。
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:2; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> グルーピングの 3 つのガード</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ガード</th><th>働き</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>maxFilesPerGroup = 10</code></td><td>大きすぎるグループを 10 ファイル単位に分割する。</td></tr>
+          <tr><td>トークン予算</td><td>差分合計がプロンプト上限を超えるグループは 1 ファイル 1 グループに割り直す。</td></tr>
+          <tr><td>カバレッジ</td><td>モデルが割り当て損ねたファイルは単独グループとして必ず拾う。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="selection" class="sec-head">4 — ファイル選別とルール</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 5 ゲートのフィルタ</span>
+    <p>各差分は <code>internal/agent/selection.go</code> の <code>whyExcluded</code> を上から順に通ります。最初に該当したゲートが除外理由になります。</p>
+    <ol class="gates">
+      <li data-n="1"><span class="badge badge--drop">binary</span> バイナリファイルを最初に落とす。</li>
+      <li data-n="2"><span class="badge badge--drop">user_exclude</span> プロジェクトの <code>exclude</code> パターンに合致したものを落とす。ユーザー指定が常に優先。</li>
+      <li data-n="3"><span class="badge badge--keep">user_include</span> <code>include</code> パターンに合致すれば、以降 2 つのゲートを飛ばして即採用する。</li>
+      <li data-n="4"><span class="badge badge--drop">unsupported_ext</span> 拡張子の許可リスト <code>supported_file_types.json</code> にないものを落とす。</li>
+      <li data-n="5"><span class="badge badge--drop">default_path</span> 組み込みのテストファイル除外パターン（<code>**/*_test.go</code>、<code>**/*.test.{js,jsx,ts,tsx}</code>、<code>**/__tests__/**</code> ほか）に合致したものを落とす。</li>
+    </ol>
+    <p style="margin-top:1rem">ゲート通過後に <code>selectFiles</code> が 2 つの判定を追加します。新パスが <code>/dev/null</code> なら <code>deleted</code>、差分だけで <code>max_tokens</code> の 80% を超えるなら <code>too_large</code> です。</p>
+    <div class="ve-callout">
+      <strong>ノイズディレクトリは別レイヤー:</strong> <code>vendor/</code>、<code>node_modules/</code>、<code>target/</code> などは差分プロバイダ側（<code>internal/diff/git.go</code>）で先に落とされ、プレビューでは <code>provider_directory</code> と表示されます。ここに <code>include</code> を書いてもレビュー対象には戻りません。
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> ルールの 4 層優先チェーン</span>
+    <p>ファイルごとに「何に注目してレビューするか」を決める文面は、次の 4 層を上から試し、最初にパターンが合致した層が勝ちます。上位層のファイルが存在しない場合は黙って次へ落ちるだけで、エラーにはなりません。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>優先度</th><th>出所</th><th>パス</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1（最高）</td><td><code>--rule</code> フラグ</td><td>ユーザー指定。渡せば常に勝つ。</td></tr>
+          <tr><td>2</td><td>プロジェクト設定</td><td><code>&lt;repo&gt;/.opencodereview/rule.json</code> — コミットして共有できる。</td></tr>
+          <tr><td>3</td><td>グローバル設定</td><td><code>~/.opencodereview/rule.json</code></td></tr>
+          <tr><td>4（最低）</td><td>システム既定</td><td>バイナリに埋め込まれた <code>system_rules.json</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>rule.json の形</h3>
+    <div class="ve-code-block">
+      <pre><code>{
+  "include": ["src/**/*.{ts,tsx}", "src/**/*.go"],
+  "exclude": ["**/*.test.ts", "**/generated/**"],
+  "rules": [
+    {
+      "path": "src/api/**/*.go",
+      "rule": "All exported handlers must validate request bodies before use."
+    }
+  ]
+}</code></pre>
+    </div>
+    <ul>
+      <li><code>include</code> は許可リストではありません。組み込みのテストファイル除外を迂回させるためのもので、ここに合致しないファイルも通常どおり残りのゲートを通ります。</li>
+      <li><code>exclude</code> はフィルタ内で最優先です。</li>
+      <li><code>rules</code> は宣言順に評価され、最初にグロブが合致した <code>path</code> の <code>rule</code> がそのファイル用のプロンプトになります。</li>
+    </ul>
+    <p>グロブは <code>bmatcuk/doublestar/v4</code> で、<code>*</code>・<code>**</code>・<code>{a,b,c}</code>・<code>?</code>・<code>[abc]</code> に対応します。パスは小文字化してから照合されるため大文字小文字は区別しません。どのルールが当たるかは <code>ocr rules check &lt;path&gt;</code> で確認できます。</p>
+  </div>
+
+  <section id="loop" class="sec-head">5 — エージェントループ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> plan フェーズと main ループ</span>
+    <p>サブタスクは最大 2 フェーズで構成されます。plan フェーズは 2 つのしきい値のどちらかを満たしたときだけ走ります。単一ファイルの大改修は 1 つ目が、複数の中規模ファイルはグループ合計の 2 つ目が拾います。小さな変更では計画が遅延だけを生むため、黙って飛ばして main ループに入ります。</p>
+    <div class="ve-code-block">
+      <pre><code>// PLAN_MODE_LINE_THRESHOLD = 50, PLAN_MODE_GROUP_LINE_THRESHOLD = 100
+if maxFileChanged &gt;= PlanModeLineThreshold                { plan }
+if fileCount &gt;= 2 &amp;&amp; total &gt;= PlanModeGroupLineThreshold { plan }</code></pre>
+    </div>
+    <p>plan フェーズの LLM 呼び出しには <code>Tools</code> を渡さないため、モデルは計画中にツールを呼べません。読み取り専用のツール定義はプレーンテキストとして <code>{{plan_tools}}</code> に埋め込まれ、後で何が使えるかだけを伝えます。返ってきたチェックリストが main プロンプトの <code>{{plan_guidance}}</code> になります。</p>
+    <h3>main ループの終了条件</h3>
+    <ol>
+      <li><code>task_done</code> が呼ばれた。</li>
+      <li><code>MAX_TOOL_REQUEST_TIMES</code>（既定 100）を使い切った。</li>
+      <li>有効なツール結果のないラウンドが 3 回続いた。</li>
+      <li>コンテキストがキャンセルされた。</li>
+      <li>圧縮してもメッセージバッファが警告しきい値を下回らなかった。</li>
+    </ol>
+    <p>いずれの場合も、そこまでに集めた <code>code_comment</code> 呼び出しがレビューコメントになります。</p>
+  </div>
+  <div class="ve-card" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 6 つの組み込みツール</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>ツール</th><th>plan</th><th>main</th><th>役割</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>task_done</code></td><td>—</td><td>○</td><td>ループの終了を宣言する。</td></tr>
+          <tr><td><code>code_comment</code></td><td>—</td><td>○</td><td>行範囲と修正案を持つレビューコメントを出す。</td></tr>
+          <tr><td><code>file_read</code></td><td>—</td><td>○</td><td>変更後スナップショットからファイルの一部を読む。</td></tr>
+          <tr><td><code>file_read_diff</code></td><td>○</td><td>○</td><td>別ファイルの差分を読み、ファイル横断の懸念を確認する。</td></tr>
+          <tr><td><code>file_find</code></td><td>○</td><td>○</td><td>ファイル名のキーワードでファイルを探す。</td></tr>
+          <tr><td><code>code_search</code></td><td>○</td><td>○</td><td>リポジトリ全体をリテラルまたは正規表現で検索する。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>コンテキスト用ツールは指摘先ではありません:</strong> <code>file_read</code> 系の 4 つは現在のファイルの差分を理解するために存在し、その過程で見つけた他ファイルの問題は設計上無視されます。ファイル横断の懸念は「今見ている差分から観測できるとき」だけコメントになります。ツールレジストリは <code>--tools &lt;path&gt;</code> で同じ形の JSON に差し替えられます。
+    </div>
+  </div>
+  <div class="split" style="margin-top:1rem">
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> レビューラウンド</span>
+      <p style="font-size:0.875rem">main ループはグループごとに複数回走ります。回数は <code>--effort</code> プリセットで決まります。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th><code>--effort</code></th><th>ラウンド数</th></tr></thead>
+          <tbody>
+            <tr><td><code>low</code></td><td>1</td></tr>
+            <tr><td><code>medium</code>（既定）</td><td>2</td></tr>
+            <tr><td><code>high</code></td><td>3</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.875rem; margin-top:0.75rem">2 回目以降は、確定済みの指摘を <code>{{confirmed_comments}}</code> として渡しつつ plan を外して再実行します。明らかな問題が出尽くした後は計画がカバレッジの上限として働いてしまうためです。新しい指摘が出ない、確定コメント数の上限に達する、<code>--max-tokens-budget</code> を使い切る、のいずれかで打ち切ります。</p>
+    </div>
+    <div class="ve-card" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> メモリ圧縮</span>
+      <p style="font-size:0.875rem">長いツール実行ループはいずれコンテキストウィンドウを溢れさせます。<code>MAX_TOKENS = 200000</code> を基準に 2 段階で動きます。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>しきい値</th><th>動作</th></tr></thead>
+          <tbody>
+            <tr><td>60%</td><td>バックグラウンドで非同期に圧縮を開始。ループはそのまま進む。</td></tr>
+            <tr><td>80%</td><td>次のリクエスト送信前に同期で圧縮する。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.875rem; margin-top:0.75rem">メッセージは <strong>frozen</strong>（先頭 2 件）・<strong>compress</strong>（要約対象）・<strong>active</strong>（直近の完全なラウンド）の 3 ゾーンに分割されます。compress ゾーンは XML に整形して要約させ、結果を最初のユーザーメッセージに <code>&lt;previous_review_summary&gt;</code> として追記します。</p>
+      <div class="ve-callout">
+        <strong>入力と出力は別枠:</strong> <code>MAX_TOKENS</code> はプロンプト側の上限だけを指します。出力上限は <code>MAX_COMPLETION_TOKENS = 16384</code> で、<code>--max-tokens</code> を上げても出力予算は膨らみません。
+      </div>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:4; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 6 つのプロンプトテンプレート</span>
+    <p><code>internal/config/template/task_template.json</code> が <code>{role, prompt_file}</code> の参照リストを持ち、読み込み時に Markdown 本文へ展開されます。プレースホルダはグループごとに解決されます。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>キー</th><th>役割</th></tr></thead>
+        <tbody>
+          <tr><td><code>GROUPING_TASK</code></td><td>変更ファイルを意味のあるグループに束ねる。</td></tr>
+          <tr><td><code>PLAN_TASK</code></td><td>計画フェーズ。チェックリストを出力する。</td></tr>
+          <tr><td><code>MAIN_TASK</code></td><td>メインのレビューループ。<code>code_comment</code> を発行する。</td></tr>
+          <tr><td><code>MEMORY_COMPRESSION_TASK</code></td><td>compress ゾーンを要約する。</td></tr>
+          <tr><td><code>REVIEW_FILTER_TASK</code></td><td>ループ後に、明らかに誤ったコメントを取り除く。</td></tr>
+          <tr><td><code>RE_LOCATION_TASK</code></td><td>位置を解決できなかったコメントを再アンカリングする。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>プレースホルダ記法の例外:</strong> ほとんどが <code>{{…}}</code> ですが、<code>RE_LOCATION_TASK</code> だけは単一波括弧の <code>{diff}</code>・<code>{existing_code}</code>・<code>{suggestion_content}</code> を使います。テンプレート自体は CLI から差し替えられず、変更するには JSON を編集して再ビルドします。
+    </div>
+  </div>
+
+  <section id="comments" class="sec-head">6 — コメント生成と後処理</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> code_comment の入力</span>
+    <p>コメントは行番号ではなく <strong>コードの断片</strong> に紐づけて発行されます。<code>existing_code</code> を手がかりに <code>ocr</code> 側が行番号を計算するため、モデルが行数を数え違えても位置がずれにくくなります。</p>
+    <div class="ve-code-block">
+      <pre><code>{
+  "name": "code_comment",
+  "input": {
+    "path": "string — 任意。このコメントのファイルパスを上書きする",
+    "comments": [
+      {
+        "content": "string — 設定した言語で書かれた指摘本文",
+        "existing_code": "string — 差分から取ったアンカー用の断片",
+        "suggestion_code": "string — 任意。修正案の断片"
+      }
+    ]
+  }
+}</code></pre>
+    </div>
+    <p><code>comments</code> は配列なので、1 回のツール呼び出しで複数の指摘を出せます。<code>path</code> を省略した場合はレビュー中のファイルが自動で補われます。</p>
+  </div>
+  <div class="ve-card" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 位置解決の 3 段構え</span>
+    <ol>
+      <li><strong>ハンク照合</strong> — 差分ハンクの新側（文脈行 + 追加行）を動的スライディングウィンドウで走査し、新ファイルの行番号を得る。外れたら旧側（文脈行 + 削除行）を試す。</li>
+      <li><strong>ファイル全文走査</strong> — どのハンクにも合わなければ、変更後のファイル内容を 1 行ずつ走査して連続一致を探す。</li>
+      <li><strong>再アンカリング</strong> — それでもテキスト一致しないとき、<code>RE_LOCATION_TASK</code> でモデルに位置を再指定させる。<code>existing_code</code> が言い換えられていた場合に効く。</li>
+    </ol>
+    <p>最終的に一致しなければ <code>start_line</code> / <code>end_line</code> は <code>0</code> になります。専用のフラグはなく、下流は <code>start_line == 0</code> を「位置未確定、手動で探す必要がある」の合図として扱います。</p>
+    <h3>ループ終了後の 2 パス</h3>
+    <ul>
+      <li><strong>レビューフィルタ</strong> — ワーカープールが捌け切った後、<code>REVIEW_FILTER_TASK</code> が差分と照らして明らかに誤った指摘を取り除く。ここでのエラーはログに残して無視する。<code>--no-filter</code> でこの工程を丸ごと省略できる。</li>
+      <li><strong>2 度目の行解決</strong> — <code>Agent.Run</code> から戻った後、コマンド側がコメント集合全体に対して行番号解決を再実行し、複数ファイルにまたがる指摘や再アンカリング済みの指摘を拾い直す。</li>
+    </ul>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:2; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> 自動化しない判断</span>
+    <ul>
+      <li><strong>エンドポイント探索にフォールバックを置かない</strong> — 設定・環境変数・rc ファイルから <code>(URL, token, model)</code> が揃わなければ、推測せず非ゼロ終了する。</li>
+      <li><strong>サブエージェントの失敗は隔離するがリトライしない</strong> — 1 グループの失敗は警告になり、残りは続行する。再試行は CI パイプライン側の仕事とする。</li>
+      <li><strong>ファイル横断の推論はグループ内に限る</strong> — 同一グループのファイルは 1 つの会話を共有する。他グループのファイルはツール経由で読めるが、指摘の対象にはしない。</li>
+    </ul>
+  </div>
+
+  <section id="cli" class="sec-head">7 — CLI の使い方</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 導入から初回レビューまで</span>
+    <p>前提は <strong>Git 2.41 以上</strong> と <strong>Node.js 18 以上</strong>、そして LLM の API キーです（委譲モードを使う場合は API キー不要）。</p>
+    <div class="ve-code-block">
+      <pre><code># 1. インストール — ocr コマンドがグローバルに入る
+npm install -g @alibaba-group/open-code-review
+ocr version
+
+# 2. プロバイダとモデルを対話 UI で設定する
+ocr config provider
+ocr config model
+
+# CI など TUI のない環境では同じ設定を直接書く
+ocr config set provider                    anthropic
+ocr config set model                       claude-opus-4-6
+ocr config set providers.anthropic.api_key sk-ant-xxxxxxxxxx
+
+# 3. 疎通確認
+ocr llm test
+
+# 4. レビュー
+cd path/to/your-repo
+ocr review                                   # ワークスペースの全変更
+ocr review --from main --to feature-branch   # ブランチ範囲（merge-base 起点）
+ocr review --commit abc123                   # 単一コミット</code></pre>
+    </div>
+    <div class="ve-callout">
+      <strong>先に対象を確かめる:</strong> <code>ocr review --preview</code> はフィルタだけを走らせ、LLM を呼ばずに対象ファイルと除外理由を表示します。トークンを 1 つも消費しません。
+    </div>
+  </div>
+  <div class="ve-card" style="--i:1; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> サブコマンド</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>コマンド</th><th>別名</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>ocr review</code></td><td><code>ocr r</code></td><td>差分をレビューしてコメントを出す。</td></tr>
+          <tr><td><code>ocr scan</code></td><td><code>ocr s</code></td><td>Git 差分なしでファイル全体をレビューする。</td></tr>
+          <tr><td><code>ocr rules check &lt;file&gt;</code></td><td>—</td><td>そのパスに当たるルールと出所を表示する。</td></tr>
+          <tr><td><code>ocr config set &lt;key&gt; &lt;value&gt;</code></td><td>—</td><td>設定値を <code>~/.opencodereview/config.json</code> に永続化する。</td></tr>
+          <tr><td><code>ocr llm test</code></td><td>—</td><td>小さなリクエストを送ってエンドポイントを検証する。</td></tr>
+          <tr><td><code>ocr session list / show / comments</code></td><td><code>ocr sessions …</code></td><td>保存済みセッションの一覧・詳細・コメントを見る。</td></tr>
+          <tr><td><code>ocr session compare &lt;before&gt; &lt;after&gt;</code></td><td><code>ocr session diff</code></td><td>2 セッションの指摘を比較する（新規・継続・解消・未レビュー）。</td></tr>
+          <tr><td><code>ocr viewer</code></td><td>—</td><td>過去セッションを見るローカル Web UI を起動する。</td></tr>
+          <tr><td><code>ocr delegate preview / rule</code></td><td>—</td><td>委譲モード。対象ファイルとルールだけを出力する。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ve-card" style="--i:2; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> ocr review の主なフラグ</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>フラグ</th><th>既定</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>--format</code> / <code>-f</code></td><td><code>text</code></td><td><code>text</code> / <code>json</code> / <code>sarif</code>（GitHub Code Scanning 向け SARIF 2.1.0）。</td></tr>
+          <tr><td><code>--output</code> / <code>-o</code></td><td>stdout</td><td>結果を UTF-8 ファイルへ書く。最初の書き込み時に作るので、失敗した実行は既存ファイルを壊さない。</td></tr>
+          <tr><td><code>--audience</code></td><td><code>human</code></td><td><code>agent</code> にすると進捗表示を止め、最終サマリ / JSON だけを stdout に出す。</td></tr>
+          <tr><td><code>--concurrency</code></td><td><code>8</code></td><td>並列にレビューするグループ数の上限。</td></tr>
+          <tr><td><code>--effort</code></td><td><code>medium</code></td><td>レビューラウンド数のプリセット（low=1 / medium=2 / high=3）。</td></tr>
+          <tr><td><code>--timeout</code></td><td><code>15</code> 分</td><td>グループごとの制限時間。<code>0</code> で無効。ラウンド数に比例して伸びる。</td></tr>
+          <tr><td><code>--max-tokens-budget</code></td><td><code>0</code>（無制限）</td><td>入力 + 出力の合計上限。超えた時点でディスパッチを止め、途中結果は出力する。</td></tr>
+          <tr><td><code>--background</code> / <code>-b</code>、<code>--background-file</code> / <code>-B</code></td><td>—</td><td>要件・業務コンテキストを plan / main プロンプトに注入する。ファイル指定が優先。</td></tr>
+          <tr><td><code>--exclude</code></td><td>—</td><td>gitignore 形式の除外パターン（カンマ区切り）。<code>rule.json</code> の <code>exclude</code> とマージされる。</td></tr>
+          <tr><td><code>--resume &lt;session-id&gt;</code></td><td>—</td><td>中断した range / commit レビューを再開する。<code>--preview</code> とは併用不可。</td></tr>
+          <tr><td><code>--no-filter</code></td><td><code>false</code></td><td><code>REVIEW_FILTER_TASK</code> を省略し、全コメントを残す。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>ファイル全体のスキャン</h3>
+    <div class="ve-code-block">
+      <pre><code>ocr scan                                  # リポジトリ全体
+ocr scan --path internal/agent            # ディレクトリ指定
+ocr scan --path internal/agent,internal/llm/client.go
+ocr scan --exclude '**/generated/*,*.pb.go'
+ocr scan --preview                        # LLM を呼ばずに対象だけ数える</code></pre>
+    </div>
+  </div>
+
+  <section id="integration" class="sec-head">8 — 連携と運用</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 委譲モード — レビューをホストエージェントに任せる</span>
+    <p>委譲モードでは、<code>ocr</code> は決定論的な部分（ファイル選別、ルール解決、除外判定）だけを担当し、実際のレビューはホストのコーディングエージェントが自分の LLM で行います。<code>ocr</code> 側の LLM 設定は不要です。Claude Code、Codex、Cursor など、すでにサブスクリプションを持っているエージェントでそのクォータを再利用したいときに使います。</p>
+    <div class="ve-code-block">
+      <pre><code># 1. 何をレビューすべきかを出す（モード / ref メタデータ / 対象 / 除外理由）
+ocr delegate preview
+ocr delegate preview --from main --to feature
+ocr delegate preview -c abc123
+
+# 2. 対象パスに当たるレビュールールをまとめて取る
+ocr delegate rule src/main.go src/handler.go
+
+# 3. 差分は git から直接取る
+git diff &lt;merge_base&gt;..&lt;to&gt; -- &lt;path&gt;   # range モード
+git show &lt;commit&gt; -- &lt;path&gt;             # commit モード
+git diff HEAD -- &lt;path&gt;                 # workspace モード（追跡済み）</code></pre>
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>統合方法</th><th>LLM を呼ぶのは</th><th>使いどころ</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Agent Skill</td><td>ocr</td><td>エージェントが <code>ocr review</code> を起動し、ocr がレビュー全体を回す。</td></tr>
+          <tr><td>Claude Code コマンド</td><td>ocr</td><td>スラッシュコマンド経由。ocr がレビューを回す。</td></tr>
+          <tr><td>委譲モード</td><td>ホストエージェント</td><td>ocr は足場だけを提供し、エージェントがレビューする。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="split" style="margin-top:1rem">
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> GitHub Actions</span>
+      <p style="font-size:0.875rem">リポジトリルートの <code>action.yml</code> が PR レビュー用の composite action を定義しています。インライン コメント、固定サマリ、非破壊な増分投稿に対応します。</p>
+      <ul>
+        <li><code>llm_url</code> / <code>llm_auth_token</code> / <code>llm_model</code> が必須入力で、それぞれ <code>OCR_LLM_*</code> 環境変数に対応します。</li>
+        <li><code>llm_use_anthropic</code> でプロトコルを切り替えます（Anthropic か OpenAI 互換か）。</li>
+        <li><code>language</code>（既定 <code>English</code>）でレビュー出力の言語を指定します。</li>
+        <li><code>llm_reasoning_effort</code> は OpenAI 互換プロトコル専用で、Anthropic プロトコルと併用すると即座に失敗します。</li>
+      </ul>
+      <p style="font-size:0.875rem">GitLab CI、Bitbucket Pipelines、Gerrit、GitFlic CI、Codeup CI の例がリポジトリの <code>examples/</code> にあります。</p>
+    </div>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> セッションの保存と閲覧</span>
+      <p style="font-size:0.875rem">すべてのレビューは JSONL としてディスクに残ります。1 行が 1 イベント（送信プロンプト、LLM 応答、ツール呼び出し、ツール結果、発行コメントなど）で、データベースはありません。</p>
+      <div class="ve-code-block">
+        <pre><code>~/.opencodereview/sessions/&lt;encoded-repo-path&gt;/&lt;session-id&gt;.jsonl</code></pre>
+      </div>
+      <p style="font-size:0.875rem"><code>ocr viewer</code> はこの JSONL を直接読む組み込み HTTP サーバーです。既定のアドレスは <code>localhost:5483</code>。リクエストごとに遅延スキャンするため、別ターミナルで走っているレビューも JSONL が現れた時点で一覧に出ます。</p>
+      <div class="ve-callout">
+        <strong>DNS リバインディング対策:</strong> viewer は <code>Host</code> ヘッダをループバック許可リストと照合します。<code>--addr :3000</code> のようなワイルドカードバインドは自動追加されないため、LAN から開くと <code>forbidden host</code> になります。許可するには <code>OCR_VIEWER_ALLOWED_HOSTS</code> にホスト名をカンマ区切りで設定します。
+      </div>
+    </div>
+  </div>
+  <div class="ve-card ve-card--recessed" style="--i:3; margin-top:1rem">
+    <span class="ve-section-label"><span class="ve-dot"></span> テレメトリ</span>
+    <p>有効化すると、ジョブ全体を包む <code>review.run</code>、差分読み込みの <code>diff.parse</code>、レビューしたグループごとの <code>subtask.execute.group.&lt;group-key&gt;</code> という 3 種類のパイプラインスパンと、判断地点ごとの短命な <code>event.&lt;name&gt;</code> スパン（<code>plan.skipped</code>、<code>token.threshold.exceeded</code>、<code>subtask.error</code> など）を発行します。LLM の往復とツール呼び出しはメトリクスとしてのみ記録されます。プロンプトと応答の内容がテレメトリに添付されることはありません。</p>
+  </div>
+
+  <section id="links" class="sec-head">9 — 参考リンク</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
+    <ul>
+      <li><a href="https://github.com/alibaba/open-code-review" target="_blank" rel="noopener">GitHub: alibaba/open-code-review</a> — 本体リポジトリ（Go、Apache-2.0）</li>
+      <li><a href="https://open-codereview.ai" target="_blank" rel="noopener">open-codereview.ai</a> — 公式サイト</li>
+      <li><a href="https://open-codereview.ai/docs" target="_blank" rel="noopener">公式ドキュメント</a> — Quickstart、CLI Reference、Review Rules、Configuration、MCP、FAQ</li>
+      <li><a href="https://www.npmjs.com/package/@alibaba-group/open-code-review" target="_blank" rel="noopener">npm: @alibaba-group/open-code-review</a> — <code>ocr</code> コマンドの配布パッケージ</li>
+      <li><a href="https://huggingface.co/datasets/Alibaba-Aone/aacr-bench" target="_blank" rel="noopener">AACR-Bench（Hugging Face）</a> — 50 リポジトリ・200 PR・1,505 件の正解課題からなる評価データセット</li>
+      <li><a href="https://deepwiki.com/alibaba/open-code-review" target="_blank" rel="noopener">DeepWiki</a> — リポジトリの自動生成ドキュメント</li>
+    </ul>
+  </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
