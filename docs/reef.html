@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reef — エージェントを継続学習させる基盤</title>
+  <meta name="description" content="Reef は推論を提供しながら応答とフィードバックを記録し、モデルの重みやエージェントのハーネスを評価付きで更新する継続学習基盤です。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Reef — エージェントを継続学習させる基盤">
+  <meta property="og:description" content="推論・フィードバック・学習・バージョン管理をつなぎ、モデルの重みやエージェントのハーネスを継続的に改善する仕組みを解説します。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/reef.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Reef — エージェントを継続学習させる基盤">
+  <meta name="twitter:description" content="応答の記録から候補の評価・公開までをつなぐ、Reef の構成と学習サイクルを紹介します。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --paper: #f4f1e8; --ink: #1d2927; --muted: #5b6964; --line: #c8d0c5;
+      --panel: #fbfaf5; --sea: #17675c; --sea-soft: #dcebe2; --rust: #a84932;
+      --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans JP', system-ui, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --paper:#151e1c; --ink:#edf1e9; --muted:#a7b4aa; --line:#394944; --panel:#1d2926; --sea:#8dcbb4; --sea-soft:#253e37; --rust:#e19a79; }
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans); line-height:1.7; }
+    a { color:var(--sea); text-underline-offset:3px; }
+    .page { max-width:1160px; margin:auto; padding:42px 28px 80px; display:grid; grid-template-columns:190px minmax(0,1fr); gap:48px; }
+    .toc { position:sticky; top:24px; align-self:start; border-top:2px solid var(--sea); padding-top:12px; }
+    .toc strong { display:block; font:500 .7rem var(--mono); letter-spacing:.12em; text-transform:uppercase; margin:0 0 12px; }
+    .toc a { display:block; color:var(--muted); text-decoration:none; font-size:.8rem; padding:5px 8px; border-left:2px solid transparent; }
+    .toc a.active { color:var(--ink); border-left-color:var(--rust); }
+    main { min-width:0; max-width:850px; }
+    .eyebrow { color:var(--rust); font:500 .75rem var(--mono); letter-spacing:.09em; text-transform:uppercase; }
+    h1 { max-width:780px; font-size:clamp(2.3rem,6vw,4.7rem); line-height:1.12; letter-spacing:-.055em; margin:14px 0 16px; }
+    .lead { color:var(--muted); max-width:720px; font-size:1.1rem; }
+    .hero { border-bottom:1px solid var(--line); padding-bottom:34px; margin-bottom:36px; }
+    .hero-meta { display:flex; gap:10px; flex-wrap:wrap; margin-top:22px; }
+    .tag { border:1px solid var(--line); border-radius:999px; padding:4px 10px; color:var(--muted); font: .72rem var(--mono); }
+    section { scroll-margin-top:24px; margin:42px 0; }
+    h2 { font-size:1.45rem; letter-spacing:-.025em; margin:0 0 16px; display:flex; align-items:baseline; gap:12px; }
+    h2 span { color:var(--rust); font:500 .75rem var(--mono); }
+    h3 { font-size:1.02rem; margin:0 0 8px; }
+    p { margin:0 0 12px; }
+    .diagram { background:var(--ink); color:var(--paper); border-radius:14px; padding:24px; overflow:hidden; }
+    .diagram-label { font: .68rem var(--mono); color:#a9c7b9; letter-spacing:.12em; text-transform:uppercase; margin-bottom:16px; }
+    .flow { display:grid; grid-template-columns:repeat(4,1fr); gap:22px; position:relative; }
+    .flow:before { content:''; position:absolute; top:17px; left:7%; right:7%; border-top:1px solid #71847c; }
+    .step { position:relative; z-index:1; }
+    .step b { display:grid; place-items:center; width:34px; height:34px; border-radius:50%; background:var(--rust); color:white; font:500 .8rem var(--mono); margin-bottom:12px; }
+    .step strong { display:block; font-size:.9rem; margin-bottom:4px; }
+    .step small { display:block; color:#b6c4bc; line-height:1.5; }
+    .loop-note { border-top:1px solid #56665e; color:#c7d2ca; margin-top:18px; padding-top:12px; font-size:.78rem; }
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; }
+    .panel .kicker { font:500 .68rem var(--mono); color:var(--sea); text-transform:uppercase; letter-spacing:.1em; margin-bottom:9px; }
+    .panel p:last-child { margin-bottom:0; }
+    .surface { border-top:3px solid var(--sea); }
+    .surface.harness { border-top-color:var(--rust); }
+    .callout { border-left:3px solid var(--rust); padding:12px 16px; background:var(--sea-soft); border-radius:0 9px 9px 0; margin:18px 0; }
+    .callout p:last-child { margin:0; }
+    .table-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:10px; }
+    table { width:100%; border-collapse:collapse; min-width:590px; background:var(--panel); font-size:.85rem; }
+    th,td { padding:12px 14px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { background:var(--sea-soft); font-weight:600; }
+    tr:last-child td { border-bottom:0; }
+    .receipt { display:inline-block; background:var(--sea-soft); color:var(--sea); border-radius:4px; padding:1px 6px; font: .78em var(--mono); }
+    .code { background:var(--ink); color:#dfe9df; border-radius:10px; overflow:auto; padding:16px 18px; font: .77rem/1.65 var(--mono); white-space:pre; }
+    .code code { display:block; background:transparent; color:inherit; padding:0; border-radius:0; font:inherit; }
+    .sequence { display:grid; grid-template-columns:1fr auto 1fr auto 1fr; align-items:center; gap:9px; margin:16px 0; }
+    .sequence div { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px; text-align:center; font-size:.82rem; }
+    .sequence b { color:var(--rust); font: .85rem var(--mono); }
+    .links { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    .links a { border:1px solid var(--line); border-radius:8px; padding:9px 12px; text-decoration:none; font-size:.83rem; background:var(--panel); }
+    footer { border-top:1px solid var(--line); margin-top:46px; padding-top:18px; color:var(--muted); font-size:.78rem; }
+    @media (max-width:800px) { .page { display:block; padding:22px 18px 56px; } .toc { position:sticky; top:0; z-index:4; display:flex; gap:4px; overflow:auto; background:var(--paper); border-top:0; border-bottom:1px solid var(--line); padding:8px 0; margin:0 -18px 22px; } .toc strong { display:none; } .toc a { white-space:nowrap; flex:none; border-left:0; border-bottom:2px solid transparent; } .toc a.active { border-bottom-color:var(--rust); } }
+    @media (max-width:560px) { .two-col { grid-template-columns:1fr; } .flow { grid-template-columns:1fr 1fr; gap:20px 14px; } .flow:before { display:none; } .sequence { grid-template-columns:1fr; } .sequence b { transform:rotate(90deg); justify-self:center; } }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+  </style>
+</head>
+<body>
+<div class="page">
+  <nav class="toc" id="toc" aria-label="目次">
+    <strong>Contents</strong>
+    <a href="#role">Reef の役割</a><a href="#cycle">学習サイクル</a><a href="#surfaces">改善する対象</a><a href="#request">リクエストと報告</a><a href="#architecture">構成の境界</a><a href="#start">始め方</a>
+  </nav>
+  <main>
+    <header class="hero">
+      <div class="eyebrow">Continual learning infrastructure</div>
+      <h1>エージェントの利用を、次の改善につなぐ</h1>
+      <p class="lead">Reef は推論を提供しながら、どのバージョンが応答したかと、その結果へのフィードバックを記録します。レシピが学習候補を作り、評価を通過した変更だけを次のリリースにします。</p>
+      <div class="hero-meta"><span class="tag">Python 3.12+</span><span class="tag">Apache-2.0</span><span class="tag">weights + harness</span></div>
+    </header>
+
+    <section id="role">
+      <h2><span>01</span> Reef が担う範囲</h2>
+      <p>推論エンジンはモデルを動かし、学習フレームワークは重みを更新します。Reef は両者の間に、リクエスト記録、フィードバック照合、候補の選択、成果物の版管理を置きます。更新中も現在のバージョンでリクエストを処理し続けます。</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>機能</th><th>推論エンジン</th><th>学習フレームワーク</th><th>Reef</th></tr></thead>
+        <tbody><tr><td>ライブ推論</td><td>担当</td><td>通常は担当外</td><td>担当</td></tr><tr><td>モデル重みの学習</td><td>担当外</td><td>担当</td><td>学習基盤と連携</td></tr><tr><td>更新の評価・選択・版管理</td><td>担当外</td><td>担当外</td><td>担当</td></tr><tr><td>プロンプトやスキルなどハーネスの改善</td><td>担当外</td><td>担当外</td><td>レシピ経由で対応</td></tr></tbody>
+      </table></div>
+    </section>
+
+    <section id="cycle">
+      <h2><span>02</span> 4 段階の学習サイクル</h2>
+      <div class="diagram">
+        <div class="diagram-label">One request can become a versioned update</div>
+        <div class="flow">
+          <div class="step"><b>1</b><strong>Serve</strong><small>シナリオに紐づく現行版で応答し、記録と受領 ID を返す</small></div>
+          <div class="step"><b>2</b><strong>Observe</strong><small>報告の参照 ID を記録に結び、学習対象か判定する</small></div>
+          <div class="step"><b>3</b><strong>Grow</strong><small>レシピが対象記録から候補の重みやハーネスを作る</small></div>
+          <div class="step"><b>4</b><strong>Commit</strong><small>候補を評価し、選ばれた変更を版として公開する</small></div>
+        </div>
+        <div class="loop-note">候補が不採用なら現行版を維持。採用時は次のリクエストから新しい版が使われます。</div>
+      </div>
+    </section>
+
+    <section id="surfaces">
+      <h2><span>03</span> 改善対象はレシピで決まる</h2>
+      <div class="two-col">
+        <article class="panel surface"><div class="kicker">Model weights</div><h3>モデルの重みを更新</h3><p>Slime と SGLang などの学習・推論基盤を使い、報告されたスコアやフィードバックから学習ステップを実行します。更新後の重みは稼働中の推論ランタイムへ同期されます。</p><p><strong>必要なもの:</strong> 学習可能なモデル、対応 GPU スタック、レシピが利用できるフィードバック。</p></article>
+        <article class="panel surface harness"><div class="kicker">Agent harness</div><h3>エージェントの構成を更新</h3><p>プロンプト、ルール、スキルなどのハーネスを候補として編集し、代表タスク上で現行版と比較します。モデル API を使う構成なら、ローカル学習 GPU は不要です。</p><p><strong>必要なもの:</strong> モデルのエンドポイント、代表タスク、評価器。</p></article>
+      </div>
+      <div class="callout"><p><strong>レシピが学習方法を決めます。</strong> シナリオ名でリクエストを分けられますが、リクエストからレシピを選ぶわけではありません。シナリオはデプロイ設定のレシピを使います。</p></div>
+    </section>
+
+    <section id="request">
+      <h2><span>04</span> 応答とフィードバックを結ぶ</h2>
+      <p>推論 API は OpenAI 互換の <code>/v1/chat/completions</code> と Anthropic 互換の <code>/v1/messages</code> を提供します。リクエストには <code>x-reef-scenario</code> を付け、応答ヘッダー <span class="receipt">x-reef-agent-record-id</span> を後の報告で使います。</p>
+      <div class="sequence" aria-label="報告フロー"><div>推論リクエスト<br><code>x-reef-scenario</code></div><b>→</b><div>応答と受領 ID<br><code>x-reef-agent-record-id</code></div><b>→</b><div>報告<br>score / feedback / references</div></div>
+      <p>報告には数値の <code>score</code>、テキストまたは構造化データの <code>feedback</code>、評価対象の受領 ID を入れます。スカラー値だけで足りるか、詳しい信号が必要かはレシピによります。Reef は報告スキーマを検証し、適格な記録をプロセッサへ渡します。</p>
+      <div class="code"><code>POST /reef/report
+{
+  "score": 1.0,
+  "feedback": "matched",
+  "references": ["<response receipt>"]
+}</code></div>
+    </section>
+
+    <section id="architecture">
+      <h2><span>05</span> 責務ごとに分かれた構成</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>領域</th><th>役割</th><th>主なパッケージ</th></tr></thead>
+        <tbody><tr><td>サービス / ランタイム</td><td>リクエストを受け、現行版で推論し、成果物を配信</td><td><code>service/</code> <code>runtime/</code> <code>surface/</code></td></tr><tr><td>記録 / 適格性</td><td>推論・報告を保存し、学習に使える記録を組み立てる</td><td><code>storage/</code> <code>train/processors/</code></td></tr><tr><td>レシピ / 学習</td><td>学習方式を選び、バッチと更新ジョブを実行</td><td><code>recipe/</code> <code>train/</code></td></tr><tr><td>選択 / 版管理</td><td>候補を評価・選択し、受け入れた版を保管</td><td><code>train/evaluation/</code> <code>artifact/</code></td></tr></tbody>
+      </table></div>
+      <p>Reef 本体は共有機構とレシピ契約を提供します。学習メソッドとサンプルは別の <code>recipes/</code> ツリーにあり、インストール済みパッケージに含まれる本体コードとは分かれています。</p>
+    </section>
+
+    <section id="start">
+      <h2><span>06</span> 試すときの入口</h2>
+      <p>PyPI パッケージ名は <code>reef-infra</code>、コマンドは <code>reef</code> です。推論だけの起動、重み学習のデプロイ、モデル API を使ったハーネス改善から用途に合う経路を選びます。</p>
+      <div class="code"><code>uv venv
+source .venv/bin/activate
+uv pip install reef-infra
+
+# 推論サーバーの例
+reef serve --inference.model-path Qwen/Qwen2.5-1.5B-Instruct</code></div>
+      <p>重み・チェックポイントを扱う場合はシステムの Git LFS が必要です。GPU 要件やレシピごとの設定は、公式ガイドで確認してください。</p>
+      <div class="links"><a href="https://github.com/Human-Agent-Society/reef" target="_blank" rel="noopener">GitHub リポジトリ</a><a href="https://reefinfra.ai/docs/getting-started/quickstart/" target="_blank" rel="noopener">クイックスタート</a><a href="https://reefinfra.ai/docs/user-guide/recipes/" target="_blank" rel="noopener">レシピ一覧</a><a href="https://reefinfra.ai/docs/user-guide/evolve-your-harness/" target="_blank" rel="noopener">ハーネスを改善する</a></div>
+    </section>
+    <footer>出典: <a href="https://github.com/Human-Agent-Society/reef" target="_blank" rel="noopener">Human-Agent-Society/reef</a> の README と Getting Started ガイド。挙動や利用条件は公式ドキュメントを参照してください。</footer>
+  </main>
+</div>
+<script>
+  const sections = [...document.querySelectorAll('main section')];
+  const links = [...document.querySelectorAll('#toc a')];
+  const observer = new IntersectionObserver(entries => {
+    const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+    if (!visible) return;
+    links.forEach(link => link.classList.toggle('active', link.hash === `#${visible.target.id}`));
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  sections.forEach(section => observer.observe(section));
+</script>
+</body>
+</html>
