@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hyper — Electron ベースの拡張可能なターミナル</title>
+  <meta name="description" content="Vercel の Hyper を、Electron main/renderer 構成、node-pty から xterm.js への入出力、プラグイン API、設定と CLI の流れで解説します。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Hyper — Electron ベースの拡張可能なターミナル">
+  <meta property="og:description" content="Electron の main/renderer、PTY と xterm.js、プラグイン API、設定・CLI を通して Hyper の構成を解説します。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/hyper.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Hyper — Electron ベースの拡張可能なターミナル">
+  <meta name="twitter:description" content="Vercel の Hyper を、端末データ経路と拡張 API を中心に読み解きます。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Fragment+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Bricolage Grotesque', system-ui, sans-serif;
+      --font-mono: 'Fragment Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+      --signal: var(--chart-1);
+      --signal-soft: color-mix(in oklch, var(--chart-1) 12%, var(--card));
+      --support: var(--chart-2);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --signal-soft: color-mix(in oklch, var(--chart-1) 18%, var(--card));
+      }
+    }
+
+    /* Spell UI static components: card, badge, section label, code block and callout. */
+    .ve-card {
+      background: var(--card);
+      color: var(--card-foreground);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+    }
+    .ve-card--elevated {
+      background: var(--accent);
+      color: var(--accent-foreground);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    }
+    .ve-card--recessed {
+      background: var(--muted);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .ve-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      padding: 4px 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .ve-badge--default { background: var(--primary); color: var(--primary-foreground); }
+    .ve-badge--secondary { background: var(--secondary); color: var(--secondary-foreground); }
+    .ve-badge--outline { border: 1px solid var(--input); background: var(--background); }
+    .ve-badge--orange {
+      background: oklch(0.828 0.189 84.429 / 0.12);
+      color: var(--chart-4);
+    }
+    .ve-section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .ve-section-label .ve-dot {
+      width: 8px;
+      height: 8px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: var(--chart-1);
+    }
+    .ve-code-block {
+      display: flex;
+      position: relative;
+      max-height: 20rem;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--code-bg);
+    }
+    .ve-code-block pre {
+      min-height: 0;
+      flex: 1;
+      overflow: auto;
+      margin: 0;
+      padding: 0.875rem 1rem;
+    }
+    .ve-code-block code {
+      color: var(--code-text);
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+    .ve-code-block pre code {
+      display: block;
+      border-radius: 0;
+      background: transparent;
+      padding: 0;
+      tab-size: 2;
+    }
+    .ve-callout {
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--chart-1);
+      border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+      background: var(--muted);
+      padding: 0.875rem 1.125rem;
+      color: var(--muted-foreground);
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+    .ve-callout strong { color: var(--foreground); }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-body);
+      line-height: 1.6;
+    }
+    a { color: var(--chart-1); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    code {
+      border-radius: var(--radius-sm);
+      background: var(--muted);
+      padding: 2px 5px;
+      font-family: var(--font-mono);
+      font-size: 0.82em;
+    }
+    .wrap {
+      display: grid;
+      max-width: 1400px;
+      grid-template-columns: 180px minmax(0, 1fr);
+      gap: 0 42px;
+      margin: 0 auto;
+      padding: 24px 40px 72px;
+    }
+    .main { min-width: 0; }
+    .toc {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px);
+      overflow-y: auto;
+      padding: 14px 0;
+    }
+    .toc-title {
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      padding: 0 0 10px;
+      color: var(--muted-foreground);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .toc a {
+      display: block;
+      margin-bottom: 1px;
+      border-left: 2px solid transparent;
+      border-radius: 5px;
+      padding: 5px 8px;
+      color: var(--muted-foreground);
+      font-size: 0.75rem;
+      line-height: 1.4;
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+    .toc a:hover { background: var(--muted); color: var(--foreground); }
+    .toc a.active { border-left-color: var(--chart-1); color: var(--foreground); }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      max-width: 850px;
+      margin-bottom: 0.75rem;
+      font-size: clamp(2.6rem, 7vw, 5.5rem);
+      font-weight: 600;
+      letter-spacing: -0.065em;
+      line-height: 0.98;
+    }
+    h2 { margin-bottom: 0.8rem; font-size: 1.4rem; line-height: 1.2; }
+    h3 { margin-bottom: 0.4rem; font-size: 1rem; }
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      margin-bottom: 1.2rem;
+      color: var(--muted-foreground);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      width: 26px;
+      height: 2px;
+      background: var(--chart-1);
+      content: "";
+    }
+    .subtitle {
+      max-width: 680px;
+      margin-bottom: 1.75rem;
+      color: var(--muted-foreground);
+      font-size: clamp(1rem, 2vw, 1.2rem);
+    }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 2rem;
+      border-color: color-mix(in oklch, var(--border) 68%, var(--chart-1) 32%);
+      background:
+        linear-gradient(110deg, var(--signal-soft), transparent 70%),
+        var(--card);
+      padding: clamp(1.5rem, 4vw, 3.25rem);
+    }
+    .hero::after {
+      position: absolute;
+      top: -64px;
+      right: -54px;
+      width: 230px;
+      height: 230px;
+      border: 1px solid color-mix(in oklch, var(--chart-1) 30%, transparent);
+      border-radius: 50%;
+      box-shadow: 0 0 0 24px color-mix(in oklch, var(--chart-1) 5%, transparent),
+        0 0 0 48px color-mix(in oklch, var(--chart-1) 4%, transparent);
+      content: "";
+      pointer-events: none;
+    }
+    .hero > * { position: relative; z-index: 1; }
+    .hero-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.4rem; }
+    .section { margin-top: 3.5rem; scroll-margin-top: 28px; }
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.15rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.8rem;
+    }
+    .section-head .ve-section-label { margin-bottom: 0; color: var(--muted-foreground); }
+    .section-index { color: var(--muted-foreground); font-family: var(--font-mono); font-size: 0.7rem; }
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.8rem;
+      margin: 1rem 0 2.25rem;
+    }
+    .kpi {
+      min-width: 0;
+      border-top: 2px solid var(--chart-1);
+      padding: 0.85rem 0.9rem;
+      background: var(--muted);
+    }
+    .kpi:nth-child(2) { border-top-color: var(--chart-2); }
+    .kpi:nth-child(3) { border-top-color: var(--chart-3); }
+    .kpi-value { display: block; margin-bottom: 0.1rem; font-size: 1.1rem; font-weight: 600; }
+    .kpi-label { color: var(--muted-foreground); font-family: var(--font-mono); font-size: 0.65rem; }
+    .architecture {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 52px minmax(0, 1.08fr);
+      gap: 0.8rem;
+      align-items: stretch;
+      margin: 1.1rem 0;
+    }
+    .runtime-card { min-width: 0; padding: 1.1rem; }
+    .runtime-card--main { border-top: 3px solid var(--chart-1); }
+    .runtime-card--renderer { border-top: 3px solid var(--chart-2); }
+    .runtime-label {
+      margin-bottom: 0.9rem;
+      color: var(--muted-foreground);
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .runtime-block {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--muted);
+      padding: 0.7rem 0.8rem;
+    }
+    .runtime-block + .runtime-block { margin-top: 0.55rem; }
+    .runtime-block strong { display: block; margin-bottom: 0.12rem; font-size: 0.87rem; }
+    .runtime-block span { display: block; color: var(--muted-foreground); font-size: 0.74rem; }
+    .bridge {
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 0.35rem;
+      color: var(--muted-foreground);
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      text-align: center;
+    }
+    .bridge-arrow { color: var(--chart-1); font-size: 1.5rem; line-height: 1; }
+    .bridge-label { writing-mode: vertical-rl; }
+    .reverse-note {
+      margin: 0.85rem 0 0;
+      border-left: 2px solid var(--chart-2);
+      padding-left: 0.8rem;
+      color: var(--muted-foreground);
+      font-size: 0.8rem;
+    }
+    .step-flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.7rem;
+      margin: 1rem 0;
+    }
+    .step-card {
+      position: relative;
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      padding: 0.9rem;
+    }
+    .step-card:not(:last-child)::after {
+      position: absolute;
+      top: 1.15rem;
+      right: -0.55rem;
+      z-index: 1;
+      color: var(--chart-1);
+      content: "›";
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+    }
+    .step-num { color: var(--chart-1); font-family: var(--font-mono); font-size: 0.67rem; }
+    .step-card h3 { margin-top: 0.5rem; font-size: 0.86rem; }
+    .step-card p { margin-bottom: 0; color: var(--muted-foreground); font-size: 0.74rem; line-height: 1.5; }
+    .plugin-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 0.9fr;
+      gap: 0.8rem;
+      margin: 1rem 0;
+    }
+    .plugin-card { min-width: 0; padding: 1.1rem; }
+    .plugin-card:nth-child(1) { border-top: 3px solid var(--chart-1); }
+    .plugin-card:nth-child(2) { border-top: 3px solid var(--chart-2); }
+    .plugin-card:nth-child(3) { border-top: 3px solid var(--chart-3); }
+    .plugin-card p { margin-bottom: 0.65rem; color: var(--muted-foreground); font-size: 0.78rem; }
+    .hook-list { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .hook-list code { font-size: 0.68rem; overflow-wrap: anywhere; }
+    .config-grid {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 0.8rem;
+      align-items: start;
+    }
+    .config-card { padding: 1.15rem; }
+    .config-card ul { margin: 0.55rem 0 0; padding-left: 1.15rem; }
+    .config-card li { margin: 0.45rem 0; color: var(--muted-foreground); font-size: 0.8rem; }
+    .config-card li strong { color: var(--foreground); }
+    .command-list { display: grid; gap: 0.55rem; margin-top: 0.65rem; }
+    .command {
+      display: grid;
+      grid-template-columns: minmax(120px, 0.7fr) minmax(0, 1.3fr);
+      gap: 0.7rem;
+      align-items: start;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.55rem;
+    }
+    .command:last-child { border-bottom: 0; padding-bottom: 0; }
+    .command code { width: fit-content; color: var(--chart-1); }
+    .command span { color: var(--muted-foreground); font-size: 0.78rem; }
+    .dev-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+      align-items: start;
+    }
+    .dev-card { min-width: 0; padding: 1.15rem; }
+    .dev-card p { color: var(--muted-foreground); font-size: 0.8rem; }
+    .ref-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem; margin: 1rem 0 0; padding: 0; list-style: none; }
+    .ref-list li { min-width: 0; }
+    .ref-list a {
+      display: block;
+      height: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      background: var(--card);
+      font-size: 0.8rem;
+      overflow-wrap: anywhere;
+    }
+    .ref-list span { display: block; margin-top: 0.2rem; color: var(--muted-foreground); font-size: 0.7rem; }
+    .page-foot { margin-top: 2.5rem; border-top: 1px solid var(--border); padding-top: 1rem; color: var(--muted-foreground); font-size: 0.72rem; }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding: 0 24px 56px; }
+      .toc {
+        top: 0;
+        z-index: 20;
+        display: flex;
+        grid-row: auto;
+        max-height: none;
+        gap: 4px;
+        align-items: center;
+        overflow-x: auto;
+        margin: 0 -24px;
+        border-bottom: 1px solid var(--border);
+        background: var(--background);
+        padding: 9px 24px;
+      }
+      .toc-title { display: none; }
+      .toc a { flex-shrink: 0; border: 0; border-bottom: 2px solid transparent; white-space: nowrap; }
+      .toc a.active { border-bottom-color: var(--chart-1); }
+      .main { padding-top: 22px; }
+      .section { scroll-margin-top: 58px; }
+    }
+    @media (max-width: 760px) {
+      .wrap { padding-right: 16px; padding-left: 16px; }
+      .toc { margin-right: -16px; margin-left: -16px; padding-right: 16px; padding-left: 16px; }
+      .architecture { grid-template-columns: 1fr; }
+      .bridge { grid-template-columns: auto 1fr; justify-items: start; text-align: left; }
+      .bridge-arrow { transform: rotate(90deg); }
+      .bridge-label { writing-mode: initial; }
+      .step-flow { grid-template-columns: 1fr; gap: 0.55rem; }
+      .step-card:not(:last-child)::after { top: auto; right: 0.9rem; bottom: -0.78rem; transform: rotate(90deg); }
+      .plugin-grid, .config-grid, .dev-grid { grid-template-columns: 1fr; }
+      .kpi-row { gap: 0.45rem; }
+      .kpi { padding: 0.65rem 0.55rem; }
+      .kpi-value { font-size: 0.95rem; }
+      .kpi-label { font-size: 0.58rem; }
+      .command { grid-template-columns: minmax(105px, 0.8fr) minmax(0, 1.2fr); }
+      .ref-list { grid-template-columns: 1fr; }
+      .ve-card { padding: 1rem; }
+      .hero { padding: 1.35rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">Hyper / Guide</div>
+    <a href="#overview">概要</a>
+    <a href="#architecture">プロセス構成</a>
+    <a href="#terminal-flow">端末データ</a>
+    <a href="#plugins">プラグイン</a>
+    <a href="#config-cli">設定と CLI</a>
+    <a href="#development">開発と参照</a>
+  </nav>
+
+  <main class="main">
+    <header class="ve-card hero">
+      <div class="eyebrow">Vercel / open-source terminal</div>
+      <h1>Hyper</h1>
+      <p class="subtitle">Electron のデスクトップアプリに、シェルプロセス、xterm.js の描画、React の UI、プラグイン API を組み合わせた拡張可能なターミナルです。</p>
+      <div class="hero-meta">
+        <span class="ve-badge ve-badge--default">4.0.0-canary.5</span>
+        <span class="ve-badge ve-badge--outline">macOS / Windows / Linux</span>
+        <span class="ve-badge ve-badge--outline">MIT</span>
+      </div>
+    </header>
+
+    <section id="overview" class="section">
+      <div class="section-head">
+        <h2 class="ve-section-label"><span class="ve-dot"></span>概要</h2>
+        <span class="section-index">01 / PROFILE</span>
+      </div>
+      <p>Hyper は Web 技術を使ってデスクトップ端末を構成します。Electron main process がシェルを起動し、renderer process が React の状態管理と xterm.js の表示を担います。プラグインは両側のライフサイクルや UI を拡張できます。</p>
+      <div class="kpi-row" aria-label="主要コンポーネント">
+        <div class="kpi"><span class="kpi-value">Electron</span><span class="kpi-label">DESKTOP RUNTIME</span></div>
+        <div class="kpi"><span class="kpi-value">React + Redux</span><span class="kpi-label">RENDERER UI</span></div>
+        <div class="kpi"><span class="kpi-value">xterm.js</span><span class="kpi-label">TERMINAL VIEW</span></div>
+      </div>
+      <aside class="ve-callout">
+        <strong>読み方:</strong> 端末出力は main process から renderer へ流れ、キー入力は同じ RPC/IPC 経路を逆向きに進みます。プラグイン API はこの実行境界をまたいでフックを提供します。
+      </aside>
+    </section>
+
+    <section id="architecture" class="section">
+      <div class="section-head">
+        <h2 class="ve-section-label"><span class="ve-dot"></span>プロセス構成</h2>
+        <span class="section-index">02 / RUNTIME</span>
+      </div>
+      <p>ウィンドウごとの RPC チャネルで Electron main と renderer を接続します。シェルの起動・管理は main 側、画面と端末描画は renderer 側に分かれています。</p>
+      <div class="architecture" aria-label="Hyper の main process と renderer process の構成">
+        <article class="ve-card runtime-card runtime-card--main">
+          <div class="runtime-label">Electron main process</div>
+          <div class="runtime-block">
+            <strong>app/index.ts</strong>
+            <span>Electron 起動、BrowserWindow、メニュー、プラグイン初期化</span>
+          </div>
+          <div class="runtime-block">
+            <strong>app/session.ts</strong>
+            <span>node-pty でシェルを起動し、出力をまとめて通知</span>
+          </div>
+          <div class="runtime-block">
+            <strong>app/rpc.ts</strong>
+            <span>ウィンドウごとの RPC Server を生成し、IPC を管理</span>
+          </div>
+        </article>
+        <div class="bridge" aria-label="双方向 RPC / IPC">
+          <span class="bridge-arrow">↔</span>
+          <span class="bridge-label">RPC / IPC</span>
+          <span class="ve-badge ve-badge--orange">window channel</span>
+        </div>
+        <article class="ve-card runtime-card runtime-card--renderer">
+          <div class="runtime-label">Electron renderer process</div>
+          <div class="runtime-block">
+            <strong>lib/index.tsx</strong>
+            <span>Redux store と RPC listener を初期化し、通知を action に変換</span>
+          </div>
+          <div class="runtime-block">
+            <strong>HyperContainer / React</strong>
+            <span>タブ、ペイン、ヘッダー、通知などのアプリ UI を描画</span>
+          </div>
+          <div class="runtime-block">
+            <strong>lib/components/term.tsx</strong>
+            <span>xterm.js と検索・フィット・リンク等の addon を接続</span>
+          </div>
+        </article>
+      </div>
+      <p class="reverse-note">入力方向: xterm.js のキー入力 → renderer action → RPC/IPC → Session.write() → node-pty → シェル。</p>
+    </section>
+
+    <section id="terminal-flow" class="section">
+      <div class="section-head">
+        <h2 class="ve-section-label"><span class="ve-dot"></span>端末データの往復</h2>
+        <span class="section-index">03 / DATA FLOW</span>
+      </div>
+      <p>出力は小さな IPC 呼び出しが続かないようにバッチ化し、renderer で session action に分けて xterm.js に渡します。</p>
+      <div class="step-flow" aria-label="シェル出力から端末表示までの手順">
+        <article class="step-card">
+          <span class="step-num">STEP 01</span>
+          <h3>シェル起動</h3>
+          <p><code>Session</code> が設定に基づいて shell、引数、作業ディレクトリ、環境変数を渡し、node-pty を生成。</p>
+        </article>
+        <article class="step-card">
+          <span class="step-num">STEP 02</span>
+          <h3>出力を集約</h3>
+          <p>PTY の文字列を <code>DataBatcher</code> が最大約 16 ms ごと、または上限到達時に flush。</p>
+        </article>
+        <article class="step-card">
+          <span class="step-num">STEP 03</span>
+          <h3>チャネルで送信</h3>
+          <p>RPC Server が対象ウィンドウの WebContents に session data を送信。</p>
+        </article>
+        <article class="step-card">
+          <span class="step-num">STEP 04</span>
+          <h3>状態を更新</h3>
+          <p>renderer の RPC listener が UID とデータを取り出し、Redux action を dispatch。</p>
+        </article>
+        <article class="step-card">
+          <span class="step-num">STEP 05</span>
+          <h3>端末へ描画</h3>
+          <p>Term component が xterm.js に書き込み、Canvas などの addon と設定を適用。</p>
+        </article>
+      </div>
+      <div class="ve-card ve-card--recessed">
+        <div class="ve-section-label"><span class="ve-dot"></span>流量制御の値</div>
+        <p style="margin-bottom:0;color:var(--muted-foreground);font-size:.82rem">
+          <code>BATCH_DURATION_MS = 16</code> を目安にまとめ、<code>BATCH_MAX_SIZE = 200 KiB</code> で大きなバッファを flush します。コメント上、1 チャンク分（最大約 4 KiB）の超過はあり得ます。
+        </p>
+      </div>
+    </section>
+
+    <section id="plugins" class="section">
+      <div class="section-head">
+        <h2 class="ve-section-label"><span class="ve-dot"></span>プラグイン API</h2>
+        <span class="section-index">04 / EXTENSIONS</span>
+      </div>
+      <p>Hyper は拡張ポイント名を <code>app/plugins/extensions.ts</code> で列挙します。インストール済み・ローカルのプラグインを読み込み、フックに応じてアプリの設定や UI に合成します。</p>
+      <div class="plugin-grid">
+        <article class="ve-card plugin-card">
+          <div class="runtime-label">Main process</div>
+          <h3>アプリとセッション</h3>
+          <p>Electron の起動やウィンドウ、シェル環境を拡張します。</p>
+          <div class="hook-list">
+            <code>onApp</code><code>onWindow</code><code>decorateSessionClass</code><code>decorateEnv</code>
+          </div>
+        </article>
+        <article class="ve-card plugin-card">
+          <div class="runtime-label">Renderer process</div>
+          <h3>React UI と状態</h3>
+          <p>コンポーネントの装飾、設定・キー割り当て、Redux 更新を追加します。</p>
+          <div class="hook-list">
+            <code>decorateTerms</code><code>decorateHeader</code><code>decorateTabs</code><code>decorateConfig</code><code>decorateKeymaps</code>
+          </div>
+        </article>
+        <article class="ve-card plugin-card">
+          <div class="runtime-label">Local workflow</div>
+          <h3>試作して読み込む</h3>
+          <p>開発用設定の <code>localPlugins</code> にローカルプラグイン名を加えます。</p>
+          <div class="hook-list">
+            <code>PLUGINS.md</code><code>decorateMenu</code><code>middleware</code>
+          </div>
+        </article>
+      </div>
+      <aside class="ve-callout">
+        <strong>拡張時の注意:</strong> 複数プラグインが同じコンポーネントを装飾する場合があります。<code>decorateTerms</code> の HOC 連鎖では <code>onDecorated</code> を次の handler に伝播し、後続プラグインの参照を維持します。
+      </aside>
+    </section>
+
+    <section id="config-cli" class="section">
+      <div class="section-head">
+        <h2 class="ve-section-label"><span class="ve-dot"></span>設定と CLI</h2>
+        <span class="section-index">05 / INTERFACE</span>
+      </div>
+      <div class="config-grid">
+        <article class="ve-card config-card">
+          <div class="runtime-label">hyper.json</div>
+          <h3>設定のまとまり</h3>
+          <ul>
+            <li><strong>config:</strong> shell、shellArgs、env、workingDirectory、フォント、色、scrollback、描画設定</li>
+            <li><strong>profiles:</strong> プロファイルごとの設定。<code>defaultProfile</code> が初期選択を指定</li>
+            <li><strong>plugins / localPlugins:</strong> npm から導入する拡張とローカル開発用拡張</li>
+            <li><strong>keymaps:</strong> コマンドとショートカットの対応</li>
+          </ul>
+        </article>
+        <article class="ve-card config-card">
+          <div class="runtime-label">CLI commands</div>
+          <h3>拡張を管理する</h3>
+          <div class="command-list">
+            <div class="command"><code>hyper install &lt;name&gt;</code><span>プラグインをインストール</span></div>
+            <div class="command"><code>hyper uninstall &lt;name&gt;</code><span>プラグインを削除</span></div>
+            <div class="command"><code>hyper list</code><span>インストール済みプラグインを表示</span></div>
+            <div class="command"><code>hyper search &lt;query&gt;</code><span>Hyper 用プラグインを検索</span></div>
+            <div class="command"><code>hyper list-remote</code><span>公開プラグイン一覧を表示</span></div>
+          </div>
+        </article>
+      </div>
+      <p class="reverse-note">アプリ本体の起動時に任意の引数でファイルやディレクトリを渡すと、その場所を開きます。設定ファイルの場所とバージョンは <code>hyper --help</code> / <code>hyper --version</code> で確認できます。</p>
+    </section>
+
+    <section id="development" class="section">
+      <div class="section-head">
+        <h2 class="ve-section-label"><span class="ve-dot"></span>開発と参照</h2>
+        <span class="section-index">06 / DEVELOPMENT</span>
+      </div>
+      <div class="dev-grid">
+        <article class="ve-card dev-card">
+          <div class="runtime-label">Local development</div>
+          <h3>起動・検証</h3>
+          <p>README の開発手順では pnpm を使います。watcher と Electron アプリは別ターミナルで起動します。</p>
+          <div class="ve-code-block" aria-label="開発コマンド">
+            <pre><code>pnpm install
+pnpm run dev
+# 別ターミナル
+pnpm run app
+
+# lint + unit tests
+pnpm test
+pnpm run build</code></pre>
+          </div>
+        </article>
+        <article class="ve-card ve-card--elevated dev-card">
+          <div class="runtime-label">Project shape</div>
+          <h3>リポジトリの入口</h3>
+          <p><code>app/</code> は Electron main process、<code>lib/</code> は renderer の React/Redux 実装、<code>cli/</code> は <code>hyper</code> コマンドです。</p>
+          <p style="margin-bottom:0">ルート <code>package.json</code> から Webpack、TypeScript、Babel の build と AVA の unit test を実行します。ネイティブ依存のため、初回インストールには OS ごとのビルド要件があります。</p>
+        </article>
+      </div>
+      <ul class="ref-list" aria-label="参考リンク">
+        <li><a href="https://github.com/vercel/hyper" target="_blank" rel="noopener">vercel/hyper <span>ソースコード・README・リリース</span></a></li>
+        <li><a href="https://github.com/vercel/hyper/blob/canary/PLUGINS.md" target="_blank" rel="noopener">PLUGINS.md <span>ローカル開発と拡張レシピ</span></a></li>
+        <li><a href="https://github.com/vercel/hyper/blob/canary/app/plugins/extensions.ts" target="_blank" rel="noopener">extensions.ts <span>利用可能な拡張ポイント</span></a></li>
+        <li><a href="https://hyper.is/" target="_blank" rel="noopener">hyper.is <span>製品情報と配布先</span></a></li>
+      </ul>
+      <footer class="page-foot">出典: vercel/hyper の README、package.json、app/・lib/・cli/ の実装。パッケージ情報は 4.0.0-canary.5 のソーススナップショットに基づきます。</footer>
+    </section>
+  </main>
+</div>
+
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(link) {
+    var id = link.getAttribute('href').slice(1);
+    var element = document.getElementById(id);
+    if (element) sections.push({link: link, head: element});
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(section) {
+      var rect = section.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = section;
+    });
+    sections.forEach(function(section) {
+      section.link.classList.toggle('active', section === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, {passive: true});
+  updateActive();
+})();
+</script>
+</body>
+</html>
