@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AutoHarness — Claude Code の自己学習スキル層</title>
+  <meta name="description" content="AutoHarness が Claude Code の作業履歴からスキルを提案し、検証・統合・再利用・アーカイブする流れと導入方法を図解します。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="AutoHarness — Claude Code の自己学習スキル層">
+  <meta property="og:description" content="実際のセッションからスキルを学び、検証して保存し、利用状況に応じて整理する仕組み。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/autoharness.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="AutoHarness — Claude Code の自己学習スキル層">
+  <meta name="twitter:description" content="AutoHarness の学習パイプライン、スキルのライフサイクル、導入と設定を図解。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Victor+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* Spell UI tokens */
+    :root {
+      --radius: .625rem; --radius-sm: calc(var(--radius) - 4px); --radius-md: calc(var(--radius) - 2px); --radius-lg: var(--radius);
+      --background: oklch(.985 .008 87); --foreground: oklch(.19 .025 238);
+      --card: oklch(1 0 0); --card-foreground: var(--foreground);
+      --popover: var(--card); --popover-foreground: var(--foreground);
+      --primary: oklch(.31 .09 215); --primary-foreground: oklch(.99 0 0);
+      --secondary: oklch(.95 .014 90); --secondary-foreground: var(--foreground);
+      --muted: oklch(.95 .014 90); --muted-foreground: oklch(.47 .025 235);
+      --accent: oklch(.93 .035 188); --accent-foreground: var(--foreground);
+      --destructive: oklch(.58 .20 28); --border: oklch(.87 .018 95);
+      --input: var(--border); --ring: oklch(.60 .10 200);
+      --chart-1: oklch(.45 .12 190); --chart-2: oklch(.64 .13 67); --chart-3: oklch(.42 .08 249);
+      --chart-4: oklch(.63 .12 148); --chart-5: oklch(.59 .13 29);
+      --code-bg: oklch(.94 .012 230); --code-text: oklch(.28 .065 237);
+      --font-body: 'Outfit', system-ui, sans-serif; --font-mono: 'Victor Mono', ui-monospace, monospace;
+      --bg: var(--background); --surface: var(--card); --surface2: var(--muted); --text: var(--foreground); --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(.17 .018 235); --foreground: oklch(.95 .012 90);
+        --card: oklch(.22 .022 232); --card-foreground: var(--foreground);
+        --popover: var(--card); --popover-foreground: var(--foreground);
+        --primary: oklch(.74 .12 190); --primary-foreground: oklch(.16 .02 235);
+        --secondary: oklch(.27 .02 230); --secondary-foreground: var(--foreground);
+        --muted: oklch(.27 .02 230); --muted-foreground: oklch(.72 .02 220);
+        --accent: oklch(.29 .04 188); --accent-foreground: var(--foreground);
+        --destructive: oklch(.72 .17 28); --border: oklch(.37 .025 228);
+        --input: var(--border); --ring: oklch(.63 .10 190);
+        --chart-1: oklch(.72 .12 190); --chart-2: oklch(.77 .12 75); --chart-3: oklch(.71 .09 249);
+        --chart-4: oklch(.70 .11 148); --chart-5: oklch(.72 .14 29);
+        --code-bg: oklch(.16 .018 235); --code-text: oklch(.83 .08 190);
+      }
+    }
+    /* Spell UI static components */
+    .ve-card { background:var(--card); color:var(--card-foreground); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.25rem 1.5rem; }
+    .ve-card--elevated { background:var(--accent); color:var(--accent-foreground); box-shadow:0 4px 20px #0001; }
+    .ve-card--recessed { background:var(--muted); box-shadow:inset 0 1px 3px #0001; }
+    .ve-card--hero { background:color-mix(in oklch,var(--card) 90%,var(--chart-1) 10%); box-shadow:0 8px 32px #0001; border-color:color-mix(in oklch,var(--border) 55%,var(--chart-1) 45%); }
+    .ve-section-label { display:inline-flex; align-items:center; gap:.5rem; font-size:.75rem; font-weight:600; line-height:1; text-transform:uppercase; letter-spacing:.1em; margin-bottom:1rem; color:var(--muted-foreground); }
+    .ve-section-label .ve-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; background:var(--chart-1); }
+    .ve-code-block { background:var(--code-bg); border:1px solid var(--border); border-radius:var(--radius-lg); max-height:20rem; overflow:hidden; display:flex; flex-direction:column; position:relative; }
+    .ve-code-block pre { margin:0; overflow:auto; padding:.9rem 1.1rem; flex:1; min-height:0; }
+    .ve-code-block code { font-family:var(--font-mono); font-size:.8rem; line-height:1.75; color:var(--code-text); white-space:pre-wrap; }
+    .ve-table-wrap { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); overflow-x:auto; }
+    .ve-table-wrap table { width:100%; border-collapse:collapse; font-size:.85rem; line-height:1.55; min-width:600px; }
+    .ve-table-wrap th { background:var(--muted); font-weight:600; text-align:left; padding:.85rem 1rem; border-bottom:2px solid var(--ring); }
+    .ve-table-wrap td { padding:.85rem 1rem; border-bottom:1px solid var(--border); vertical-align:top; }
+    .ve-table-wrap tr:last-child td { border-bottom:0; }
+    .ve-callout { background:var(--muted); border:1px solid var(--border); border-left:3px solid var(--chart-1); border-radius:0 var(--radius-lg) var(--radius-lg) 0; padding:.9rem 1.1rem; line-height:1.65; color:var(--muted-foreground); }
+    .ve-callout strong { color:var(--foreground); }
+    /* Layout */
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--bg); background-image:linear-gradient(color-mix(in oklch,var(--chart-1) 5%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in oklch,var(--chart-1) 5%,transparent) 1px,transparent 1px); background-size:32px 32px; color:var(--text); font-family:var(--font-body); padding:36px; }
+    a { color:var(--chart-1); text-underline-offset:3px; }
+    .wrap { width:100%; max-width:1260px; margin:auto; display:grid; grid-template-columns:180px minmax(0,1fr); gap:0 48px; }
+    .main { min-width:0; max-width:920px; }
+    .toc { position:sticky; top:24px; align-self:start; grid-row:1 / -1; padding:16px 0; max-height:calc(100dvh - 48px); overflow-y:auto; }
+    .toc-title { font:600 .7rem var(--font-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); padding-bottom:12px; border-bottom:1px solid var(--border); margin-bottom:8px; }
+    .toc a { display:block; padding:7px 9px; border-left:2px solid transparent; border-radius:4px; color:var(--text-dim); text-decoration:none; font-size:.81rem; line-height:1.35; }
+    .toc a:hover { background:var(--surface2); color:var(--text); }
+    .toc a.active { border-left-color:var(--chart-1); color:var(--text); font-weight:600; }
+    .breadcrumb { font:.75rem var(--font-mono); margin:3px 0 20px; }
+    .breadcrumb a { text-decoration:none; }
+    .eyebrow { font:.72rem var(--font-mono); color:var(--chart-1); text-transform:uppercase; letter-spacing:.15em; font-weight:600; }
+    h1 { font-size:clamp(2.2rem,5vw,4.2rem); line-height:1.05; letter-spacing:-.045em; margin:.6rem 0 1rem; }
+    .lead { font-size:1.1rem; line-height:1.7; color:var(--text-dim); max-width:65ch; margin:0; }
+    .hero-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:20px; }
+    .pill { display:inline-block; border:1px solid var(--border); border-radius:99px; background:var(--card); padding:5px 11px; font:.68rem var(--font-mono); }
+    .sec-head { margin:72px 0 20px; border-top:1px solid var(--border); padding-top:20px; scroll-margin-top:72px; }
+    .sec-head h2 { font-size:1.65rem; letter-spacing:-.025em; margin:0 0 8px; }
+    .sec-head p { color:var(--text-dim); line-height:1.65; margin:0; }
+    h3 { margin:0 0 9px; font-size:1rem; }
+    p { line-height:1.65; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .grid .ve-card p { color:var(--text-dim); margin:0; font-size:.89rem; }
+    .flow { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
+    .flow .ve-card { position:relative; min-height:158px; padding:18px; }
+    .flow .ve-card::after { content:'→'; position:absolute; right:-15px; top:50%; transform:translateY(-50%); z-index:1; font:600 1.4rem var(--font-mono); color:var(--chart-1); }
+    .flow .ve-card:nth-child(3)::after,.flow .ve-card:last-child::after { content:none; }
+    .step-num { display:block; color:var(--chart-1); font:.73rem var(--font-mono); margin-bottom:13px; }
+    .flow p { font-size:.84rem; color:var(--text-dim); margin:0; }
+    code { font-family:var(--font-mono); font-size:.85em; background:var(--muted); padding:1px 4px; border-radius:3px; overflow-wrap:anywhere; }
+    .ve-code-block pre code { display:block; background:transparent; border-radius:0; color:var(--code-text); padding:0; tab-size:2; }
+    .source-list { margin:0; padding-left:1.3rem; line-height:1.9; }
+    .source-list li + li { margin-top:6px; }
+    .note { font-size:.8rem; color:var(--text-dim); }
+    footer { margin:65px 0 20px; padding-top:16px; border-top:1px solid var(--border); font-size:.75rem; color:var(--text-dim); }
+    @media (max-width:1000px) {
+      body { padding:0 24px 32px; }
+      .wrap { grid-template-columns:1fr; }
+      .toc { top:0; z-index:10; grid-row:auto; display:flex; gap:4px; align-items:center; max-height:none; overflow-x:auto; background:var(--bg); border-bottom:1px solid var(--border); margin:0 -24px 25px; padding:8px 24px; }
+      .toc-title { display:none; }
+      .toc a { white-space:nowrap; flex-shrink:0; border-left:0; border-bottom:2px solid transparent; font-size:.75rem; }
+      .toc a.active { border-left:0; border-bottom-color:var(--chart-1); }
+      .sec-head { scroll-margin-top:65px; }
+    }
+    @media (max-width:650px) {
+      .grid,.flow { grid-template-columns:1fr; }
+      .flow .ve-card { min-height:0; }
+      .flow .ve-card::after { content:'↓'; right:50%; top:auto; bottom:-21px; transform:translateX(50%); }
+      .flow .ve-card:nth-child(3)::after { content:'↓'; }
+      .ve-card { padding:1rem; }
+    }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="ページ内目次">
+    <div class="toc-title">Contents</div>
+    <a href="#overview">概要</a>
+    <a href="#pipeline">学習の流れ</a>
+    <a href="#boundary">書き込みの境界</a>
+    <a href="#lifecycle">スキルの寿命</a>
+    <a href="#start">導入と確認</a>
+    <a href="#settings">主な設定</a>
+    <a href="#references">参照</a>
+  </nav>
+  <main class="main">
+    <div class="breadcrumb"><a href="../index.html">資料一覧</a> / AutoHarness</div>
+    <header class="ve-card ve-card--hero">
+      <span class="eyebrow">Claude Code plugin / skill lifecycle</span>
+      <h1>AutoHarness</h1>
+      <p class="lead">Claude Code の作業セッションから再利用できるスキルを見つけ、検証して保存するプラグイン。重複を統合し、使われなくなったスキルはアーカイブします。</p>
+      <div class="hero-meta"><span class="pill">Python 3.11+</span><span class="pill">Linux / macOS</span><span class="pill">第三者依存なし</span></div>
+    </header>
+
+    <section id="overview" class="sec-head"><h2>01 / 何を管理するか</h2><p>AutoHarness は、Claude Code が使うネイティブな <code>SKILL.md</code> のうち、自身が作ったものを管理します。</p></section>
+    <div class="grid">
+      <div class="ve-card"><span class="ve-section-label"><span class="ve-dot"></span> 作業から学ぶ</span><h3>セッションを教材にする</h3><p>ツール呼び出し数がしきい値を越えたターンの終わりに、作業の一部を振り返ります。必要なときは <code>/learn</code> で今のセッションから学べます。</p></div>
+      <div class="ve-card"><span class="ve-section-label"><span class="ve-dot"></span> ライブラリを保つ</span><h3>似た技能をまとめる</h3><p>同じ場面に向けた提案は新規追加だけでなく、既存スキルへの統合や更新として扱います。セッション開始時には管理対象の索引を提示します。</p></div>
+    </div>
+
+    <section id="pipeline" class="sec-head"><h2>02 / 学習の流れ</h2><p>記録、提案、検証、再提示を別の責務に分けています。学習処理は通常のセッションに並走します。</p></section>
+    <div class="flow" aria-label="AutoHarness の学習パイプライン">
+      <div class="ve-card"><span class="step-num">01 / CAP</span><h3>作業を捕捉</h3><p>フックがターンとツール利用を記録。外へ渡す際に機密情報を伏せ、既存のホストログを参照します。</p></div>
+      <div class="ve-card"><span class="step-num">02 / REF</span><h3>改善を提案</h3><p>リフレクターが既存スキルと照合し、追加・統合・更新などの意図を作ります。</p></div>
+      <div class="ve-card"><span class="step-num">03 / PROMOTER</span><h3>検証して保存</h3><p>提案の安全性と構造を検査し、通ったものだけをスキルディレクトリへ反映します。</p></div>
+    </div>
+    <div class="flow" aria-label="スキルを使い続けるための仕組み">
+      <div class="ve-card"><span class="step-num">04 / IDX</span><h3>次回に提示</h3><p>管理対象スキルをカテゴリ別に並べ、次のセッション開始時に索引として渡します。</p></div>
+      <div class="ve-card"><span class="step-num">05 / MNG</span><h3>利用状況を評価</h3><p>読み込み・閲覧・更新を別々に数え、十分な機会を経たスキルだけを整理対象にします。</p></div>
+      <div class="ve-card"><span class="step-num">06 / CURATOR + LED</span><h3>統合し、履歴を残す</h3><p>全体の重複を統合。スキルごとの台帳に変更理由と根拠を記録します。</p></div>
+    </div>
+
+    <section id="boundary" class="sec-head"><h2>03 / 書き込みの境界</h2><p>スキル提案をそのままファイル操作に結び付けない設計です。</p></section>
+    <div class="grid">
+      <div class="ve-card ve-card--elevated"><span class="ve-section-label"><span class="ve-dot"></span> 提案側</span><h3>Reflector は書き込まない</h3><p>エピソードから変更意図と根拠を作り、保存は行いません。古いスキルと矛盾する提案では、矛盾の解消も同じ実行内で求められます。</p></div>
+      <div class="ve-card"><span class="ve-section-label"><span class="ve-dot"></span> 保存側</span><h3>Promoter が検証する</h3><p>構造・安全性・台帳・自作スキルかどうかを確認し、合格した変更だけを原子的に配置します。却下理由は実行結果に残ります。</p></div>
+    </div>
+    <p class="ve-callout"><strong>対象の制限:</strong> 管理するのは AutoHarness の台帳マーカーを持つ自作スキルだけです。利用者が書いたスキルや別途インストールしたスキルは変更対象にしません。</p>
+
+    <section id="lifecycle" class="sec-head"><h2>04 / スキルの寿命</h2><p>経過時間ではなく、利用機会に対する実際の使われ方を見ます。</p></section>
+    <div class="ve-table-wrap"><table>
+      <thead><tr><th>段階</th><th>判定・動作</th><th>ディスク上の結果</th></tr></thead>
+      <tbody>
+        <tr><td>試用期間</td><td>一定数のリクエストが届くまで評価を待つ。索引には引き続き表示。</td><td><code>.claude/skills/&lt;name&gt;/</code> に保持</td></tr>
+        <tr><td>卒業判定</td><td>試用期間中に読み込みも閲覧も一度もなければアーカイブ。</td><td><code>.claude/skills/.archive/</code> へ移動</td></tr>
+        <tr><td>容量超過</td><td>成熟したスキルが上限を越えた場合、利用率が低いものから整理。</td><td>削除せずアーカイブ。戻せば復帰可能</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">利用率に数えるのはスキルの読み込みです。閲覧は卒業判定の根拠にし、更新は改善後の再利用を見分けるため別に記録します。</p>
+
+    <section id="start" class="sec-head"><h2>05 / 導入と確認</h2><p>Claude Code のプラグインとして導入します。実行環境には <code>python3</code> が必要です。</p></section>
+    <div class="ve-card">
+      <span class="ve-section-label"><span class="ve-dot"></span> Claude Code の入力欄</span>
+      <div class="ve-code-block"><pre><code>/plugin marketplace add tigerless-labs/autoharness
+/plugin install autoharness@autoharness
+/reload-plugins</code></pre></div>
+      <p>再読み込み後は通常の作業を続けるだけで動きます。学習を明示的に依頼するときは <code>/learn</code> を使います。</p>
+    </div>
+    <div class="ve-callout" style="margin-top:14px"><strong>動作を確かめる場所:</strong> 自作スキルは <code>.claude/skills/</code>、プロジェクトごとの実行記録は <code>.claude/autoharness/</code> に置かれます。各スキルの <code>.ledger.jsonl</code> に変更理由と根拠が残ります。</div>
+
+    <section id="settings" class="sec-head"><h2>06 / 主な設定</h2><p>環境変数 <code>AUTOHARNESS_*</code> で学習間隔とスキルの上限を調整できます。</p></section>
+    <div class="ve-table-wrap"><table>
+      <thead><tr><th>変数</th><th>既定値</th><th>役割</th></tr></thead>
+      <tbody>
+        <tr><td><code>REFLECT_EVERY_N</code></td><td>50</td><td>振り返りまでのツール呼び出し数</td></tr>
+        <tr><td><code>CONSOLIDATE_EVERY_N</code></td><td>250</td><td>ライブラリ全体の統合までのリクエスト数</td></tr>
+        <tr><td><code>MATURITY_PROJECT</code> / <code>MATURITY_GLOBAL</code></td><td>100 / 300</td><td>卒業判定までのリクエスト数</td></tr>
+        <tr><td><code>CAPACITY_PROJECT</code> / <code>CAPACITY_GLOBAL</code></td><td>50 / 20</td><td>各層で保持する成熟スキルの上限</td></tr>
+        <tr><td><code>INDEX_SUSPENDED</code></td><td>0</td><td>1 にするとセッション開始時の索引注入を停止</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">表中の変数名にはすべて <code>AUTOHARNESS_</code> を付けます。既定値はソース README の値です。</p>
+
+    <section id="references" class="sec-head"><h2>07 / 参照</h2><p>機能や既定値は AutoHarness の公開ソースを基にしています。</p></section>
+    <div class="ve-card"><ul class="source-list">
+      <li><a href="https://github.com/tigerless-labs/autoharness" target="_blank" rel="noopener noreferrer">tigerless-labs/autoharness</a> — プロジェクト本体と README</li>
+      <li><a href="https://github.com/tigerless-labs/autoharness/tree/main/src/autoharness" target="_blank" rel="noopener noreferrer">src/autoharness</a> — フック、検証、保存、ライフサイクルの実装</li>
+      <li><a href="https://github.com/tigerless-labs/autoharness/blob/main/skills/learn/SKILL.md" target="_blank" rel="noopener noreferrer">skills/learn/SKILL.md</a> — 手動の学習入口</li>
+    </ul></div>
+    <footer>AutoHarness の構成と運用を理解するための図解資料。</footer>
+  </main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 80;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var docTop = s.head.getBoundingClientRect().top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>

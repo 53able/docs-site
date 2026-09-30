@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dotenvx — .env の暗号化と実行時の変数注入</title>
+  <meta name="description" content="dotenvx の run、複数環境、暗号化、鍵の分離、Node.js API をソースコードに沿って図解します。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="dotenvx — .env の暗号化と実行時の変数注入">
+  <meta property="og:description" content="dotenvx の実行フロー、複数 .env の優先順位、暗号化と秘密鍵の扱いを解説します。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/dotenvx.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="dotenvx — .env の暗号化と実行時の変数注入">
+  <meta name="twitter:description" content="dotenvx の run、複数環境、暗号化、鍵の分離を図解します。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* THEME: warm paper and forest green, with Spell UI component tokens */
+    :root {
+      --radius: .625rem; --radius-sm: calc(var(--radius) - 4px); --radius-lg: var(--radius);
+      --background: #f8f7f1; --foreground: #20312b; --card: #fffefa; --card-foreground: var(--foreground);
+      --muted: #eeefe7; --muted-foreground: #52645a; --accent: #e7eee3; --accent-foreground: var(--foreground);
+      --border: #cdd7cb; --ring: #668576; --chart-1: #27714c; --chart-2: #a45d30; --chart-3: #345a68;
+      --code-bg: #e9eee8; --code-text: #244f38;
+      --font-body: 'IBM Plex Sans JP', sans-serif; --font-mono: 'IBM Plex Mono', monospace;
+      --bg: var(--background); --surface: var(--card); --surface2: var(--muted); --text: var(--foreground); --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #18231e; --foreground: #ecf1e9; --card: #223028; --card-foreground: var(--foreground);
+        --muted: #2c3b32; --muted-foreground: #b7c8b7; --accent: #2c4434; --accent-foreground: var(--foreground);
+        --border: #415b49; --ring: #83b996; --chart-1: #94d3a6; --chart-2: #e0a578; --chart-3: #a1c7d4;
+        --code-bg: #17241c; --code-text: #d4edda;
+      }
+    }
+    /* Spell UI static components */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--hero { background: color-mix(in oklch, var(--card) 88%, var(--chart-1) 12%); border-color: color-mix(in oklch, var(--border) 65%, var(--chart-1) 35%); box-shadow: 0 5px 24px #0000000d; }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px #0000000a; }
+    .ve-section-label { display: inline-flex; align-items: center; gap: .5rem; font: 600 .73rem var(--font-mono); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-code-block pre { margin: 0; padding: 1rem 1.25rem; overflow-x: auto; }
+    .ve-code-block code { font: .84rem/1.7 var(--font-mono); color: var(--code-text); white-space: pre; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-x: auto; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: .86rem; line-height: 1.6; }
+    .ve-table-wrap th { background: var(--muted); text-align: left; padding: .8rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: .8rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 1rem 1.2rem; line-height: 1.7; }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; padding: 36px; min-height: 100vh; color: var(--text); font-family: var(--font-body); background: var(--bg); background-image: linear-gradient(#27714c0a 1px, transparent 1px), linear-gradient(90deg, #27714c0a 1px, transparent 1px); background-size: 32px 32px; }
+    .wrap { max-width: 1220px; margin: auto; display: grid; grid-template-columns: 195px minmax(0, 1fr); gap: 46px; }
+    .main { min-width: 0; max-width: 920px; }
+    .toc { position: sticky; top: 24px; align-self: start; max-height: calc(100dvh - 48px); overflow-y: auto; padding: 10px 0; }
+    .toc-title { font: 600 .67rem var(--font-mono); letter-spacing: .15em; color: var(--text-dim); margin-bottom: 12px; padding-bottom: 9px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; padding: 7px 9px; color: var(--text-dim); font-size: .78rem; text-decoration: none; border-left: 2px solid transparent; border-radius: 4px; }
+    .toc a:hover, .toc a.active { color: var(--text); background: var(--muted); }
+    .toc a.active { border-left-color: var(--chart-1); font-weight: 700; }
+    h1 { font-size: clamp(2.2rem, 5vw, 4rem); letter-spacing: -.045em; line-height: 1.12; margin: .25rem 0 .5rem; }
+    .eyebrow { color: var(--chart-1); font: 600 .72rem var(--font-mono); letter-spacing: .15em; text-transform: uppercase; }
+    .subtitle { color: var(--text-dim); margin: 0 0 2.2rem; line-height: 1.6; }
+    .sec-head { font-size: 1.25rem; margin: 3rem 0 1rem; padding-bottom: .6rem; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+    h3 { font-size: 1rem; margin: .2rem 0 .65rem; }
+    p { line-height: 1.78; margin: .55rem 0 1rem; }
+    a { color: var(--chart-1); text-underline-offset: 3px; }
+    code { font: .84em var(--font-mono); background: var(--muted); padding: 2px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+    .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; margin: 1rem 0; }
+    .flow .ve-card { padding: 1rem; position: relative; }
+    .flow .ve-card:not(:last-child)::after { content: '→'; position: absolute; right: -.66rem; top: 46%; color: var(--chart-1); font: 700 1.15rem var(--font-mono); z-index: 1; }
+    .flow b { display: block; font: 600 .69rem var(--font-mono); color: var(--chart-1); margin-bottom: .6rem; }
+    .flow p { font-size: .83rem; margin: 0; line-height: 1.55; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0; }
+    .grid .ve-card { height: 100%; }
+    .grid p { margin-bottom: 0; font-size: .88rem; }
+    .pill { display: inline-block; border: 1px solid var(--border); border-radius: 99px; padding: .25rem .6rem; background: var(--card); font: .69rem var(--font-mono); margin: .2rem .3rem .2rem 0; }
+    .source { font: .72rem var(--font-mono); color: var(--text-dim); margin: .6rem 0 0; }
+    @media (max-width: 900px) { body { padding: 22px; } .wrap { display: block; } .toc { position: sticky; top: 0; z-index: 2; display: flex; gap: 5px; overflow-x: auto; max-height: none; margin: 0 -22px 20px; padding: 9px 22px; background: var(--bg); border-bottom: 1px solid var(--border); } .toc-title { display: none; } .toc a { white-space: nowrap; border-left: 0; border-bottom: 2px solid transparent; } .toc a.active { border-bottom-color: var(--chart-1); } .sec-head { scroll-margin-top: 70px; } }
+    @media (max-width: 680px) { .flow, .grid { grid-template-columns: 1fr; } .flow .ve-card:not(:last-child)::after { content: '↓'; left: 50%; top: auto; right: auto; bottom: -.72rem; } .ve-card { padding: 1rem; } }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">CONTENTS</div>
+    <a href="#overview">概要</a>
+    <a href="#run">実行フロー</a>
+    <a href="#environments">複数環境</a>
+    <a href="#encryption">暗号化と鍵</a>
+    <a href="#interfaces">利用方法</a>
+    <a href="#sources">ソース</a>
+  </nav>
+  <main class="main">
+    <span class="eyebrow">SOURCE GUIDE / DOTENVX</span>
+    <h1>dotenvx</h1>
+    <p class="subtitle">.env の値を読み込み、必要なら復号して、コマンドや Node.js のプロセスへ渡す。</p>
+
+    <section id="overview" aria-labelledby="overview-title">
+      <h2 class="sec-head" id="overview-title">1 — 何を担うか</h2>
+      <div class="ve-card ve-card--hero">
+        <span class="ve-section-label"><span class="ve-dot"></span> ENV FILE → PROCESS ENV</span>
+        <p><strong>dotenvx</strong> は、`.env` の変数をアプリに渡す CLI と Node.js ライブラリ。環境別ファイルの選択、暗号化された値の復号、コマンド実行をひとつのワークフローにまとめる。値を暗号化した `.env` はコードと共に管理できるが、復号に使う秘密鍵は別に保持する。</p>
+        <span class="pill">Source: v2.30.0</span><span class="pill">CLI: dotenvx / dx</span><span class="pill">Library: config()</span><span class="pill">License: BSD-3-Clause</span>
+      </div>
+      <p class="source">根拠: README.md「Usage」「Design」、package.json</p>
+    </section>
+
+    <section id="run" aria-labelledby="run-title">
+      <h2 class="sec-head" id="run-title">2 — <code>run</code> の実行フロー</h2>
+      <div class="flow" aria-label="環境変数をコマンドへ渡すまでの流れ">
+        <div class="ve-card"><b>01 / SELECT</b><h3>.env を選ぶ</h3><p><code>-f</code>、環境規約、またはデフォルトのファイルを解決する。</p></div>
+        <div class="ve-card"><b>02 / RESOLVE</b><h3>値を読む</h3><p>ファイルを解析し、暗号化された値は利用可能な鍵で復号する。</p></div>
+        <div class="ve-card"><b>03 / INJECT</b><h3>環境を組み立てる</h3><p>既存のプロセス環境と読み込んだ変数を優先規則に沿って統合する。</p></div>
+        <div class="ve-card"><b>04 / EXECUTE</b><h3>子コマンドを実行</h3><p><code>--</code> より後のコマンドに環境変数を渡す。</p></div>
+      </div>
+      <div class="ve-code-block"><pre><code>echo 'HELLO=World' &gt; .env
+dotenvx run -- node index.js</code></pre></div>
+      <div class="ve-callout"><strong>区切りの <code>--</code>:</strong> オプションと実行コマンドを明確に分ける。コマンドがない場合、<code>run</code> はエラーを返す。</div>
+      <p class="source">根拠: README.md「Run Anywhere」、src/cli/actions/run.js、src/lib/services/validate.js</p>
+    </section>
+
+    <section id="environments" aria-labelledby="environments-title">
+      <h2 class="sec-head" id="environments-title">3 — 複数環境の読み込み順</h2>
+      <p><code>-f</code> でファイルを指定できる。複数のファイルはカンマ区切りで並べる。通常は先に解決された値と既存の環境変数が優先される。<code>--overload</code> を付けると、後から読み込む値で上書きする。</p>
+      <div class="ve-table-wrap"><table>
+        <thead><tr><th scope="col">指定</th><th scope="col">読み込み結果</th><th scope="col">用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>-f .env.production</code></td><td>指定したファイルを読む</td><td>環境を明示する</td></tr>
+          <tr><td><code>-f .env.local,.env</code></td><td>通常は先の <code>.env.local</code> が優先</td><td>ローカル設定を共通設定に重ねる</td></tr>
+          <tr><td><code>-f .env.local,.env --overload</code></td><td>後の <code>.env</code> が上書き</td><td>上書き順を切り替える</td></tr>
+          <tr><td><code>--convention=nextjs</code></td><td><code>DOTENV_ENV</code>（なければ <code>NODE_ENV</code>）に応じ、<code>.env.&lt;環境&gt;.local</code> → <code>.env.local</code> → <code>.env.&lt;環境&gt;</code> → <code>.env</code> の順。test では <code>.env.local</code> を除く</td><td>フレームワークの慣習に合わせる</td></tr>
+        </tbody>
+      </table></div>
+      <p class="source">根拠: README.md「Multiple Environments」、src/lib/main.js</p>
+    </section>
+
+    <section id="encryption" aria-labelledby="encryption-title">
+      <h2 class="sec-head" id="encryption-title">4 — 暗号化と鍵の分離</h2>
+      <div class="grid">
+        <div class="ve-card"><span class="ve-section-label"><span class="ve-dot"></span> REPOSITORY</span><h3>暗号化した .env</h3><p><code>dotenvx encrypt</code> は値を暗号文に変換する。公開鍵と暗号化した値は `.env` に置ける。</p></div>
+        <div class="ve-card"><span class="ve-section-label"><span class="ve-dot"></span> RUNTIME</span><h3>復号用の秘密鍵</h3><p>実行環境に秘密鍵を別経路で渡す。<code>run</code> は実行時に復号し、アプリへ変数を渡す。</p></div>
+      </div>
+      <div class="ve-code-block"><pre><code>dotenvx encrypt -f .env.production
+DOTENV_PRIVATE_KEY_PRODUCTION="&lt;private key&gt;" dotenvx run -- node index.js</code></pre></div>
+      <div class="ve-callout"><strong>鍵の扱い:</strong> 暗号化した `.env` と秘密鍵を同じ公開範囲へ置かない。`.env.production` の鍵は <code>DOTENV_PRIVATE_KEY_PRODUCTION</code> で渡せる。鍵ファイルの初期値は <code>.env.keys</code>。</div>
+      <p class="source">根拠: README.md「Encryption」、src/cli/actions/encrypt.js</p>
+    </section>
+
+    <section id="interfaces" aria-labelledby="interfaces-title">
+      <h2 class="sec-head" id="interfaces-title">5 — CLI と Node.js から使う</h2>
+      <div class="grid">
+        <div class="ve-card"><h3>CLI</h3><p><code>dotenvx run -- &lt;command&gt;</code> は言語を問わず子プロセスへ変数を渡す。<code>encrypt</code> は `.env` の値を暗号化する。</p></div>
+        <div class="ve-card"><h3>Node.js API</h3><p><code>require('@dotenvx/dotenvx').config()</code> はアプリのプロセス環境へ値を読み込む。ESM 向けに <code>@dotenvx/dotenvx/config</code> も公開されている。</p></div>
+      </div>
+      <div class="ve-code-block"><pre><code>// Node.js のエントリポイント
+require('@dotenvx/dotenvx').config()
+console.log(process.env.HELLO)</code></pre></div>
+      <p><code>run --redact</code> は子コマンドの標準出力・標準エラーに現れる機密値を伏せるオプション。値の加工・変換後など、元の値と一致しない文字列は対象外なので、出力を転送・保存するときは表示結果を確認する。</p>
+      <p class="source">根拠: README.md「Quickstart」、package.json、src/lib/main.js、src/cli/actions/run.js</p>
+    </section>
+
+    <section id="sources" aria-labelledby="sources-title">
+      <h2 class="sec-head" id="sources-title">6 — 参照先</h2>
+      <div class="ve-card ve-card--recessed">
+        <p><a href="https://github.com/dotenvx/dotenvx/tree/25950d8203b78ee3a5c1e32949ed69c2e1f28d11" target="_blank" rel="noopener">dotenvx / dotenvx</a> — このページで参照したソース（v2.30.0）</p>
+        <p><a href="https://github.com/dotenvx/dotenvx/blob/25950d8203b78ee3a5c1e32949ed69c2e1f28d11/src/cli/actions/run.js" target="_blank" rel="noopener">run.js</a> — コマンド実行と変数注入</p>
+        <p><a href="https://github.com/dotenvx/dotenvx/blob/25950d8203b78ee3a5c1e32949ed69c2e1f28d11/src/lib/main.js" target="_blank" rel="noopener">main.js</a> — Node.js の <code>config()</code></p>
+        <p><a href="https://github.com/dotenvx/dotenvx/blob/25950d8203b78ee3a5c1e32949ed69c2e1f28d11/src/cli/actions/encrypt.js" target="_blank" rel="noopener">encrypt.js</a> — 暗号化コマンド</p>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) { s.link.classList.toggle('active', s === current); });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
