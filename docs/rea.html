@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REA — アプリとバイナリをエージェントで解析</title>
+  <meta name="description" content="REA の CLI・MCP、解析対象とプロバイダー、証拠に基づく調査の流れ、セットアップ方法を解説します。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="REA — アプリとバイナリをエージェントで解析">
+  <meta property="og:description" content="REA の CLI・MCP、解析対象とプロバイダー、証拠に基づく調査の流れ、セットアップ方法を解説します。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/rea.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="REA — アプリとバイナリをエージェントで解析">
+  <meta name="twitter:description" content="REA の CLI・MCP、解析対象とプロバイダー、証拠に基づく調査の流れ、セットアップ方法を解説します。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Chivo+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.48 0.12 75);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Noto Sans JP', system-ui, sans-serif;
+      --font-mono: 'Chivo Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.79 0.12 85);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.646 0.222 41.116 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.488 0.243 264.376 / 0.08) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Pipeline diagram */
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+    .ve-code-block pre code { display:block; background:transparent; padding:0; border-radius:0; color:var(--code-text); overflow-wrap:anywhere; }
+    .hero-name { font-family: var(--font-mono); font-size: clamp(3rem, 8vw, 5rem); letter-spacing: -.06em; line-height: 1; color: var(--chart-1); margin-bottom: 1rem; }
+    .investigation { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin:1rem 0; }
+    .investigation article { border-top:3px solid var(--chart-1); }
+    .investigation h3 { margin-top:.5rem; }
+    .step-number { font-family:var(--font-mono); color:var(--chart-1); }
+    .source-note { margin-top:2rem; color:var(--text-dim); font-size:.8rem; }
+    .ve-table-wrap { overflow-x:auto; }
+    .ve-table-wrap table { min-width:580px; }
+    a:focus-visible { outline:2px solid var(--chart-1); outline-offset:4px; }
+    @media(max-width:640px) { .investigation { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">REA / Contents</div>
+    <a href="#overview">概要と構成</a><a href="#targets">解析対象</a><a href="#investigation">調査の流れ</a><a href="#evidence">証拠の読み方</a><a href="#start">始め方</a><a href="#links">公式資料</a>
+  </nav>
+  <main class="main">
+    <a href="../index.html">資料一覧へ</a>
+    <header style="margin-top:2rem">
+      <div class="hero-name">REA</div>
+      <h1>アプリとバイナリをエージェントで解析</h1>
+      <p class="subtitle">Reverse Engineer Anything / morluto/rea</p>
+    </header>
+
+    <section aria-labelledby="overview">
+      <h2 id="overview" class="sec-head">1 — 概要と構成</h2>
+      <div class="ve-card ve-card--hero">
+        <span class="ve-section-label"><span class="ve-dot"></span> CLI + MCP</span>
+        <p>REA は、配布されたアプリやバイナリの内部を調べるための CLI と MCP サーバーです。エージェントが文字列、関数、呼び出し関係、実行時の観測を手がかりに機能を説明し、その知見を自分のプロジェクトの実装に使えます。</p>
+        <p>解析はローカルで行います。ネイティブコードは Hopper・Ghidra・IDA と連携し、JavaScript や Electron の静的解析はそれらを使わずに実行できます。</p>
+        <div class="pipeline" aria-label="REA の構成">
+          <span class="step">ターミナル / エージェント</span><span class="arrow" aria-hidden="true">→</span><span class="step">REA CLI / MCP</span><span class="arrow" aria-hidden="true">→</span><span class="step">対象に応じた解析機能</span><span class="arrow" aria-hidden="true">→</span><span class="step">Evidence と解析結果</span>
+        </div>
+      </div>
+      <p class="source-note">npm パッケージ: <code>rea-agents</code> · コマンド: <code>rea</code> · MIT ライセンス</p>
+    </section>
+
+    <section aria-labelledby="targets">
+      <h2 id="targets" class="sec-head">2 — 対象に応じて解析経路を選ぶ</h2>
+      <div class="ve-table-wrap"><table>
+        <thead><tr><th scope="col">対象</th><th scope="col">調べる内容</th><th scope="col">経路・前提</th></tr></thead>
+        <tbody>
+          <tr><td>ネイティブ実行ファイル・ライブラリ</td><td>関数、文字列、参照、逆アセンブル、擬似コード</td><td>Hopper / Ghidra / IDA。対応 OS・形式はプロバイダーごとに異なる</td></tr>
+          <tr><td>JavaScript / Electron のディレクトリ・ASAR</td><td>モジュールやアプリの構造、依存関係</td><td>Node.js と npm。静的解析ではアプリを実行しない</td></tr>
+          <tr><td>.NET アセンブリ</td><td>メタデータ、型、メソッド、IL</td><td>マネージドコード解析。NativeAOT はネイティブ解析へ</td></tr>
+          <tr><td>ブラウザ / Electron の実行中アプリ</td><td>画面、ネットワーク、実行時の観測</td><td>接続可能なデバッグ対象。静的解析とは別の経路</td></tr>
+          <tr><td>ZIP / APK / IPA / MSIX / DMG</td><td>パッケージ内のメンバーと構造</td><td>アーカイブ検査。APK のコード解析には別途 JADX JAR と JDK が必要</td></tr>
+          <tr><td>ファームウェア</td><td>領域の検査、明示的な抽出</td><td>Linux 上の Binwalk / Unblob を利用者が用意</td></tr>
+        </tbody>
+      </table></div>
+      <div class="ve-callout"><strong>ネイティブ解析エンジンが複数ある場合:</strong> <code>--provider ghidra</code> などで選択します。MCP では <code>open_binary</code> に <code>provider_id</code> を指定します。選択したエンジンの失敗時に別のエンジンへ自動で切り替わることはありません。</div>
+    </section>
+
+    <section aria-labelledby="investigation">
+      <h2 id="investigation" class="sec-head">3 — 手がかりから機能を理解する</h2>
+      <p>たとえば「このアプリのオフライン検索はどう動くか」を調べる場合、関係する箇所に絞って解析します。</p>
+      <div class="investigation">
+        <article class="ve-card"><span class="step-number">01 / Decompile</span><h3>手がかりを見つける</h3><p>対象を開き、検索や保存に関する文字列・関数名を探します。参照をたどり、関連する処理の擬似コードを取得します。</p></article>
+        <article class="ve-card"><span class="step-number">02 / Understand</span><h3>処理のつながりを説明</h3><p>呼び出し元・呼び出し先と制御フローを確認します。観測できた内容を根拠にし、未解決の点も示します。</p></article>
+        <article class="ve-card"><span class="step-number">03 / Recreate</span><h3>自分の実装へ適用</h3><p>エージェントが調査結果を使い、利用者の技術構成と要件に合わせてコードを書き、テストします。</p></article>
+      </div>
+      <div class="ve-callout"><strong>REA が担うのは解析です。</strong> 新しい機能のコード編集とテストはエージェントの通常の開発ツールが担当します。擬似コードは元のソースコードの復元を保証しません。</div>
+    </section>
+
+    <section aria-labelledby="evidence">
+      <h2 id="evidence" class="sec-head">4 — 証拠・推測・未解決を区別する</h2>
+      <div class="ve-card">
+        <p>解析結果には Evidence と、解析範囲の制約や不明点が付属します。見つかった文字列だけで機能全体を断定せず、結論を支える参照と観測範囲を確認します。</p>
+        <div class="ve-table-wrap"><table>
+          <thead><tr><th scope="col">区分</th><th scope="col">読み方</th></tr></thead>
+          <tbody><tr><td>観測</td><td>解析ツールが取得した関数、文字列、参照、実行時データ</td></tr><tr><td>推測</td><td>観測をつないだ説明。根拠となる Evidence を明示する</td></tr><tr><td>未解決</td><td>解析できない経路や不足した観測。未確認の挙動を成功扱いにしない</td></tr></tbody>
+        </table></div>
+        <p style="margin-top:1rem">Evidence は CLI でインポート・エクスポート・比較できます。保存した解析スナップショットは、対象のバイト列・操作・パラメーター・ツール・設定が一致する場合に結果を再利用します。</p>
+      </div>
+      <div class="ve-callout"><strong>ローカル解析とモデルへの送信は別です。</strong> REA にホスト型の解析サービスはありませんが、エージェントやモデル提供元のデータポリシーは別途適用されます。</div>
+    </section>
+
+    <section aria-labelledby="start">
+      <h2 id="start" class="sec-head">5 — 始め方</h2>
+      <h3>静的 JavaScript 解析を CLI で試す</h3>
+      <p>Node.js 22.19 以上の 22 系、24.11 以上の 24 系、または 26 以上と npm が必要です。以下の <code>./app.asar</code> は解析したいローカルファイルのパスに置き換えてください。</p>
+      <div class="ve-code-block"><pre><code>npx -y rea-agents@latest analyze-javascript-application ./app.asar --json</code></pre></div>
+      <p>MCP 設定やネイティブ解析エンジンのインストールは不要です。結果には Evidence、復元されたグラフ、制約、不明点が含まれます。</p>
+      <h3>エージェントへ接続する</h3>
+      <div class="ve-code-block"><pre><code>npx rea-agents setup</code></pre></div>
+      <ol>
+        <li>利用するエージェントを選び、設定パスと変更内容を確認します。</li>
+        <li>必要なら既存の解析エンジンを設定します。Hopper のインストールは別の任意選択です。</li>
+        <li>セットアップ後にエージェントを再起動し、対象アプリと調べたい機能を伝えます。</li>
+      </ol>
+      <p>Codex、Claude Code、Cursor、Gemini CLI などに対応します。setup は通常、パッケージと版が一致する調査スキルも導入します。</p>
+      <h3>診断は必要な範囲で行う</h3>
+      <div class="ve-code-block"><pre><code># Codex の MCP 登録を診断
+npx -y rea-agents@latest doctor --client codex --json
+
+# Ghidra の前提条件を診断
+npx -y rea-agents@latest doctor --provider ghidra --json</code></pre></div>
+      <p>無指定の <code>doctor</code> は全体監査です。使わないエンジンが未設定でも異常を報告し得るため、現在の作業に必要な範囲を指定します。</p>
+    </section>
+
+    <section aria-labelledby="links">
+      <h2 id="links" class="sec-head">6 — 公式資料</h2>
+      <div class="ve-card"><ul>
+        <li><a href="https://github.com/morluto/rea" target="_blank" rel="noopener">morluto/rea</a> — README、ソース、リリース</li>
+        <li><a href="https://github.com/morluto/rea/blob/main/docs/installation.md" target="_blank" rel="noopener">Installation and setup</a> — エージェント設定と環境要件</li>
+        <li><a href="https://github.com/morluto/rea/blob/main/docs/provider-evaluation.md" target="_blank" rel="noopener">Provider evaluation</a> — 解析エンジンの対応範囲</li>
+        <li><a href="https://github.com/morluto/rea/blob/main/skills/reverse-engineer-anything/SKILL.md" target="_blank" rel="noopener">調査スキル</a> — 対象の選択と Evidence の扱い</li>
+      </ul></div>
+    </section>
+    <footer class="source-note">出典: morluto/rea の README、package.json、調査スキル、CLI・MCP エントリーポイント。2026-10-08 時点の main（4.1.0）を参照。main と公開 npm パッケージでは利用できる機能が異なる場合があります。</footer>
+  </main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
