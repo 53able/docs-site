@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>openai/math — 数学原稿と Lean 形式化の資料集</title>
+  <meta name="description" content="OpenAI の数学原稿集を読むための案内。ファミリー別カタログ、原稿と証明資料の関係、Lean 形式化の範囲、Comparator の確認手順を解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="openai/math — 数学原稿と Lean 形式化の資料集">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/math.html">
+  <meta property="og:description" content="数学原稿と証明資料の構成、カタログの読み方、Lean 形式化と Comparator による確認手順。結果ごとに異なる検証範囲も整理。">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="openai/math — 数学原稿と Lean 形式化の資料集">
+  <meta name="twitter:description" content="数学原稿、Lean 証明、形式化の範囲を結び付けて読むための案内。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600;700&amp;family=Spline+Sans+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Source Serif 4', system-ui, sans-serif;
+      --font-mono: 'Spline Sans Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+
+    /* Page palette and editorial layout */
+    :root { --bg:#f8f5ef; --surface:#fffdf8; --text:#27251f; --text-dim:#625e53; --chart-1:#825521; --chart-2:#557060; --code-text:#563d22; }
+    @media(prefers-color-scheme:dark) { :root { --bg:#1c1b17; --surface:#25241f; --text:#eee8dd; --text-dim:#beb7a9; --chart-1:#e3b878; --chart-2:#a9c8b2; --code-text:#e3cfac; } }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:36px; background:var(--bg); color:var(--text); font-family:var(--font-body); }
+    a { color:var(--chart-1); text-underline-offset:3px; }
+    a:focus-visible { outline:2px solid var(--chart-1); outline-offset:4px; }
+    .wrap { max-width:1280px; margin:auto; display:grid; grid-template-columns:185px minmax(0,1fr); gap:48px; }
+    .main, .grid > *, .route > * { min-width:0; }
+    .toc { position:sticky; top:24px; align-self:start; max-height:calc(100dvh - 48px); overflow:auto; padding:14px 0; }
+    .toc-title { font:.7rem var(--font-mono); color:var(--text-dim); letter-spacing:.12em; padding-bottom:12px; border-bottom:1px solid var(--border); }
+    .toc a { display:block; padding:9px 10px; margin:3px 0; border-left:2px solid transparent; text-decoration:none; color:var(--text-dim); font-size:.82rem; }
+    .toc a.active { border-left-color:var(--chart-1); color:var(--text); }
+    .breadcrumb, .eyebrow, .source-note, .step-num { font:.75rem/1.7 var(--font-mono); }
+    .eyebrow, .step-num { color:var(--chart-1); letter-spacing:.08em; }
+    h1 { font-size:clamp(2.2rem,5vw,4.2rem); line-height:1.12; letter-spacing:-.035em; margin:20px 0; font-weight:600; }
+    .lead { max-width:46rem; font-size:1.1rem; line-height:1.9; color:var(--text-dim); }
+    h2 { font-size:1.45rem; margin:48px 0 20px; padding-top:16px; border-top:1px solid var(--border); scroll-margin-top:70px; }
+    h3 { font-size:1.1rem; margin:0 0 12px; }
+    p, li { font-size:.95rem; line-height:1.85; }
+    p { margin:0 0 12px; } li { margin-bottom:7px; } ul, ol { padding-left:1.3rem; }
+    .ve-card--hero { padding:30px; border-top:3px solid var(--chart-1); background:var(--surface); }
+    .ve-card--reference { background:var(--muted); }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:16px 0; }
+    .stats { display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; margin:24px 0 16px; }
+    .stat { padding:18px 0; border-top:1px solid var(--border); }
+    .stat strong { display:block; font-size:2.4rem; font-weight:500; font-variant-numeric:tabular-nums; }
+    .stat span { font-size:.82rem; color:var(--text-dim); }
+    .route { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; margin:20px 0; }
+    .route article { border-top:2px solid var(--chart-1); padding:18px 0; }
+    .step-num { display:block; margin-bottom:12px; }
+    .source-note { color:var(--text-dim); margin:16px 0; }
+    code { font:.83em var(--font-mono); background:var(--muted); border-radius:3px; padding:2px 4px; overflow-wrap:anywhere; }
+    .ve-code-block { margin:18px 0; }
+    .ve-code-block pre code { display:block; background:transparent; padding:0; border-radius:0; color:var(--code-text); white-space:pre-wrap; overflow-wrap:anywhere; tab-size:2; }
+    .ve-table-wrap th { text-transform:none; font-size:.8rem; letter-spacing:0; }
+    .ve-table-wrap td { font-size:.88rem; line-height:1.7; overflow-wrap:anywhere; }
+    .ve-callout { margin:20px 0; font-size:.9rem; }
+    .formula { font-size:clamp(1.2rem,3vw,1.8rem); margin:22px 0; font-style:italic; }
+    footer { border-top:1px solid var(--border); margin-top:40px; padding:20px 0; }
+    @media(max-width:1000px) {
+      body { padding:0 24px 24px; } .wrap { grid-template-columns:minmax(0,1fr); gap:0; }
+      .toc { top:0; z-index:20; display:flex; gap:4px; max-height:none; overflow-x:auto; background:var(--bg); border-bottom:1px solid var(--border); margin:0 -24px; padding:10px 24px; }
+      .toc-title { display:none; } .toc a { white-space:nowrap; flex-shrink:0; font-size:.75rem; border-left:none; border-bottom:2px solid transparent; padding:6px 8px; }
+      .toc a.active { border-bottom-color:var(--chart-1); } .main { padding-top:24px; }
+    }
+    @media(max-width:640px) { .grid,.route { grid-template-columns:minmax(0,1fr); } .stats { grid-template-columns:repeat(3,minmax(0,1fr)); } .stat strong { font-size:1.8rem; } .ve-card--hero { padding:22px; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">CONTENTS</div>
+    <a href="#overview">01 概要と検証段階</a><a href="#reading">02 資料を読む順序</a><a href="#artifacts">03 資料の構成</a><a href="#scope">04 形式化の範囲</a><a href="#verification">05 Lean の確認手順</a><a href="#references">06 引用と参照</a>
+  </nav>
+  <main class="main">
+    <p class="breadcrumb"><a href="../index.html">資料一覧</a> / openai/math</p>
+    <header>
+      <span class="eyebrow">MATHEMATICS / MANUSCRIPTS / FORMAL PROOFS</span>
+      <h1>openai/math<br>数学原稿と Lean 形式化</h1>
+      <p class="lead">内部 OpenAI モデルが生成した数学原稿と、それを支える証明資料のコレクション。研究テーマから原稿を探し、対応する形式化の命題と検証設定まで辿るための構成を整理します。</p>
+      <p class="source-note">参照版: 2026-10-06 · commit adc7f1241 · 数値はこの版の README に基づく</p>
+    </header>
+    <section aria-labelledby="overview">
+      <h2 id="overview">01 — 概要と検証段階</h2>
+      <div class="ve-card ve-card--hero">
+        <h3>原稿をファミリー単位で読む</h3>
+        <p>ファミリーは主結果、補助的な議論、帰結、別証明などの関連原稿をまとめた単位です。分野別に分類され、カタログの番号は順位を表しません。</p>
+        <div class="stats"><div class="stat"><strong>722</strong><span>数学原稿</span></div><div class="stat"><strong>372</strong><span>ファミリー</span></div><div class="stat"><strong>10</strong><span>推論要約の対象</span></div></div>
+        <p>既存の数学評価が飽和した後、モデル開発の一環として未解決の研究課題へ評価を広げたと README は説明しています。約 4,000 問の出力を整理し、重要性の基準を満たした結果がこの資料集に収録されています。</p>
+      </div>
+      <aside class="ve-callout"><strong>結果ごとに検証段階が異なります。</strong>すべての原稿に Lean 形式化が付いているわけではありません。README は未形式化の結果に問題があり得ると明記し、形式化カタログの <code>review.status</code> は <code>unchecked</code> です。本ページは資料の案内であり、数学的な正しさを独立に認定するものではありません。</aside>
+      <p class="source-note">出典: <a href="https://github.com/openai/math/blob/adc7f1241/README.md">README</a> · <a href="https://github.com/openai/math/blob/adc7f1241/lean/formalization.yaml">形式化カタログ</a></p>
+    </section>
+    <section aria-labelledby="reading">
+      <h2 id="reading">02 — 資料を読む順序</h2>
+      <div class="route" aria-label="テーマから原稿へ進む三段階">
+        <article><span class="step-num">STEP 01 / FAMILY</span><h3>研究テーマを選ぶ</h3><p><a href="https://github.com/openai/math/blob/main/overview.pdf">overview.pdf</a> で分野別の概要を確認。数論、幾何、解析、計算機科学などから関心のあるファミリーを選びます。</p></article>
+        <article><span class="step-num">STEP 02 / MANUSCRIPT</span><h3>関連原稿を辿る</h3><p><a href="https://github.com/openai/math/blob/main/CONTENTS.md">CONTENTS.md</a> で個々の原稿と関連資料を探し、<code>preprints/</code> の PDF と原稿別 README を開きます。</p></article>
+        <article><span class="step-num">STEP 03 / STATEMENT</span><h3>形式化の対応を調べる</h3><p><a href="https://github.com/openai/math/blob/main/lean/formalization.yaml">formalization.yaml</a> と <code>lean/docs/</code> で命題の範囲を確認し、対応する Comparator 設定に進みます。</p></article>
+      </div>
+      <div class="ve-card ve-card--reference"><h3>推論要約を併読する</h3><p><code>reasoning_traces/</code> には、π の無理数度、乗法的関数の相関、自由群因子の同型など 10 ファミリーの短縮された推論要約があります。対象の一覧は README にあり、原稿・形式証明と併せて読む補助資料です。</p></div>
+    </section>
+    <section aria-labelledby="artifacts">
+      <h2 id="artifacts">03 — 原稿と証明資料の構成</h2>
+      <div class="ve-table-wrap"><table><thead><tr><th scope="col">資料</th><th scope="col">役割</th><th scope="col">確認する内容</th></tr></thead><tbody>
+        <tr><td><code>overview.pdf / overview.tex</code></td><td>ファミリー別概要</td><td>研究分野、結果の要約、原稿リンク</td></tr>
+        <tr><td><code>CONTENTS.md</code></td><td>個別原稿のマップ</td><td>主結果と関連原稿の関係</td></tr>
+        <tr><td><code>preprints/</code></td><td>原稿と付随資料</td><td>PDF、ソース、原稿別の引用・ビルド手順</td></tr>
+        <tr><td><code>lean/OAI/</code></td><td>単一の Lean ライブラリ</td><td>分野ごとの定義・補題・主定理</td></tr>
+        <tr><td><code>lean/docs/</code></td><td>形式化範囲の説明</td><td>対象原稿、選択された命題、対象外の帰結</td></tr>
+        <tr><td><code>lean/formalization.yaml</code></td><td>形式化カタログ</td><td>原稿、依存ライブラリ、宣言、ファイル、検証設定</td></tr>
+        <tr><td><code>lean/ComparatorChallenges/</code></td><td>照合用命題と設定</td><td>challenge と solution のモジュール、定理名、許可する公理</td></tr>
+        <tr><td><code>reasoning_traces/</code></td><td>短縮された推論要約</td><td>選ばれた 10 ファミリーの推論過程</td></tr>
+      </tbody></table></div>
+      <p class="source-note">Lean は <code>leanprover/lean4:v4.34.1</code> を指定。依存先の版は <code>lakefile.lean</code> と <code>lake-manifest.json</code> で固定されています。</p>
+    </section>
+    <section aria-labelledby="scope">
+      <h2 id="scope">04 — 形式化がカバーする命題</h2>
+      <div class="ve-card ve-card--hero"><span class="eyebrow">EXAMPLE / FAMILY 017</span><h3>π の無理数度を題材に範囲を確認する</h3><p><a href="https://github.com/openai/math/blob/main/lean/docs/017.md">形式化範囲の説明</a>は、π の無理数度が 2 である命題を対象にしています。ν &gt; 2 に対し、十分大きい正の分母 q では、すべての整数 p について次の不等式を満たすと記載されています。</p><p class="formula" aria-label="パイと p 割る q の差の絶対値は q のマイナスニュー乗以上">|π − p/q| ≥ q<sup>−ν</sup></p>
+      <div class="grid"><div><h3>選択された命題</h3><p>無理数度が 2 であることと、無限個の有理近似を用いた上限の特徴付け。照合用の命題は <code>PiExponent.lean</code> にあります。</p></div><div><h3>この命題の範囲外</h3><p>原稿が述べる Flint–Hills 級数の収束という帰結は、この選択された形式化命題の対象外です。</p></div></div></div>
+      <p class="source-note">参照版では π の説明文書と Comparator 設定は存在しますが、<code>formalization.yaml</code> の <code>main_results</code> に PiExponent の項目はありません。カタログだけでなく個別の文書と設定も確認してください。</p>
+      <aside class="ve-callout"><strong>原稿の主張と Lean の宣言を対応させてください。</strong>原稿のタイトルだけで範囲を判断せず、対象命題、仮定、定義、許可する公理を読みます。形式化済みの部分から原稿全体の検証済み状態を推定しないことが大切です。</aside>
+    </section>
+    <section aria-labelledby="verification">
+      <h2 id="verification">05 — Lean と Comparator の確認手順</h2>
+      <p><a href="https://github.com/openai/math/blob/main/lean/ComparatorChallenges/README.md">Comparator README</a> は <code>comparator</code>、<code>landrun</code>、<code>lean4export</code> をインストールして PATH に置くよう指定しています。対応する Lean 環境を用意し、取得したプロジェクトの <code>lean/</code> 内から実行します。</p>
+      <div class="ve-code-block"><div class="ve-code-block__label">公式 README の例 · lean/ 内で実行</div><pre><code>lake update
+lake exe cache get
+lake env comparator ComparatorChallenges/QuasiRiemannHypothesis.json</code></pre></div>
+      <div class="grid"><div class="ve-card"><h3>対象の設定を選ぶ</h3><p>上の例は QuasiRiemannHypothesis 用です。π の例なら <code>ComparatorChallenges/PiExponent.json</code> の設定を選びます。</p><p>その設定は <code>OAI.PiExponent.main</code> を指定し、許可する公理を <code>propext</code>、<code>Quot.sound</code>、<code>Classical.choice</code> に限定しています。<code>enable_nanoda</code> は <code>false</code> です。</p></div><div class="ve-card"><h3>小さい単位で確認する</h3><p>Lean README はライブラリ全体を一度にコンパイルせず、小さい部分ごとにビルドすることを推奨しています。全体ビルドでは Linux の <code>vm.max_map_count</code> が不足すると失敗する場合があります。</p><p>回避策として Lean の CMake オプション <code>-DMMAP=OFF</code>、必要に応じた環境変数の設定を案内しています。</p></div></div>
+      <div class="ve-code-block"><div class="ve-code-block__label">Lean README にある mmap 回避用環境変数</div><pre><code>GLIBC_TUNABLES=glibc.malloc.mmap_max=0:glibc.malloc.arena_max=1</code></pre></div>
+      <p class="source-note">このページの作成では Lean 証明や Comparator を実行していません。上記はソースに記載された検証手順の案内です。</p>
+    </section>
+    <section aria-labelledby="references">
+      <h2 id="references">06 — 引用と参照</h2>
+      <div class="ve-card"><h3>個別原稿の BibTeX を使う</h3><p>原稿を引用するときは、その原稿のディレクトリにある README の BibTeX を使用します。README は修正・改訂を新しい版として記録し、過去の公開版もアクセス可能な状態で残す方針を示しています。</p><ul>
+      <li><a href="https://github.com/openai/math">openai/math</a> — 公開リポジトリと最新 README</li>
+      <li><a href="https://github.com/openai/math/blob/main/overview.pdf">研究カタログ</a> / <a href="https://github.com/openai/math/blob/main/CONTENTS.md">原稿マップ</a> — テーマと関連資料を探す</li>
+      <li><a href="https://github.com/openai/math/blob/main/lean/README.md">Lean README</a> / <a href="https://github.com/openai/math/blob/main/lean/formalization.yaml">形式化カタログ</a> — 対応と環境を調べる</li>
+      <li><a href="https://github.com/openai/math/blob/main/lean/ComparatorChallenges/README.md">Comparator 手順</a> / <a href="https://github.com/leanprover/comparator">Comparator 本体</a> — 照合の入口</li>
+      <li><a href="https://github.com/openai/math/blob/main/lean/ComparatorChallenges/PiExponent.json">π の照合設定</a> / <a href="https://github.com/openai/math/blob/main/preprints/The-irrationality-exponent-of-pi-is-2-September-24-2026/README.md">π の原稿と引用情報</a> — 本ページの具体例</li>
+      </ul></div>
+    </section>
+    <footer class="source-note">参照ソース: <a href="https://github.com/openai/math/tree/adc7f1241">openai/math · adc7f1241</a> · ページ作成: 2026-10-08</footer>
+  </main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 76;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
