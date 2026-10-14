@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xtool — Linux・Windows・macOS で iOS アプリをビルドして実機に入れる</title>
+  <meta name="description" content="xtool の処理の流れ、モジュール構成、インストール手順、xtool.yml の設定、コマンド一覧、制約を解説します。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="xtool — Linux・Windows・macOS で iOS アプリをビルドして実機に入れる">
+  <meta property="og:description" content="xtool の処理の流れ、モジュール構成、インストール手順、xtool.yml の設定、コマンド一覧、制約を解説します。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/xtool.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="xtool — Linux・Windows・macOS で iOS アプリをビルドして実機に入れる">
+  <meta name="twitter:description" content="xtool の処理の流れ、モジュール構成、インストール手順、xtool.yml の設定、コマンド一覧、制約を解説します。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Chivo+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.48 0.12 75);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Noto Sans JP', system-ui, sans-serif;
+      --font-mono: 'Chivo Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.79 0.12 85);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.646 0.222 41.116 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.488 0.243 264.376 / 0.08) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Pipeline diagram */
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+    .ve-code-block pre code { display:block; background:transparent; padding:0; border-radius:0; color:var(--code-text); overflow-wrap:anywhere; }
+    .hero-name { font-family: var(--font-mono); font-size: clamp(3rem, 8vw, 5rem); letter-spacing: -.06em; line-height: 1; color: var(--chart-1); margin-bottom: 1rem; }
+    .investigation { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin:1rem 0; }
+    .investigation article { border-top:3px solid var(--chart-1); }
+    .investigation h3 { margin-top:.5rem; }
+    .step-number { font-family:var(--font-mono); color:var(--chart-1); }
+    .source-note { margin-top:2rem; color:var(--text-dim); font-size:.8rem; }
+    .ve-table-wrap { overflow-x:auto; }
+    .ve-table-wrap table { min-width:580px; }
+    a:focus-visible { outline:2px solid var(--chart-1); outline-offset:4px; }
+    @media(max-width:640px) { .investigation { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">xtool / Contents</div>
+    <a href="#overview">概要</a><a href="#modules">モジュール構成</a><a href="#flow">xtool dev の流れ</a><a href="#install">インストール</a><a href="#first-app">最初のアプリ</a><a href="#config">xtool.yml</a><a href="#commands">コマンド一覧</a><a href="#cautions">制約と注意</a><a href="#links">公式資料</a>
+  </nav>
+  <main class="main">
+    <a href="../index.html">資料一覧へ</a>
+    <header style="margin-top:2rem">
+      <div class="hero-name">xtool</div>
+      <h1>Linux・Windows・macOS で iOS アプリをビルドして実機に入れる</h1>
+      <p class="subtitle">Cross-platform Xcode replacement / xtool-org/xtool</p>
+    </header>
+
+    <section aria-labelledby="overview">
+      <h2 id="overview" class="sec-head">1 — 概要</h2>
+      <div class="ve-card ve-card--hero">
+        <span class="ve-section-label"><span class="ve-dot"></span> SwiftPM / Cross-platform</span>
+        <p>xtool は、Xcode のビルド・署名・実機インストールを置き換える CLI です。SwiftPM パッケージを iOS アプリ（<code>.app</code> / <code>.ipa</code>）に組み立て、Apple Developer Services で証明書とプロビジョニングプロファイルを用意し、USB で接続した iPhone へインストールします。</p>
+        <p>CLI は Linux、WSL、macOS で動きます。Linux と WSL では、Apple が配布する <code>Xcode.xip</code> から iOS 用の Swift SDK を生成して使います。macOS ではインストール済みの Xcode の SDK を使いますが、Xcode のビルドシステムは使いません。</p>
+        <div class="pipeline" aria-label="xtool の処理の流れ">
+          <span class="step">Package.swift + xtool.yml</span><span class="arrow" aria-hidden="true">→</span><span class="step">swift build（Darwin SDK）</span><span class="arrow" aria-hidden="true">→</span><span class="step">.app に梱包</span><span class="arrow" aria-hidden="true">→</span><span class="step">プロビジョニング + 署名</span><span class="arrow" aria-hidden="true">→</span><span class="step">USB で実機へ</span>
+        </div>
+      </div>
+      <div class="kpi-row" style="margin-top:1rem">
+        <div class="ve-kpi-card"><div class="ve-kpi-card__value">3</div><div class="ve-kpi-card__label">対応 OS（Linux / WSL / macOS）</div></div>
+        <div class="ve-kpi-card"><div class="ve-kpi-card__value">6.4</div><div class="ve-kpi-card__label">Linux で使う Swift</div></div>
+        <div class="ve-kpi-card"><div class="ve-kpi-card__value">2</div><div class="ve-kpi-card__label">ログイン方式</div></div>
+        <div class="ve-kpi-card"><div class="ve-kpi-card__value">MIT</div><div class="ve-kpi-card__label">ライセンス</div></div>
+      </div>
+      <p class="source-note">言語: Swift 6（strict concurrency）· 配布: Linux は AppImage、macOS は Homebrew または xtool.app · 作者: Kabir Oberai</p>
+    </section>
+
+    <section aria-labelledby="modules">
+      <h2 id="modules" class="sec-head">2 — モジュール構成</h2>
+      <p>リポジトリは 1 つの Swift Package です。CLI 本体とは別に、署名や実機操作を担う <code>XKit</code> をライブラリとして公開しています。</p>
+      <div class="ve-table-wrap"><table>
+        <thead><tr><th scope="col">ターゲット</th><th scope="col">役割</th></tr></thead>
+        <tbody>
+          <tr><td><code>xtool</code> / <code>XToolSupport</code></td><td>CLI の入口とサブコマンド（<code>setup</code>、<code>dev</code>、<code>sdk</code>、<code>auth</code> など）</td></tr>
+          <tr><td><code>PackLib</code></td><td><code>xtool.yml</code> の読み込み、SwiftPM の依存グラフからの梱包計画（Planner）、<code>.app</code> の組み立て（Packer）、Xcode プロジェクト生成</td></tr>
+          <tr><td><code>XKit</code></td><td>Apple Developer Services への認証（GrandSlam / API キー）、証明書・App ID・プロファイルの発行、署名、実機へのインストール。iOS でも動く</td></tr>
+          <tr><td><code>DeveloperAPI</code></td><td>App Store Connect API の OpenAPI 定義から生成したクライアント</td></tr>
+          <tr><td><code>XcodeProjects</code></td><td><code>xtool dev generate-xcode-project</code> 用の <code>.xcodeproj</code> 書き出し</td></tr>
+        </tbody>
+      </table></div>
+      <p style="margin-top:1rem">自作アプリから XKit を使う場合は、SwiftPM の依存に追加します。</p>
+      <div class="ve-code-block"><pre><code>// package dependency:
+.package(url: "https://github.com/xtool-org/xtool", .upToNextMinor(from: "1.2.0"))
+// target dependency:
+.product(name: "XKit", package: "xtool")</code></pre></div>
+    </section>
+
+    <section aria-labelledby="flow">
+      <h2 id="flow" class="sec-head">3 — <code>xtool dev</code> の流れ</h2>
+      <p><code>xtool dev</code> は <code>xtool dev run</code> の省略形です。パッケージのルートで実行すると、ビルドから起動可能な状態までを 1 回で進めます。</p>
+      <div class="investigation">
+        <article class="ve-card" style="--i:0"><span class="step-number">01 / Plan</span><h3>梱包計画を作る</h3><p><code>Package.swift</code> と <code>xtool.yml</code> を読み、アプリ本体と App Extension に対応するライブラリ製品、リソース、<code>Info.plist</code>、entitlements を決めます。<code>xtool.yml</code> がなければ <code>com.example</code> を組織 ID として続行します。</p></article>
+        <article class="ve-card" style="--i:1"><span class="step-number">02 / Build</span><h3>SwiftPM でビルド</h3><p>ターゲット <code>arm64-apple-ios</code> で SwiftPM がビルドし、Packer が <code>xtool/&lt;App&gt;.app</code> を組み立てます。初回は iOS SDK のモジュールをビルドするため数分かかります。</p></article>
+        <article class="ve-card" style="--i:2"><span class="step-number">03 / Install</span><h3>署名して実機へ</h3><p>デバイスを Apple ID に登録し、証明書・App ID・プロファイルを用意して署名し、インストールします。進捗は Provisioning、Signing、Installing などの段階で表示されます。</p></article>
+      </div>
+      <div class="ve-code-block"><pre><code>Hello$ xtool dev
+Planning...
+Building for debugging...
+Build of product 'Hello-App' complete! (4.94s)
+Waiting for device to be connected...
+Installing to device: Kabir's iPhone (udid: *****)
+
+[Unpacking app] 100%
+[Logging in] 100%
+[Preparing device] 100%
+[Provisioning] 100%
+[Signing] 100%
+[Packaging] 100%
+[Connecting] 100%
+[Installing] 100%
+[Verifying] 100%</code></pre></div>
+      <div class="ve-callout"><strong>macOS ではシミュレーターも使えます。</strong> <code>xtool dev run --simulator</code> で <code>arm64-apple-ios-simulator</code> 向けにビルドし、iOS Simulator へインストールします。この場合はログインもデバイス接続も不要です。</div>
+    </section>
+
+    <section aria-labelledby="install">
+      <h2 id="install" class="sec-head">4 — インストール</h2>
+      <div class="ve-table-wrap"><table>
+        <thead><tr><th scope="col">項目</th><th scope="col">Linux / WSL</th><th scope="col">macOS</th></tr></thead>
+        <tbody>
+          <tr><td>Swift</td><td>Swift 6.4 ツールチェーン（swift.org から）</td><td>Xcode 同梱の Swift</td></tr>
+          <tr><td>iOS SDK</td><td><code>Xcode.xip</code>（Xcode 27）から <code>xtool setup</code> が生成</td><td>インストール済み Xcode の SDK</td></tr>
+          <tr><td>デバイス接続</td><td><code>usbmuxd</code>。WSL は USBIPD で USB をパススルー</td><td>OS 標準</td></tr>
+          <tr><td>xtool 本体</td><td>GitHub Release の <code>xtool-&lt;arch&gt;.AppImage</code></td><td><code>brew install xtool-org/tap/xtool</code> または <code>xtool.app</code></td></tr>
+        </tbody>
+      </table></div>
+      <h3>Linux の手順</h3>
+      <div class="ve-code-block"><pre><code># 前提: Swift 6.4 と usbmuxd を入れ、Xcode.xip をブラウザーでダウンロードしておく
+swift --version
+sudo apt-get install usbmuxd
+
+# xtool を PATH に置く
+curl -fL \
+  "https://github.com/xtool-org/xtool/releases/latest/download/xtool-$(uname -m).AppImage" \
+  -o xtool
+chmod +x xtool
+sudo mv xtool /usr/local/bin/
+
+# ログインと SDK の生成
+xtool setup
+swift sdk list   # darwin が表示されれば完了</code></pre></div>
+      <h3><code>xtool setup</code> のログイン方式</h3>
+      <div class="ve-table-wrap"><table>
+        <thead><tr><th scope="col">方式</th><th scope="col">条件</th><th scope="col">仕組み</th></tr></thead>
+        <tbody>
+          <tr><td>API Key（推奨）</td><td>有料の Apple Developer Program</td><td>公開 API の App Store Connect API。App Manager ロールの Team Key を発行して入力する</td></tr>
+          <tr><td>Password</td><td>任意の Apple ID（無料アカウント可）</td><td>メールアドレス・パスワード・2FA で Apple の非公開 API に認証する</td></tr>
+        </tbody>
+      </table></div>
+      <div class="ve-callout"><strong>Xcode.xip は手動でダウンロードします。</strong> ダウンロードページは Apple ID でのログインとライセンス同意が必要なため、<code>curl</code> では取得できません。<code>xtool setup</code> でファイルのパスを入力すると、展開して Darwin 用の Swift SDK をインストールします。SDK は後から <code>xtool sdk</code> で更新・削除できます。</div>
+    </section>
+
+    <section aria-labelledby="first-app">
+      <h2 id="first-app" class="sec-head">5 — 最初のアプリ</h2>
+      <ol>
+        <li><code>xtool new Hello</code> でテンプレートを作ります。<code>Package.swift</code>、<code>xtool.yml</code>、<code>.bsp/xtool.json</code>、SwiftUI の <code>HelloApp.swift</code> と <code>ContentView.swift</code> が生成されます。</li>
+        <li>iPhone を USB で接続し、<code>Hello</code> ディレクトリで <code>xtool dev</code> を実行します。</li>
+        <li>iPhone に「このコンピュータを信頼しますか」が出たら <strong>信頼</strong> を選びます。直後にエラーで止まった場合は <code>xtool dev</code> を再実行します。</li>
+        <li>デベロッパモードを求められたら、iPhone の設定で有効にして再実行します。</li>
+        <li>初回起動で「信頼されていないデベロッパ」と出たら、<strong>設定 &gt; 一般 &gt; VPN とデバイス管理</strong> で自分の Apple ID を信頼します。</li>
+      </ol>
+      <div class="ve-code-block"><pre><code>Developer$ xtool new Hello
+Creating package: Hello
+Creating Package.swift
+Creating xtool.yml
+Creating .gitignore
+Creating .bsp/xtool.json
+Creating Sources/Hello/HelloApp.swift
+Creating Sources/Hello/ContentView.swift</code></pre></div>
+      <div class="ve-callout"><strong>エディターの補完は SourceKit-LSP で動きます。</strong> <code>.bsp/xtool.json</code> は Build Server Protocol 経由で xtool にビルド情報を問い合わせる設定です。VS Code なら Swift 拡張を入れれば、iOS SDK の型にもホバーで説明が出ます。コードを直したら <code>xtool dev</code> を再実行します。2 回目以降はキャッシュが効きます。</div>
+    </section>
+
+    <section aria-labelledby="config">
+      <h2 id="config" class="sec-head">6 — <code>xtool.yml</code> の設定</h2>
+      <p>SwiftPM のライブラリをどう iOS アプリに梱包するかを書くファイルです。<code>version: 1</code> と、<code>bundleID</code> または <code>orgID</code> のどちらかが必須です。</p>
+      <div class="ve-table-wrap"><table>
+        <thead><tr><th scope="col">キー</th><th scope="col">内容</th></tr></thead>
+        <tbody>
+          <tr><td><code>bundleID</code> / <code>orgID</code></td><td>バンドル ID。<code>orgID</code> の場合は <code>&lt;orgID&gt;.&lt;製品名&gt;</code> になる</td></tr>
+          <tr><td><code>product</code></td><td>アプリ本体にするライブラリ製品。製品が複数あるときに指定する</td></tr>
+          <tr><td><code>infoPath</code></td><td>追加・上書きしたいキーだけを書いた <code>Info.plist</code>。自動生成の内容にマージされる</td></tr>
+          <tr><td><code>entitlementsPath</code></td><td>entitlements の plist</td></tr>
+          <tr><td><code>iconPath</code></td><td>アプリアイコン。PNG のみ</td></tr>
+          <tr><td><code>resources</code></td><td>アプリバンドル直下に置くファイル。通常のリソースは SwiftPM の <code>resources:</code> で足りる</td></tr>
+          <tr><td><code>extensions</code></td><td>App Extension の一覧。各項目に <code>product</code> と <code>infoPath</code> が必須</td></tr>
+          <tr><td><code>skipLSP</code></td><td><code>.bsp/xtool.json</code> の自動作成を止める</td></tr>
+        </tbody>
+      </table></div>
+      <h3>ウィジェットを足す例</h3>
+      <p><code>Package.swift</code> に <code>HelloWidget</code> ライブラリを追加したうえで、アプリ本体と拡張を区別します。</p>
+      <div class="ve-code-block"><pre><code>version: 1
+bundleID: com.example.Hello
+product: Hello
+extensions:
+  - product: HelloWidget
+    infoPath: HelloWidget-Info.plist</code></pre></div>
+    </section>
+
+    <section aria-labelledby="commands">
+      <h2 id="commands" class="sec-head">7 — コマンド一覧</h2>
+      <div class="ve-table-wrap"><table>
+        <thead><tr><th scope="col">区分</th><th scope="col">コマンド</th><th scope="col">内容</th></tr></thead>
+        <tbody>
+          <tr><td>設定</td><td><code>setup</code></td><td>ログインと SDK の準備をまとめて行う</td></tr>
+          <tr><td>設定</td><td><code>auth login</code> / <code>logout</code> / <code>status</code></td><td>Apple Developer Services の認証</td></tr>
+          <tr><td>設定</td><td><code>sdk build</code> / <code>install</code> / <code>update</code> / <code>remove</code> / <code>status</code></td><td>Darwin Swift SDK の管理</td></tr>
+          <tr><td>開発</td><td><code>new</code></td><td>テンプレートからプロジェクトを作る</td></tr>
+          <tr><td>開発</td><td><code>dev</code>（= <code>dev run</code>）</td><td>ビルドして実機またはシミュレーターで実行</td></tr>
+          <tr><td>開発</td><td><code>dev build [--sign] [--ipa]</code></td><td>ビルドのみ。<code>--sign</code> で署名、<code>--ipa</code> で <code>.ipa</code> を出力</td></tr>
+          <tr><td>開発</td><td><code>dev generate-xcode-project</code></td><td>macOS で Xcode を使いたいときの <code>.xcodeproj</code> を生成</td></tr>
+          <tr><td>開発</td><td><code>ds teams</code> / <code>devices</code> / <code>identifiers</code> / <code>certificates</code> / <code>profiles</code></td><td>Developer Services 上の資源を一覧する</td></tr>
+          <tr><td>デバイス</td><td><code>devices</code> / <code>install</code> / <code>uninstall</code> / <code>launch</code></td><td>接続中デバイスの一覧、<code>.ipa</code> のインストール、削除、起動</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section aria-labelledby="cautions">
+      <h2 id="cautions" class="sec-head">8 — 制約と注意</h2>
+      <div class="ve-card">
+        <ul>
+          <li><strong>Password 方式は Apple の非公開 API を使います。</strong> 公式ドキュメントは、慎重を期すなら使い捨ての Apple ID を作ることを勧めています。認証情報の送信先は Apple だけです。</li>
+          <li><strong>実機に入れるとバンドル ID に接頭辞が付きます。</strong> 例: <code>XTL-1234.com.example.Hello</code>。無料アカウント同士で同じバンドル ID を使えないため、共有時の衝突を避ける措置です。</li>
+          <li><strong>Linux でも Xcode.xip が必要です。</strong> iOS SDK は Apple の Xcode から生成するため、Apple ID でのダウンロードとライセンス同意は避けられません。</li>
+          <li><strong>WSL では USB 接続の設定が要ります。</strong> USBIPD でデバイスを WSL にバインドします。<code>AFCClient.Error.muxError</code> が出る場合は、Windows 側の iTunes 経由で接続を中継する方法が issue #19 で案内されています。</li>
+          <li><strong>macOS で手動インストールした場合は自動更新されません。</strong> 新しいリリースは自分で確認して入れ替えます。Homebrew なら <code>brew upgrade</code> で更新できます。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section aria-labelledby="links">
+      <h2 id="links" class="sec-head">9 — 公式資料</h2>
+      <div class="ve-card"><ul>
+        <li><a href="https://github.com/xtool-org/xtool" target="_blank" rel="noopener">xtool-org/xtool</a> — README、ソース、リリース</li>
+        <li><a href="https://xtool.sh/documentation/xtooldocs/installation-linux" target="_blank" rel="noopener">Installation (Linux/Windows)</a> — Swift、usbmuxd、Xcode.xip、ログイン、SDK</li>
+        <li><a href="https://xtool.sh/documentation/xtooldocs/installation-macos" target="_blank" rel="noopener">Installation (macOS)</a> — Homebrew と xtool.app</li>
+        <li><a href="https://xtool.sh/tutorials/xtooldocs/first-app" target="_blank" rel="noopener">Build your first iOS app</a> — <code>xtool new</code> から実機での起動まで</li>
+      </ul></div>
+    </section>
+    <footer class="source-note">出典: xtool-org/xtool の README、AGENTS.md、Documentation/xtool.docc、Package.swift、Sources/PackLib/PackSchema.swift、Sources/XToolSupport/DevCommand.swift。2026-10-14 時点の main（b50173f）を参照。</footer>
+  </main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
