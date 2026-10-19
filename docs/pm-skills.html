@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PM Skills Marketplace — プロダクト意思決定のための AI オペレーティングシステム</title>
-  <meta name="description" content="phuryn/pm-skills のスキル・コマンド・プラグインを MECE で整理。65 スキル、36 コマンド、8 プラグインの役割分担と包含関係。Claude Code / Cowork 向け PM マーケットプレイス。">
+  <meta name="description" content="phuryn/pm-skills のスキル・コマンド・プラグインの役割を整理。69 スキル、42 コマンド、9 プラグインの役割分担と包含関係。Claude Code / Cowork / Codex CLI 向けマーケットプレイス。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="PM Skills Marketplace — プロダクト意思決定のための AI オペレーティングシステム">
-  <meta property="og:description" content="スキル・コマンド・プラグインを MECE で整理した phuryn/pm-skills 解説。65 スキル、36 コマンド、8 プラグイン。">
+  <meta property="og:description" content="スキル・コマンド・プラグインの役割を整理した phuryn/pm-skills 解説。69 スキル、42 コマンド、9 プラグイン。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/pm-skills.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="PM Skills Marketplace — プロダクト意思決定のための AI オペレーティングシステム">
-  <meta name="twitter:description" content="65 PM スキルと 36 ワークフロー。8 プラグインで構成された Claude Code / Cowork 向けマーケットプレイス。">
+  <meta name="twitter:description" content="69 スキルと 42 ワークフロー。9 プラグインで構成された Claude Code / Cowork / Codex CLI 向けマーケットプレイス。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -257,7 +257,7 @@
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
     <a href="#start-here">エントリーポイント</a>
-    <a href="#how-it-works">3 要素（MECE）</a>
+    <a href="#how-it-works">3 つの役割</a>
     <a href="#plugins">プラグイン</a>
     <a href="#install">インストール</a>
     <a href="#frameworks">参照フレームワーク</a>
@@ -266,25 +266,27 @@
 
   <div class="main">
     <h1>PM Skills Marketplace</h1>
-    <p class="subtitle">phuryn/pm-skills v1.0.1 — プロダクト意思決定のための AI オペレーティングシステム</p>
+    <p class="subtitle">phuryn/pm-skills — main 07b34f64（2026-10-19 確認）</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">65</span><span class="ve-kpi-card__label">PM スキル</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">36</span><span class="ve-kpi-card__label">チェーンドワークフロー</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">8</span><span class="ve-kpi-card__label">プラグイン</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">69</span><span class="ve-kpi-card__label">PM スキル</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">42</span><span class="ve-kpi-card__label">コマンドワークフロー</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">9</span><span class="ve-kpi-card__label">プラグイン</span></div>
         <div class="ve-kpi-card"><span class="ve-kpi-card__value">MIT</span><span class="ve-kpi-card__label">ライセンス</span></div>
       </div>
-      <p>汎用 AI はテキストを返す。PM Skills Marketplace は<strong>構造</strong>を返す。各スキルは Teresa Torres・Marty Cagan・Alberto Savoia らが確立した PM フレームワークをエンコードし、ステップバイステップで実行を導く。</p>
-      <p>ディスカバリーから戦略、実行、ローンチ、グロースまでをカバーする 8 プラグイン構成。Claude Code と <a href="https://cowork.anthropic.com" target="_blank" rel="noopener">Cowork</a> 向けに設計されているが、スキル単体は Gemini CLI / OpenCode / Cursor / Codex CLI / Kiro など任意のエージェントで使える。</p>
+      <p>汎用 AI はテキストを返す。PM Skills Marketplace は<strong>構造</strong>を返す。PM スキルは Teresa Torres・Marty Cagan・Alberto Savoia らのフレームワークに沿って思考を構造化し、AI shipping スキルはコードと文書の証拠に基づくレビューを導く。</p>
+      <p>ディスカバリーから戦略、実行、ローンチ、グロース、AI で作ったアプリの出荷前レビューまでをカバーする 9 プラグイン構成。Claude Code / <a href="https://cowork.anthropic.com" target="_blank" rel="noopener">Cowork</a> に加え、Codex CLI でもプラグインを導入できる。Gemini CLI / OpenCode / Cursor / Kiro ではスキルをコピーして利用する。</p>
     </div>
+
+    <p>最新リリースは <a href="https://github.com/phuryn/pm-skills/releases/tag/v2.2.0" target="_blank" rel="noopener">v2.2.0</a>。本ページはその後の default branch（main）を対象とし、Cursor 用 manifest の追加は CHANGELOG の <strong>Unreleased</strong> に含まれる。</p>
 
     <section id="start-here" class="sec-head">2 — エントリーポイント</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> よく使うスラッシュコマンド</span>
-      <p>状況に応じて次のコマンドから始める。各コマンド完了後、関連する次のコマンドが提案される。</p>
+      <p>以下のスラッシュ表記は Claude Code / Cowork 向け。状況に応じて次のコマンドから始める。Codex では同じ手順を自然言語で依頼する。</p>
       <div class="ve-table-wrap">
         <table>
           <thead>
@@ -294,6 +296,8 @@
             <tr><td>新しいアイデアを検証したい</td><td><code>/discover</code></td><td>pm-product-discovery</td></tr>
             <tr><td>戦略の骨格が欲しい</td><td><code>/strategy</code></td><td>pm-product-strategy</td></tr>
             <tr><td>PRD を書きたい</td><td><code>/write-prd</code></td><td>pm-execution</td></tr>
+            <tr><td>PRD の前提を検証したい</td><td><code>/red-team-prd</code></td><td>pm-execution</td></tr>
+            <tr><td>出荷前のレビュー資料をまとめたい</td><td><code>/ship-check</code></td><td>pm-ai-shipping</td></tr>
             <tr><td>ローンチ計画を立てたい</td><td><code>/plan-launch</code></td><td>pm-go-to-market</td></tr>
             <tr><td>North Star を決めたい</td><td><code>/north-star</code></td><td>pm-marketing-growth</td></tr>
           </tbody>
@@ -304,20 +308,20 @@
       </div>
     </div>
 
-    <section id="how-it-works" class="sec-head">3 — スキル・コマンド・プラグイン（MECE）</section>
+    <section id="how-it-works" class="sec-head">3 — スキル・コマンド・プラグインの役割</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 分解の軸</span>
-      <p>PM Skills Marketplace に含まれる実行資産は、<strong>役割レイヤー</strong>で MECE（Mutually Exclusive, Collectively Exhaustive）に 3 分類できる。同じ名前の概念が混ざると「スラッシュコマンドなのか、自動で読まれる SKILL.md なのか、インストール単位なのか」が判別しづらくなるため、レイヤーごとに切り分ける。</p>
+      <p>PM Skills Marketplace は、知識・手順、ワークフロー、配布単位の 3 つの役割で読むと分かりやすい。スキルには補助的な参照ファイルも含まれる。Claude ではスキルもコマンドもスラッシュ表記で明示呼び出しできるため、記号ではなく参照先と役割で区別する。</p>
       <ul>
         <li><span class="mece-pill mece-pill--skill">Skill</span>知識・手順の<strong>最小単位</strong> — 1 つの PM フレームワークや 1 タスクの進め方</li>
-        <li><span class="mece-pill mece-pill--cmd">Command</span>ユーザーが <code>/</code> で起動する<strong>オーケストレーション</strong> — 複数スキルを順序付きで実行</li>
+        <li><span class="mece-pill mece-pill--cmd">Command</span>ユーザーが起動する<strong>ワークフロー</strong> — 1 つ以上のスキルや手順を順序付きで適用</li>
         <li><span class="mece-pill mece-pill--plugin">Plugin</span>PM 領域ごとの<strong>配布パッケージ</strong> — 関連スキルとコマンドをまとめてインストール</li>
       </ul>
     </div>
 
     <div class="ve-card" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> 相互排他 — 何が違うか</span>
-      <p>3 要素は<strong>重ならない</strong>。1 ファイルは必ずどれか一つのレイヤーに属し、役割も起動方法も異なる。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> 役割の比較 — 何が違うか</span>
+      <p>Skill と Command は手順の実体、Plugin はそれらを束ねる配布物。起動方法は利用するエージェントによって異なる。</p>
       <div class="ve-table-wrap">
         <table>
           <thead>
@@ -337,33 +341,33 @@
             </tr>
             <tr>
               <td>実体（ファイル）</td>
-              <td><code>skills/&lt;name&gt;/SKILL.md</code></td>
+              <td><code>skills/&lt;name&gt;/SKILL.md</code> と必要な参照ファイル</td>
               <td><code>commands/&lt;name&gt;.md</code></td>
               <td><code>.claude-plugin/plugin.json</code> + プラグイン直下の <code>skills/</code> / <code>commands/</code></td>
             </tr>
             <tr>
               <td>起動方法</td>
-              <td>会話に関連すれば<strong>自動ロード</strong>。<br><code>/plugin-name:skill-name</code> または <code>/skill-name</code> で<strong>明示</strong>も可</td>
-              <td><code>/command-name</code> のみ（例: <code>/discover</code>）</td>
+              <td>Claude では会話に関連すれば<strong>自動ロード</strong>。<br><code>/plugin-name:skill-name</code> または <code>/skill-name</code> で<strong>明示</strong>も可</td>
+              <td>Claude で <code>/command-name</code>（例: <code>/discover</code>）</td>
               <td><code>claude plugin install pm-execution@pm-skills</code> など。<br>Cowork では GitHub マーケットプレイスから一括</td>
             </tr>
             <tr>
               <td>粒度</td>
               <td>1 フレームワーク / 1 分析タスク</td>
-              <td>複数スキルを連鎖した 1 プロセス</td>
+              <td>1 つ以上のスキルや手順を適用する 1 プロセス</td>
               <td>1 PM 領域（discovery, strategy, execution 等）</td>
             </tr>
             <tr>
               <td>他ツールでの利用</td>
               <td><strong>可</strong> — <code>SKILL.md</code> を Cursor / OpenCode 等へコピー</td>
-              <td><strong>不可</strong> — スラッシュコマンドは Claude 専用</td>
-              <td><strong>Claude 系</strong> — Code / Cowork のプラグイン機構向け</td>
+              <td>Codex ではファイルは導入されるが、スラッシュコマンドとしては実行できない</td>
+              <td>Claude Code / Cowork / Codex CLI。Cursor manifest は main の Unreleased</td>
             </tr>
             <tr>
               <td>他レイヤーとの関係</td>
               <td>コマンドに<strong>使われる</strong>。単体でも会話から参照される</td>
               <td>スキルを<strong>順序づけて呼ぶ</strong>。完了後に次コマンドを提案</td>
-              <td>スキル群 + コマンド群を<strong>包含する</strong>。Marketplace が 8 個を列挙</td>
+              <td>スキル群 + コマンド群を<strong>包含する</strong>。Marketplace が 9 個を列挙</td>
             </tr>
           </tbody>
         </table>
@@ -371,8 +375,8 @@
     </div>
 
     <div class="ve-card" style="--i:2">
-      <span class="ve-section-label"><span class="ve-dot"></span> 全体性 — マーケットプレイスを漏れなく説明する</span>
-      <p>実行可能な中身はこの 3 層で<strong>全部</strong>説明できる。レジストリの <code>marketplace.json</code> は「8 プラグインの目次」であり、第 4 の実行単位ではない。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> 包含関係 — 配布物と手順を読む</span>
+      <p>レジストリの <code>marketplace.json</code> は 9 プラグインの目次。プラグインはスキルとコマンドを含み、スキルから補助資料を参照する場合もある。</p>
       <div class="mermaid-wrap">
         <pre class="mermaid">
 flowchart TB
@@ -382,7 +386,7 @@ flowchart TB
   subgraph plugin["Plugin 層 — 配布・領域分割"]
     P1["pm-product-discovery"]
     P2["pm-execution"]
-    P8["… 計 8 プラグイン"]
+    P9["pm-ai-shipping ほか 計 9 プラグイン"]
   end
   subgraph cmd["Command 層 — ユーザー起動"]
     C1["/discover"]
@@ -394,7 +398,9 @@ flowchart TB
     S2["create-prd"]
     S3["sprint-plan"]
   end
-  M --> P1 & P2 & P8
+  M --> P1 & P2 & P9
+  P1 --> S1
+  P2 --> S2 & S3
   P1 --> C1
   P2 --> C2 & C3
   C1 --> S1
@@ -411,7 +417,7 @@ flowchart TB
       <div class="step-card" style="--i:0">
         <span class="step-card__num">01</span>
         <span class="step-card__title"><span class="mece-pill mece-pill--skill">Skill</span> スキル</span>
-        <p class="step-card__body">例: <code>create-prd</code> は 8 セクション PRD テンプレと執筆手順を <code>SKILL.md</code> に持つ。Teresa Torres の OST や RICE など<strong>参照型スキル</strong>はコマンドなしで会話から引かれる。</p>
+        <p class="step-card__body">例: <code>create-prd</code> は 8 セクションの PRD テンプレと執筆手順を持つ。既定は約 1〜2 ページの lean PRD で、詳細は依頼時に追加する。Teresa Torres の OST や RICE など<strong>参照型スキル</strong>はコマンドなしで会話から引かれる。</p>
       </div>
       <div class="step-card" style="--i:1">
         <span class="step-card__num">02</span>
@@ -421,7 +427,7 @@ flowchart TB
       <div class="step-card" style="--i:2">
         <span class="step-card__num">03</span>
         <span class="step-card__title"><span class="mece-pill mece-pill--plugin">Plugin</span> プラグイン</span>
-        <p class="step-card__body">例: <code>pm-execution</code> は 15 スキル + 10 コマンド（PRD, OKR, スプリント等）を 1 パッケージにまとめる。Cowork で <code>phuryn/pm-skills</code> を追加すると 8 プラグインが一括インストールされる。</p>
+        <p class="step-card__body">例: <code>pm-execution</code> は 16 スキル + 11 コマンド（PRD, OKR, スプリント等）を 1 パッケージにまとめる。Cowork で <code>phuryn/pm-skills</code> を追加すると 9 プラグインが一括インストールされる。</p>
       </div>
     </div>
 
@@ -431,14 +437,14 @@ flowchart TB
         <pre class="mermaid">
 flowchart TD
   Q{"操作の種類は？"}
-  Q -->|"claude plugin install / Cowork で追加"| PL["プラグイン — 配布単位"]
-  Q -->|"/ で始める"| CM["コマンド — ワークフロー起動"]
-  Q -->|"自然言語でフレームワークを聞く"| SK["スキル — 自動 or /skill-name"]
+  Q -->|"Claude / Codex で plugin 導入"| PL["プラグイン — 配布単位"]
+  Q -->|"commands の手順を実行 /discover など"| CM["コマンド — ワークフロー起動"]
+  Q -->|"SKILL.md を参照 自動 or /plugin-name:skill-name"| SK["スキル — 知識と手順"]
   CM --> CH["内部で 1 つ以上のスキルを順に適用"]
   SK --> RF["コマンド不要の参照スキルもあり"]
         </pre>
       </div>
-      <p>コマンド完了後に「次は <code>/strategy</code> を試す」と提案されるのは、<strong>コマンド間のチェーン</strong>であり、スキルやプラグインの境界をまたぐ誘導である（PM ワークフロー全体の接続）。</p>
+      <p>先頭の <code>/</code> だけでは判別できない。Claude の <code>/plugin-name:skill-name</code> はスキル、<code>/discover</code> は Command を呼び出す。コマンド完了後に「次は <code>/strategy</code> を試す」と提案されるのは、<strong>コマンド間のチェーン</strong>であり、スキルやプラグインの境界をまたぐ誘導である（PM ワークフロー全体の接続）。</p>
     </div>
 
     <section id="plugins" class="sec-head">4 — プラグイン一覧</section>
@@ -521,16 +527,18 @@ flowchart TD
         <div class="plugin-card__header">
           <span class="plugin-card__name">pm-execution</span>
           <span class="plugin-card__counts">
-            <span class="badge badge--skills">15 skills</span>
-            <span class="badge badge--cmds">10 cmds</span>
+            <span class="badge badge--skills">16 skills</span>
+            <span class="badge badge--cmds">11 cmds</span>
           </span>
         </div>
         <p class="plugin-card__title">実行管理</p>
         <p class="plugin-card__desc">戦略をチームの実行単位へ翻訳する領域。PRD、OKR、ロードマップ、スプリント、リリース、ステークホルダー管理まで、日々の PM 作業を支える。</p>
+        <p><code>create-prd</code> と <code>/write-prd</code> は同じテンプレートを使用する。Market Segments と各セグメントの Value Propositions は必須。6 部の JTBD（Who / Why / What before / How / What after / Alternatives）を残し、Solution を How、Key Results を What after と対応させる。</p>
         <div class="plugin-detail-grid">
           <div class="plugin-detail">
             <h4>Skills</h4>
             <ul>
+              <li><code>strategy-red-team</code> は PRD・ロードマップ・戦略の重要な仮定を洗い出し、検証すべき安価なテストを優先順位付けする。</li>
               <li><code>create-prd</code>、<code>brainstorm-okrs</code>、<code>outcome-roadmap</code> で、要求・目標・ロードマップを成果中心にまとめる。</li>
               <li><code>sprint-plan</code>、<code>retro</code>、<code>release-notes</code> で、スプリント運営とリリースコミュニケーションを支える。</li>
               <li><code>user-stories</code>、<code>job-stories</code>、<code>wwas</code>、<code>test-scenarios</code> で、開発が動ける粒度に分解する。</li>
@@ -539,6 +547,7 @@ flowchart TD
           <div class="plugin-detail">
             <h4>Commands</h4>
             <ul>
+              <li><code>/red-team-prd</code> は戦略の前提を反証するレビューを行う。</li>
               <li><code>/write-prd</code>、<code>/plan-okrs</code>、<code>/transform-roadmap</code> が計画系の骨格を作る。</li>
               <li><code>/sprint</code> は plan / retro / release のサブモードでスプリントの前後を扱う。</li>
               <li><code>/write-stories</code>、<code>/test-scenarios</code>、<code>/generate-data</code> は実装・検証の入力を作る。</li>
@@ -737,12 +746,49 @@ flowchart TD
           </div>
         </div>
       </div>
+      <div class="plugin-card" style="--i:8">
+        <div class="plugin-card__header">
+          <span class="plugin-card__name">pm-ai-shipping</span>
+          <span class="plugin-card__counts">
+            <span class="badge badge--skills">3 skills</span>
+            <span class="badge badge--cmds">5 cmds</span>
+          </span>
+        </div>
+        <p class="plugin-card__title">AI アプリの出荷前レビュー</p>
+        <p class="plugin-card__desc">コードからシステム資料を整理し、意図と実装の差、正しさ、セキュリティ、性能、テストの裏付けを確認する。出力は人が判断する shipping packet であり、リリースの自動承認ではない。</p>
+        <div class="plugin-detail-grid">
+          <div class="plugin-detail">
+            <h4>Skills</h4>
+            <ul>
+              <li><code>shipping-artifacts</code> は既存の文書配置を尊重し、architecture / flows / permissions / variables を核に、必要な資料だけを整える。</li>
+              <li><code>intended-vs-implemented</code> は文書の意図とコードの実装証拠を境界ごとに照合する。</li>
+              <li><code>code-review</code> は正しさ・セキュリティ・性能の観点で、反証を経た指摘を残す。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Commands</h4>
+            <ul>
+              <li><code>/ship-check</code> は文書化、エージェント指示の整備、各レビュー、独立レビュー、テスト対応表をまとめて shipping packet を作る。</li>
+              <li><code>/document-app</code> はコードからシステム文書を作成・更新し、<code>/derive-tests</code> は既存テスト・提案・未検証の区別を保ったテスト対応表を作る。</li>
+              <li><code>/security-audit-static</code> と <code>/performance-audit-static</code> は静的な監査とレポート作成。監査対象コードを自動修正しない。</li>
+            </ul>
+          </div>
+          <div class="plugin-detail">
+            <h4>Examples</h4>
+            <ul>
+              <li class="plugin-example"><code>/ship-check the payments service</code> で対象領域の出荷判断資料をまとめる。</li>
+              <li class="plugin-example"><code>/document-app check</code> と <code>/derive-tests check</code> は読み取り専用でファイルを書かない。後者はテストを読むが実行しない。</li>
+              <li class="plugin-example">テスト対応表はテスト成功の証明ではない。未検証事項と出荷条件を確認し、最終判断は人が行う。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
 
     <section id="install" class="sec-head">5 — インストール</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> Claude Cowork（推奨）</span>
-      <p>非開発者向けの最速経路。<strong>Customize → Browse plugins → Personal → + → Add marketplace from GitHub</strong> の順に進み、<code>phuryn/pm-skills</code> を入力すると全 8 プラグインが自動インストールされる。</p>
+      <p>非開発者向けの最速経路。<strong>Customize → Browse plugins → Personal → + → Add marketplace from GitHub</strong> の順に進み、<code>phuryn/pm-skills</code> を入力すると全 9 プラグインが自動インストールされる。</p>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:1">
       <span class="ve-section-label"><span class="ve-dot"></span> Claude Code（CLI）</span>
@@ -758,12 +804,22 @@ claude plugin install pm-market-research@pm-skills
 claude plugin install pm-data-analytics@pm-skills
 claude plugin install pm-marketing-growth@pm-skills
 claude plugin install pm-go-to-market@pm-skills
-claude plugin install pm-execution@pm-skills</code></pre>
+claude plugin install pm-execution@pm-skills
+claude plugin install pm-ai-shipping@pm-skills</code></pre>
       </div>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> Codex CLI（upstream の導入手順）</span>
+      <div class="ve-code-block">
+        <pre><code>codex plugin marketplace add phuryn/pm-skills
+codex plugin add pm-execution@pm-skills
+codex plugin add pm-ai-shipping@pm-skills</code></pre>
+      </div>
+      <p>必要なプラグイン名を <code>codex plugin add &lt;plugin&gt;@pm-skills</code> に指定する。スキルを名前で利用できるが、同梱の <code>commands/*.md</code> は Codex のスラッシュコマンドとしては実行できない。「アイデアを出し、仮定を洗い出し、優先順位を付けて実験を設計して」のように自然言語で依頼する。</p>
+    </div>
+    <div class="ve-card ve-card--recessed" style="--i:3">
       <span class="ve-section-label"><span class="ve-dot"></span> その他のエージェント（スキル単体）</span>
-      <p><code>skills/*/SKILL.md</code> はユニバーサルフォーマット。スラッシュコマンドは Claude 専用だが、スキル自体はどのツールでも動く。</p>
+      <p><code>skills/*/SKILL.md</code> と関連する参照ファイルを、利用先が読む skills ディレクトリへコピーする。Cursor 用 marketplace / plugin manifest は最新 main に追加済みだが Unreleased。ここでは README に記載されたスキルのコピー方法を示す。</p>
       <div class="ve-table-wrap" style="margin: 0.75rem 0">
         <table>
           <thead>
@@ -773,7 +829,6 @@ claude plugin install pm-execution@pm-skills</code></pre>
             <tr><td>Gemini CLI</td><td><code>~/.gemini/skills/</code></td><td>スキルのみ</td></tr>
             <tr><td>OpenCode</td><td><code>.opencode/skills/</code></td><td>スキルのみ</td></tr>
             <tr><td>Cursor</td><td><code>.cursor/skills/</code></td><td>スキルのみ</td></tr>
-            <tr><td>Codex CLI</td><td><code>.codex/skills/</code></td><td>スキルのみ</td></tr>
             <tr><td>Kiro</td><td><code>.kiro/skills/</code></td><td>スキルのみ</td></tr>
           </tbody>
         </table>
@@ -819,6 +874,9 @@ done</code></pre>
       <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
       <ul>
         <li><a href="https://github.com/phuryn/pm-skills" target="_blank" rel="noopener">GitHub: phuryn/pm-skills</a> — 本体リポジトリ（MIT ライセンス）</li>
+        <li><a href="https://github.com/phuryn/pm-skills/tree/07b34f64ee828df08953f505b7f747aef85ae7c6" target="_blank" rel="noopener">確認した main snapshot（07b34f64）</a> — 69 skills / 42 commands / 9 plugins の集計元</li>
+        <li><a href="https://github.com/phuryn/pm-skills/blob/07b34f64ee828df08953f505b7f747aef85ae7c6/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> — v2.2.0 と Unreleased の区別</li>
+        <li><a href="https://github.com/phuryn/pm-skills/tree/07b34f64ee828df08953f505b7f747aef85ae7c6/pm-ai-shipping/skills" target="_blank" rel="noopener">AI shipping の 3 スキル</a> — 実ファイルを確認</li>
         <li><a href="https://github.com/phuryn/pm-brain" target="_blank" rel="noopener">PM Brain</a> — PM 向けセカンドブレイン。ローカルの Markdown を Claude が読み書きし、PM Skills と組み合わせて使う</li>
         <li><a href="https://www.productcompass.pm" target="_blank" rel="noopener">The Product Compass Newsletter</a> — 作者 Paweł Huryn のニュースレター</li>
         <li><a href="https://github.com/phuryn/pm-skills/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">CONTRIBUTING.md</a> — 貢献ガイド</li>
@@ -832,10 +890,10 @@ mermaid.initialize({
   startOnLoad: true,
   theme: 'base',
   themeVariables: {
-    primaryColor: 'oklch(0.97 0 0)',
-    primaryTextColor: 'oklch(0.205 0 0)',
-    primaryBorderColor: 'oklch(0.708 0 0)',
-    lineColor: 'oklch(0.556 0 0)',
+    primaryColor: '#f5f5f5',
+    primaryTextColor: '#171717',
+    primaryBorderColor: '#a3a3a3',
+    lineColor: '#737373',
     fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif'
   }
 });
