@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>awesome-opus5-5-videos — Opus 5.5 でコードから作った動画とプロンプトの一覧</title>
+  <meta name="description" content="Claude Opus 5.5 にアニメーションをコードで書かせた動画 703 件のプロンプト集。収録データの内訳、ファイル構成、videos.json の項目、収録基準の変遷、プロンプトの使い方と注意点を解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="awesome-opus5-5-videos — Opus 5.5 でコードから作った動画とプロンプトの一覧">
+  <meta property="og:description" content="Claude Opus 5.5 にアニメーションをコードで書かせた動画 703 件のプロンプト集。収録データの内訳、ファイル構成、videos.json の項目、収録基準の変遷、プロンプトの使い方と注意点を解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/awesome-opus5-5-videos.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="awesome-opus5-5-videos — Opus 5.5 でコードから作った動画とプロンプトの一覧">
+  <meta name="twitter:description" content="Claude Opus 5.5 にアニメーションをコードで書かせた動画 703 件のプロンプト集。収録データの内訳、ファイル構成、videos.json の項目、収録基準の変遷、プロンプトの使い方と注意点を解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Reddit+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.646 0.222 41.116);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Golos Text', system-ui, sans-serif;
+      --font-mono: 'Reddit Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: none; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.646 0.222 41.116 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.52 0.13 38 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.76 0.12 45 / 0.06) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: 680px; overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Pipeline diagram */
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+
+    :root { --chart-1: oklch(0.52 0.13 38); --chart-2: oklch(0.55 0.09 230); }
+    @media (prefers-color-scheme: dark) { :root { --chart-1: oklch(0.76 0.12 45); --chart-2: oklch(0.76 0.09 230); } }
+    .ve-code-block pre code { display: block; background: transparent; padding: 0; border-radius: 0; color: var(--code-text); tab-size: 2; white-space: pre-wrap; overflow-wrap: anywhere; }
+    h2 { scroll-margin-top: 70px; }
+    a:focus-visible { outline: 2px solid var(--chart-1); outline-offset: 4px; }
+    .ve-card + .ve-card, .ve-card + .ve-callout, .ve-callout + .ve-card { margin-top: 1rem; }
+    .ve-table-wrap { margin: 0.75rem 0 1rem; overflow-x: auto; }
+    .ve-table-wrap td code, .ve-table-wrap th code { white-space: nowrap; }
+
+    /* Bar chart */
+    .bars { display: grid; gap: 0.5rem; margin: 0.75rem 0 1rem; }
+    .bar { display: grid; grid-template-columns: 7.5rem 1fr 4.5rem; gap: 0.75rem; align-items: center; font-size: 0.8125rem; }
+    .bar__label { font-family: var(--font-mono); color: var(--text); overflow-wrap: anywhere; }
+    .bar__track { height: 14px; background: var(--muted); border-radius: 999px; overflow: hidden; display: flex; }
+    .bar__fill { height: 100%; background: var(--chart-1); }
+    .bar__fill--sub { background: color-mix(in oklch, var(--chart-1) 35%, var(--muted)); }
+    .bar__value { font-variant-numeric: tabular-nums; text-align: right; color: var(--text-dim); font-family: var(--font-mono); }
+    .legend { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.75rem; color: var(--text-dim); margin-top: 0.25rem; }
+    .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: var(--chart-1); }
+    .legend span.sub::before { background: color-mix(in oklch, var(--chart-1) 35%, var(--muted)); }
+
+    /* File tree */
+    .tree { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.9; background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.75rem 1rem; margin: 0.75rem 0 1rem; overflow-x: auto; white-space: pre; }
+    .tree .note { color: var(--text-dim); }
+
+    /* Timeline */
+    .timeline { list-style: none; padding: 0; margin: 0.75rem 0 1rem; border-left: 2px solid var(--border); }
+    .timeline li { position: relative; padding: 0 0 0.9rem 1.25rem; margin: 0; }
+    .timeline li::before { content: ""; position: absolute; left: -6px; top: 0.4rem; width: 10px; height: 10px; border-radius: 50%; background: var(--card); border: 2px solid var(--chart-1); }
+    .timeline li.cut::before { background: var(--chart-1); }
+    .timeline time { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: block; }
+    .timeline p { margin: 0.1rem 0 0; font-size: 0.875rem; }
+    .timeline .total { font-family: var(--font-mono); font-size: 0.75rem; color: var(--chart-1); margin-left: 0.4rem; }
+
+    /* Prompt samples */
+    .samples { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0.75rem 0 1rem; }
+    .samples .ve-card { margin: 0 !important; display: flex; flex-direction: column; gap: 0.5rem; }
+    .samples blockquote { font-size: 0.875rem; line-height: 1.6; border-left: 3px solid var(--chart-2); padding-left: 0.75rem; margin: 0; }
+    .samples .meta { font-size: 0.75rem; color: var(--text-dim); font-family: var(--font-mono); margin: 0; }
+    .tag { display: inline-block; font-family: var(--font-mono); font-size: 0.6875rem; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); }
+
+    @media (max-width: 640px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .samples { grid-template-columns: 1fr; }
+      .bar { grid-template-columns: 5.5rem 1fr 3.5rem; gap: 0.5rem; }
+      body { padding: 16px; }
+      .toc { margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+    }
+  </style>
+</head>
+
+<body><div class="wrap"><nav class="toc" id="toc" aria-label="目次"><div class="toc-title">目次</div>
+<a href="#overview">概要</a>
+<a href="#numbers">収録データの内訳</a>
+<a href="#layout">ファイル構成</a>
+<a href="#schema">videos.json の項目</a>
+<a href="#history">収録基準と更新履歴</a>
+<a href="#prompts">プロンプトの傾向</a>
+<a href="#usage">プロンプトを試す</a>
+<a href="#caveats">利用時の注意</a>
+<a href="#links">参考リンク</a>
+</nav><main class="main"><a href="../index.html">← 資料一覧</a><h1>awesome-opus5-5-videos</h1><p class="subtitle">Opus 5.5 でコードから作った動画とプロンプトの一覧 · yihui-dev · MIT</p>
+
+<section aria-labelledby="overview"><h2 id="overview" class="sec-head">1 — 概要</h2><div class="ve-card ve-card--hero"><span class="ve-section-label"><span class="ve-dot"></span>1 エントリに、動画の元投稿とプロンプトを 1 件ずつ</span><p><strong>awesome-opus5-5-videos</strong> は、Claude Opus 5.5 にアニメーションをコード（HTML、Canvas、SVG、Three.js など）で書かせて作られた動画を集めたリストです。X（旧 Twitter）で話題になった投稿を対象に、作者が公開したプロンプトを 1 件ずつ Markdown と JSON で収録しています。</p><p>動画ファイル自体はリポジトリに含まれません。各エントリは作者の元投稿へリンクし、一部はコンパニオンサイト Skillry 上の再現版（live remake）へリンクします。プロンプトをコピーして、自分のエージェントで同じ種類の動画を作る用途を想定しています。</p></div></section>
+
+<section aria-labelledby="numbers"><h2 id="numbers" class="sec-head">2 — 収録データの内訳</h2><div class="ve-card"><div class="kpi-row"><div class="ve-kpi-card"><div class="ve-kpi-card__value">703</div><div class="ve-kpi-card__label">プロンプト</div></div><div class="ve-kpi-card"><div class="ve-kpi-card__value">418</div><div class="ve-kpi-card__label">Skillry 再現版あり</div></div><div class="ve-kpi-card"><div class="ve-kpi-card__value">616</div><div class="ve-kpi-card__label">作者アカウント</div></div><div class="ve-kpi-card"><div class="ve-kpi-card__value">207</div><div class="ve-kpi-card__label">一部のみ公開のプロンプト</div></div></div>
+<h3>カテゴリ別の件数</h3><div class="bars" role="list">
+<div class="bar" role="listitem"><span class="bar__label">motion</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:62.06%"></span><span class="bar__fill bar__fill--sub" style="width:37.94%"></span></span><span class="bar__value">369</span></div>
+<div class="bar" role="listitem"><span class="bar__label">3d</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:15.18%"></span><span class="bar__fill bar__fill--sub" style="width:16.53%"></span></span><span class="bar__value">117</span></div>
+<div class="bar" role="listitem"><span class="bar__label">explainer</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:18.43%"></span><span class="bar__fill bar__fill--sub" style="width:13.01%"></span></span><span class="bar__value">116</span></div>
+<div class="bar" role="listitem"><span class="bar__label">interactive</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:17.62%"></span><span class="bar__fill bar__fill--sub" style="width:9.76%"></span></span><span class="bar__value">101</span></div>
+</div><div class="legend"><span>再現版あり</span><span class="sub">再現版なし（プロンプトのみ）</span></div>
+<div class="ve-table-wrap"><table><thead><tr><th>カテゴリ</th><th>README の見出し</th><th>再現版あり</th><th>再現版なし</th><th>合計</th></tr></thead><tbody><tr><td><code>motion</code></td><td>Motion graphics</td><td>229</td><td>140</td><td>369</td></tr><tr><td><code>3d</code></td><td>3D scenes</td><td>56</td><td>61</td><td>117</td></tr><tr><td><code>explainer</code></td><td>Explainers</td><td>68</td><td>48</td><td>116</td></tr><tr><td><code>interactive</code></td><td>Games &amp; interactive</td><td>65</td><td>36</td><td>101</td></tr></tbody></table></div>
+<h3>再現版の技術タグ（418 件中）</h3><p>技術タグは Skillry の再現版を作った技術を表し、再現版がないエントリでは空です。1 件に複数のタグが付きます。Canvas が 64%、SVG が 44%、Three.js が 31% の再現版で使われています。</p><div class="bars" role="list">
+<div class="bar" role="listitem"><span class="bar__label">canvas</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:100%"></span></span><span class="bar__value">267</span></div>
+<div class="bar" role="listitem"><span class="bar__label">svg</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:68.5%"></span></span><span class="bar__value">183</span></div>
+<div class="bar" role="listitem"><span class="bar__label">threejs</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:49.1%"></span></span><span class="bar__value">131</span></div>
+<div class="bar" role="listitem"><span class="bar__label">shader</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:34.5%"></span></span><span class="bar__value">92</span></div>
+<div class="bar" role="listitem"><span class="bar__label">gsap</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:32.2%"></span></span><span class="bar__value">86</span></div>
+<div class="bar" role="listitem"><span class="bar__label">css</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:21.3%"></span></span><span class="bar__value">57</span></div>
+<div class="bar" role="listitem"><span class="bar__label">audio</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:14.6%"></span></span><span class="bar__value">39</span></div>
+<div class="bar" role="listitem"><span class="bar__label">playable</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:8.2%"></span></span><span class="bar__value">22</span></div>
+<div class="bar" role="listitem"><span class="bar__label">particles</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:6.4%"></span></span><span class="bar__value">17</span></div>
+<div class="bar" role="listitem"><span class="bar__label">pixel</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:5.6%"></span></span><span class="bar__value">15</span></div>
+<div class="bar" role="listitem"><span class="bar__label">webgl</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:3.4%"></span></span><span class="bar__value">9</span></div>
+<div class="bar" role="listitem"><span class="bar__label">physics</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:3.4%"></span></span><span class="bar__value">9</span></div>
+<div class="bar" role="listitem"><span class="bar__label">ai-image</span><span class="bar__track" aria-hidden="true"><span class="bar__fill" style="width:2.2%"></span></span><span class="bar__value">6</span></div>
+</div><p>集計対象は <code>data/videos.json</code>（コミット <code>92aee2f</code>）です。616 アカウントのうち 560 は 1 件だけで、最多の作者でも 7 件です。</p></div></section>
+
+<section aria-labelledby="layout"><h2 id="layout" class="sec-head">3 — ファイル構成</h2><div class="ve-card"><p>ソースコードやビルド手順はなく、Markdown と JSON だけで構成されています。同じエントリが <code>prompts/</code> と <code>data/videos.json</code> の両方にあり、前者は人が読む用、後者は機械処理用です。</p><div class="tree">awesome-opus5-5-videos/
+├── README.md            <span class="note"># ギャラリー（再現版 100 件の抜粋 + 最新プロンプト 30 件）</span>
+├── prompts/
+│   └── &lt;作者&gt;-&lt;投稿 ID 末尾 6 桁&gt;.md   <span class="note"># 703 ファイル。作者名は小文字化し _ を - に置換</span>
+├── data/
+│   └── videos.json      <span class="note"># 全 703 件の配列（約 0.8 MB）</span>
+└── LICENSE              <span class="note"># MIT</span></div>
+<h3>README のギャラリー</h3><p>README は全件ではなく、再現版から 1 プロンプト 1 件ずつ選んだ 100 件をカテゴリ別の表で示します（Motion graphics 58、Explainers 16、3D scenes 14、Games &amp; interactive 12）。末尾の Latest prompts には、再現版のない新しいプロンプト 30 件が並びます。全件を見るには <code>prompts/</code> か <code>videos.json</code> を使います。</p>
+<h3>prompts/*.md の書式</h3><p>再現版ありのエントリは、見出し、Skillry と元投稿へのリンク、カテゴリ・技術タグ・作者の箇条書き、<code>## Prompt</code> 以下のコードブロックという並びです。作者がプロンプトの一部しか公開していない場合は、<code>## Prompt</code> の前に注記が入ります。</p><div class="ve-code-block"><pre><code># Opus 5.5 video by @gautam_mer1
+
+[▶ Watch the original and a live remake on Skillry](…) · [Original post](…)
+
+- **Category:** Motion graphics
+- **Remake built with:** Canvas · SVG · GSAP
+- **Author:** [@gautam_mer1](https://x.com/gautam_mer1)
+
+&gt; The author shared only part of the prompt.
+
+## Prompt
+
+```text
+an Apple-style 30s video of my app
+```</code></pre></div><p>再現版のないエントリは <code>title</code> を見出しにし、冒頭のリンクは元投稿だけです。箇条書きはカテゴリと作者のみで、Skillry へは一覧ページへの汎用リンクが 1 行入ります。</p></div></section>
+
+<section aria-labelledby="schema"><h2 id="schema" class="sec-head">4 — videos.json の項目</h2><div class="ve-card"><p>トップレベルはオブジェクトの配列です。各要素は次の項目を持ちます。</p><div class="ve-table-wrap"><table><thead><tr><th>項目</th><th>型</th><th>内容</th></tr></thead><tbody>
+<tr><td><code>slug</code></td><td>string</td><td>エントリの ID。<code>prompts/&lt;slug&gt;.md</code> のファイル名と一致</td></tr>
+<tr><td><code>title</code></td><td>string</td><td>作品名。再現版のない 285 件にだけある</td></tr>
+<tr><td><code>author</code> / <code>author_url</code></td><td>string</td><td>X のハンドルとプロフィール URL</td></tr>
+<tr><td><code>post_url</code></td><td>string</td><td>動画を含む元投稿の URL</td></tr>
+<tr><td><code>category</code></td><td>string</td><td><code>motion</code> / <code>3d</code> / <code>explainer</code> / <code>interactive</code></td></tr>
+<tr><td><code>tech_tags</code></td><td>string[]</td><td>再現版の技術。再現版がなければ空配列</td></tr>
+<tr><td><code>prompt</code></td><td>string</td><td>プロンプト本文。空のエントリはない</td></tr>
+<tr><td><code>prompt_partial</code></td><td>boolean</td><td>作者がプロンプトの一部だけを公開した場合 <code>true</code></td></tr>
+<tr><td><code>poster_url</code></td><td>string</td><td>Skillry がホストするポスター画像。全件に値がある</td></tr>
+<tr><td><code>skillry_url</code></td><td>string</td><td>Skillry の個別ページ。再現版がなければ <code>null</code></td></tr>
+<tr><td><code>added</code></td><td>string</td><td>収録日（YYYY-MM-DD）</td></tr>
+<tr><td><code>has_remake</code></td><td>boolean</td><td>Skillry に再現版があるか</td></tr>
+</tbody></table></div><div class="ve-callout"><strong>再現版の有無で性質が違います。</strong> <code>prompt_partial: true</code> の 207 件はすべて再現版ありのエントリです。再現版なしの 285 件は 2026-10-12 に追加された分で、全件がプロンプト全文です。</div></div></section>
+
+<section aria-labelledby="history"><h2 id="history" class="sec-head">5 — 収録基準と更新履歴</h2><div class="ve-card"><p>件数は追加と削除を繰り返して変わっています。コミット履歴から追うと次のとおりです。塗りつぶした点は削除を伴う変更です。</p><ol class="timeline">
+<li><time>2026-09-27</time><p>プロンプト 282 件と README ギャラリーを公開</p></li>
+<li><time>2026-09-28</time><p>107 件を追加<span class="total">389</span></p></li>
+<li><time>2026-09-29</time><p>MIT ライセンスを追加</p></li>
+<li><time>2026-09-30</time><p>Opus 5.5 と Remotion / HyperFrames を組み合わせた 86 件を追加<span class="total">475</span></p></li>
+<li><time>2026-10-08</time><p>同様の 38 件を追加<span class="total">513</span></p></li>
+<li><time>2026-10-12</time><p>再現版のないプロンプト 335 件を追加<span class="total">848</span></p></li>
+<li class="cut"><time>2026-10-12</time><p>本文を取得できなかった 5 件を削除<span class="total">843</span></p></li>
+<li><time>2026-10-12</time><p>再現版付きの 10 件を追加<span class="total">853</span></p></li>
+<li class="cut"><time>2026-10-13</time><p>Opus 5.5 への素のプロンプトで作られていない 150 件を削除<span class="total">703</span></p></li>
+</ol><p>最新の削除で、収録基準は「Opus 5.5 にプロンプトを渡して作った動画」に絞られました。コミットメッセージが挙げる除外対象は次の 4 種類です。</p><ul><li>HyperFrames のデモ用プロンプト（"showreel for a résumé, go all out"）と、その軽微な変種</li><li><code>/hyperframes</code> スキルや HyperFrames Studio で作ったもの</li><li>ほかのアプリビルダーやスキルで作ったもの</li><li>主な映像を別のモデルで生成したもの</li></ul><p>残りのプロンプトにも Remotion や HyperFrames に触れるものが 118 件あります。動画化ツールの名前が出ることだけで除外されたわけではありません。</p><div class="ve-callout"><strong>README の件数は、README を最後に更新した時点の値です。</strong> 冒頭の「418 件の再現版」「100 件の抜粋」は <code>videos.json</code> と一致しますが、見出しの括弧内の数字は抜粋分だけを数えています。全件数は <code>videos.json</code> で確認してください。</div></div></section>
+
+<section aria-labelledby="prompts"><h2 id="prompts" class="sec-head">6 — プロンプトの傾向</h2><div class="ve-card"><p>プロンプトの長さは中央値 221 文字で、1 割は 74 文字以下、1 割は 1,077 文字以上です（文字数は Unicode のコードポイント数）。最長は約 15,600 文字あります。短いものは 1〜2 文の依頼、長いものは成果物・画角・色・タイミングを列挙した仕様書です。</p><div class="ve-table-wrap"><table><thead><tr><th>本文に含まれる語</th><th>件数</th><th>読み取れること</th></tr></thead><tbody><tr><td>秒数の指定（例: <code>15-second</code>、<code>30s</code>）</td><td>191</td><td>尺を先に決めて依頼する</td></tr><tr><td><code>Remotion</code> / <code>HyperFrames</code></td><td>118</td><td>動画書き出しの仕組みを指定する</td></tr><tr><td><code>Three.js</code></td><td>78</td><td>3D は Three.js を名指しすることが多い</td></tr><tr><td><code>single HTML</code>、<code>one file</code> などの 1 ファイル指定</td><td>59</td><td>成果物の形を固定する</td></tr><tr><td><code>go all out</code></td><td>44</td><td>品質の上限を上げるよう促す言い回し</td></tr></tbody></table></div><p>件数は大文字小文字を区別しない正規表現で数えた概数です。秒数は <code>\b\d+\s*-?\s*(seconds?|secs?|s)\b</code>、1 ファイル指定は <code>\b(single|one)[- ]?(html|file)\b</code> で数えました。リテラルの <code>single HTML</code> だけなら 13 件です。</p></div>
+<div class="samples">
+<div class="ve-card"><p class="meta"><span class="tag">explainer</span> @emollick · canvas</p><blockquote>A video explaining recursion, where every explanation about recursion has a radically different video style, make this self-referential &amp; clever &amp; fast moving.</blockquote><p>再帰の説明を、説明ごとにまったく違う映像スタイルで見せる自己言及的な動画。</p><a href="https://github.com/yihui-dev/awesome-opus5-5-videos/blob/main/prompts/emollick-019567.md" target="_blank" rel="noopener">prompts/emollick-019567.md</a></div>
+<div class="ve-card"><p class="meta"><span class="tag">3d</span> @MondemSuraj · threejs, shader</p><blockquote>Build the Golden Gate Bridge in a single HTML file using Three.js. Include rolling fog, water effects, and traffic moving on the deck.</blockquote><p>技術（Three.js）、成果物（1 ファイルの HTML）、要素（霧・水面・車列）を 1 文ずつ指定。</p><a href="https://github.com/yihui-dev/awesome-opus5-5-videos/blob/main/prompts/mondemsuraj-691517.md" target="_blank" rel="noopener">prompts/mondemsuraj-691517.md</a></div>
+<div class="ve-card"><p class="meta"><span class="tag">interactive</span> @aisongman · canvas, pixel, playable</p><blockquote>Create a 1-on-1 card game like Hearthstone. Just make it. As best you can. In pixel art style.</blockquote><p>既存ゲームを参照点にし、仕様を書かずに任せる短い依頼。</p><a href="https://github.com/yihui-dev/awesome-opus5-5-videos/blob/main/prompts/aisongman-461057.md" target="_blank" rel="noopener">prompts/aisongman-461057.md</a></div>
+<div class="ve-card"><p class="meta"><span class="tag">motion</span> @melvynx · canvas, svg, gsap</p><blockquote>make a dynamic 15-second motion graphics video that shows what an incredible motion designer you are for &lt;website url&gt;</blockquote><p>尺と題材の URL だけを渡す形。「showreel」か「incredible motion designer」を含むプロンプトは 51 件あります。HyperFrames のデモ用プロンプトとその変種は削除済みのため、残っているのは収録者が別物と判断したものです。</p><a href="https://github.com/yihui-dev/awesome-opus5-5-videos/blob/main/prompts/melvynx-638493.md" target="_blank" rel="noopener">prompts/melvynx-638493.md</a></div>
+</div></section>
+
+<section aria-labelledby="usage"><h2 id="usage" class="sec-head">7 — プロンプトを試す</h2><div class="ve-card"><p>README が示す手順は次の 3 つです。</p><ol><li><code>prompts/</code> のファイルを開き、<strong>Prompt</strong> 以下のブロックをコピーする。</li><li>Claude Opus 5.5 を使う環境（Claude Code、Claude アプリ、Opus 5.5 で動く任意のエージェント）に貼り付ける。</li><li>結果を 1 つの HTML ファイルとして出力させ、動画が必要ならページを録画する。</li></ol><p>条件で絞り込むときは <code>videos.json</code> を使います。次の例はリポジトリを取得し、再現版があってプロンプト全文が公開されている 3D エントリを数え、1 件の本文を取り出します。</p><div class="ve-code-block"><pre><code>git clone https://github.com/yihui-dev/awesome-opus5-5-videos.git
+cd awesome-opus5-5-videos
+
+# 再現版あり・全文公開の 3D エントリ数（92aee2f 時点で 18）
+jq '[.[] | select(.category == "3d" and .has_remake and (.prompt_partial | not))] | length' data/videos.json
+
+# slug を指定してプロンプト本文だけを出力
+jq -r '.[] | select(.slug == "emollick-019567") | .prompt' data/videos.json</code></pre></div><p>再現版のある 418 件は、<code>skillry_url</code> のページで元動画と再現版を並べて確認できます。再現版のないエントリでは、<code>post_url</code> の元投稿を見てください。</p></div></section>
+
+<section aria-labelledby="caveats"><h2 id="caveats" class="sec-head">8 — 利用時の注意</h2><div class="ve-card"><ul>
+<li><strong>権利の扱い:</strong> LICENSE は MIT ですが、README の Credits では各動画とプロンプトは作者に帰属すると明記しています。プロンプトや動画を転載・再配布する場合は、元投稿の作者の扱いを確認してください。</li>
+<li><strong>再現できないプロンプトがある:</strong> 207 件は一部だけの公開です。全文のものでも、作者のローカルフォルダ、独自スキル、外部 API キー（音声生成・画像生成など）を前提にした指示を含む場合があり、そのままでは同じ結果になりません。</li>
+<li><strong>技術タグは元動画の情報ではない:</strong> <code>tech_tags</code> は Skillry の再現版の実装を示します。元の作者が使った技術とは一致しない場合があります。タグ名から見て、<code>ai-image</code> の 6 件は再現版に AI 生成画像を使っていると考えられます。</li>
+<li><strong>外部サービスへの依存:</strong> 動画の視聴は X と Skillry に依存します。投稿の削除やサイトの変更でリンクが切れても、リポジトリ側では検知されません。README と <code>prompts/*.md</code> の Skillry へのリンクには UTM パラメータが付いています（<code>videos.json</code> の <code>skillry_url</code> には付いていません）。</li>
+<li><strong>モデルの出力は毎回変わる:</strong> 同じプロンプトでも生成結果は一定ではありません。紹介されている動画は、作者が選んだ結果、または手を加えた結果である可能性があります。</li>
+</ul></div></section>
+
+<section aria-labelledby="links"><h2 id="links" class="sec-head">9 — 参考リンク</h2><div class="ve-card"><ul><li><a href="https://github.com/yihui-dev/awesome-opus5-5-videos" target="_blank" rel="noopener">GitHub: yihui-dev/awesome-opus5-5-videos</a></li><li><a href="https://github.com/yihui-dev/awesome-opus5-5-videos/blob/main/data/videos.json" target="_blank" rel="noopener">data/videos.json（全エントリ）</a></li><li><a href="https://github.com/yihui-dev/awesome-opus5-5-videos/tree/main/prompts" target="_blank" rel="noopener">prompts/（エントリ別の Markdown）</a></li><li><a href="https://skillry.dev/ai-videos/opus-5-5" target="_blank" rel="noopener">Skillry: 元動画と再現版の比較ページ</a></li></ul><p>確認日: 2026-10-22。取得した main のコミット <code>92aee2f</code>（2026-10-13）に基づきます。件数はすべてこの時点の <code>data/videos.json</code> から集計しました。</p></div></section>
+</main></div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
