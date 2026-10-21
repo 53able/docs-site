@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>graphify — コードとドキュメントをナレッジグラフに変換する AI スキル</title>
-  <meta name="description" content="tree-sitter でコードをローカル AST 抽出、Docs/PDF/画像はセマンティック抽出。EXTRACTED/INFERRED 付きグラフを query / path / explain。PyPI graphifyy 0.9.14、20+ アシスタント対応。">
+  <meta name="description" content="tree-sitter でコードをローカル AST 抽出、Docs/PDF/画像はセマンティック抽出。EXTRACTED/INFERRED 付きグラフを query / path / explain。PyPI graphifyy 0.9.93、20+ アシスタント対応。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
@@ -239,7 +239,7 @@
 
   <div class="main">
     <h1>graphify</h1>
-    <p class="subtitle">any input → knowledge graph → query / path / explain · Graphify-Labs · v0.9.14</p>
+    <p class="subtitle">any input → knowledge graph → query / path / explain · Graphify-Labs · v0.9.93</p>
 
     <!-- ============ 1. 概要 ============ -->
     <section id="overview" class="sec-head">1 — 概要</section>
@@ -290,7 +290,7 @@ graphify install               # スキルをアシスタントに登録
     <!-- ============ 2. ベンチマーク ============ -->
     <section id="benchmarks" class="sec-head">2 — ベンチマーク</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 同一ハーネス比較（BENCHMARKS.md）</span>
+      <span class="ve-section-label"><span class="ve-dot"></span> 同一ハーネス比較（BENCHMARKS.md・2026-07-05 更新）</span>
       <p>同一モデル・同一予算・ブラインド検証済みジャッジ（合意 90.6%、κ=0.81）で計測。グラフ構築自体の LLM クレジットは 0。</p>
       <div class="ve-table-wrap">
         <table>
@@ -298,9 +298,10 @@ graphify install               # スキルをアシスタントに登録
             <tr><th>スイート</th><th>指標</th><th>graphify</th><th>比較</th></tr>
           </thead>
           <tbody>
-            <tr><td>LOCOMO (n=300)</td><td>recall@10</td><td><strong>0.497</strong></td><td>mem0 0.048 / BM25 0.362</td></tr>
-            <tr><td>LOCOMO (n=300)</td><td>QA accuracy</td><td>45.3%</td><td>supermemory 49.7%（ingest 約 11x 高コスト）/ mem0 27.3%</td></tr>
-            <tr><td>LongMemEval-S (n=50)</td><td>QA accuracy</td><td><strong>76%</strong></td><td>dense RAG と同点</td></tr>
+            <tr><td>LOCOMO (n=300)</td><td>recall@10</td><td><strong>0.497</strong></td><td>supermemory 0.149 / BM25 0.362 / mem0 0.048</td></tr>
+            <tr><td>LOCOMO (n=300)</td><td>QA accuracy</td><td>45.3%</td><td>supermemory 49.7%（ingest 約 11x 高コスト）/ BM25 31.3% / mem0 27.3%</td></tr>
+            <tr><td>LongMemEval-S (n=50)</td><td>QA accuracy</td><td><strong>76%</strong></td><td>dense RAG 76%（同点）/ mem0 70%</td></tr>
+            <tr><td>ERPNext cross-tool (n=6)</td><td>key-fact coverage</td><td><strong>82.0%</strong></td><td>grep/read ベースライン 70.8%</td></tr>
             <tr><td>グラフ構築</td><td>LLM credits</td><td><strong>$0</strong></td><td>多くの系はトークン課金</td></tr>
           </tbody>
         </table>
@@ -312,7 +313,7 @@ graphify install               # スキルをアシスタントに登録
     <section id="pipeline" class="sec-head">3 — パイプライン</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> ライブラリ段階</span>
-      <p>各ステージは独立モジュールの単一関数。共有ステートなし。副作用は <code>graphify-out/</code> 内への書き出しに限定（ARCHITECTURE.md）。</p>
+      <p>各ステージは独立したモジュールで、やり取りは plain な Python dict と NetworkX グラフ。ただし extractor は走査中のルートを module レベルの状態で参照する（ARCHITECTURE.md）。<code>analyze.py</code> と <code>export.py</code> は単一エントリではなく、関数群。</p>
       <div class="pipeline">
         <span class="step">detect()</span>
         <span class="arrow">→</span>
@@ -348,14 +349,15 @@ graphify install               # スキルをアシスタントに登録
             <tr><th>モジュール</th><th>関数</th><th>入力 → 出力</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>detect.py</code></td><td><code>collect_files</code></td><td>ディレクトリ → フィルタ済み <code>[Path]</code></td></tr>
-            <tr><td><code>extract.py</code></td><td><code>extract</code></td><td>パス → <code>{nodes, edges}</code></td></tr>
-            <tr><td><code>build.py</code></td><td><code>build_graph</code></td><td>抽出リスト → <code>nx.Graph</code></td></tr>
-            <tr><td><code>cluster.py</code></td><td><code>cluster</code></td><td>グラフ → <code>community</code> 属性</td></tr>
-            <tr><td><code>analyze.py</code></td><td><code>analyze</code></td><td>god nodes / surprises / questions</td></tr>
-            <tr><td><code>report.py</code></td><td><code>render_report</code></td><td>→ GRAPH_REPORT.md</td></tr>
-            <tr><td><code>export.py</code></td><td><code>export</code></td><td>→ graph.json / graph.html / Obsidian 等</td></tr>
-            <tr><td><code>serve.py</code></td><td><code>start_server</code></td><td>graph → MCP（stdio / HTTP）</td></tr>
+            <tr><td><code>detect.py</code></td><td><code>detect</code></td><td>ディレクトリ → スキャン概要（カテゴリ別ファイル、総語数、scan_root 等）</td></tr>
+            <tr><td><code>extract.py</code></td><td><code>extract</code> / <code>collect_files</code></td><td>パスのリスト → <code>{nodes, edges}</code>。ディレクトリ展開もここ</td></tr>
+            <tr><td><code>build.py</code></td><td><code>build</code></td><td>抽出結果 → <code>nx.Graph</code></td></tr>
+            <tr><td><code>cluster.py</code></td><td><code>cluster</code></td><td>グラフ → <code>{community_id: [node_id, ...]}</code>（グラフは変更しない）</td></tr>
+            <tr><td><code>analyze.py</code></td><td><code>god_nodes</code> / <code>surprising_connections</code> / <code>suggest_questions</code> ほか</td><td>グラフ → 分析ごとの一覧（単一の <code>analyze()</code> は無い）</td></tr>
+            <tr><td><code>report.py</code></td><td><code>generate</code></td><td>→ GRAPH_REPORT.md</td></tr>
+            <tr><td><code>export.py</code></td><td><code>to_json</code> / <code>to_html</code> / <code>to_obsidian</code> / <code>to_svg</code> ほか</td><td>→ graph.json / graph.html / Obsidian vault 等（形式ごとに関数）</td></tr>
+            <tr><td><code>wiki.py</code></td><td><code>to_wiki</code></td><td>→ コミュニティごとの markdown 記事 + index.md</td></tr>
+            <tr><td><code>serve.py</code></td><td><code>serve</code> / <code>serve_http</code></td><td>graph → MCP（stdio / HTTP）</td></tr>
             <tr><td><code>watch.py</code> / <code>hooks.py</code></td><td>監視・git hook</td><td>変更検知 / コミット後再ビルド</td></tr>
             <tr><td><code>security.py</code></td><td>バリデーション</td><td>URL / パス / ラベル</td></tr>
           </tbody>
@@ -406,13 +408,17 @@ uvx --from graphifyy graphify install   # パッケージ名は graphifyy</code>
             <tr><th>プラットフォーム</th><th>コマンド</th></tr>
           </thead>
           <tbody>
-            <tr><td>Claude Code</td><td><code>graphify install</code></td></tr>
+            <tr><td>Claude Code</td><td><code>graphify install</code>（Windows は自動判定、または <code>--platform windows</code>）</td></tr>
             <tr><td>Cursor</td><td><code>graphify cursor install</code></td></tr>
             <tr><td>Codex</td><td><code>graphify install --platform codex</code>（並列抽出に <code>multi_agent = true</code>）</td></tr>
             <tr><td>GitHub Copilot CLI</td><td><code>graphify install --platform copilot</code></td></tr>
             <tr><td>VS Code Copilot Chat</td><td><code>graphify vscode install</code></td></tr>
-            <tr><td>Gemini CLI / Amp / Pi / Devin 等</td><td><code>graphify install --platform …</code> または専用サブコマンド</td></tr>
-            <tr><td>Agent Skills（汎用）</td><td><code>graphify install --platform agents</code></td></tr>
+            <tr><td>Gemini CLI</td><td><code>graphify install --platform gemini</code></td></tr>
+            <tr><td>Amp / Devin CLI / Kiro / Google Antigravity</td><td><code>graphify amp install</code> / <code>graphify devin install</code> / <code>graphify kiro install</code> / <code>graphify antigravity install</code></td></tr>
+            <tr><td>Pi coding agent</td><td><code>graphify install --platform pi</code>（ネイティブ guard は <code>graphify pi guard install</code>）</td></tr>
+            <tr><td>OpenCode / Kilo Code / Aider / Trae / Trae CN</td><td><code>graphify install --platform opencode | kilo | aider | trae | trae-cn</code></td></tr>
+            <tr><td>CodeBuddy / Factory Droid / OpenClaw / Hermes / Kimi Code</td><td><code>graphify install --platform codebuddy | droid | claw | hermes | kimi</code></td></tr>
+            <tr><td>Agent Skills（汎用）</td><td><code>graphify install --platform agents</code>（alias <code>skills</code>）</td></tr>
           </tbody>
         </table>
       </div>
@@ -420,7 +426,7 @@ uvx --from graphifyy graphify install   # パッケージ名は graphifyy</code>
     </div>
     <div class="ve-card ve-card--recessed" style="--i:2">
       <span class="ve-section-label"><span class="ve-dot"></span> 主な extras</span>
-      <p style="font-size:0.875rem;"><code>pdf</code> / <code>office</code> / <code>video</code> / <code>mcp</code> / <code>neo4j</code> / <code>falkordb</code> / <code>leiden</code> / <code>ollama</code> / <code>openai</code> / <code>gemini</code> / <code>anthropic</code> / <code>postgres</code> / <code>terraform</code> / <code>pascal</code> / <code>all</code> など。<code>uv tool install "graphifyy[mcp]"</code> 形式。</p>
+      <p style="font-size:0.875rem;"><code>pdf</code> / <code>office</code> / <code>google</code> / <code>video</code> / <code>mcp</code> / <code>neo4j</code> / <code>falkordb</code> / <code>svg</code> / <code>leiden</code> / <code>ollama</code> / <code>openai</code> / <code>gemini</code> / <code>anthropic</code> / <code>bedrock</code> / <code>azure</code> / <code>sql</code> / <code>postgres</code> / <code>dm</code> / <code>terraform</code> / <code>pascal</code> / <code>ocaml</code> / <code>commonlisp</code> / <code>robot</code> / <code>chinese</code> / <code>all</code> など。<code>uv tool install "graphifyy[mcp]"</code> 形式。</p>
     </div>
 
     <!-- ============ 5. コマンド ============ -->
@@ -439,7 +445,8 @@ graphify path "UserService" "DatabasePool"
 graphify explain "RateLimiter"
 
 /graphify add https://arxiv.org/abs/1706.03762
-graphify hook install              # コミット後に自動再ビルド
+graphify update .                  # AST のみで再構築（API コストなし）
+graphify hook install              # commit / checkout / merge / rewrite 後に自動再ビルド
 graphify merge-graphs a.json b.json
 graphify export callflow-html      # Mermaid コールフロー HTML
 
@@ -447,6 +454,23 @@ graphify prs                       # PR ダッシュボード
 graphify prs 42                    # PR #42 のグラフ影響
 graphify prs --triage              # レビューキュー順位付け
 graphify prs --conflicts           # コミュニティ共有の衝突リスク</code></pre>
+      </div>
+      <p style="font-size:0.8125rem; color: var(--text-dim);">query / path / explain の終了コード: <code>0</code> 回答あり、<code>3</code> 名前が曖昧（候補を列挙して拒否）、<code>4</code> 該当ノードなし。スクリプトからは終了コードで判定できる。</p>
+    </div>
+    <div class="ve-card" style="--i:2">
+      <span class="ve-section-label"><span class="ve-dot"></span> .graphifyrc（プロジェクト設定）</span>
+      <p>スキャンルートの <code>.graphifyrc</code> に、実行ごとではなくプロジェクト固有の設定を <code>key=value</code> 形式で書く。<code>#</code> で始まる行はコメント。</p>
+      <div class="ve-code-block">
+        <pre><code># .graphifyrc
+# 言語名で指定
+language.inc=php
+# 既知の拡張子で指定
+language.tpl=.ts
+# git フックに埋め込まれる
+viz_node_limit=0</code></pre>
+      </div>
+      <div class="ve-callout">
+        <strong>拡張子の言語が曖昧なとき用。</strong><code>.inc</code>（PHP / Pascal / SQL / アセンブリ）、<code>.h</code>（C / C++）、<code>.m</code>（Objective-C / MATLAB）などは誤判定されても失敗せず、無関係なノードが少数できるだけで、実シンボルが欠けたままグラフが埋まって見える。誤判定は言語を明示して防ぐ。typo は stderr に 1 回報告され、既定値でスキャンを続行する。
       </div>
     </div>
     <div class="ve-card" style="--i:1">
@@ -469,7 +493,7 @@ graphify prs --conflicts           # コミュニティ共有の衝突リスク<
         </div>
         <div class="output-card">
           <div class="output-card__file">graph.json</div>
-          <div class="output-card__desc">NetworkX node-link。再読み込みなしで query / path / explain / MCP。</div>
+          <div class="output-card__desc">NetworkX node-link。<code>graph.schema_version</code> と <code>graph.graphify_version</code> を含み、再読み込みなしで query / path / explain / MCP。</div>
         </div>
         <div class="output-card">
           <div class="output-card__file">cache/ · callflow · Obsidian</div>
@@ -529,8 +553,9 @@ python -m graphify.serve graphify-out/graph.json \
       <ul>
         <li><strong>コード</strong> — マシン内 AST のみ。コードのみなら API キー不要でオフライン可。</li>
         <li><strong>動画・音声</strong> — faster-whisper でローカル転写。</li>
-        <li><strong>Docs / PDF / 画像</strong> — スキル利用時は IDE セッションのモデルへ。headless <code>graphify extract</code> は設定した backend（Gemini / Kimi / Claude / OpenAI / Ollama / Bedrock 等）へ。</li>
-        <li><strong>テレメトリなし。</strong>クエリログはオプトイン（既定オフ、または <code>GRAPHIFY_QUERY_LOG_DISABLE=1</code>）。</li>
+        <li><strong>Docs / PDF / 画像</strong> — スキル利用時は IDE セッションのモデルへ。headless <code>graphify extract</code> は API キーの有無で backend を自動選択（優先順: Gemini → Kimi → Claude → OpenAI → DeepSeek → Azure → Bedrock → Ollama）し、選ばれた環境変数名を表示する。<code>--backend</code> または <code>GRAPHIFY_BACKEND</code> で明示できる。</li>
+        <li><strong>LLM を一切使わない</strong> — <code>GRAPHIFY_BACKEND=none</code> で意味抽出とラベル付けのフォールバックを無効化し、コードのみのグラフを維持。コードのみなら <code>graphify extract --code-only</code> で docs / PDF / 画像を除外できる。データ所在の制約がある場合は <code>GRAPHIFY_BACKEND=ollama</code>（完全ローカル）。Kimi（<code>MOONSHOT_API_KEY</code>）は中国の Moonshot AI のサーバーへ送られる。</li>
+        <li><strong>テレメトリなし。</strong>クエリログは既定オフ。有効化は <code>GRAPHIFY_QUERY_LOG_ENABLE=1</code>（<code>~/.cache/graphify-queries.log</code>）または <code>GRAPHIFY_QUERY_LOG=&lt;path&gt;</code>。応答全文の記録は <code>GRAPHIFY_QUERY_LOG_RESPONSES=1</code> を付けた場合のみ。</li>
       </ul>
       <div class="ve-callout" style="margin-top: 0.75rem;">
         外部入力は <code>security.py</code> 経由（http/https のみ、file:// リダイレクト遮断、サイズ上限、グラフパスは <code>graphify-out/</code> 内、ラベルのサニタイズ）。
@@ -543,8 +568,10 @@ python -m graphify.serve graphify-out/graph.json \
       <span class="ve-section-label"><span class="ve-dot"></span> 公式</span>
       <ul>
         <li><a href="https://github.com/Graphify-Labs/graphify" target="_blank" rel="noopener">GitHub: Graphify-Labs/graphify</a></li>
-        <li><a href="https://pypi.org/project/graphifyy/" target="_blank" rel="noopener">PyPI: graphifyy</a>（v0.9.14）</li>
+        <li><a href="https://pypi.org/project/graphifyy/" target="_blank" rel="noopener">PyPI: graphifyy</a>（v0.9.93）</li>
+        <li><a href="https://docs.graphify.com" target="_blank" rel="noopener">docs.graphify.com</a> — CLI リファレンス・設定・トラブルシューティング</li>
         <li><a href="https://graphify.com" target="_blank" rel="noopener">graphify.com</a></li>
+        <li><a href="https://app.graphify.com/login" target="_blank" rel="noopener">Graphify Cloud</a> — 商用の常時稼働レイヤー（README 記載。OSS 本体とは別製品）</li>
         <li><a href="https://github.com/Graphify-Labs/graphify/blob/main/ARCHITECTURE.md" target="_blank" rel="noopener">ARCHITECTURE.md</a> — モジュール責務</li>
         <li><a href="https://github.com/Graphify-Labs/graphify/blob/main/BENCHMARKS.md" target="_blank" rel="noopener">BENCHMARKS.md</a> — 再現可能な比較</li>
         <li><a href="https://github.com/Graphify-Labs/graphify/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a> — 脅威モデル</li>
