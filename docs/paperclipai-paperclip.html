@@ -228,7 +228,7 @@
     <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
     <p><strong>Paperclip</strong> は、Node.js サーバーと React UI で、AI エージェントのチームをオーケストレーションして「会社」を運営するオープンソースプロジェクト。OpenClaw が「従業員」なら、Paperclip は「会社」に相当する。自前のエージェントを持ち込み、ゴールを設定し、エージェントの作業とコストを一つのダッシュボードで管理する。</p>
     <p>外見はタスクマネージャーのようだが、内部には組織図・予算・ガバナンス・ゴール整合・エージェント間調整がある。プルリクではなくビジネスゴールを管理する。</p>
-    <div class="ve-callout" style="margin-top:1rem"><strong>ロードマップ:</strong> <strong>Clipmart</strong>（プリビルト会社テンプレの公開・ワンクリック投入）は README で COMING SOON として案内されている。</div>
+    <div class="ve-callout" style="margin-top:1rem"><strong>4つの柱:</strong> Agentic Task Manager（タスク・承認・検証）、Org Chart for Agents（役割・権限・境界）、Agent Employee Training（Skill Studio・評価）、Agentic OS（ランタイム・サンドボックス・MCP・コスト管理）で構成される。</div>
     <div class="kpi-row">
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node</span><span class="ve-kpi-card__label">サーバー</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">React</span><span class="ve-kpi-card__label">UI</span></div>
@@ -263,6 +263,9 @@
           <tr><td>Ticket System</td><td>会話はすべてトレース、決定は説明付き。ツール呼び出しの完全トレースと不変監査ログ。</td></tr>
           <tr><td>Governance</td><td>ボードとして承認・戦略の上書き・エージェントの一時停止・終了が可能。実行ポリシーと監査ログとセット。</td></tr>
           <tr><td>Org Chart</td><td>階層・役割・報告ライン。エージェントに上司・肩書き・職務記述がある。</td></tr>
+          <tr><td>Skill Studio</td><td>組織で共有するスキルを発見・作成・テスト・共有。エージェントの訓練と評価を運用に組み込む。</td></tr>
+          <tr><td>MCP Tool Gateway &amp; Apps</td><td>MCP ツールとアプリへのアクセスをゲートウェイで管理し、会社境界・承認・アクティビティ帰属を適用する。</td></tr>
+          <tr><td>Connections &amp; Access Grants</td><td>保存済み接続をエージェントに割り当て、接続ごとの権限・利用者・承認状態を管理する。</td></tr>
           <tr><td>Mobile Ready</td><td>どこからでも自律ビジネスを監視・管理できる。</td></tr>
         </tbody>
       </table>
@@ -371,18 +374,29 @@
   <section id="quickstart" class="sec-head">7 — クイックスタート</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> セルフホスト・オープンソース</span>
-    <p>Paperclip アカウントは不要。既定は trusted local（ループバック）で最短初回起動:</p>
+    <p>Paperclip アカウントは不要。公式のマネージドインストーラーは Node.js 24.11 以上を確認し、CLI を管理してオンボーディングを開始する:</p>
     <div class="ve-code-block">
-      <pre><code>npx paperclipai onboard --yes</code></pre>
+      <pre><code>curl -fsSLO https://paperclip.ing/install.sh
+curl -fsSLO https://paperclip.ing/install.sh.sha256
+if command -v sha256sum &gt;/dev/null 2&gt;&amp;1; then
+  sha256sum -c install.sh.sha256
+else
+  shasum -a 256 -c install.sh.sha256
+fi
+bash install.sh</code></pre>
     </div>
-    <p>認証付き／LAN・Tailnet 公開で初めたい場合はバインドプリセットを明示:</p>
+    <p>非対話でインストールする場合:</p>
     <div class="ve-code-block">
-      <pre><code>npx paperclipai onboard --yes --bind lan
-# または
-npx paperclipai onboard --yes --bind tailnet</code></pre>
+      <pre><code>curl -fsSL https://paperclip.ing/install.sh | bash -s -- --no-prompt --no-onboard
+paperclipai onboard --yes</code></pre>
     </div>
-    <p>既に設定がある状態で <code>onboard</code> を再実行すると既存設定は維持。変更は <code>paperclipai configure</code>。</p>
-    <p>手動クローン:</p>
+    <p>セットアップ済みの Paperclip は <code>paperclipai run</code> で再起動できる。設定を編集する場合は <code>paperclipai configure</code>。パイプ経由のインストールで Node.js のブートストラップが必要な場合は、先にスクリプトをダウンロードして内容を確認する。</p>
+    <p>永続インストールなしで試す軽量な方法:</p>
+    <div class="ve-code-block">
+      <pre><code>npx --registry https://registry.npmjs.org paperclipai onboard --yes</code></pre>
+    </div>
+    <p>CEO エージェントを初期化した前景実行を試す場合は <code>test-drive</code>（例: <code>ANTHROPIC_API_KEY=... npx paperclipai test-drive</code>）を使える。</p>
+    <p>手動クローン（ローカル開発）:</p>
     <div class="ve-code-block">
       <pre><code>git clone https://github.com/paperclipai/paperclip.git
 cd paperclip
@@ -390,7 +404,7 @@ pnpm install
 pnpm dev</code></pre>
     </div>
     <p>API は <code>http://localhost:3100</code>。開発時は UI も API サーバのミドルウェア経由で同一オリジン。組み込み PostgreSQL が自動作成され、追加 DB セットアップは不要。</p>
-    <div class="ve-callout"><strong>要件:</strong> Node.js 20+、pnpm 9.15+（リポジトリの <code>package.json</code> の engines / packageManager に準拠）</div>
+    <div class="ve-callout"><strong>要件:</strong> Node.js 24.11 以上、pnpm 9.15.4（リポジトリの <code>package.json</code> の engines / packageManager に準拠）。</div>
   </div>
 
   <section id="development" class="sec-head">8 — 開発</section>
@@ -401,6 +415,8 @@ pnpm dev</code></pre>
       <pre><code>pnpm dev              # API + UI、ウォッチ
 pnpm dev:once         # ウォッチなしで 1 回起動（既定でローカルマイグレーション適用など）
 pnpm dev:server       # サーバーのみ
+pnpm dev:mobile       # ビルド済み UI を :3101 で配信（スマホ・タブレット向け）
+pnpm dev:both         # pnpm dev と pnpm dev:mobile を同時起動
 pnpm dev:list         # 管理済み dev ランナーの確認
 pnpm dev:stop         # dev ランナー停止
 pnpm storybook        # UI Storybook（ポート 6006）
@@ -439,8 +455,10 @@ pnpm db:migrate       # マイグレーション適用</code></pre>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・コミュニティ</span>
     <ul>
-      <li><a href="https://paperclip.ing/docs" target="_blank" rel="noopener">公式ドキュメント（paperclip.ing）</a></li>
+      <li><a href="https://docs.paperclip.ing" target="_blank" rel="noopener">公式ドキュメント（docs.paperclip.ing）</a></li>
       <li><a href="https://github.com/paperclipai/paperclip" target="_blank" rel="noopener">GitHub: paperclipai/paperclip</a></li>
+      <li><a href="https://github.com/paperclipai/paperclip/releases/tag/v2026.916.1" target="_blank" rel="noopener">最新安定版リリース: v2026.916.1（2026-09-21）</a></li>
+      <li><a href="https://github.com/paperclipai/paperclip/commit/d3e0f0a238ed66a05d50ab6f627eb55874f0f57e" target="_blank" rel="noopener">参照コミット: d3e0f0a（2026-09-26）</a></li>
       <li><a href="https://github.com/gsxdsm/awesome-paperclip" target="_blank" rel="noopener">awesome-paperclip</a> — プラグイン・関連リンク集</li>
       <li><a href="https://discord.gg/m4HZY7xNG3" target="_blank" rel="noopener">Discord</a></li>
       <li><a href="https://x.com/papercliping" target="_blank" rel="noopener">X（@papercliping）</a></li>
