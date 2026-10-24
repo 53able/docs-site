@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HumanLayer — コーディングエージェントのタスク実行と共同レビュー</title>
+  <meta name="description" content="HumanLayer のタスク・セッション・成果物の関係、ホスト上のデーモンとクラウド同期、導入手順、RPI ワークフローと利用上の制約を図解する。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="HumanLayer — コーディングエージェントのタスク実行と共同レビュー">
+  <meta property="og:description" content="HumanLayer のタスク・セッション・成果物の関係、ホスト上のデーモンとクラウド同期、導入手順、RPI ワークフローと利用上の制約を図解する。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/humanlayer.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="HumanLayer — コーディングエージェントのタスク実行と共同レビュー">
+  <meta name="twitter:description" content="HumanLayer のタスク・セッション・成果物の関係、ホスト上のデーモンとクラウド同期、導入手順、RPI ワークフローと利用上の制約を図解する。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;500;600;700&amp;family=Spline+Sans+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <style>
+  /* THEME → Spell UI static → layout */
+
+
+:root {
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+
+
+  --code-bg: var(--muted);
+  --code-text: #032f62;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.1149 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(22.213% 0.00003 271.152);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.488 0.243 264.376);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.769 0.188 70.08);
+    --chart-4: oklch(0.627 0.265 303.9);
+    --chart-5: oklch(0.645 0.246 16.439);
+
+
+    --code-bg: #0f0f0f;
+    --code-text: #9ecbff;
+  }
+}
+
+
+
+
+.ve-card {
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+}
+
+.ve-card--elevated {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.ve-card--recessed {
+  background: var(--muted);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+
+.ve-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 0.75rem;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  white-space: nowrap;
+}
+
+.ve-badge--default {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.ve-badge--secondary {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.ve-badge--outline {
+  border: 1px solid var(--input);
+  background: var(--background);
+}
+
+
+.ve-badge--green {
+  background: oklch(0.6 0.118 184.704 / 0.12);
+  color: var(--chart-2);
+}
+
+
+.ve-badge--red {
+  background: oklch(0.577 0.245 27.325 / 0.12);
+  color: var(--destructive);
+}
+
+.ve-badge--orange {
+  background: oklch(0.828 0.189 84.429 / 0.12);
+  color: var(--chart-4);
+}
+
+.ve-badge--blue {
+  background: oklch(0.646 0.222 41.116 / 0.12);
+  color: var(--chart-1);
+}
+
+
+.ve-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  transition: background, color, border-color, box-shadow 0.15s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+  outline: none;
+}
+
+.ve-button--default {
+  height: 2.25rem;
+  padding: 0 1rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ve-button--default:hover {
+  background: oklch(from var(--primary) l c h / 0.9);
+}
+
+.ve-button--outline {
+  height: 2.25rem;
+  padding: 0 1rem;
+  border-color: var(--border);
+  background: var(--background);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ve-button--outline:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.ve-button--secondary {
+  height: 2.25rem;
+  padding: 0 1rem;
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ve-button--ghost:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.ve-button--sm {
+  height: 2rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-md);
+}
+
+
+.ve-section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+
+.ve-section-label .ve-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+
+.ve-code-block {
+  background: var(--code-bg, var(--muted));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  max-height: 20rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.ve-code-block pre {
+  margin: 0;
+  overflow-x: auto;
+  overflow-y: auto;
+  padding: 0.75rem 1rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.ve-code-block code {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: var(--code-text, var(--foreground));
+}
+
+.ve-code-filename {
+  position: absolute;
+  top: -12px;
+  left: 24px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--card-foreground);
+}
+
+
+.ve-table-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.ve-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.ve-table-wrap th {
+  background: var(--muted);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.875rem 1rem;
+  border-bottom: 2px solid var(--ring);
+}
+
+.ve-table-wrap td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ve-table-wrap tbody tr:hover {
+  background: var(--border);
+}
+
+
+.ve-kpi-card {
+  background: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.125rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.ve-kpi-card__value {
+  font-variant-numeric: tabular-nums;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.ve-kpi-card__label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted-foreground);
+  margin-top: 0.375rem;
+}
+
+
+.ve-inner-card {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+}
+
+.ve-inner-card .ve-title {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  margin-bottom: 0.25rem;
+}
+
+.ve-inner-card .ve-desc {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.ve-inner-card code {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  background: oklch(0.646 0.222 41.116 / 0.1);
+  color: var(--chart-1);
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+}
+
+
+.ve-callout {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--chart-1);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  padding: 0.875rem 1.125rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+
+.ve-callout strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.ve-callout code {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  background: oklch(0.646 0.222 41.116 / 0.1);
+  color: var(--chart-1);
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+}
+
+  :root { --font-body: 'Karla', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif; --font-mono: 'Spline Sans Mono', monospace; --chart-1: oklch(0.43 0.09 175); --chart-2: oklch(0.52 0.10 60); --chart-3: oklch(0.36 0.07 175); --bg: var(--background); --surface: var(--card); --surface2: var(--muted); --text: var(--foreground); --text-dim: var(--muted-foreground); }
+  @media (prefers-color-scheme: dark) { :root { --chart-1: oklch(0.79 0.09 175); --chart-2: oklch(0.80 0.10 60); --chart-3: oklch(0.88 0.06 175); } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 40px; color: var(--foreground); background: var(--background); background-image: radial-gradient(ellipse at 70% 0%, color-mix(in oklch, var(--chart-1) 7%, transparent), transparent 48%); font-family: var(--font-body); line-height: 1.8; }
+
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+
+  h1 { font-size: clamp(2.5rem, 6vw, 4.8rem); line-height: 1.1; letter-spacing: -.045em; margin: .3rem 0 1rem; }
+  h2 { font-size: 1.4rem; line-height: 1.5; }
+  h3 { font-size: 1.05rem; line-height: 1.5; margin: 0 0 .6rem; }
+  p { margin: 0 0 1rem; }
+  a { color: var(--chart-1); text-underline-offset: 3px; }
+  a:hover { color: var(--chart-3); }
+  a:focus-visible { outline: 2px solid var(--chart-1); outline-offset: 4px; }
+  code { font: .83em var(--font-mono); background: var(--muted); padding: 2px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+  .ve-code-block pre code { display: block; background: transparent; padding: 0; white-space: pre-wrap; color: var(--code-text); tab-size: 2; }
+  .ve-code-block { margin: 1rem 0; }
+  .ve-section-label .ve-dot { background: var(--chart-1); }
+  .ve-card--hero { background: color-mix(in oklch, var(--card) 95%, var(--chart-1)); border-top: 3px solid var(--chart-1); }
+  .eyebrow, .caption, .source-note { font-size: .78rem; color: var(--muted-foreground); }
+  .eyebrow { font-family: var(--font-mono); letter-spacing: .08em; }
+  .lead { font-size: 1.13rem; max-width: 46rem; }
+  .subtitle { font-size: 1.2rem; font-weight: 600; margin-bottom: 1.4rem; }
+  .sec-head { margin: 3rem 0 1rem; padding-bottom: .6rem; border-bottom: 1px solid var(--border); scroll-margin-top: 70px; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .grid > * { min-width: 0; }
+  .agent-tags { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.4rem 0 .5rem; }
+  .layer { display: grid; grid-template-columns: 115px minmax(0, 1fr); gap: 1rem; padding: 1.2rem; border-bottom: 1px solid var(--border); }
+  .layer:last-child { border-bottom: 0; }
+  .layer-label { font: .75rem var(--font-mono); color: var(--chart-1); padding-top: .3rem; }
+  .layer p { margin: .4rem 0 0; }
+  .architecture { border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+  .architecture .layer:nth-child(2) { background: var(--muted); }
+  .ve-table-wrap { overflow-x: auto; }
+  .ve-table-wrap table { min-width: 540px; }
+  .ve-table-wrap caption { text-align: left; padding: 1rem; font-weight: 600; }
+  .ve-table-wrap td { vertical-align: top; }
+  .ve-callout { margin: 1rem 0; }
+  ol, ul { padding-left: 1.4rem; }
+  li { margin-bottom: .6rem; }
+  .steps li::marker { color: var(--chart-1); font-weight: 700; }
+  .source-note { margin: .75rem 0 1rem; }
+  footer { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+  @media (max-width: 640px) { body { padding: 20px; } .grid { grid-template-columns: 1fr; } .layer { grid-template-columns: 1fr; gap: .5rem; } .toc { margin: 0 -20px; padding-left: 20px; padding-right: 20px; } }
+  @media (prefers-reduced-motion: no-preference) { .ve-card--hero { animation: enter .4s ease-out; } @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">HumanLayer / Guide</div>
+    <a href="#overview">01 概要</a>
+    <a href="#tasks">02 タスクと成果物</a>
+    <a href="#architecture">03 システム構成</a>
+    <a href="#start">04 最初のタスク</a>
+    <a href="#workflows">05 ワークフロー</a>
+    <a href="#constraints">06 制約と開発</a>
+    <a href="#sources">07 参考リンク</a>
+  </nav>
+  <main class="main">
+    <a href="../index.html">← 資料一覧</a>
+    <header id="overview">
+      <p class="eyebrow">CODING AGENTS · TASKS · SHARED REVIEW</p>
+      <h1>HumanLayer</h1>
+      <p class="subtitle">コーディングエージェントのタスク実行と共同レビュー</p>
+      <div class="ve-card ve-card--hero">
+        <span class="ve-section-label"><span class="ve-dot"></span> 実行はホストで、進行管理はアプリで</span>
+        <p class="lead">自分のマシンで動くコーディングエージェントを、デスクトップと Web から操作する。調査・設計・実装の会話をタスクにまとめ、計画や成果物にチームでコメントできる。</p>
+        <div class="agent-tags" aria-label="README に記載の対応エージェント">
+          <span class="ve-badge ve-badge--outline">Claude Code</span>
+          <span class="ve-badge ve-badge--outline">Codex</span>
+          <span class="ve-badge ve-badge--outline">OpenCode</span>
+          <span class="ve-badge ve-badge--outline">Pi</span>
+        </div>
+      </div>
+      <p class="source-note">確認日: 2026-10-24 · ソース: <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/README.md">README</a> · commit <code>f16f286acfc6</code>。エージェントごとの実行・ミラーリング経路は異なる。</p>
+    </header>
+
+    <section aria-labelledby="tasks">
+      <h2 id="tasks" class="sec-head">02 — タスク・セッション・成果物</h2>
+      <div class="grid">
+        <article class="ve-card"><h3>Task / 仕事を束ねる</h3><p>一件の仕事に、複数の会話・共有ファイル・コメント・履歴をまとめる。担当者やマシンが変わっても、同じタスクで作業を続けられる。</p></article>
+        <article class="ve-card"><h3>Session / エージェントと話す</h3><p>一つのエージェントとの会話。モデル設定、作業ディレクトリ、メッセージ、実行状態を持つ。調査と実装を別セッションに分けられる。</p></article>
+        <article class="ve-card"><h3>Artifact / 判断を残す</h3><p>調査文書・設計・実装アウトラインなどをタスクファイルとして共有する。レビューのコメントを、後続セッションが参照できる。</p></article>
+        <article class="ve-card"><h3>Workspace / 作業場所を選ぶ</h3><p>作業対象のリポジトリと worktree を定義する。複数リポジトリも扱え、primary repository がセッション開始場所になる。</p></article>
+      </div>
+      <div class="ve-callout"><strong>タスクファイルの同期範囲:</strong> <code>.humanlayer/tasks/&lt;task-slug&gt;/</code> 内の成果物を扱う。リポジトリ全体のバックアップではなく、対応するエージェントのファイルツール操作を契機に同期する。別プログラムが置いたファイルは、それだけではアップロードされない。</div>
+      <p class="source-note">出典: <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/docs/explanation/tasks.md">Task の概念と同期</a> / <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/docs/explanation/workspace-model.md">Workspace モデル</a></p>
+    </section>
+
+    <section aria-labelledby="architecture">
+      <h2 id="architecture" class="sec-head">03 — UI・クラウド・ホストの役割</h2>
+      <div class="architecture" aria-label="HumanLayer の構成を三層で説明">
+        <div class="layer"><div class="layer-label">01 / INTERFACE</div><div><h3>デスクトップ / Web</h3><p>タスクの作成、セッションへの返信、成果物のレビューを行う。共通 UI は <code>apps/riptide-ui</code>。macOS シェルは Electron / Tauri。</p></div></div>
+        <div class="layer"><div class="layer-label">02 / CLOUD</div><div><h3>API と同期基盤</h3><p>作業要求とイベントを仲介する Hono + oRPC API。Postgres のクライアント同期には Electric と認証プロキシを使う。</p></div></div>
+        <div class="layer"><div class="layer-label">03 / HOST</div><div><h3>デーモンとコーディングエージェント</h3><p>接続したホストでセッションを実行する。コード、開発ツール、資格情報、ネットワークへのアクセスは、そのホストと実行ユーザーに依存する。</p></div></div>
+      </div>
+      <p class="caption">作業要求: UI → API → 接続したデーモン。セッションイベント: デーモン → API → 各 UI。デスクトップは同じマシンのデーモンを起動でき、Web はリモートホストの作業を操作できる。</p>
+      <div class="ve-callout"><strong>既存 CLI セッションのミラーリング:</strong> Claude Code / OpenCode のプラグイン、Pi の拡張から、手元で開始したセッションを HumanLayer に表示する経路もある。この経路のホスト表示は、Web から新規セッションを起動できることを意味しない。</div>
+      <p class="source-note">出典: <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/README.md">モノレポ構成</a> / <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/docs/explanation/remote-daemons.md">デーモンの動作</a> / <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/riptide-pi-extension/README.md">Pi 拡張</a> / <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/riptide-claude-code-plugin/README.md">Claude Code プラグイン</a> / <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/riptide-opencode-plugin/README.md">OpenCode プラグイン</a></p>
+    </section>
+
+    <section aria-labelledby="start">
+      <h2 id="start" class="sec-head">04 — 最初のタスクを実行する</h2>
+      <div class="grid">
+        <article class="ve-card"><h3>ローカルの macOS アプリ</h3><p>公式チュートリアルは Apple silicon Mac、HumanLayer アカウント、認証済み Claude Code、Git を前提にしている。</p><ol class="steps"><li><a href="https://update.humanlayer.com/download/darwin-arm64">公式アプリ</a>を入れてサインインする。</li><li>変更を保持する必要のない、クリーンなテスト用ブランチを選ぶ。</li><li><strong>Create Task</strong> で対象 Directory と小さな作業内容を指定する。</li><li><strong>ONESHOT / Worktree NEVER / Claude Code</strong> を選ぶ。</li><li>完了後にファイルと差分を確認する。</li></ol></article>
+        <article class="ve-card"><h3>リモートホストの CLI</h3><p>実行ホストで CLI を導入・認証し、デーモンを起動する。接続後は <a href="https://app.humanlayer.com">Web アプリ</a>から操作する。</p><div class="ve-code-block"><pre><code>npm install -g @humanlayer/cli@latest
+humanlayer --help
+humanlayer login
+humanlayer daemon launch</code></pre></div><p class="caption">エージェントが必要とするコード・ツール・認証も、そのホストで準備する。<code>daemon launch</code> は常駐サービスを自動登録しない。</p></article>
+      </div>
+      <div class="ve-callout"><strong>Codex を使う場合:</strong> CLI の <code>humanlayer agents auth codex login</code> で認証し、新規セッションで Codex を選ぶ。HumanLayer へのログインとエージェントの認証は、それぞれ必要になる。</div>
+      <p class="source-note">出典: <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/docs/tutorials/first-session.md">最初のタスク</a> / <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/docs/guide/remote-daemons.md">リモート導入</a> / <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/docs/guide/codex.md">Codex 設定</a></p>
+    </section>
+
+    <section aria-labelledby="workflows">
+      <h2 id="workflows" class="sec-head">05 — 変更の規模に合うワークフロー</h2>
+      <div class="ve-table-wrap"><table>
+        <caption>設計の確認点に合わせて選ぶ</caption>
+        <thead><tr><th scope="col">選択肢</th><th scope="col">適した作業</th><th scope="col">主な段階</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Oneshot</th><td>結果が明確な小さな修正</td><td>実装 → PR</td></tr>
+          <tr><th scope="row">RPI</th><td>調査と設計議論が必要</td><td>質問 → 調査 → 設計議論 → 構造アウトライン → 実装 → PR</td></tr>
+          <tr><th scope="row">PRD-Oriented</th><td>製品設計と技術設計を分けたい</td><td>質問 → 調査 → PRD → TDD → 構造アウトライン → 実装 → PR</td></tr>
+          <tr><th scope="row">Freeform</th><td>固定の段階を設けず進めたい</td><td>固定フェーズなし</td></tr>
+        </tbody>
+      </table></div>
+      <div class="grid" style="margin-top:1rem">
+        <article class="ve-card"><h3>成果物を確認して次へ進む</h3><p>段階ごとに成果物へフィードバックし、決定事項を文書に残す。設計やアウトラインの主要な引き継ぎは人の確認を待つ。通常の実装も、検証後に段階ごとのレビューを挟む。</p></article>
+        <article class="ve-card"><h3>Worktree を作る時点を選ぶ</h3><p><strong>Now</strong>: 最初のセッション前。<strong>Later</strong>: 実装前。<strong>Never</strong>: 現在の checkout を使用する。Oneshot の Later は Never と同じ扱いになる。</p></article>
+      </div>
+      <p class="source-note">出典: <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/docs/guide/skills-workflows.md">ワークフローの選択</a> / <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/docs/reference/skills-workflows.md">正確な段階・確認点・Worktree 設定</a></p>
+    </section>
+
+    <section aria-labelledby="constraints">
+      <h2 id="constraints" class="sec-head">06 — 利用上の制約とソース開発</h2>
+      <div class="grid">
+        <article class="ve-card"><h3>接続・権限・同期</h3><ul><li>デーモンは実行ユーザーのファイル・ネットワーク権限で動く。</li><li>Web とネイティブアプリは機能が同一ではない。workspace 管理や埋め込み terminal などは個別に確認する。</li><li>テキスト成果物は Markdown / text / JSON 系に対応し、各ファイルの上限は 10 MB。画像・PDF・HTML などはオブジェクトストレージを使う。</li></ul></article>
+        <article class="ve-card"><h3>ソースから開発する場合</h3><p>Bun と Turborepo のモノレポ。Bun と Docker が必要で、Tauri 版 <code>riptide-native</code> のビルドには Rust も必要になる。</p><div class="ve-code-block"><pre><code># 開発用スタックの起動方法を確認
+bun --bun run devstack help</code></pre></div><p>環境設定とチェックは <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/CONTRIBUTING.md">CONTRIBUTING.md</a> を参照する。セルフホスト手順は README 時点で準備中。</p></article>
+      </div>
+      <div class="ve-callout"><strong>再起動時の認証:</strong> <code>humanlayer login</code> は資格情報をホストに保存する。launch token を使う経路では、交換した資格情報はそのプロセス限り。サービス再起動時の認証方法を事前に決める。</div>
+      <p class="source-note">出典: <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/docs/explanation/remote-daemons.md">ホストと認証の制約</a> / <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/docs/explanation/tasks.md">成果物の同期</a> / <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/README.md">開発環境とセルフホスト</a></p>
+    </section>
+
+    <section aria-labelledby="sources">
+      <h2 id="sources" class="sec-head">07 — 参考リンク</h2>
+      <div class="ve-card"><ul>
+        <li><a href="https://github.com/humanlayer/humanlayer">humanlayer/humanlayer</a> — 最新ソースと README</li>
+        <li><a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/apps/docs/index.md">リポジトリ内のユーザードキュメント</a> — チュートリアル・ガイド・リファレンス</li>
+        <li><a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/LICENSE">Apache License 2.0</a> / <a href="https://github.com/humanlayer/humanlayer/blob/f16f286acfc66605e90e5dd43d76093e422a1f3c/NOTICE">NOTICE</a> — 本体のライセンスと同梱コードの表示</li>
+        <li><a href="humanlayer-skills.html">humanlayer/skills の解説</a> — 別リポジトリの Claude Code スキル集</li>
+      </ul><p class="caption">本文の出典リンクは確認時のコミットに固定している。導入コマンドや画面の最新情報は公式リポジトリで確認する。</p></div>
+    </section>
+    <footer><p class="caption">HumanLayer / source reading guide · 2026-10-24</p><a href="../index.html">資料一覧へ戻る</a></footer>
+  </main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var offset = window.innerWidth <= 1000 ? toc.getBoundingClientRect().bottom + 24 : 24;
+    var top = window.scrollY + offset;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  window.addEventListener('resize', updateActive);
+  updateActive();
+})();
+</script>
+
+</body>
+</html>
