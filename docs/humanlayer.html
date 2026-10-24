@@ -52,7 +52,7 @@
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
 
-  
+
   --code-bg: var(--muted);
   --code-text: #032f62;
 }
@@ -83,7 +83,7 @@
     --chart-4: oklch(0.627 0.265 303.9);
     --chart-5: oklch(0.645 0.246 16.439);
 
-    
+
     --code-bg: #0f0f0f;
     --code-text: #9ecbff;
   }
@@ -428,7 +428,7 @@
       .sec-head { scroll-margin-top: 52px; }
     }
 
-    
+
   h1 { font-size: clamp(2.5rem, 6vw, 4.8rem); line-height: 1.1; letter-spacing: -.045em; margin: .3rem 0 1rem; }
   h2 { font-size: 1.4rem; line-height: 1.5; }
   h3 { font-size: 1.05rem; line-height: 1.5; margin: 0 0 .6rem; }
@@ -591,7 +591,8 @@ bun --bun run devstack help</code></pre></div><p>環境設定とチェックは 
     if (el) sections.push({ link: a, head: el });
   });
   function updateActive() {
-    var top = window.scrollY + 24;
+    var offset = window.innerWidth <= 1000 ? toc.getBoundingClientRect().bottom + 24 : 24;
+    var top = window.scrollY + offset;
     var current = sections[0] || null;
     sections.forEach(function(s) {
       var rect = s.head.getBoundingClientRect();
@@ -603,6 +604,7 @@ bun --bun run devstack help</code></pre></div><p>環境設定とチェックは 
     });
   }
   window.addEventListener('scroll', updateActive, { passive: true });
+  window.addEventListener('resize', updateActive);
   updateActive();
 })();
 </script>
