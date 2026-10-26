@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>scriptc — TypeScript をネイティブ実行ファイルへ</title>
-  <meta name="description" content="TypeScript を Node.js や V8 なしで動くネイティブ実行ファイルへ変換する scriptc のコンパイル経路、静的・動的実行の境界、CLI、検証方針を図解します。">
+  <meta name="description" content="TypeScript と JavaScript を Node.js なしで動くネイティブ実行ファイルと WebAssembly へ変換する scriptc のコンパイル経路、静的・動的ティアの境界、出力ターゲット、CLI、検証方針を図解します。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="scriptc — TypeScript をネイティブ実行ファイルへ">
-  <meta property="og:description" content="scriptc のコンパイル経路、静的・動的実行の境界、CLI、検証方針を視覚的に整理します。">
+  <meta property="og:description" content="scriptc のコンパイル経路、静的・動的ティアの境界、出力ターゲット、CLI、検証方針を視覚的に整理します。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/scriptc.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="scriptc — TypeScript をネイティブ実行ファイルへ">
-  <meta name="twitter:description" content="Node.js や V8 を同梱せず、通常の TypeScript をネイティブ実行ファイルへ変換する仕組みを図解します。">
+  <meta name="twitter:description" content="TypeScript と npm パッケージを LLVM でネイティブ実行ファイルと WebAssembly へ変換する仕組みを図解します。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700&family=Red+Hat+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -156,8 +156,9 @@
   <nav class="toc" id="toc" aria-label="ページ内目次">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
-    <a href="#boundary">実行境界</a>
+    <a href="#boundary">静的・動的・ブロッカー</a>
     <a href="#pipeline">コンパイル経路</a>
+    <a href="#targets">出力ターゲット</a>
     <a href="#surface">対応範囲</a>
     <a href="#cli">CLI</a>
     <a href="#correctness">正しさの検証</a>
@@ -166,134 +167,165 @@
 
   <main class="main">
     <h1>TypeScript を、そのままネイティブへ。</h1>
-    <p class="subtitle">scriptc / zero-runtime TypeScript compiler / native executable</p>
+    <p class="subtitle">scriptc v0.4.5 / TypeScript &amp; JavaScript compiler / native executable &amp; WebAssembly</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> scriptc とは</span>
-      <p><strong>scriptc</strong> は、通常の TypeScript を小さなネイティブ実行ファイルへ変換する実験的なコンパイラです。コードに専用アノテーションや別方言を導入せず、TypeScript コンパイラによる型検査を通したあと、型付き IR とネイティブ向けバックエンドへ渡します。</p>
-      <p>静的に証明できる処理は Node.js、V8、JavaScript エンジンを含まない実行ファイルになります。静的に扱えない箇所は明示的に動的実行へ切り替えるか、診断コードと書き換えの手掛かりを伴って拒否します。</p>
+      <p><strong>scriptc</strong> は、TypeScript と JavaScript をネイティブ実行ファイルと WebAssembly へ変換する実験的なコンパイラです。TypeScript コンパイラが検査した型を使って機械語を生成し、出力は Node.js がなくても動きます。専用アノテーションや言語拡張は不要で、型検査の厳しさはプロジェクトの <code>tsconfig.json</code> に従います。</p>
+      <p>プログラムが import する npm パッケージも、自分のコードと一緒にネイティブコードへコンパイルされます。コンパイルできない箇所はビルド時に診断コードとソース位置、多くの場合は書き換えの手掛かりを示して報告します。</p>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">170–200KB</span><span class="ve-kpi-card__label">静的バイナリの目安</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">約 2.4ms</span><span class="ve-kpi-card__label">Apple M 系での起動例</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">1–4MB</span><span class="ve-kpi-card__label">典型的な RSS</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">800+</span><span class="ve-kpi-card__label">差分テストのコーパス</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">v0.4.5</span><span class="ve-kpi-card__label">最新リリース（2026-10-25）</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">3 OS</span><span class="ve-kpi-card__label">コンパイラが動くホスト</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">3 種</span><span class="ve-kpi-card__label">実行ファイル / Wasm / 静的ライブラリ</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">LLVM 22</span><span class="ve-kpi-card__label">唯一のコード生成バックエンド</span></div>
       </div>
     </div>
-    <p class="source-note">数値はプロジェクト README に掲載された Apple M シリーズ上の測定例です。ワークロード、機能、ビルド条件で変わります。</p>
+    <p class="source-note">対応しているのは JavaScript、TypeScript、Node.js API のサブセットです。既存プログラムがどこまでコンパイルできるかは <code>scriptc coverage</code> で確認します。</p>
 
-    <section id="boundary" class="sec-head">2 — 静的・動的・拒否の境界</section>
+    <section id="boundary" class="sec-head">2 — 静的・動的ティア・ブロッカーの境界</section>
     <div class="tier-grid">
       <article class="ve-card tier" style="--tier-color:var(--chart-3);--i:0">
         <span class="tier-num">TIER 01</span>
-        <h3>静的コンパイル</h3>
-        <p>既定の経路です。型と制御フローから証明できる処理をネイティブコードへ変換し、JavaScript エンジンを含めません。</p>
+        <h3>静的コード</h3>
+        <p>型が静的に決まるコードです。チェック済みの型と絞り込みから値ごとのネイティブ表現を選び、そのまま機械語へ変換します。</p>
       </article>
       <article class="ve-card tier" style="--tier-color:var(--chart-4);--i:1">
         <span class="tier-num">TIER 02</span>
-        <h3>動的アイランド</h3>
-        <p><code>--dynamic</code> を明示すると、npm パッケージの JavaScript や <code>any</code> の処理を QuickJS ベースの埋め込みエンジンで実行します。静的側へ戻る値は実行時に検証されます。</p>
+        <h3>動的ティア</h3>
+        <p><code>any</code>、型なしの <code>JSON.parse</code> の結果、型のない JavaScript を扱う関数です。これもネイティブコードですが、型検査とプロパティ探索を実行時に行うため静的コードより遅くなります。</p>
       </article>
       <article class="ve-card tier" style="--tier-color:var(--chart-1);--i:2">
         <span class="tier-num">TIER 03</span>
-        <h3>診断して拒否</h3>
-        <p>どちらの経路でも安全に扱えない構文は、コードフレーム、固有の診断コード、多くの場合は書き換え案を示して停止します。</p>
+        <h3>ブロッカー</h3>
+        <p>ネイティブ表現がない構文や API です。アプリケーションコードでは <code>SC</code> 付きの診断でビルドを止めます。npm パッケージ内では、実行されたときだけ例外を投げるコードとしてコンパイルされます。</p>
       </article>
     </div>
-    <div class="ve-callout" style="margin-top:0.9rem"><strong>暗黙の切り替えはしません。</strong> 静的ビルドが勝手に JavaScript エンジンを同梱することはなく、LLVM の対応範囲外で C バックエンドへ移る場合も標準エラーへ1行の通知を出します。</div>
+    <div class="ve-callout" style="margin-top:0.9rem"><strong>0.3 で <code>--dynamic</code> は削除されました。</strong> 0.2 までは QuickJS を実行ファイルに埋め込み、コンパイルできないコードを JavaScript として動かしていました。現在はアプリケーションとパッケージのコードをすべてネイティブコードにします。QuickJS 由来のコードは、ビルド時の <code>comptime</code> 評価器と、正規表現・Unicode ライブラリとしてだけ残っています。</div>
+    <div class="ve-callout" style="margin-top:0.9rem"><strong>実行時の型チェック:</strong> 型が実行時にしか分からない値は、特定の型として使う前に検査します。たとえば <code>JSON.parse(...) as Config</code> は、形が合わなければ <code>expected number at $.port, got string</code> のようなエラーを投げます。Node.js では同じ <code>as</code> は何も検査しません。</div>
 
     <section id="pipeline" class="sec-head">3 — コンパイル経路</section>
     <div class="ve-card ve-card--elevated" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 1本のフロントエンド、2つのバックエンド</span>
-      <div class="flow" aria-label="TypeScript からネイティブ実行ファイルまでの流れ">
-        <div class="flow-step"><strong>TypeScript</strong><span>入力</span></div>
+      <span class="ve-section-label"><span class="ve-dot"></span> 型検査から LLVM まで</span>
+      <div class="flow" aria-label="TypeScript から型付き IR までの流れ">
+        <div class="flow-step"><strong>TS / JS</strong><span>入力（JSX 含む）</span></div>
         <div class="flow-arrow" aria-hidden="true">→</div>
-        <div class="flow-step"><strong>tsc / tsgo</strong><span>解析・型検査</span></div>
+        <div class="flow-step"><strong>tsc-ts</strong><span>解析・型検査（es2025）</span></div>
         <div class="flow-arrow" aria-hidden="true">→</div>
-        <div class="flow-step"><strong>型付き IR</strong><span>検証可能な境界</span></div>
+        <div class="flow-step"><strong>型付き IR</strong><span>--emit=ir</span></div>
         <div class="flow-arrow" aria-hidden="true">→</div>
-        <div class="flow-step"><strong>LLVM または C</strong><span>コード生成</span></div>
+        <div class="flow-step"><strong>LLVM IR</strong><span>--emit=llvm</span></div>
       </div>
-      <div class="flow" aria-label="コード生成から実行ファイルまでの流れ">
-        <div class="flow-step"><strong>生成コード</strong><span>.ll / .c</span></div>
+      <div class="flow" aria-label="LLVM IR から出力までの流れ">
+        <div class="flow-step"><strong>LLVM 22 helper</strong><span>最適化・パーティション分割</span></div>
         <div class="flow-arrow" aria-hidden="true">→</div>
-        <div class="flow-step"><strong>clang</strong><span>コンパイル・リンク</span></div>
+        <div class="flow-step"><strong>asm / obj</strong><span>--emit=asm|obj</span></div>
         <div class="flow-arrow" aria-hidden="true">→</div>
-        <div class="flow-step"><strong>C ランタイム</strong><span>必要な機能だけリンク</span></div>
+        <div class="flow-step"><strong>ランタイムパック</strong><span>必要な機能だけ選択</span></div>
         <div class="flow-arrow" aria-hidden="true">→</div>
-        <div class="flow-step"><strong>実行ファイル</strong><span>自己完結</span></div>
+        <div class="flow-step"><strong>リンカ</strong><span>実行ファイル / .wasm / .lib.a</span></div>
       </div>
+    </div>
+    <div class="ve-table-wrap" style="margin-top:0.9rem">
+      <table>
+        <thead><tr><th>段階</th><th>処理内容</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge">フロントエンド</span></td><td>TypeScript 7 API サーバーの <code>tsc-ts</code>（既定。<code>tsgo</code> も選択可）が別プロセスで型検査します。チェック済みの型と絞り込み情報を使って対応する操作を lower し、未対応の操作は診断にします。入力が変わらなければ結果をビルドキャッシュから再利用します。</td></tr>
+          <tr><td><span class="badge">型付き IR</span></td><td>フロントエンドとバックエンドをつなぐ検証済みの中間表現です。ジェネリクスは特殊化、Union はタグ付き値、クロージャは捕捉変数を明示した形になります。</td></tr>
+          <tr><td><span class="badge">LLVM backend</span></td><td>LLVM IR のサイズに応じて最大 64 のパーティションに分け、並列に最適化・コンパイルします。<code>release</code> / <code>speed</code> ではパーティション間で小さな関数を import し、境界をまたいだインライン化を保ちます。再ビルドでは変更のあったパーティションだけをコンパイルします。</td></tr>
+          <tr><td><span class="badge">リンク</span></td><td>コンパイル済み C ランタイムを含むランタイムパックから、機能・最適化モードに必要な成果物をハッシュ付きマニフェストで選び、ターゲットのリンカと SDK / sysroot で出力します。</td></tr>
+        </tbody>
+      </table>
     </div>
     <div class="module-grid" style="margin-top:0.9rem">
-      <article class="ve-card" style="--i:1"><h3><code>packages/compiler</code></h3><p>TypeScript API から IR への lowering、IR の検証と直列化、LLVM と C のコード生成を担当します。IR がフロントエンドとバックエンドの唯一の接点です。</p></article>
-      <article class="ve-card" style="--i:2"><h3><code>packages/runtime</code></h3><p>参照カウント値、循環回収、スタックフル fiber、イベントループ、ネットワーク、JS 互換の数値整形などを C で提供します。</p></article>
-      <article class="ve-card" style="--i:3"><h3><code>packages/cli</code></h3><p><code>build</code>、<code>run</code>、<code>coverage</code> を公開し、出力先やバックエンド、動的実行、FFI を制御します。</p></article>
+      <article class="ve-card" style="--i:1"><h3><code>packages/compiler</code></h3><p>フロントエンド、型付き IR、検証、直列化、LLVM バックエンド、ネイティブ helper との連携、coverage 分析を担当します。</p></article>
+      <article class="ve-card" style="--i:2"><h3><code>packages/runtime</code></h3><p>参照カウントと循環回収、fiber とコルーチン、イベントループ（kqueue / epoll）、mbedTLS ベースのネットワーク、Node.js API の実装を C で提供します。ターゲット別のパックは <code>packages/runtime-*</code> にあります。</p></article>
+      <article class="ve-card" style="--i:3"><h3><code>native/llvm-codegen</code></h3><p>検証、最適化、アセンブリ・オブジェクト出力を行う LLVM 22 helper です。CLI は <code>packages/cli</code> にあります。</p></article>
     </div>
 
-    <section id="surface" class="sec-head">4 — どこまでコンパイルするか</section>
+    <section id="targets" class="sec-head">4 — 出力ターゲット</section>
     <div class="ve-table-wrap">
       <table>
-        <thead><tr><th>領域</th><th>代表的な対応</th><th>実装上の考え方</th></tr></thead>
+        <thead><tr><th>出力</th><th>ターゲット</th><th>条件・制約</th></tr></thead>
         <tbody>
-          <tr><td><span class="badge">TypeScript</span></td><td>クラス、クロージャ、ジェネリクス、判別可能な Union、例外、分割代入、async / await</td><td>TypeScript 自身の型検査と絞り込みを利用し、IR へ lower します。</td></tr>
-          <tr><td><span class="badge">標準ライブラリ</span></td><td>String、Array、Map、Set、JSON、Math、TypedArray、Buffer、正規表現</td><td>UTF-16、列挙順、同一性など JavaScript の観測可能な意味を維持します。</td></tr>
-          <tr><td><span class="badge">Node API</span></td><td>fs、path、process、child_process、crypto、net、http、https、tls、dns、timers</td><td>ネイティブ実装を必要な機能単位でリンクします。</td></tr>
-          <tr><td><span class="badge">Web API</span></td><td>fetch、Streams、Headers、AbortSignal</td><td>同じネイティブのネットワーク / TLS 層を利用し、libcurl には依存しません。</td></tr>
-          <tr><td><span class="badge">拡張境界</span></td><td><code>comptime</code>、ネイティブ FFI、<code>--dynamic</code>、検証付き cast</td><td>ビルド時、C ABI、動的 JS、実行時検証の境界をそれぞれ明示します。</td></tr>
+          <tr><td><span class="badge">実行ファイル</span></td><td>macOS（arm64 / x64、14.0 以上）、Linux（arm64 / x64、glibc 2.34 以上または musl）、Windows（x64）</td><td>ホスト向けはそのままビルドできます。別ターゲットは <code>SCRIPTC_TARGET</code> を指定し、zig と <code>@scriptc/runtime-&lt;target&gt;</code> パックを追加します。</td></tr>
+          <tr><td><span class="badge">WebAssembly</span></td><td>WASI Preview 1（<code>wasm32-wasi</code>）</td><td>単体で動く <code>.wasm</code> と、Web やネイティブアプリから呼ぶ reactor（<code>--lib</code>）を作れます。ソケット、子プロセス、シグナル、<code>fs.watch</code> は使えません。</td></tr>
+          <tr><td><span class="badge">静的ライブラリ</span></td><td>iOS（実機 / シミュレータ、15.0 以上）、Android（arm64、API 26 以上）</td><td><code>scriptc build --lib --profile</code> で <code>.lib.a</code> を作り、Xcode や Android NDK でアプリにリンクします。async、Promise、タイマーは使えません。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="margin-top:0.9rem"><strong>コンパイラ自体が動くホスト:</strong> macOS 15 以上（arm64 / x64）、Linux（arm64 / x64、glibc 2.34 以上または musl）、Windows x64。npm のほか、GitHub Releases の単体アーカイブでも配布されています。</div>
+
+    <section id="surface" class="sec-head">5 — どこまでコンパイルするか</section>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>領域</th><th>代表的な対応</th><th>補足</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge">言語</span></td><td>クラスと継承、クロージャ、ジェネリクス、判別可能な Union、分割代入、スプレッド、async / await、例外、イテレータ、リソース破棄、JSX（<code>react</code> / <code>react-jsx</code>）</td><td>JavaScript は <code>// @ts-check</code> や <code>checkJs</code> があれば JSDoc の型を使います。</td></tr>
+          <tr><td><span class="badge">標準ライブラリ</span></td><td>String、BigInt、Array、Map、Set、JSON、Math、TypedArray、Buffer、正規表現、Date</td><td><code>es2025</code> の標準ライブラリに対して型検査します。</td></tr>
+          <tr><td><span class="badge">Node API</span></td><td>fs、path、process、child_process、crypto（WebCrypto 含む）、zlib、timers、net、http、https、http2、tls、dgram、dns、worker_threads</td><td>API ごとの対応状況は Node.js compatibility reference に一覧があります。</td></tr>
+          <tr><td><span class="badge">npm</span></td><td>型宣言（同梱または <code>@types/</code>）があり、webpack バンドルでないパッケージ。CommonJS や minify 済みも対象</td><td>Node.js の解決規則で探し、実行ファイルに組み込みます。実行時に <code>node_modules</code> は読みません。</td></tr>
+          <tr><td><span class="badge">拡張境界</span></td><td><code>comptime</code>、ネイティブ FFI（C ABI）、<code>@scriptc/threads</code> の <code>publish</code>、<code>@scriptc/experimental</code></td><td>ビルド時評価、C ライブラリ呼び出し、ワーカー間での不変データ共有をそれぞれ明示します。</td></tr>
         </tbody>
       </table>
     </div>
 
-    <section id="cli" class="sec-head">5 — CLI の使い方</section>
+    <section id="cli" class="sec-head">6 — CLI の使い方</section>
     <div class="stack">
-      <div class="ve-code-block" data-label="install and run"><pre><code>npm install -g scriptc
+      <div class="ve-code-block" data-label="install and build"><pre><code>npm install -g scriptc
 
-scriptc run fib.ts
-scriptc build fib.ts
-scriptc coverage app.ts</code></pre></div>
+scriptc run hello.ts
+scriptc build hello.ts -o hello
+scriptc coverage hello.ts
+SCRIPTC_TARGET=wasm32-wasi scriptc build hello.ts</code></pre></div>
       <div class="ve-card" style="--i:0">
-        <span class="ve-section-label"><span class="ve-dot"></span> 主要コマンド</span>
+        <span class="ve-section-label"><span class="ve-dot"></span> 6 つのサブコマンド</span>
         <div class="ve-table-wrap">
           <table>
-            <thead><tr><th>コマンド</th><th>目的</th><th>主な出力</th></tr></thead>
+            <thead><tr><th>コマンド</th><th>目的</th></tr></thead>
             <tbody>
-              <tr><td><code>scriptc build file.ts</code></td><td>ネイティブ実行ファイルを作る</td><td><code>.scriptc/&lt;name&gt;</code> と生成した <code>.ll</code> または <code>.c</code></td></tr>
-              <tr><td><code>scriptc run file.ts</code></td><td>ビルド後、そのまま実行する</td><td>対象プログラムの標準出力・終了コード</td></tr>
-              <tr><td><code>scriptc coverage file.ts</code></td><td>静的にコンパイルできる割合と阻害要因を調べる</td><td>文単位の集計、診断コード、ブロッカー</td></tr>
+              <tr><td><code>scriptc build file.ts</code></td><td>実行ファイル（WASI なら <code>.wasm</code>）を作る。<code>--emit=ir|llvm|asm|obj</code> で途中段階で止め、<code>--lib --profile</code> でライブラリを作る</td></tr>
+              <tr><td><code>scriptc run file.ts</code></td><td>ビルドしてそのまま実行する。引数は渡さないため、引数が必要なら build して直接実行する</td></tr>
+              <tr><td><code>scriptc coverage file.ts</code></td><td>ビルドせずに、静的にコンパイルできる文の割合、動的ティア、ブロッカー、Node との相違を報告する</td></tr>
+              <tr><td><code>scriptc types</code></td><td>npm パッケージの誤った型宣言を直す型パッチを <code>package.json</code> に書く・一覧する</td></tr>
+              <tr><td><code>scriptc cache warm</code></td><td>コンパイル済みランタイムや TLS ライブラリを検証して読み込む</td></tr>
+              <tr><td><code>scriptc merge-profiles</code></td><td><code>--profile-generate</code> で集めたプロファイルを <code>--profile-use</code> 用にまとめる</td></tr>
             </tbody>
           </table>
         </div>
       </div>
-      <div class="ve-callout"><strong>前提:</strong> グローバル CLI のインストールには npm を使い、ネイティブビルドには clang が必要です。主対象は macOS arm64。Linux と Windows はクロスコンパイルと個別の差分テストレーンで検証されています。</div>
+      <div class="ve-callout"><strong>前提:</strong> npm でのインストールには Node.js 24 以上が必要です。実行ファイルのビルドにはリンカとプラットフォームの SDK / sysroot が要ります（macOS は Xcode Command Line Tools の clang、glibc Linux は clang、Windows・musl Linux・クロスコンパイルは zig）。<code>coverage</code> と <code>--emit=ir|llvm|asm|obj</code> はコンパイラ単体で動きます。</div>
     </div>
 
-    <section id="correctness" class="sec-head">6 — 正しさをどう確かめるか</section>
+    <section id="correctness" class="sec-head">7 — 正しさをどう確かめるか</section>
     <div class="checks">
       <article class="ve-card ve-card--elevated" style="--i:0">
         <h3>Node との差分テスト</h3>
-        <p>各コーパスを Node と scriptc のネイティブ実行ファイルで動かし、標準出力、標準エラー、終了コードをバイト単位で比較します。サーバー機能は両実装へ同じクライアントを接続して検証します。</p>
+        <p>テストプログラムを Node.js とコンパイル済み実行ファイルの両方で動かし、標準出力、標準エラー、終了コードを比較します。サーバーは同じクライアントで両実装を検証し、数値の文字列化は Node.js の <code>String(x)</code> に対してファジングします。</p>
       </article>
       <article class="ve-card" style="--i:1">
-        <h3>メモリ安全性レーン</h3>
-        <p>同じコーパスを AddressSanitizer と参照カウント監査つきで再実行し、リークや use-after-free をビルド失敗として扱います。</p>
+        <h3>メモリ安全性</h3>
+        <p>同じテストを AddressSanitizer と終了時の参照カウント監査つきで再実行します。利用者も <code>--sanitize</code> で自分のビルドに同じ検査を入れられます。</p>
       </article>
       <article class="ve-card" style="--i:2">
-        <h3>明示された相違</h3>
-        <p>タイミング内部や Error オブジェクトの一部プロパティなど、Node と意図的に異なる箇所は番号を付けて文書化します。</p>
+        <h3>Node との相違を報告</h3>
+        <p>コンパイルできても挙動が変わりうる箇所は <code>SC6xxx</code> の警告として coverage と build が報告します。既知の相違は Limitations ページにまとまっています。</p>
       </article>
       <article class="ve-card ve-card--recessed" style="--i:3">
-        <h3>開発時の合格条件</h3>
-        <p>通常レーンと ASan / 参照カウント監査レーンの両方が通ることを変更の出荷条件とし、新機能には Node とネイティブの挙動を固定するコーパスを追加します。</p>
+        <h3>CI での止め方</h3>
+        <p><code>scriptc coverage --fail-on=blockers</code> でブロッカーがあれば終了コード 1 にできます。<code>divergences</code> や <code>dynamic</code> も指定でき、<code>--print=diagnostics</code> で JSON を出力します。</p>
       </article>
     </div>
+    <p class="source-note">公式ドキュメントは、テストで確認できるのは試したケースだけで、Node.js との完全な互換性を保証するものではないとしています。</p>
 
-    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <section id="links" class="sec-head">8 — 参考リンク</section>
     <div class="ve-card" style="--i:0">
       <ul>
-        <li><a href="https://github.com/vercel-labs/scriptc" target="_blank" rel="noopener">GitHub: vercel-labs/scriptc</a> — ソースコードと README</li>
-        <li><a href="https://scriptc.dev" target="_blank" rel="noopener">scriptc.dev</a> — 公式ドキュメント</li>
-        <li><a href="https://scriptc.dev/ffi" target="_blank" rel="noopener">Native FFI guide</a> — C ABI 連携の手順</li>
-        <li><a href="https://github.com/quickjs-ng/quickjs" target="_blank" rel="noopener">quickjs-ng</a> — <code>--dynamic</code> で使う埋め込みエンジン</li>
+        <li><a href="https://github.com/vercel-labs/scriptc" target="_blank" rel="noopener">GitHub: vercel-labs/scriptc</a> — ソースコード、README、CHANGELOG</li>
+        <li><a href="https://scriptc.dev/docs" target="_blank" rel="noopener">scriptc.dev/docs</a> — 公式ドキュメント</li>
+        <li><a href="https://scriptc.dev/docs/how-it-works" target="_blank" rel="noopener">How It Works</a> — コンパイラの各段階とランタイム</li>
+        <li><a href="https://scriptc.dev/docs/platforms" target="_blank" rel="noopener">Platform Support</a> — クロスコンパイル、WebAssembly、iOS / Android</li>
+        <li><a href="https://scriptc.dev/docs/limitations" target="_blank" rel="noopener">Limitations</a> と <a href="https://scriptc.dev/compatibility" target="_blank" rel="noopener">Node.js compatibility reference</a> — 制限事項と API 対応表</li>
       </ul>
     </div>
   </main>
