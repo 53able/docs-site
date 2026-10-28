@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DeepTutor — Agent-Native パーソナライズド AI 家庭教師</title>
-  <meta name="description" content="HKUDS が開発した Agent-Native 学習プラットフォーム。TutorBot・5モードChat・CLI・Guided Learning を統合した次世代 AI チューター。">
+  <title>DeepTutor — Agent-Native な個別学習ワークスペース</title>
+  <meta name="description" content="HKUDS が開発した Agent-Native な学習ワークスペース。11 の Capability、Partners、My Agents、10 種の知識ベースエンジン、3 層 Memory、CLI と EduHub を v1.6.15 時点で解説する。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="DeepTutor — Agent-Native パーソナライズド AI 家庭教師">
-  <meta property="og:description" content="HKUDS が開発した Agent-Native 学習プラットフォーム。TutorBot・5モードChat・CLI・Guided Learning を統合した次世代 AI チューター。">
+  <meta property="og:title" content="DeepTutor — Agent-Native な個別学習ワークスペース">
+  <meta property="og:description" content="HKUDS が開発した Agent-Native な学習ワークスペース。11 の Capability、Partners、My Agents、10 種の知識ベースエンジン、3 層 Memory、CLI と EduHub を v1.6.15 時点で解説する。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/DeepTutor.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="DeepTutor — Agent-Native パーソナライズド AI 家庭教師">
-  <meta name="twitter:description" content="HKUDS が開発した Agent-Native 学習プラットフォーム。TutorBot・5モードChat・CLI を統合した次世代 AI チューター。">
+  <meta name="twitter:title" content="DeepTutor — Agent-Native な個別学習ワークスペース">
+  <meta name="twitter:description" content="HKUDS が開発した Agent-Native な学習ワークスペース。11 の Capability、Partners、My Agents、10 種の知識ベースエンジン、3 層 Memory、CLI と EduHub を v1.6.15 時点で解説する。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -249,40 +249,44 @@
   <nav class="toc" id="toc">
     <div class="toc-title">Contents</div>
     <a href="#overview">概要</a>
-    <a href="#workspace">Chat Workspace</a>
-    <a href="#features">機能群</a>
-    <a href="#tutorbot">TutorBot</a>
+    <a href="#capabilities">Capability</a>
+    <a href="#chat">Chat の動き方</a>
+    <a href="#surfaces">主要な画面</a>
+    <a href="#knowledge">Knowledge Center</a>
+    <a href="#memory">Memory と Workspace</a>
     <a href="#cli">CLI</a>
+    <a href="#skills">EduHub と Skills</a>
     <a href="#setup">セットアップ</a>
-    <a href="#links">参考リンク</a>
+    <a href="#links">リリースとリンク</a>
   </nav>
 
   <div class="main">
     <h1>DeepTutor</h1>
-    <p class="subtitle">Agent-Native Personalized Tutoring · <code>v1.0.0</code> · HKUDS (HKU Data Intelligence Lab) · Apache 2.0</p>
+    <p class="subtitle">Lifelong Personalized Tutoring · <code>v1.6.15</code>（2026-10-19）· HKUDS (HKU Data Intelligence Lab) · Apache 2.0</p>
 
     <!-- ========== SECTION 1: 概要 ========== -->
     <section id="overview" class="sec-head">1 — 概要</section>
 
     <div class="ve-card ve-card--hero" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> What is DeepTutor?</span>
-      <p>DeepTutor は <strong>Agent-Native</strong> を標榜する学習プラットフォーム。単なる AI チャットではなく、複数のエージェントが協調して「計画 → 調査 → 解決 → 検証」を実行する設計になっている。バックエンドは FastAPI（Python 3.11+）、フロントエンドは Next.js 16、エージェントエンジンには <a href="https://github.com/HKUDS/nanobot" target="_blank" rel="noopener">nanobot</a> を採用している。</p>
+      <p>DeepTutor は、個別指導・問題解決・問題作成・調査・可視化・習熟練習を 1 つのシステムにまとめた <strong>Agent-Native な学習ワークスペース</strong>。Chat や Quiz などのモードは 1 つの Capability ランタイムとセッション文脈を共有し、知識ベース・Book・ノートブック・問題バンク・Memory をモード間で使い回す。バックエンドは FastAPI（Python 3.11〜3.14）、フロントエンドは Next.js 16。</p>
 
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">v1.0.0</span><span class="ve-kpi-card__label">Latest Release (2026.4)</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">10k+</span><span class="ve-kpi-card__label">GitHub Stars (39 days)</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">5 modes</span><span class="ve-kpi-card__label">Unified Chat Workspace</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">24+</span><span class="ve-kpi-card__label">LLM Providers</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">v1.6.15</span><span class="ve-kpi-card__label">Latest Release (2026.10)</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">40k+</span><span class="ve-kpi-card__label">GitHub Stars（公開 9 か月）</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">11</span><span class="ve-kpi-card__label"><code>deeptutor run</code> の Capability</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">10</span><span class="ve-kpi-card__label">知識ベースのエンジン</span></div>
       </div>
 
       <div class="pill-list">
-        <span class="pill--blue pill">Python 3.11+</span>
+        <span class="pill--blue pill">Python 3.11–3.14</span>
         <span class="pill--blue pill">Next.js 16</span>
         <span class="pill--blue pill">FastAPI</span>
-        <span class="pill--gold pill">TutorBot (nanobot)</span>
-        <span class="pill--gold pill">LlamaIndex RAG</span>
-        <span class="pill--gold pill">Manim Math Animator</span>
-        <span class="pill">OpenAI / Anthropic / Gemini / …</span>
+        <span class="pill--gold pill">Partners</span>
+        <span class="pill--gold pill">My Agents</span>
+        <span class="pill--gold pill">L1/L2/L3 Memory</span>
+        <span class="pill--gold pill">EduHub</span>
+        <span class="pill">LlamaIndex / PageIndex / LightRAG / …</span>
       </div>
     </div>
 
@@ -292,364 +296,426 @@
         <div class="mermaid">
 %%{init: {"theme": "base", "themeVariables": {"primaryColor": "#dae6f5", "primaryTextColor": "#1a2e4a", "primaryBorderColor": "#4a7ab5", "lineColor": "#4a7ab5", "secondaryColor": "#fdf3d8", "tertiaryColor": "#f0f4f8", "fontSize": "14px"}, "flowchart": {"htmlLabels": true, "curve": "basis"}}}%%
 flowchart TD
-    UI["Next.js 16\nフロントエンド :3782"]
-    API["FastAPI\nバックエンド :8001"]
-    CAPS["Capabilities Layer\nChat / DeepSolve / Quiz\nResearch / Math"]
-    TOOLS["Tools Layer\nRAG · Search · Code · Reason"]
-    KB["LlamaIndex\nKnowledge Base"]
-    BOT["TutorBot\n(nanobot)"]
-    MEM["Persistent Memory\nSummary + Profile"]
-    CHAN["Multi-Channel\nTelegram / Discord / Slack …"]
+    UI["Web アプリ<br/>Next.js :3782"]
+    CLI["deeptutor CLI<br/>REPL / NDJSON"]
+    IM["IM チャネル<br/>Feishu / Telegram / Slack …"]
+    API["FastAPI バックエンド :8001"]
+    ORCH["ChatOrchestrator<br/>Capability ランタイム"]
+    CAPS["Capability<br/>Chat / Solve / Quiz / Research<br/>Mastery Path / Reading …"]
+    TOOLS["ツール<br/>rag · web_search · exec<br/>MCP · CLI Apps · Skills"]
+    SUB["My Agents<br/>Claude Code / Codex …"]
+    KB["Knowledge Center<br/>10 エンジン"]
+    MEM["Memory<br/>L1 / L2 / L3"]
+    WS["Content Workspace<br/>outputs/"]
 
     UI -->|WebSocket| API
-    API --> CAPS
+    CLI --> API
+    IM -->|Partner| API
+    API --> ORCH
+    ORCH --> CAPS
     CAPS --> TOOLS
     TOOLS --> KB
-    API --> BOT
-    BOT --> MEM
-    BOT --> CHAN
-    CAPS -.->|"session / notebook"| MEM
+    TOOLS --> SUB
+    TOOLS --> WS
+    ORCH -.-> MEM
         </div>
       </div>
+      <p style="margin-bottom:0">Web・CLI・IM のどこから来たメッセージも、同じ <code>ChatOrchestrator</code> のターンとして処理される。Partner は独立したボットエンジンではなく、Partner 専用のワークスペースで動く通常の Chat ターンである。</p>
     </div>
 
-    <!-- ========== SECTION 2: Chat Workspace ========== -->
-    <section id="workspace" class="sec-head">2 — Unified Chat Workspace</section>
+    <!-- ========== SECTION 2: Capabilities ========== -->
+    <section id="capabilities" class="sec-head">2 — Capability（モード）</section>
 
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 5 つのモードが 1 スレッドに共存</span>
-      <p>コンテキスト管理システムが会話履歴・知識ベース・参照ファイルを横断して保持する。モード間の切り替えは <strong>同一スレッド内</strong>でいつでも可能。ツールの有効/無効はモードに依存せずユーザーが選択する。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> 1 つのランタイムで動く 11 モード</span>
+      <p>各モードは専用のループやパイプラインを持つが、セッション文脈は共通。Web のホームには Chat / Ask Questions / Quiz / Visualize が並び、Research と Solve は <em>More Capabilities</em>、Book・Mastery Path・Immersive Reading・Practice は <em>Personalized Learning</em> にまとめられている。括弧内は <code>deeptutor run</code> に渡す名前。</p>
 
-      <div class="mode-grid">
-        <div class="ve-card ve-card--elevated mode-card" style="--i:0">
-          <span class="mode-num">01</span>
-          <div>
-            <div class="mode-name">Chat</div>
-            <div class="mode-desc">ツール拡張型の対話。RAG 検索・Web 検索・コード実行・深い推論・ブレインストーミング・論文検索を組み合わせて利用できる。</div>
-          </div>
-        </div>
-        <div class="ve-card ve-card--elevated mode-card" style="--i:1">
-          <span class="mode-num">02</span>
-          <div>
-            <div class="mode-name">Deep Solve</div>
-            <div class="mode-desc">マルチエージェントによる問題解決。計画→調査→解決→検証の各フェーズで精密なソース引用を伴う。</div>
-          </div>
-        </div>
-        <div class="ve-card ve-card--elevated mode-card" style="--i:2">
-          <span class="mode-num">03</span>
-          <div>
-            <div class="mode-name">Quiz Generation</div>
-            <div class="mode-desc">知識ベースに基づく問題生成。内蔵バリデーションで問題の品質を担保する。</div>
-          </div>
-        </div>
-        <div class="ve-card ve-card--elevated mode-card" style="--i:3">
-          <span class="mode-num">04</span>
-          <div>
-            <div class="mode-name">Deep Research</div>
-            <div class="mode-desc">トピックをサブテーマに分解し、RAG・Web・学術論文へ並列エージェントを派遣して、完全引用つきレポートを生成する。</div>
-          </div>
-        </div>
-        <div class="ve-card ve-card--elevated mode-card" style="--i:4">
-          <span class="mode-num">05</span>
-          <div>
-            <div class="mode-name">Math Animator</div>
-            <div class="mode-desc">数学的概念を Manim（ManimCat）で視覚アニメーション化。ストーリーボードから動画ファイルを生成する。</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="ve-callout">
-        <strong>ツールはモードから独立している。</strong>各モードでどのツールを使うか、いくつ使うか、使わないかを自由に選択できる。ワークフローが推論を担い、ツールはユーザーが構成する。
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>モード</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Chat</strong>（<code>chat</code>）</td><td>既定のモード。ツール呼び出し、知識ベース参照、添付ファイル読解、画像生成、サブエージェント相談、ノート書き込みを 1 スレッドで行う。</td></tr>
+            <tr><td><strong>Ask Questions</strong>（<code>ask_questions</code>）</td><td>足りない文脈を埋めるため、DeepTutor 側から質問カードで聞き取りを行う。</td></tr>
+            <tr><td><strong>Solve</strong>（<code>deep_solve</code>）</td><td>途中の推論を示しながら問題を解く。</td></tr>
+            <tr><td><strong>Quiz</strong>（<code>deep_question</code>）</td><td>問題を生成する。結果は問題バンクに保存でき、Practice で復習に使える。</td></tr>
+            <tr><td><strong>Research</strong>（<code>deep_research</code>）</td><td>引用付きのレポートを作る。<code>mode</code> や <code>depth</code> を <code>--config</code> で指定する。</td></tr>
+            <tr><td><strong>Visualize</strong>（<code>visualize</code>）</td><td>図や可視化を生成する。表示形式はプラグインで追加できるカタログ方式。</td></tr>
+            <tr><td><strong>Math Animator</strong>（<code>math_animator</code>）</td><td>数学の概念を Manim のアニメーションにする。</td></tr>
+            <tr><td><strong>Mastery Path</strong>（<code>mastery_path</code>）</td><td>習熟度ベースの個別指導。専用の状態機械は持たず、Chat と同じループエンジンを指導用プロンプトで動かす。モードごとに使えるツールが制限される。</td></tr>
+            <tr><td><strong>Immersive Reading</strong>（<code>immersive_reading</code>）</td><td>文書・動画・音声を横に開いて読み進める。開いている箇所を把握し、ページ単位で引用する。YouTube / Bilibili は字幕検索とタイムスタンプ付きで扱える。</td></tr>
+            <tr><td><strong>Course Study</strong>（<code>course_study</code>）</td><td>コースに紐づいた文脈で、次に何を学ぶかを決めて他のモードへ引き継ぐ。</td></tr>
+            <tr><td><strong>Audio Overview</strong>（<code>audio_overview</code>）</td><td>知識ベースの内容から、2 人の話者による音声解説と書き起こしを作る。</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- ========== SECTION 3: Features ========== -->
-    <section id="features" class="sec-head">3 — 機能群</section>
+    <!-- ========== SECTION 3: Chat ========== -->
+    <section id="chat" class="sec-head">3 — Chat の動き方</section>
+
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> エージェントループ</span>
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+flowchart LR
+    T["考える"] --> C{"ツールが必要?"}
+    C -->|はい| R["ツール呼び出し"] --> O["結果を観察"] --> T
+    C -->|確認が必要| A["ask_user で質問<br/>ターンを一時停止"] -->|回答| T
+    C -->|いいえ| F["ツールなしの<br/>メッセージで終了"]
+        </div>
+      </div>
+      <p style="margin-bottom:0">ループは単純な構造で、モデルはラウンドごとに考え、必要ならツールを呼び、結果を見て、ツールを使わないメッセージで締める。<code>ask_user</code> だけは特別で、推測で進めずにターンを止めて構造化された質問を出し、回答後に再開する。</p>
+    </div>
+
+    <div class="two-col">
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-3)"></span> ツールの 2 種類</span>
+        <ul>
+          <li><strong>ユーザーが切り替えるツール</strong> — <code>brainstorm</code> / <code>web_search</code> / <code>paper_search</code> / <code>zotero_search</code> / <code>reason</code> / <code>geogebra_analysis</code>。生成モデルを設定すると <code>imagegen</code> / <code>videogen</code> も加わる。</li>
+          <li><strong>文脈で自動的に載るツール</strong> — <code>rag</code>、<code>read_memory</code>、<code>exec</code>、<code>web_fetch</code>、<code>ask_user</code>、<code>write_note</code>、<code>question_bank</code>、<code>consult_subagent</code>、<code>workspace_*</code> など。ターンに必要な条件が揃ったときだけ使える。</li>
+        </ul>
+      </div>
+
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-4)"></span> 文脈の 2 種類</span>
+        <ul>
+          <li><strong>セッションに残る文脈</strong> — Capability、ワークスペースまたはコース、ツール、知識ベース、ペルソナ、モデル、Reading / Mastery の状態。ターンをまたいで保持される。</li>
+          <li><strong>1 ターン限りの参照</strong> — ファイル、過去のチャット、Book、読書箇所、ノートブック、問題バンクの項目、取り込んだエージェントの会話。<code>+</code> メニューから付ける。</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ========== SECTION 4: Surfaces ========== -->
+    <section id="surfaces" class="sec-head">4 — 主要な画面</section>
 
     <div class="two-col">
       <div class="ve-card" style="--i:0">
-        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-3)"></span> AI Co-Writer</span>
-        <p>Markdown エディタで AI が第一級のコラボレーターになる。テキストを選択して <strong>Rewrite / Expand / Shorten</strong> を適用できる。知識ベースや Web からの文脈を活用でき、全編集はノートブックへ保存されて学習エコシステムに還元される。</p>
+        <span class="ve-section-label"><span class="ve-dot--gold ve-dot"></span> Partners</span>
+        <p>常駐するコンパニオン。各 Partner は <code>SOUL.md</code>（人格）、モデル、ツール方針、割り当てライブラリ、Memory、チャネルを持つ。旧版の TutorBot に相当する機能だが、別エンジンではなく Partner 用ワークスペースの Chat ターンとして動く。</p>
         <ul>
-          <li>非破壊編集（undo/redo 完全対応）</li>
-          <li>知識ベース・Web 検索による文脈補完</li>
-          <li>ノートブック保存でセッション間共有</li>
+          <li>接続先は Feishu / Telegram / Slack / Discord / DingTalk / QQ / WeCom / WhatsApp / Zulip / Mattermost / Matrix / Microsoft Teams など。</li>
+          <li>Feishu/Lark・WeCom・個人 WeChat はブラウザに表示した QR コードから接続できる。</li>
+          <li>Chat からサブエージェントとして相談することもできる。</li>
         </ul>
       </div>
 
       <div class="ve-card" style="--i:1">
-        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-4)"></span> Guided Learning</span>
-        <p>自分の教材を構造化された段階的学習ジャーニーに変換する。</p>
-        <ol>
-          <li>教材から 3〜5 個の段階的知識ポイントを設計</li>
-          <li>各ポイントを視覚的な HTML インタラクティブページに生成</li>
-          <li>各ステップに沿ってコンテキスト Q&amp;A が可能</li>
-          <li>完了時に学習サマリーを生成</li>
-        </ol>
-        <p style="margin-bottom:0">セッションは永続化され、一時停止・再開・任意のステップへの戻りが可能。</p>
+        <span class="ve-section-label"><span class="ve-dot--gold ve-dot"></span> My Agents</span>
+        <p>他のエージェントを DeepTutor の文脈として使う。役割は 2 つ。</p>
+        <ul>
+          <li><strong>稼働中のエージェントに相談</strong> — Claude Code / Codex / Grok CLI / Antigravity / Kimi / opencode / MiMo Code / Hermes Agent / OpenClaw / DeepSeek Harness、または Partner を <code>consult_subagent</code> で実際に実行し、作業内容を Activity パネルに流す。</li>
+          <li><strong>過去の会話を取り込む</strong> — ChatGPT のエクスポート、Claude Code（プロジェクト単位）、Codex（日付単位）の履歴を検索・再開できる会話として取り込む。DeepTutor 自身の発言ではなく第三者の記録として扱う。</li>
+        </ul>
       </div>
     </div>
 
     <div class="two-col">
       <div class="ve-card" style="--i:2">
-        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-5)"></span> Knowledge Hub</span>
-        <p>すべての機能を支える学習インフラ。</p>
+        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-3)"></span> Book</span>
+        <p>選んだ資料から「生きた本」を作る。作成時はまず章立てが提案され、確認してから本文を生成する。</p>
         <ul>
-          <li><strong>Knowledge Bases</strong> — PDF / TXT / Markdown を RAG-ready コレクションに。インクリメンタル追加が可能。</li>
-          <li><strong>Notebooks</strong> — Chat / Guided Learning / Co-Writer / Deep Research の洞察をカラーコード付きのノートに保存・整理。</li>
+          <li>章はテキスト・クイズ・フラッシュカード・年表・コード・図・インタラクティブ HTML・概念グラフなどの型付きブロックで構成され、ブロック単位で挿入・移動・再生成できる。</li>
+          <li>章ごとに Page Chat を持つ。進捗・ブックマーク・回答履歴は共有された本でも読者ごとに分かれる。</li>
+          <li>Markdown へ書き出せる。</li>
         </ul>
-        <p style="margin-bottom:0">知識ベースは受動的な保管庫ではなく、すべての会話・研究・学習パスに能動的に参加する。</p>
       </div>
 
       <div class="ve-card" style="--i:3">
-        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-2)"></span> Persistent Memory</span>
-        <p>DeepTutor はあなたとともに学ぶ。二つの次元でプロファイルを構築する。</p>
-        <ul>
-          <li><strong>Summary</strong> — 学習経緯の継続ダイジェスト。何を学んだか、どのトピックを探求したか、理解がどう深まったか。</li>
-          <li><strong>Profile</strong> — 学習スタイル・好み・知識レベル・目標・コミュニケーションスタイルを自動更新。</li>
-        </ul>
-        <p style="margin-bottom:0">メモリはすべての機能と全 TutorBot で共有される。使えば使うほどパーソナライズが深まる。</p>
+        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-4)"></span> Co-Writer</span>
+        <p>左右分割の Markdown エディタ。自動保存とライブプレビュー（KaTeX、図）を備え、<code>.docx</code> の読み込みと Markdown / Word の書き出しに対応する。</p>
+        <p style="margin-bottom:0">範囲を選んで書き換え・展開・短縮を指示する部分編集が中心。知識ベースや Web の根拠を使え、作業中に原稿が変わっていなければ選択範囲を直接置き換える。<strong>Undo</strong> で戻せる。</p>
       </div>
     </div>
 
-    <!-- ========== SECTION 4: TutorBot ========== -->
-    <section id="tutorbot" class="sec-head">4 — TutorBot — 永続的・自律型 AI 家庭教師</section>
+    <div class="two-col">
+      <div class="ve-card" style="--i:4">
+        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-5)"></span> Learning Space</span>
+        <ul>
+          <li><strong>Conversations &amp; Materials</strong> — チャット履歴、ノートブック、解答と解説付きの問題バンク。</li>
+          <li><strong>Practice</strong> — 問題バンクから復習セッションを始め、間違いの記録と間隔反復を行う。</li>
+          <li><strong>Personalization</strong> — ペルソナ、Skills（<code>SKILL.md</code>）、MCP Services、<a href="https://github.com/HKUDS/CLI-Anything" target="_blank" rel="noopener">CLI-Anything</a> カタログの CLI Apps。</li>
+        </ul>
+      </div>
 
-    <div class="ve-card ve-card--hero" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot--gold ve-dot"></span> チャットボットではなく、自律型エージェント</span>
-      <p>TutorBot は <a href="https://github.com/HKUDS/nanobot" target="_blank" rel="noopener">nanobot</a> 上に構築された<strong>永続的・マルチインスタンス型エージェント</strong>。各 TutorBot は独立したワークスペース・メモリ・個性を持ち、独自のエージェントループを実行する。ソクラテス式数学チューター、忍耐強い文章コーチ、厳格なリサーチアドバイザーを同時に複数起動できる。</p>
+      <div class="ve-card" style="--i:5">
+        <span class="ve-section-label"><span class="ve-dot" style="background:var(--chart-2)"></span> Task Board と Settings</span>
+        <ul>
+          <li><strong>Task Board</strong> — 学習タスクを To do / In progress / Done で管理する。ドラッグかキーボード操作で移動でき、アーカイブから復元できる。モデル設定は不要。</li>
+          <li><strong>Settings</strong> — 検索できるナビゲーターから各ページへ移動する。多くの項目は下書きして接続テストしてから適用する。Chat で「設定を変えて」と頼むこともでき、API キーはモデルに渡さず該当フォームを開く。</li>
+        </ul>
+      </div>
+    </div>
 
-      <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value" style="color:var(--chart-2)">Soul</span><span class="ve-kpi-card__label">個性テンプレート</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value" style="color:var(--chart-2)">Heartbeat</span><span class="ve-kpi-card__label">プロアクティブ発信</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value" style="color:var(--chart-2)">SKILL.md</span><span class="ve-kpi-card__label">エージェント操作</span></div>
+    <!-- ========== SECTION 5: Knowledge ========== -->
+    <section id="knowledge" class="sec-head">5 — Knowledge Center</section>
+
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 知識ベースごとにエンジンを選ぶ</span>
+      <p>知識ベースは Chat・Co-Writer・Book・Partner の根拠になる文書の集まり。1 つの知識ベースは 1 つのエンジンに紐づく。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>エンジン</th><th>検索方式・用途</th></tr></thead>
+          <tbody>
+            <tr><td><strong>LlamaIndex</strong>（既定）</td><td>ベクトル + BM25 のハイブリッド。cross-encoder による再ランクと FAISS（exact-flat / HNSW）を選べる。</td></tr>
+            <tr><td><strong>PageIndex</strong></td><td>推論による検索とページ単位の引用。ホスト版とセルフホスト OSS 版。</td></tr>
+            <tr><td><strong>GraphRAG</strong> / <strong>LightRAG</strong></td><td>知識グラフによる検索。LightRAG は <code>deeptutor[rag-lightrag]</code> で導入する。</td></tr>
+            <tr><td><strong>LightRAG Server</strong></td><td>外部の LightRAG インスタンスへ HTTP で検索を任せる。</td></tr>
+            <tr><td><strong>WeKnora</strong></td><td>セルフホストの WeKnora から検索する。ローカルの索引や文書コピーを持たない。</td></tr>
+            <tr><td><strong>Tencent IMA</strong></td><td>IMA で管理するライブラリを OpenAPI 経由で検索・閲覧・書き込みする。</td></tr>
+            <tr><td><strong>MarginNote 4</strong></td><td>MN4 の文書・抜粋・マインドマップカードを Add-on から送り込み、専用ツールで辿る。</td></tr>
+            <tr><td><strong>Kiwix</strong></td><td>HTTP で配信される ZIM アーカイブを索引なしで検索する。</td></tr>
+            <tr><td><strong>Obsidian</strong></td><td>リンクした Vault をその場で読み書きする。</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
     <div class="two-col">
       <div class="ve-card" style="--i:1">
-        <span class="ve-section-label"><span class="ve-dot"></span> 主要機能</span>
+        <span class="ve-section-label"><span class="ve-dot"></span> 作成と同期</span>
         <ul>
-          <li><strong>Soul Templates</strong> — 編集可能な Soul ファイルでチューターの個性・口調・教育哲学を定義。ソクラテス式・励まし型・厳格型などのアーキタイプを選択、またはカスタム設計。</li>
-          <li><strong>Independent Workspace</strong> — 各ボットは独立したメモリ・セッション・スキル・設定を持ちながら、DeepTutor の共有知識レイヤーにアクセスできる。</li>
-          <li><strong>Proactive Heartbeat</strong> — 定期的な学習チェックイン・復習リマインダー・スケジュールタスクを開始する。ユーザーが来なくてもチューターが動く。</li>
-          <li><strong>Skill Learning</strong> — スキルファイルを追加してボットに新しい能力を教える。ニーズの進化とともにチューターの能力も進化する。</li>
+          <li>作成方法は <strong>新規作成</strong>（アップロードして索引化）、<strong>既存の索引をリンク</strong>、<strong>Kiwix に接続</strong> の 3 つ。</li>
+          <li>GitHub リポジトリ（リポジトリ・ブランチ・glob）やドキュメントサイトの URL を追跡できる。既定では 24 時間ごとに再同期し、差分だけを反映する。</li>
+          <li>LightRAG の索引は作成時の埋め込み設定を記録する。設定を変えた場合は元に戻すか再構築する。</li>
         </ul>
       </div>
 
       <div class="ve-card" style="--i:2">
-        <span class="ve-section-label"><span class="ve-dot"></span> マルチチャネル・チームエージェント</span>
-        <ul style="margin-bottom:1rem">
-          <li><strong>Multi-Channel</strong> — Telegram / Discord / Slack / Feishu / WeChat Work / DingTalk / Email などに接続。あなたのいる場所にチューターが来る。</li>
-          <li><strong>Full Tool Access</strong> — RAG 検索・コード実行・Web 検索・学術論文検索・深い推論・ブレインストーミング。</li>
-          <li><strong>Team &amp; Sub-Agents</strong> — バックグラウンドサブエージェントや複数エージェントチームを組成して複雑・長期タスクに対応。</li>
-        </ul>
+        <span class="ve-section-label"><span class="ve-dot"></span> 検索品質の採点</span>
+        <p>どのエンジンがよいかは <code>deeptutor kb eval</code> で実測する。<code>query</code> と理想の検索結果 <code>gold</code> を 1 行ずつ書いた QA セットを用意し、Chat と同じ経路で検索した結果を照合する。</p>
         <div class="ve-code-block">
-          <pre><code>deeptutor bot create math-tutor \
-  --persona "Socratic math teacher \
-             who uses probing questions"
+          <pre><code>{"query": "Why do transformers scale attention?", "gold": ["Scaling keeps the dot products from growing with the dimension."]}
 
-deeptutor bot create writing-coach \
-  --persona "Patient writing mentor"
-
-deeptutor bot list   # 全ボット一覧</code></pre>
+deeptutor kb eval textbook --dataset qa.jsonl --top-k 5 --save baseline.json</code></pre>
         </div>
       </div>
     </div>
 
-    <!-- ========== SECTION 5: CLI ========== -->
-    <section id="cli" class="sec-head">5 — DeepTutor CLI — Agent-Native インターフェース</section>
+    <!-- ========== SECTION 6: Memory & Workspace ========== -->
+    <section id="memory" class="sec-head">6 — Memory と Content Workspace</section>
 
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 設計思想</span>
-      <p>CLI はブラウザ不要のフルアクセスを提供する。リッチなターミナル出力（人間向け）と構造化 JSON 出力（AI エージェント向け）のデュアルモードを持つ。<code>SKILL.md</code> をエージェントに渡すと、LLM ツールが DeepTutor を自律的に操作できる。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> 3 層の Memory</span>
+      <p>Memory は隠れたベクトルストアではなく、読んで編集・監査できるファイルで構成される。Memory Graph では L3 を中心に、L2 → L1 の根拠リンクと L3 → 元の L2 のリンクを確認できる。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>層</th><th>保存場所</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td><strong>L1</strong></td><td><code>trace/&lt;surface&gt;/&lt;date&gt;.jsonl</code></td><td>ワークスペースのミラーと追記専用のイベント記録</td></tr>
+            <tr><td><strong>L2</strong></td><td><code>L2/&lt;surface&gt;.md</code></td><td>画面（chat / notebook / quiz / kb / book / partner / cowriter）ごとに整理した事実。L1 の項目を参照する</td></tr>
+            <tr><td><strong>L3</strong></td><td><code>L3/&lt;profile|recent|scope|preferences&gt;.md</code></td><td>画面を横断した統合。どの L2 から作ったかを記録する</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div class="ve-card" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> コア機能コマンド</span>
+      <span class="ve-section-label"><span class="ve-dot--gold ve-dot"></span> Content Workspace</span>
+      <p>エージェントが読めるフォルダで、設定や認証情報を置く private runtime home とは別に管理される。生成物は <code>outputs/&lt;capability&gt;/&lt;session&gt;/&lt;turn&gt;/</code> に出力される。</p>
+      <ul>
+        <li>モデルが受け取るのは <code>outputs/...</code> のような相対パスだけ。</li>
+        <li><code>outputs/</code> の外は読み取り専用。生成物を他の場所へコピーするには、コピー元と先を指定した <strong>Allow once</strong> の確認が要る。</li>
+        <li>この境界はシステムのサンドボックスか Docker runner が強制する。どちらも使えない環境では <strong>best effort</strong> と表示される。</li>
+      </ul>
       <div class="ve-code-block">
-        <pre><code># One-shot 実行
-deeptutor run chat "Fourier 変換を説明して" -t rag --kb textbook
-deeptutor run deep_solve "√2 が無理数であることを証明せよ" -t reason
-deeptutor run deep_question "線形代数" --config num_questions=5
-deeptutor run deep_research "Transformer の Attention メカニズム"
-
-# インタラクティブ REPL（ライブモード切り替え対応）
-deeptutor chat --capability deep_solve --kb my-kb
-# REPL 内: /cap /tool /kb /history /notebook /config
-
-# デュアル出力
-deeptutor run chat "第3章を要約" -f rich   # 着色フォーマット
-deeptutor run chat "第3章を要約" -f json   # ライン区切り JSON</code></pre>
+        <pre><code>deeptutor workspace show
+deeptutor workspace set /absolute/path/to/my-folder
+deeptutor workspace reset</code></pre>
       </div>
+    </div>
+
+    <!-- ========== SECTION 7: CLI ========== -->
+    <section id="cli" class="sec-head">7 — DeepTutor CLI</section>
+
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 人が使う REPL、エージェントが使う NDJSON</span>
+      <p><code>deeptutor</code> コマンド 1 つで、対話型 REPL と構造化 JSON の両方を提供する。<code>--format json</code> を付けると、各ターンが 1 行 1 イベントの NDJSON（<code>content</code> / <code>tool_call</code> / <code>tool_result</code> / <code>done</code> …）で流れ、すべての行に <code>session_id</code> が付く。TTY がない場合、<code>ask_user</code> は空の回答で自動的に進むため止まらない。</p>
+      <div class="ve-code-block">
+        <pre><code># 対話型
+deeptutor chat --capability deep_solve --kb my-kb --tool rag
+
+# 1 回だけ実行
+deeptutor run chat "Explain the Fourier transform" --tool rag --kb textbook
+
+# セッションをつないで連続実行（エージェント向け）
+SID=$(deeptutor run deep_research "Survey 2026 papers on RAG" \
+  --config mode=report --config depth=standard --format json \
+  | jq -r 'select(.type=="done").session_id')
+deeptutor run deep_question "Quiz me on that survey" --session "$SID" --format json</code></pre>
+      </div>
+      <p style="margin-bottom:0">リポジトリ直下の <code>SKILL.md</code> は CLI の引き継ぎ用ドキュメント。エージェントに読ませると DeepTutor を CLI で操作できる。</p>
     </div>
 
     <div class="ve-table-wrap" style="margin-bottom:1rem">
       <table>
         <thead>
-          <tr><th>コマンドグループ</th><th>主なサブコマンド</th><th>説明</th></tr>
+          <tr><th>コマンド</th><th>用途</th></tr>
         </thead>
         <tbody>
-          <tr>
-            <td><code>deeptutor run</code></td>
-            <td><code>chat / deep_solve / deep_question / deep_research / math_animator</code></td>
-            <td>任意の Capability をワンショット実行</td>
-          </tr>
-          <tr>
-            <td><code>deeptutor kb</code></td>
-            <td><code>create / add / search / list / set-default / delete</code></td>
-            <td>知識ベースのライフサイクル管理</td>
-          </tr>
-          <tr>
-            <td><code>deeptutor bot</code></td>
-            <td><code>create / start / stop / list</code></td>
-            <td>TutorBot インスタンス管理</td>
-          </tr>
-          <tr>
-            <td><code>deeptutor memory</code></td>
-            <td><code>show / clear</code></td>
-            <td>学習メモリの参照・クリア</td>
-          </tr>
-          <tr>
-            <td><code>deeptutor session</code></td>
-            <td><code>list / show / open / rename / delete</code></td>
-            <td>セッション継続・管理</td>
-          </tr>
-          <tr>
-            <td><code>deeptutor notebook</code></td>
-            <td><code>list / create / show / add-md / replace-md</code></td>
-            <td>ノートブック管理</td>
-          </tr>
-          <tr>
-            <td><code>deeptutor plugin</code></td>
-            <td><code>list / info</code></td>
-            <td>登録ツール・Capability 一覧</td>
-          </tr>
-          <tr>
-            <td><code>deeptutor provider</code></td>
-            <td><code>login</code></td>
-            <td>プロバイダー認証（OpenAI Codex / GitHub Copilot）</td>
-          </tr>
+          <tr><td><code>deeptutor init</code></td><td>セットアップウィザード（ポート → LLM → 埋め込み → 検索）。<code>--non-interactive</code> で既定値だけ作る</td></tr>
+          <tr><td><code>deeptutor doctor [--online]</code></td><td>起動できる状態か診断する。<code>--online</code> でモデルプロバイダーにも接続確認する</td></tr>
+          <tr><td><code>deeptutor start / stop / serve</code></td><td>バックエンドとフロントエンドを起動・停止する。<code>serve</code> は FastAPI だけ</td></tr>
+          <tr><td><code>deeptutor run &lt;capability&gt; &lt;message&gt;</code></td><td>任意の Capability を 1 ターン実行する</td></tr>
+          <tr><td><code>deeptutor kb</code></td><td>知識ベースの作成・追加・検索・採点（<code>eval</code> / <code>eval-diff</code>）・ソース同期</td></tr>
+          <tr><td><code>deeptutor partner</code></td><td>IM 接続の Partner を一覧・作成・起動・停止する</td></tr>
+          <tr><td><code>deeptutor skill</code></td><td>Skills の検索・インストール・公開</td></tr>
+          <tr><td><code>deeptutor memory / session / notebook / book</code></td><td>Memory、セッション、ノートブック、Book の参照と管理</td></tr>
+          <tr><td><code>deeptutor plugin</code></td><td>ツールと Capability の確認、審査済みプラグインの導入・承認・ロールバック</td></tr>
+          <tr><td><code>deeptutor config</code></td><td>解決済み設定の表示（認証情報は伏せ字）、設定 JSON の適用と検証</td></tr>
+          <tr><td><code>deeptutor provider login &lt;provider&gt;</code></td><td><code>openai-codex</code> の OAuth、<code>github-copilot</code> のデバイスログインなど</td></tr>
         </tbody>
       </table>
     </div>
 
-    <!-- ========== SECTION 6: Setup ========== -->
-    <section id="setup" class="sec-head">6 — セットアップ</section>
+    <!-- ========== SECTION 8: Skills ========== -->
+    <section id="skills" class="sec-head">8 — EduHub と Skills</section>
+
+    <div class="two-col">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Agent-Skills 形式のスキル</span>
+        <p>DeepTutor のスキルは、<code>SKILL.md</code>（YAML frontmatter + Markdown）と参照ファイルを入れたフォルダ。既定の取得元は教育向けレジストリの <a href="https://eduhub.deeptutor.info/" target="_blank" rel="noopener">EduHub</a> で、<a href="https://clawhub.ai/" target="_blank" rel="noopener">ClawHub</a> も組み込まれている。</p>
+        <div class="ve-code-block">
+          <pre><code>deeptutor skill search "socratic tutor"
+deeptutor skill install socratic-tutor
+deeptutor skill install eduhub:socratic-tutor@1.2.0
+deeptutor skill install clawhub:git-release-notes@1.0.1
+deeptutor skill publish ./my-skill</code></pre>
+        </div>
+      </div>
+
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot--gold ve-dot"></span> 取り込み時の安全チェック</span>
+        <p>取得元に関係なく、すべての取り込みが同じチェックを通る。</p>
+        <ol>
+          <li>レジストリのセキュリティ判定を確認し、警告付きのパッケージは <code>--allow-unverified</code> なしでは拒否する。</li>
+          <li>アーカイブはパストラバーサル・件数・サイズ・圧縮率・拡張子・シンボリックリンクを検査して展開し、実行ビットを外す。</li>
+          <li>frontmatter を正規化し、<code>always:</code> を削除する。取り込んだスキルが全システムプロンプトに常駐することはない。</li>
+          <li>取得元・バージョン・判定・導入日時を <code>.hub-lock.json</code> に記録する。</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- ========== SECTION 9: Setup ========== -->
+    <section id="setup" class="sec-head">9 — セットアップ</section>
 
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 必須の環境変数（最低限）</span>
-      <div class="ve-code-block">
-        <pre><code># LLM（必須）
-LLM_BINDING=openai
-LLM_MODEL=gpt-4o-mini
-LLM_API_KEY=sk-xxx
-LLM_HOST=https://api.openai.com/v1
-
-# Embedding（Knowledge Base に必須）
-EMBEDDING_BINDING=openai
-EMBEDDING_MODEL=text-embedding-3-large
-EMBEDDING_API_KEY=sk-xxx
-EMBEDDING_HOST=https://api.openai.com/v1
-EMBEDDING_DIMENSION=3072</code></pre>
-      </div>
-      <p style="margin-bottom:0">24 以上の LLM プロバイダーをサポート（Anthropic / Gemini / DeepSeek / Ollama / Groq など）。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> 設定の置き場所</span>
+      <p style="margin-bottom:0">旧版の <code>.env</code> による設定は廃止された。プロジェクト直下の <code>.env</code> は意図的に無視され、設定は起動ディレクトリ配下の <code>data/user/settings/*.json</code>（または <code>DEEPTUTOR_HOME</code> / <code>deeptutor start --home</code> で指定した場所）に保存される。モデルやプロバイダーは <code>deeptutor init</code> か Web の <strong>Settings → Providers</strong> で設定する。</p>
     </div>
 
     <div class="step-flow">
       <div class="step-card">
-        <div class="step-card__num">Option A — 推奨</div>
-        <div class="step-card__title">Setup Tour</div>
+        <div class="step-card__num">試すだけ</div>
+        <div class="step-card__title">Docker 1 コマンド</div>
         <div class="step-card__body">
-          <code>python scripts/start_tour.py</code> を起動するインタラクティブスクリプト。依存のインストール・環境設定・接続テスト・起動までを対話的にガイド。Web モードと CLI モードを選択できる。
+          <code>docker run --rm -p 127.0.0.1:3782:3782 -v deeptutor-data:/app/data ghcr.io/hkuds/deeptutor:latest</code> で起動し、<code>http://127.0.0.1:3782</code> を開く。設定は名前付きボリュームに残る。
         </div>
       </div>
       <div class="step-card">
-        <div class="step-card__num">Option B</div>
-        <div class="step-card__title">Manual Local Install</div>
+        <div class="step-card__num">Option 1</div>
+        <div class="step-card__title">PyPI からインストール</div>
         <div class="step-card__body">
-          <code>pip install -e ".[server]"</code> でバックエンド、<code>cd web &amp;&amp; npm install</code> でフロントエンドを個別インストール。<code>.env</code> を手動設定してサービスを個別起動。
+          Web アプリと CLI の両方が入る。Python 3.11〜3.14 と Node.js 20 以上が必要。<code>pip install -U deeptutor</code> → <code>deeptutor init</code> → <code>deeptutor start</code>。
         </div>
       </div>
       <div class="step-card">
-        <div class="step-card__num">Option C</div>
-        <div class="step-card__title">Docker Deployment</div>
+        <div class="step-card__num">Option 2</div>
+        <div class="step-card__title">ソースからインストール</div>
         <div class="step-card__body">
-          GHCR の公式イメージ（<code>docker compose -f docker-compose.ghcr.yml up -d</code>）またはソースからのビルド。<code>linux/amd64</code> と <code>linux/arm64</code> に対応。ユーザーデータは Docker ボリュームで永続化。
+          開発向け。CI と同じ Python 3.11〜3.14 と Node.js 22 LTS を使う。RAG エンジンや Partner 用のチャネルは extras で追加する。
         </div>
       </div>
       <div class="step-card">
-        <div class="step-card__num">Option D</div>
-        <div class="step-card__title">CLI Only</div>
+        <div class="step-card__num">Option 3 / 4</div>
+        <div class="step-card__title">Docker / CLI のみ</div>
         <div class="step-card__body">
-          Web フロントエンドなしで CLI だけを使う場合は <code>pip install -e ".[cli]"</code>。<code>deeptutor chat</code> または <code>deeptutor run &lt;capability&gt;</code> ですぐに開始できる。
+          Docker は 1 つのコンテナで完結する構成と Compose 構成がある。Web UI が不要なら <code>pip install -e ./packaging/deeptutor-cli</code>（PyPI 未公開のためソースから）。
         </div>
       </div>
     </div>
 
-    <div class="ve-card ve-card--recessed" style="--i:1">
-      <span class="ve-section-label"><span class="ve-dot"></span> デフォルトポート</span>
-      <div class="ve-table-wrap">
-        <table>
-          <thead><tr><th>サービス</th><th>デフォルトポート</th><th>環境変数で変更</th></tr></thead>
-          <tbody>
-            <tr><td>Backend (FastAPI)</td><td><code>8001</code></td><td><code>BACKEND_PORT</code></td></tr>
-            <tr><td>Frontend (Next.js)</td><td><code>3782</code></td><td><code>FRONTEND_PORT</code></td></tr>
-          </tbody>
-        </table>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> エージェントにセットアップを任せる</span>
+      <p>README には、Codex や Claude Code などに渡すためのプロンプトが用意されている。エージェントは <code>SKILL.md</code> と <code>docs-for-user/AGENT_SETUP.md</code> を読み、環境準備・プロバイダー設定・動作確認・起動まで進める。API キーは表示しないよう指示されている。</p>
+      <div class="ve-code-block">
+        <pre><code>Help me install and configure DeepTutor locally from https://github.com/HKUDS/DeepTutor.
+Clone the repository, or reuse my existing checkout, and read SKILL.md and
+docs-for-user/AGENT_SETUP.md first. Follow that guide to prepare the environment,
+configure my model provider, verify the setup, and start the Web app.
+Ask me for any missing provider, model, or credential-source information;
+do not print API keys. Preserve my existing files and settings, and finish
+with the access URL and the results of your checks.</code></pre>
       </div>
     </div>
 
-    <!-- ========== SECTION 7: Links ========== -->
-    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <div class="two-col">
+      <div class="ve-card ve-card--recessed" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> デフォルトポート</span>
+        <div class="ve-table-wrap">
+          <table>
+            <thead><tr><th>サービス</th><th>ポート</th></tr></thead>
+            <tbody>
+              <tr><td>Backend (FastAPI)</td><td><code>8001</code></td></tr>
+              <tr><td>Frontend (Next.js)</td><td><code>3782</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-bottom:0">どちらも <code>deeptutor init</code> で変更できる。</p>
+      </div>
+
+      <div class="ve-card ve-card--recessed" style="--i:3">
+        <span class="ve-section-label"><span class="ve-dot"></span> マルチユーザー</span>
+        <p>認証は既定で無効（シングルユーザー）。<code>data/user/settings/auth.json</code> で有効にすると、最初に登録したユーザーが管理者になり、ユーザーごとに分離されたワークスペースを持つ。</p>
+        <p style="margin-bottom:0">管理者はモデル・知識ベース・Skills・Partner・コード実行の権限をユーザーに付与する。一般ユーザーに API キーそのものは渡らない。Learner アカウントと保護者による承認・レポート機能もある。</p>
+      </div>
+    </div>
+
+    <!-- ========== SECTION 10: Links ========== -->
+    <section id="links" class="sec-head">10 — リリースとリンク</section>
 
     <div class="two-col">
       <div class="ve-card" style="--i:0">
-        <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連リソース</span>
-        <ul>
-          <li><a href="https://github.com/HKUDS/DeepTutor" target="_blank" rel="noopener">GitHub: HKUDS/DeepTutor</a></li>
-          <li><a href="https://github.com/HKUDS/nanobot" target="_blank" rel="noopener">nanobot</a> — TutorBot のエージェントエンジン</li>
-          <li><a href="https://github.com/run-llama/llama_index" target="_blank" rel="noopener">LlamaIndex</a> — RAG パイプライン</li>
-          <li><a href="https://github.com/Wing900/ManimCat" target="_blank" rel="noopener">ManimCat</a> — Math Animator の基盤</li>
-          <li><a href="https://discord.gg/eRsjPgMU4t" target="_blank" rel="noopener">Discord コミュニティ</a></li>
-        </ul>
-      </div>
-
-      <div class="ve-card" style="--i:1">
-        <span class="ve-section-label"><span class="ve-dot--gold ve-dot"></span> リリース履歴（主要版）</span>
+        <span class="ve-section-label"><span class="ve-dot--gold ve-dot"></span> 主なリリース</span>
         <div class="timeline">
           <div class="tl-item">
-            <div class="tl-date">2026.4.8 — v1.0.0-beta.3</div>
-            <div class="tl-body">litellm 依存を除去しネイティブ SDK へ移行。Windows Math Animator 対応、堅牢な JSON パース、i18n 中国語完全対応。</div>
+            <div class="tl-date">2026.10.19 — v1.6.15</div>
+            <div class="tl-body">学習パス変更のレビュー、評価のグループ化、Memory の上限管理、チャット復旧の改善、Gemini のネイティブ音声。</div>
           </div>
           <div class="tl-item">
-            <div class="tl-date">2026.4.4 — v1.0.0-beta.1</div>
-            <div class="tl-body"><strong>DeepTutor 2.0 アーキテクチャ刷新。</strong> 2 層プラグインモデル（Tools + Capabilities）、CLI &amp; SDK、TutorBot、Co-Writer、Guided Learning、永続メモリ。</div>
+            <div class="tl-date">2026.9.6 — v1.6.5</div>
+            <div class="tl-body">任意のフォルダを指定できる Content Workspace、全言語共通の <code>exec</code> ツール、ツールを制限する Mastery Path のモード。</div>
           </div>
           <div class="tl-item">
-            <div class="tl-date">2026.2.6</div>
-            <div class="tl-body">39 日で GitHub Stars 10k 突破。</div>
+            <div class="tl-date">2026.9.2 — v1.6.3</div>
+            <div class="tl-body">フロント／バックエンドの破壊的リファクタ。Learner / 保護者アカウント、Python 3.14 対応。</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-date">2026.8.25 — v1.5.17</div>
+            <div class="tl-body">メンバーごとに所有する Partner、GitHub リポジトリを知識ソースに、<code>deeptutor doctor</code>。</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-date">2026.4.10</div>
+            <div class="tl-body">論文を arXiv で公開（<a href="https://arxiv.org/abs/2604.26962" target="_blank" rel="noopener">2604.26962</a>）。</div>
           </div>
           <div class="tl-item">
             <div class="tl-date">2025.12.29</div>
-            <div class="tl-body">DeepTutor 初期リリース。</div>
+            <div class="tl-body">DeepTutor 初回リリース。</div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="ve-card ve-card--recessed" style="--i:2">
-      <span class="ve-section-label"><span class="ve-dot"></span> HKUDS エコシステム</span>
-      <div class="ve-table-wrap">
-        <table>
-          <thead><tr><th>プロジェクト</th><th>役割</th></tr></thead>
-          <tbody>
-            <tr><td><a href="https://github.com/HKUDS/LightRAG" target="_blank" rel="noopener">LightRAG</a></td><td>高速・シンプルな RAG エンジン（将来 DeepTutor に統合予定）</td></tr>
-            <tr><td><a href="https://github.com/HKUDS/AutoAgent" target="_blank" rel="noopener">AutoAgent</a></td><td>ノーコードエージェントフレームワーク</td></tr>
-            <tr><td><a href="https://github.com/HKUDS/AI-Researcher" target="_blank" rel="noopener">AI-Researcher</a></td><td>自動リサーチシステム</td></tr>
-            <tr><td><a href="https://github.com/HKUDS/nanobot" target="_blank" rel="noopener">nanobot</a></td><td>超軽量 AI エージェントエンジン（TutorBot の心臓部）</td></tr>
-          </tbody>
-        </table>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連リソース</span>
+        <ul>
+          <li><a href="https://github.com/HKUDS/DeepTutor" target="_blank" rel="noopener">GitHub: HKUDS/DeepTutor</a></li>
+          <li><a href="https://deeptutor.info/" target="_blank" rel="noopener">deeptutor.info</a> — 公式ドキュメント</li>
+          <li><a href="https://eduhub.deeptutor.info/" target="_blank" rel="noopener">EduHub</a> — 教育向けスキルのレジストリ</li>
+          <li><a href="https://arxiv.org/abs/2604.26962" target="_blank" rel="noopener">arXiv: 2604.26962</a> — 設計と考え方をまとめた論文</li>
+          <li><a href="https://github.com/HKUDS/CLI-Anything" target="_blank" rel="noopener">CLI-Anything</a> — CLI Apps のカタログ</li>
+          <li><a href="https://github.com/VectifyAI/PageIndex" target="_blank" rel="noopener">PageIndex</a> — 推論型検索エンジン</li>
+          <li><a href="https://github.com/HKUDS/LightRAG" target="_blank" rel="noopener">LightRAG</a> — 知識グラフ型 RAG</li>
+          <li><a href="https://discord.gg/eRsjPgMU4t" target="_blank" rel="noopener">Discord コミュニティ</a></li>
+        </ul>
       </div>
     </div>
 
