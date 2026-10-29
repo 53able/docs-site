@@ -250,15 +250,16 @@
     <span class="ve-section-label"><span class="ve-dot"></span> 何をするものか</span>
     <p><strong>just-bash</strong> は、bash インタプリタと仮想ファイルシステムを TypeScript で実装した npm パッケージ。実プロセスを起動せず、パーサからコマンド実装まですべて JavaScript のコードとして動く。AI エージェントに bash を渡したいが、ホストのファイルシステムやネットワークには触れさせたくない、という用途を想定している。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">約 79</span><span class="ve-kpi-card__label">組み込みコマンド</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">約 81</span><span class="ve-kpi-card__label">組み込みコマンド</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">0</span><span class="ve-kpi-card__label">子プロセス起動</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">OFF</span><span class="ve-kpi-card__label">ネットワーク既定値</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node 20.18.1+</span><span class="ve-kpi-card__label">動作要件</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node 20.19+</span><span class="ve-kpi-card__label">動作要件</span></div>
     </div>
     <p>設計上の中心は「スクリプトは完全に信用しない」という前提。ファイルアクセスは仮想 FS に閉じ、ネットワークは既定で無効、Python と JavaScript の実行は明示的に有効化しないと存在しない。防御は 1 枚ではなく、アーキテクチャ・FS・ネットワーク・実行リミット・グローバル遮蔽の複数層で構成される。</p>
     <div class="ve-callout">
       <strong>ベータ版:</strong> パッケージの README は beta software と明記している。ライセンスは Apache-2.0。フル VM が必要な場合は Vercel Sandbox など別手段を使うよう案内されている。
     </div>
+    <p>本ページは npm 公開版 <strong>v3.6.0</strong>（2026-10-01 リリース）を基準にしている。main ブランチにあって未リリースの変更は、該当箇所に「未リリース」と明記する。</p>
   </div>
 
   <section id="start" class="sec-head">2 — 導入と基本 API</section>
@@ -279,6 +280,9 @@ console.log(result.stdout);   // "Hello\n"
 console.log(result.exitCode); // 0</code></pre>
     </div>
     <p><code>exec()</code> の呼び出しごとにシェル状態（環境変数・関数・カレントディレクトリ）はリセットされる。一方で<strong>ファイルシステムは呼び出し間で共有される</strong>ため、前の <code>exec()</code> で書いたファイルは次の <code>exec()</code> から見える。</p>
+    <div class="ve-callout">
+      <strong>未リリース（main）:</strong> <code>shopt</code> 設定・readonly 属性・コマンドのハッシュ表も <code>exec()</code> ごとに複製されるようになり、前の呼び出しの変更が後に残らない。また <code>sh -c</code> / <code>bash -c</code> で起動した入れ子のシェルは、export された環境変数だけを引き継ぐ。v3.6.0 までは <code>replaceEnv: true</code> で渡した env が入れ子のシェルに届かず、コンストラクタの env が見えていた。
+    </div>
   </div>
 
   <div class="ve-card" style="--i:1">
@@ -322,7 +326,7 @@ await bash.exec("echo 'test' | upper"); // "TEST\n"</code></pre>
     </div>
     <p>ホスト提供コマンドは既定で trusted 扱いになる。制限付きの拡張境界を選ぶ場合は <code>trusted: false</code> を指定する。trusted なコマンドは埋め込み側のプロセスで動くため、ゲスト由来の JavaScript を実行してはいけない。</p>
     <div class="ve-callout">
-      <strong>キャンセル時の挙動:</strong> 呼び出しは <code>maxExecutionTimeMs</code> に拘束される。キャンセルされるとコマンドコンテキストは即座に無効化され、遅れて動き出した継続処理は <code>ctx.fs</code> / <code>ctx.env</code> / <code>ctx.exec</code> を使えない。スコープ終了時に必ず走らせたい後始末は <code>ctx.executionScope.registerCleanup()</code> に登録する。
+      <strong>キャンセル時の挙動:</strong> 呼び出しは <code>maxExecutionTimeMs</code> に拘束される。キャンセルされるとコマンドコンテキストは即座に無効化され、モジュール読み込み中などでまだ開始していないコマンドは起動されず、その場でキャンセルとして報告される。遅れて動き出した継続処理は <code>ctx.fs</code> / <code>ctx.env</code> / <code>ctx.exec</code> を使えない。スコープ終了時に必ず走らせたい後始末は <code>ctx.executionScope.registerCleanup()</code> に登録する。
     </div>
   </div>
 
@@ -333,7 +337,7 @@ await bash.exec("echo 'test' | upper"); // "TEST\n"</code></pre>
     <div class="cmd-groups">
       <div class="cmd-group">
         <span class="cmd-group__name">ファイル操作</span>
-        <div class="cmd-group__items">cat, cp, file, ln, ls, mkdir, mv, readlink, rm, rmdir, split, stat, touch, tree</div>
+        <div class="cmd-group__items">cat, cp, file, ln, ls, mkdir, mktemp, mv, readlink, rm, rmdir, split, stat, touch, tree</div>
       </div>
       <div class="cmd-group">
         <span class="cmd-group__name">テキスト処理</span>
@@ -353,13 +357,21 @@ await bash.exec("echo 'test' | upper"); // "TEST\n"</code></pre>
       </div>
       <div class="cmd-group">
         <span class="cmd-group__name">シェルユーティリティ</span>
-        <div class="cmd-group__items">alias, bash, chmod, clear, date, expr, false, help, history, seq, sh, sleep, time, timeout, true, unalias, which, whoami</div>
+        <div class="cmd-group__items">alias, bash, chmod, clear, date, expr, false, help, history, seq, sh, sleep, time, timeout, true, unalias, which, whoami, yes</div>
       </div>
       <div class="cmd-group">
         <span class="cmd-group__name">要設定</span>
         <div class="cmd-group__items">curl, html-to-markdown（ネットワーク設定時）<br>js-exec（<code>javascript: true</code>）<br>python3 / python（<code>python: true</code>）</div>
       </div>
     </div>
+    <h3>v3.5.0 以降に追加・変更されたコマンド</h3>
+    <ul>
+      <li><strong><code>mktemp</code>（v3.6.0 で追加）:</strong> モード 0600 のファイル、または <code>-d</code> でモード 0700 のディレクトリを作り、パスを出力する。既定の作成先は <code>$TMPDIR</code>（未設定なら <code>/tmp</code>）。名前の乱数は <code>crypto.getRandomValues</code> から取る。原子的な作成のために <code>IFileSystem</code> へ任意メソッド <code>createExclusive()</code> が追加された。組み込み FS はすべて実装済みで、これを持たない独自 FS では <code>mktemp</code> は非原子的な手順で代用せずエラーを返す。</li>
+      <li><strong><code>yes</code>（v3.6.0 で追加）:</strong> パイプラインの各段は逐次ストリーミングせず完了まで実行されるため、出力は無限ではない。<code>maxLoopIterations</code> 行、または出力サイズ上限に達した時点で止まる。</li>
+      <li><strong><code>diff</code>（v3.5.0 で既定出力を変更）:</strong> 既定が unified 形式から GNU / POSIX と同じ normal 形式（<code>2c2</code> / <code>&lt;</code> / <code>---</code> / <code>&gt;</code>）に変わった。旧出力をパースしていたコードは壊れるので、unified が必要なら <code>-u</code> を付ける。<code>-c</code>（context 形式）も追加された。</li>
+      <li><strong><code>curl</code>:</strong> v3.5.0 で <code>-D</code> / <code>--dump-header</code> に対応。<code>-o</code> でファイルへ書き出すときにレスポンス全体を stdout 用の文字列へ変換しなくなった。stdin からのリクエストデータにも対応した。</li>
+      <li><strong><code>rg</code>（未リリース、main）:</strong> ripgrep 互換のオプション（<code>-C</code>、ファイル種別、glob、ファイル単位のマッチ上限、パスのみの出力、<code>--color</code>、<code>--</code>）とヘッダ表示に合わせ込んだ。空のパイプ入力は、カレントディレクトリを探索せずに空入力として検索する。終了コードは一致 0、不一致 1、エラー 2。本家と違い既定は smart-case で、小文字だけのパターンは大文字小文字を区別しない。<code>--color</code> にどの値を渡しても出力はプレーンテキストになる。</li>
+    </ul>
   </div>
   <div class="ve-card ve-card--recessed" style="--i:1">
     <span class="ve-section-label"><span class="ve-dot"></span> サポートするシェル構文</span>
@@ -534,15 +546,17 @@ const env2 = new Bash({
       <li><strong>オリジン一致:</strong> スキーム・ホスト・ポートが完全に一致する必要がある。<code>new URL()</code> でパースしてから照合するため <code>https://evil.com@good.com</code> のような細工は通らない。</li>
       <li><strong>パスプレフィックス:</strong> 指定した接頭辞で始まるパスだけを許可する。</li>
       <li><strong>メソッド制限:</strong> 既定は <code>["GET", "HEAD"]</code>。追加は <code>allowedMethods</code> で明示する。</li>
-      <li><strong>リダイレクト保護:</strong> リダイレクトは手動で処理し、遷移のたびに許可リストへ照合する。</li>
+      <li><strong>リダイレクト保護:</strong> リダイレクトは手動で処理し、遷移のたびに許可リストへ照合する。メソッドの書き換えは fetch 標準に従い（301/302 は POST のみ、303 は GET/HEAD 以外を書き換え、307/308 は維持）、書き換え後のメソッドも <code>allowedMethods</code> で再検査する。オリジンをまたぐ遷移ではユーザの認証情報を落とす。</li>
+      <li><strong>プライベート IP 遮断:</strong> <code>denyPrivateRanges: true</code>（既定 <code>false</code>）で、プライベート・ループバック宛ての接続を拒否する。DNS 解決結果を接続時に固定するため DNS リバインディングも防ぐ。<code>dangerouslyAllowFullInternetAccess: true</code> と併用しても効く。ブラウザでは固定ができないため、有効にするとリクエストは失敗する（fail closed）。</li>
       <li><strong>ヘッダ変換:</strong> fetch 境界で注入され、同名のユーザ指定ヘッダを上書きする。リダイレクトごとに再評価されるため、変換対象外のホストへ認証情報が渡らない。</li>
       <li><strong>レスポンス上限:</strong> <code>maxResponseSize</code>（10 MB）を Content-Length とストリーミングの両方で強制する。</li>
     </ul>
+    <p>v3.5.0 で、独自実装だった <code>secureFetch</code> の SSRF 対策・DNS リバインディング対策・プロトコル制限・URL 検証を、Vercel の <a href="https://www.npmjs.com/package/guarded-fetch" target="_blank" rel="noopener">guarded-fetch</a>（undici ベース）に委ねた。パスプレフィックスの許可リスト、ヘッダ変換、レスポンス上限、リダイレクト処理は just-bash 側に残っている。公開 API（<code>createSecureFetch</code> など）は変わらないが、Node の要件が <code>&gt;=20.19</code> に上がり、just-bash を再バンドルする場合は <code>guarded-fetch</code> を external 指定する必要がある。</p>
   </div>
 
   <div class="ve-card" style="--i:2">
     <span class="ve-section-label"><span class="ve-dot"></span> JavaScript 実行（js-exec）</span>
-    <p>QuickJS の WASM サンドボックスで動く。<code>require()</code> と <code>import</code> は <code>fs</code>、<code>path</code>、<code>child_process</code>、<code>process</code>、<code>os</code>、<code>url</code>、<code>assert</code>、<code>util</code>、<code>events</code>、<code>buffer</code>、<code>stream</code> などの互換シムに解決される（<code>fs</code> はサンドボックスの仮想 FS を指す）。タイムアウトは既定 <code>normal</code> プロファイルで 30 秒、<code>hardened</code> プロファイルで 10 秒。ネットワークを有効化してもこの期限は延びない。</p>
+    <p><code>run</code> パッケージが提供する QuickJS の WASM サンドボックスで動く（v3.5.0 で移行）。ゲストの JavaScript は Node のワーカーのレルムでは実行されず、ホストとの接点は検証付きで上限のあるブリッジだけになる。<code>require()</code> と <code>import</code> は <code>fs</code>、<code>path</code>、<code>child_process</code>、<code>process</code>、<code>os</code>、<code>url</code>、<code>assert</code>、<code>util</code>、<code>events</code>、<code>buffer</code>、<code>stream</code> などの互換シムに解決される（<code>fs</code> はサンドボックスの仮想 FS を指す）。タイムアウトは既定 <code>normal</code> プロファイルで 30 秒、<code>hardened</code> プロファイルで 10 秒。ネットワークを有効化してもこの期限は延びない。</p>
     <p><code>javascript.invokeTool</code> を渡すと、スクリプト側からグローバルな <code>tools</code> プロキシ経由でホスト定義のツールを呼び出せる。フック自体は汎用で、素のマップ・MCP・Anthropic の tool-use など任意のツールフレームワークを接続できる。</p>
     <div class="ve-code-block">
       <span class="ve-code-block__label">typescript</span>
@@ -552,14 +566,19 @@ const env2 = new Bash({
     // argsJson: '{"a":1,"b":2}'（引数なしなら ""）
     // 戻り値:   JSON 文字列。undefined なら ""
     // throw:    サンドボックス内の例外として伝播する
-    invokeTool: async (path, argsJson) =&gt; {
+    invokeTool: async (path, argsJson, abortSignal) =&gt; {
       const args = argsJson ? JSON.parse(argsJson) : undefined;
-      if (path === "math.add") return JSON.stringify({ sum: args.a + args.b });
+      if (path === "math.add") {
+        abortSignal.throwIfAborted();
+        return JSON.stringify({ sum: args.a + args.b });
+      }
       throw new Error(`Unknown tool: ${path}`);
     },
   },
 });</code></pre>
     </div>
+    <p>第 3 引数の <code>abortSignal</code> は、JavaScript の実行がキャンセルまたはタイムアウトしたときに発火する。ネットワーク呼び出しなどキャンセル可能な処理へ渡し、副作用がサンドボックスの実行より長く残らないようにする。</p>
+    <p>GraphQL・OpenAPI・MCP のツール発見まで含めて接続するなら、同じモノレポの <code>@just-bash/executor</code>（v7.0.0、<code>experimental</code> dist-tag）が <code>@executor-js/sdk</code> をこのフックにつなぐ。登録したツールは <code>math add a=1 b=2</code> のような bash コマンドとしても呼べる。API は今後も変わる前提で公開されている。</p>
   </div>
 
   <div class="ve-card" style="--i:3">
@@ -594,7 +613,7 @@ const env2 = new Bash({
   },
 });</code></pre>
     </div>
-    <p>値の検証は <code>Bash</code> の構築時に行われ、不正な値はその場で弾かれる。エラーメッセージには、どのリソースに当たったかが含まれる。</p>
+    <p><code>js-exec</code> は無限の期限を <code>run</code> の最長タイムアウト（約 24.9 日）に読み替える。値の検証は <code>Bash</code> の構築時に行われ、不正な値はその場で弾かれる。エラーメッセージには、どのリソースに当たったかが含まれる。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
@@ -702,7 +721,7 @@ const env2 = new Bash({
           <tr>
             <td>動的 <code>import()</code></td>
             <td><span class="badge badge--warn">ランタイム依存</span></td>
-            <td><code>import()</code> は言語キーワードであり Proxy でも <code>defineProperty</code> でも捕捉できない。<code>node:module.registerHooks()</code> が使えるランタイムでは文脈付きローダフックで拒否できるが、そうでないランタイムでは best-effort に留まる</td>
+            <td><code>import()</code> は言語キーワードであり Proxy でも <code>defineProperty</code> でも捕捉できない。<code>node:module.registerHooks()</code> が使えるランタイムでは文脈付きローダフックで拒否できるが、そうでないランタイムでは best-effort に留まる。<code>js-exec</code> のゲストコードは QuickJS/WASM 内で動くため、この経路には当たらない</td>
           </tr>
           <tr>
             <td>事前取得された参照</td>
@@ -740,7 +759,7 @@ const env2 = new Bash({
 
   <div class="ve-card ve-card--recessed" style="--i:1">
     <span class="ve-section-label"><span class="ve-dot"></span> CLI としての利用</span>
-    <p>グローバルインストールすると、OverlayFS を使うサンドボックス CLI が入る。読み取りは実ファイルシステムから行われ、書き込みはすべてメモリに留まり実行後に破棄される。プロジェクトルートはサンドボックス内の <code>~/project</code> 相当にマウントされるので、そのパスか既定の作業ディレクトリからの相対パスでファイルを参照する。</p>
+    <p>グローバルインストールすると、OverlayFS を使うサンドボックス CLI が入る。読み取りは実ファイルシステムから行われ、既定では書き込みを許さない。<code>--allow-write</code> を付けても書き込みはメモリに留まり、実行後に破棄される。プロジェクトルートはサンドボックス内のホームディレクトリ（<code>$HOME</code>）直下の <code>project</code> にマウントされるので、そのパスか既定の作業ディレクトリからの相対パスでファイルを参照する。</p>
     <div class="ve-code-block">
       <span class="ve-code-block__label">bash</span>
       <pre><code># インラインスクリプトを実行
@@ -752,18 +771,23 @@ just-bash -c 'grep -r "TODO" src/' --root /path/to/project
 # 標準入力からスクリプトを渡す
 echo 'find . -name "*.ts" | wc -l' | just-bash
 
+# スクリプトファイルを実行
+just-bash ./scripts/deploy.sh
+
 # プログラムから扱いやすい JSON 出力
 just-bash -c 'echo hello' --json
 # {"stdout":"hello\n","stderr":"","exitCode":0}</code></pre>
     </div>
-    <p>オプションは <code>-c &lt;script&gt;</code>（引数からスクリプトを実行）、<code>--root &lt;path&gt;</code>（ルートディレクトリ、既定はカレント）、<code>--cwd &lt;path&gt;</code>（サンドボックス内の作業ディレクトリ）、<code>-e, --errexit</code>（最初のエラーで終了）、<code>--json</code>（JSON 出力）。</p>
+    <p>オプションは <code>-c &lt;script&gt;</code>（引数からスクリプトを実行）、<code>--root &lt;path&gt;</code>（ルートディレクトリ、既定はカレント）、<code>--cwd &lt;path&gt;</code>（サンドボックス内の作業ディレクトリ）、<code>--allow-write</code>（メモリ上への書き込みを許可）、<code>-e, --errexit</code>（最初のエラーで終了）、<code>--json</code>（JSON 出力）。</p>
   </div>
 
   <section id="links" class="sec-head">10 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
     <ul>
-      <li><a href="https://github.com/vercel-labs/just-bash" target="_blank" rel="noopener">GitHub: vercel-labs/just-bash</a> — 本体リポジトリ（TypeScript モノレポ）。本ページは同リポジトリの README.md、パッケージの README.md、CLAUDE.md、THREAT_MODEL.md を出典としている</li>
+      <li><a href="https://github.com/vercel-labs/just-bash" target="_blank" rel="noopener">GitHub: vercel-labs/just-bash</a> — 本体リポジトリ（TypeScript モノレポ）。本ページは同リポジトリの README.md、パッケージの README.md と CHANGELOG.md、AGENTS.md、THREAT_MODEL.md、<code>.changeset/</code>（未リリース分）を出典としている</li>
+      <li><a href="https://github.com/vercel-labs/just-bash/blob/main/packages/just-bash/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> — バージョンごとの変更点。v3.5.0 の <code>diff</code> 既定形式変更のような互換性に関わる変更もここに書かれる</li>
+      <li><a href="https://github.com/vercel-labs/just-bash/tree/main/packages/just-bash-executor" target="_blank" rel="noopener">@just-bash/executor</a> — <code>invokeTool</code> フックに <code>@executor-js/sdk</code> をつなぐ実験的パッケージ</li>
       <li><a href="https://www.npmjs.com/package/just-bash" target="_blank" rel="noopener">npm: just-bash</a> — パッケージ本体</li>
       <li><a href="https://github.com/vercel-labs/bash-tool" target="_blank" rel="noopener">vercel-labs/bash-tool</a> — just-bash を AI SDK のツールとして包むラッパ。エージェント向けの追加ガイドを <code>AGENTS.md</code> に持つ</li>
       <li><a href="https://ai-sdk.dev/" target="_blank" rel="noopener">AI SDK</a> — <code>bash-tool</code> が前提とするツール定義基盤</li>
