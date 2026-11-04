@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto-Ontology — データベースのメタデータからオントロジーを組み立て、エージェントの誤答を減らす NVIDIA のコンテキスト層</title>
+  <meta name="description" content="NVIDIA/auto-ontology（v1.1.0）の解説。用語・SQL 属性・関係で構成するオントロジー、Next.js・FastAPI・取り込みサービス・MCP サーバーの構成とポート、生成・認定・回答の 3 段階、LangGraph の回答エージェント、Docker Compose と Helm での導入、接続先と Vault、モデルロール、MCP ツールと Agent Skills、REST API と認証、評価方法、運用上の注意をまとめます。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Auto-Ontology — データベースのメタデータからオントロジーを組み立て、エージェントの誤答を減らす NVIDIA のコンテキスト層">
+  <meta property="og:description" content="NVIDIA/auto-ontology（v1.1.0）の解説。用語・SQL 属性・関係で構成するオントロジー、Next.js・FastAPI・取り込みサービス・MCP サーバーの構成とポート、生成・認定・回答の 3 段階、LangGraph の回答エージェント、Docker Compose と Helm での導入、接続先と Vault、モデルロール、MCP ツールと Agent Skills、REST API と認証、評価方法、運用上の注意をまとめます。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/auto-ontology.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Auto-Ontology — データベースのメタデータからオントロジーを組み立て、エージェントの誤答を減らす NVIDIA のコンテキスト層">
+  <meta name="twitter:description" content="NVIDIA/auto-ontology（v1.1.0）の解説。用語・SQL 属性・関係で構成するオントロジー、Next.js・FastAPI・取り込みサービス・MCP サーバーの構成とポート、生成・認定・回答の 3 段階、LangGraph の回答エージェント、Docker Compose と Helm での導入、接続先と Vault、モデルロール、MCP ツールと Agent Skills、REST API と認証、評価方法、運用上の注意をまとめます。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Wix+Madefor+Text:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.5 0.12 205);
+      --chart-2: oklch(0.58 0.15 60);
+      --chart-3: oklch(0.38 0.09 205);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #0e3340;
+      --font-body: 'Wix Madefor Text', system-ui, sans-serif;
+      --font-mono: 'Share Tech Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.78 0.11 205);
+        --chart-2: oklch(0.8 0.13 70);
+        --chart-3: oklch(0.88 0.06 205);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #a9e2ec;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 93%, var(--chart-1) 7%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 91%, var(--chart-1) 9%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 26rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-family: var(--font-mono); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .ve-callout--warn { border-left-color: var(--chart-2); }
+    .ve-callout--warn code { color: var(--chart-2); background: color-mix(in oklch, var(--chart-2) 12%, transparent); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 25% 0%, oklch(0.5 0.12 205 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 25% 0%, oklch(0.78 0.11 205 / 0.07) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 0.5rem; text-wrap: balance; line-height: 1.3; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.0625rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.4rem; line-height: 1.65; font-size: 0.9375rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    a:focus-visible { outline: 2px solid var(--chart-1); outline-offset: 4px; }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block pre code { display: block; background: transparent; padding: 0; border-radius: 0; color: var(--code-text); overflow-wrap: anywhere; tab-size: 2; }
+    .ve-table-wrap { overflow-x: auto; }
+    .ve-table-wrap table { min-width: 560px; }
+
+    /* Hero wordmark: the name drawn as an ontology term node */
+    .hero { display: flex; flex-wrap: wrap; align-items: center; gap: .9rem; margin-bottom: 1.25rem; }
+    .hero-name {
+      font-family: var(--font-mono); font-size: clamp(2.2rem, 6vw, 3.6rem); line-height: 1; letter-spacing: -0.01em;
+      display: inline-block; padding: .35em .6em; border-radius: 999px; position: relative;
+      border: 2px solid var(--chart-1); background: color-mix(in oklch, var(--chart-1) 9%, transparent);
+    }
+    .hero-edges { display: flex; flex-direction: column; gap: .35rem; }
+    .hero-edges span { font-family: var(--font-mono); font-size: .75rem; color: var(--text-dim); }
+    .hero-edges span::before { content: '──▶ '; color: var(--chart-1); }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+    .grid3 > * { min-width: 0; border-top: 3px solid var(--chart-1); }
+    .grid3 h3 { margin-top: .1rem; font-size: 1rem; }
+    .grid3 p { font-size: .875rem; margin-bottom: .4rem; }
+    .grid3 .eg { font-family: var(--font-mono); font-size: .75rem; color: var(--text-dim); }
+    @media (max-width: 860px) { .grid3 { grid-template-columns: 1fr; } }
+
+    .verbs { display: grid; grid-template-columns: repeat(5, 1fr); gap: .6rem; margin: 1rem 0; }
+    .verbs div { border: 1px solid var(--border); border-radius: var(--radius-md); padding: .7rem .8rem; background: var(--card); }
+    .verbs b { display: block; font-family: var(--font-mono); color: var(--chart-1); font-size: .875rem; margin-bottom: .25rem; }
+    .verbs span { font-size: .8rem; line-height: 1.5; display: block; }
+    @media (max-width: 860px) { .verbs { grid-template-columns: 1fr 1fr; } }
+
+    /* Architecture diagram */
+    .arch { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: .9rem; align-items: stretch; margin: 1rem 0; }
+    .arch .col { display: flex; flex-direction: column; gap: .6rem; min-width: 0; }
+    .arch .col-title { font-family: var(--font-mono); font-size: .6875rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-dim); }
+    .node { border: 1px solid var(--border); border-radius: var(--radius-md); padding: .6rem .75rem; background: var(--card); font-size: .8125rem; line-height: 1.45; }
+    .node b { display: block; font-size: .875rem; }
+    .node .port { font-family: var(--font-mono); font-size: .6875rem; color: var(--chart-1); }
+    .node.pub { border-color: color-mix(in oklch, var(--border) 30%, var(--chart-1) 70%); }
+    .node.priv { border-style: dashed; }
+    .node.priv .port { color: var(--chart-2); }
+    .arch .legend { grid-column: 1 / -1; font-size: .75rem; color: var(--text-dim); }
+    @media (max-width: 860px) { .arch { grid-template-columns: 1fr; } }
+
+    /* Stage lanes */
+    .stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; counter-reset: st; }
+    .stages article { min-width: 0; position: relative; }
+    .stages article h3 { margin-top: 0; display: flex; gap: .5rem; align-items: baseline; }
+    .stages article h3::before { counter-increment: st; content: counter(st); font-family: var(--font-mono); color: var(--chart-1); font-size: .875rem; }
+    .stages ol { font-size: .8125rem; padding-left: 1.2rem; margin: 0; }
+    .stages li { font-size: .8125rem; }
+    .stages .who { font-family: var(--font-mono); font-size: .6875rem; color: var(--text-dim); display: block; margin-bottom: .5rem; }
+    @media (max-width: 860px) { .stages { grid-template-columns: 1fr; } }
+
+    /* Agent graph */
+    .flow { display: grid; gap: .45rem; margin: 1rem 0; }
+    .flow .row { display: grid; grid-template-columns: 15rem 1fr; gap: .9rem; align-items: start; }
+    .flow .n { font-family: var(--font-mono); font-size: .75rem; padding: .35rem .6rem; border-radius: var(--radius-sm); background: var(--muted); border: 1px solid transparent; overflow-wrap: anywhere; }
+    .flow .n.key { border-color: color-mix(in oklch, var(--border) 30%, var(--chart-1) 70%); color: var(--chart-1); }
+    .flow .n.loop { border-color: color-mix(in oklch, var(--border) 30%, var(--chart-2) 70%); color: var(--chart-2); }
+    .flow .d { font-size: .8125rem; line-height: 1.55; padding-top: .3rem; }
+    .flow .d .br { display: block; color: var(--text-dim); font-size: .75rem; margin-top: .15rem; }
+    @media (max-width: 640px) { .flow .row { grid-template-columns: 1fr; gap: .2rem; } }
+
+    .steps { counter-reset: s; list-style: none; padding-left: 0; }
+    .steps > li { counter-increment: s; position: relative; padding-left: 2.25rem; margin-bottom: 1.1rem; }
+    .steps > li::before { content: counter(s); position: absolute; left: 0; top: .1rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-mono); font-size: .75rem; background: var(--chart-1); color: var(--primary-foreground); }
+
+    .transcript { font-family: var(--font-mono); font-size: .8125rem; line-height: 1.7; }
+    .transcript .who { color: var(--chart-1); }
+    .transcript .ag { color: var(--chart-2); }
+
+    .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 1rem; }
+    .chips span { font-family: var(--font-mono); font-size: .75rem; padding: .2rem .55rem; border-radius: 999px; border: 1px solid var(--border); background: var(--card); }
+
+    .order { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .75rem 0 1rem; font-size: .8125rem; }
+    .order .step { background: var(--muted); padding: .35rem .6rem; border-radius: var(--radius-sm); }
+    .order .arrow { color: var(--text-dim); }
+
+    .source-note { margin-top: 2rem; color: var(--text-dim); font-size: .8rem; line-height: 1.6; }
+    .badge { display: inline-block; font-family: var(--font-mono); font-size: .6875rem; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border); background: var(--muted); white-space: nowrap; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">Auto-Ontology / Contents</div>
+    <a href="#overview">概要</a><a href="#ontology">オントロジーの中身</a><a href="#arch">構成とポート</a><a href="#stages">生成・認定・回答</a><a href="#agent">回答エージェントの処理</a><a href="#quickstart">クイックスタート</a><a href="#helm">Kubernetes への導入</a><a href="#sources">接続先と認証情報</a><a href="#models">モデルの割り当て</a><a href="#mcp">MCP サーバー</a><a href="#skills">Agent Skills</a><a href="#rest">REST API と認証</a><a href="#eval">評価</a><a href="#cautions">注意点</a><a href="#links">参考資料</a>
+  </nav>
+  <main class="main">
+    <a href="../index.html">資料一覧へ</a>
+    <header style="margin-top:3rem">
+      <div class="hero">
+        <div class="hero-name" aria-label="Auto-Ontology">Auto-Ontology</div>
+        <div class="hero-edges" aria-hidden="true"><span>maps_to columns</span><span>has sql_attribute</span><span>joins via relationship</span></div>
+      </div>
+      <h1>データベースのメタデータからオントロジーを組み立て、エージェントの誤答を減らす NVIDIA のコンテキスト層</h1>
+      <p class="subtitle">NVIDIA/auto-ontology · v1.1.0（pyproject.toml）· 2026-11-03 時点の main · Apache-2.0</p>
+    </header>
+
+    <h2 class="sec-head" id="overview">概要</h2>
+    <p>Auto-Ontology は、社内のデータベースの横で動かすサービスです。テーブルとカラムのメタデータを読み、業務用語とカラムの対応、レビュー済みの SQL 式、テーブル間の結合関係をまとめた<strong>オントロジー</strong>を Postgres に作ります。エージェントはスキーマを直接読む代わりに、このオントロジーを経由して質問を SQL に変換します。人は Web UI で定義を確認し、正しいものを認定（certify）します。</p>
+    <p>README が掲げる狙いは「エージェントの誤答を減らすこと」です。速く出た売上の数字も、間違っていれば使えません。そこで、質問の前に「データがどこにあり、何を意味し、どう結合し、そもそも答えられる質問か」をエージェントへ渡します。</p>
+
+    <div class="kpi-row">
+      <div class="ve-kpi-card" style="--i:0"><div class="ve-kpi-card__value">3</div><div class="ve-kpi-card__label">定義の種類（用語・SQL 属性・関係）</div></div>
+      <div class="ve-kpi-card" style="--i:1"><div class="ve-kpi-card__value">10</div><div class="ve-kpi-card__label">対応 DB エンジン</div></div>
+      <div class="ve-kpi-card" style="--i:2"><div class="ve-kpi-card__value">9</div><div class="ve-kpi-card__label">MCP ツール（すべて読み取り）</div></div>
+      <div class="ve-kpi-card" style="--i:3"><div class="ve-kpi-card__value">4</div><div class="ve-kpi-card__label">モデルロール</div></div>
+    </div>
+
+    <h3>できること</h3>
+    <div class="verbs">
+      <div><b>Discover</b><span>DB メタデータからオントロジーを生成し、既存のセマンティックモデルを取り込み、グラフで確認する</span></div>
+      <div><b>Ground</b><span>業務概念ごとに定義を 1 つに揃え、複数のテーブルや DB にまたがって対応付ける</span></div>
+      <div><b>Certify</b><span>UI または API で定義を確認・編集し、認定する</span></div>
+      <div><b>Validate</b><span>問い合わせ前に回答可能かを判定し、回答には SQL と手順を付ける</span></div>
+      <div><b>Expose</b><span>MCP、Agent Skills、REST API でどのエージェント基盤にも提供する</span></div>
+    </div>
+
+    <h3>スキーマをコンテキストに貼る方法との違い</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th></th><th>スキーマをコンテキストに入れる</th><th>Auto-Ontology のツールを使う</th></tr></thead>
+        <tbody>
+          <tr><td>トークン</td><td>テーブルとカラムが増えるほど増える</td><td>質問に関係する用語とテーブルだけ</td></tr>
+          <tr><td>意味</td><td>カラム名だけ。残りはエージェントが推測する</td><td>業務用語がカラムと SQL に対応付いている</td></tr>
+          <tr><td>結合と指標</td><td>質問のたびにその場で組み立てる</td><td>解決済みの関係と、レビュー済みの SQL 式を使う</td></tr>
+          <tr><td>答えられない質問</td><td>自信を持って答え、よく間違える</td><td>回答可能性を判定し、エージェントが確認を求める</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="sec-head" id="ontology">オントロジーの中身</h2>
+    <p>オントロジーは 3 種類の定義で構成されます。いずれも Postgres に保存され、検索用の埋め込みは pgvector に入ります。</p>
+    <div class="grid3">
+      <article class="ve-card" style="--i:0">
+        <h3>用語（Terms）</h3>
+        <p>Customer や Invoice Line のような業務概念。説明と同義語を持ち、値を保持するカラムに対応付けられます。</p>
+        <span class="eg">例: Wide World Importers を 1 回コンパイルすると 31 用語</span>
+      </article>
+      <article class="ve-card" style="--i:1">
+        <h3>SQL 属性（SQL attributes）</h3>
+        <p>用語の下に置くレビュー済みの SQL 式。粗利や移動合計など。エージェントはこれを再利用するので、同じ指標は毎回同じ式で計算されます。</p>
+        <span class="eg">クエリ履歴からも候補を提案</span>
+      </article>
+      <article class="ve-card" style="--i:2">
+        <h3>関係（Relationships）</h3>
+        <p>テーブル同士の結合方法。ブリッジテーブルを含み、キーとデータの両方から推定します。</p>
+        <span class="eg">ブリッジテーブル用 SQL 属性は RERANK モデルで候補を絞る</span>
+      </article>
+    </div>
+    <p>セマンティックモデルの交換標準 <a href="https://ossie.apache.org/">Apache Ossie</a> に対応しており、Ossie 側にある Auto-Ontology 用コンバーターでモデル定義を Ossie YAML として取り込み・書き出しできます。UI では <strong>Settings → Import / Export</strong>、API では <code>POST /api/model/import</code> と <code>POST /api/model/export</code> です。</p>
+    <p>カタログ取り込み時には PII 検出も走ります。LLM の分類器がカラムを判定し、確信度 0.9 以上のものには PII タグが自動で付きます（<code>auto_ontology/pii_detection/</code>）。</p>
+
+    <h2 class="sec-head" id="arch">構成とポート</h2>
+    <div class="arch">
+      <div class="col">
+        <span class="col-title">利用者</span>
+        <div class="node"><b>ブラウザ</b>Web UI（Chat、グラフ、Settings）</div>
+        <div class="node"><b>MCP クライアント</b>Cursor、Claude Desktop など</div>
+        <div class="node"><b>スクリプト</b>API トークンで REST を呼ぶ</div>
+      </div>
+      <div class="col">
+        <span class="col-title">Auto-Ontology</span>
+        <div class="node pub"><b>Frontend</b><span class="port">:3000 公開</span> Next.js、Better Auth、Prisma。Web UI、認証、公開 API ゲートウェイ</div>
+        <div class="node pub"><b>MCP server</b><span class="port">:3003 公開</span> FastMCP。公開 API の上に読み取り専用ツールを提供</div>
+        <div class="node priv"><b>Backend</b><span class="port">:3001 非公開</span> FastAPI + LangChain / LangGraph。Text-to-SQL エージェント、カタログ、オントロジー API</div>
+        <div class="node priv"><b>Ingestion service</b><span class="port">:3002 非公開</span> FastAPI。取り込みとセマンティックコンパイル</div>
+      </div>
+      <div class="col">
+        <span class="col-title">データとモデル</span>
+        <div class="node"><b>Postgres 17 + pgvector</b><span class="port">:5432</span> カタログ、オントロジー、アプリデータ、ベクトル</div>
+        <div class="node"><b>接続先 DB</b>PostgreSQL、Snowflake、Databricks など</div>
+        <div class="node"><b>モデルエンドポイント</b>既定は build.nvidia.com の NIM</div>
+        <div class="node"><b>HashiCorp Vault</b>任意。接続先の認証情報を保管</div>
+      </div>
+      <p class="legend">実線の枠はクライアントから到達させるサービス、破線の枠はプライベートネットワークに閉じるサービス。</p>
+    </div>
+    <div class="ve-callout ve-callout--warn"><strong>3001 と 3002 は外に出さない。</strong> FastAPI はフロントエンドが転送する <code>x-auto-ontology-user-id</code> ヘッダーをそのまま信頼します。取り込みサービスの ingest / delete / reset / compile には独自の認証がありません。クライアントは必ずポート 3000 の Web アプリを経由させてください。</div>
+    <p>MCP サーバーは公開 API の HTTP クライアントにすぎず、DB の認証情報もモデル設定も持ちません。認証と権限チェックは Next.js 側にあるため、MCP のセッションはサインインした本人の権限でしか動きません。</p>
+
+    <h2 class="sec-head" id="stages">生成・認定・回答</h2>
+    <p>Auto-Ontology は、オントロジーを生成し、人が認定し、エージェントがそれを使って答える、という 3 段階で動きます。</p>
+    <div class="stages">
+      <article class="ve-card" style="--i:0">
+        <h3>生成（Generate）</h3>
+        <span class="who">取り込みサービス</span>
+        <ol>
+          <li>ソースを読む: スキーマ抽出、カラムのプロファイル、サンプル値をカタログへ</li>
+          <li>エンティティ命名: テーブルごとに用語を抽出し、カラムに対応付け</li>
+          <li>関係の解決: 結合とブリッジテーブルを推定し、クエリ履歴から SQL 属性を提案</li>
+          <li>書き込み: 用語・関係・SQL 属性を Postgres に、埋め込みを pgvector に保存</li>
+        </ol>
+      </article>
+      <article class="ve-card" style="--i:1">
+        <h3>認定（Certify）</h3>
+        <span class="who">人（UI / API）</span>
+        <ol>
+          <li>実際の質問で試す。Chat、または MCP の <code>check_answerable</code> と <code>ask_question</code></li>
+          <li>用語、説明、SQL 属性を UI か API で直す</li>
+          <li>正しくなった名前、説明、SQL 属性を認定する</li>
+        </ol>
+      </article>
+      <article class="ve-card" style="--i:2">
+        <h3>回答（Answer）</h3>
+        <span class="who">Text-to-SQL エージェント</span>
+        <ol>
+          <li>意図を分類し、質問中のエンティティを抽出</li>
+          <li>埋め込み検索で用語・カラム・SQL 属性の候補を取得</li>
+          <li>候補から SQL を書く</li>
+          <li>フィルター値とクエリを DB で確かめ、失敗したら SQL を直す</li>
+          <li>実行し、答えに SQL と手順を添えて返す</li>
+        </ol>
+      </article>
+    </div>
+    <p>コンパイルは <code>auto_ontology/semantic/pipeline.py</code> がテーブル単位で進めます。LLM による抽出は 3 ワーカーで並列に走らせつつ、書き込みはテーブルの順番どおりにコミットします。取り消しが入ったときは、待ち行列のテーブルを順番待ちせずにスキップ扱いにして、ワーカーをすぐ解放します。</p>
+
+    <h2 class="sec-head" id="agent">回答エージェントの処理</h2>
+    <p>回答エージェントは LangGraph のグラフとして <code>auto_ontology/retrieval/text_to_sql/text_to_sql_graph.py</code> に定義されています。上から順に進み、検証に落ちると <code>reconstruct_sql</code> へ戻って SQL を作り直します。</p>
+    <div class="flow">
+      <div class="row"><span class="n key">question_intent</span><span class="d">質問の意図を分類する。予測系の質問かどうかもここで判定する。<span class="br">再開指定（path_state の _resume_from）がある実行は、入口から reconstruct_sql へ直行する</span></span></div>
+      <div class="row"><span class="n">question_extraction</span><span class="d">質問が名指ししているエンティティを抜き出す。</span></div>
+      <div class="row"><span class="n key">retrieve_candidates</span><span class="d">埋め込み検索で用語・カラム・SQL 属性の候補を集める。<span class="br">データの中身ではなくメタデータを尋ねる質問（question_type が information）→ information_agent で答えて終了</span></span></div>
+      <div class="row"><span class="n">prepare_candidates</span><span class="d">候補を整える。<span class="br">KumoRFM 設定時の予測質問 → prepare_prediction_graph → kumo_predict で終了 / 証拠が足りない → refine_evidence</span></span></div>
+      <div class="row"><span class="n key">construct_sql_from_candidates</span><span class="d">候補から SQL を組み立てる。<span class="br">候補で SQL が組めない → unconstructable_sql_response（答えられないと返す）</span></span></div>
+      <div class="row"><span class="n">validate_sql_values / validate_sql_query</span><span class="d">フィルターの値と SQL そのものを検証する。</span></div>
+      <div class="row"><span class="n">precheck_combined</span><span class="d">任意。リテラル値、結合経路、JSONB パスの事前プローブをまとめて行う。</span></div>
+      <div class="row"><span class="n key">execute_sql_query</span><span class="d">DB で実行する。試行回数の上限もここで管理する。</span></div>
+      <div class="row"><span class="n">check_empty_like_result / check_value_repair</span><span class="d">結果が空のとき、LIKE 条件やフィルター値の誤りを疑って修復を試みる。</span></div>
+      <div class="row"><span class="n key">format_and_respond</span><span class="d">答え、SQL、手順を返す。</span></div>
+      <div class="row"><span class="n loop">reconstruct_sql</span><span class="d">検証・実行・修復チェックで落ちたときの戻り先。作り直した SQL は再び検証に回る。</span></div>
+    </div>
+    <p>Chat では各回答の SQL が見え、行の表示、CSV のダウンロード、チャート表示ができます。</p>
+
+    <h2 class="sec-head" id="quickstart">クイックスタート（Docker Compose）</h2>
+    <p>Microsoft のサンプル販売 DB である Wide World Importers を相手に、Docker Compose で起動します。Docker（Compose v2）、<a href="https://docs.astral.sh/uv/">uv</a>、<a href="https://build.nvidia.com">build.nvidia.com</a> の NVIDIA API キー（<code>nvapi-...</code>）を用意してください。</p>
+    <ol class="steps">
+      <li>
+        <p>リポジトリを取得し、<code>.env</code> を作ります。</p>
+        <div class="ve-code-block"><pre><code>git clone https://github.com/NVIDIA/auto-ontology.git &amp;&amp; cd auto-ontology
+cp .env.example .env</code></pre></div>
+        <p><code>.env</code> に次の値を設定します。</p>
+        <div class="ve-code-block"><pre><code>DEFAULT_MODELS_API_KEY=nvapi-...
+AUTH_SECRET=&lt;長いランダム文字列。openssl rand -base64 32 など&gt;
+APP_URL=http://localhost:3000
+POSTGRES_PASSWORD=&lt;新しいパスワード&gt;
+CONNECTION_STRINGS=postgresql://postgres:&lt;同じパスワード&gt;@postgres:5432/wideworldimporters
+AUTO_ONTOLOGY_ADMIN_PASSWORD=&lt;新しいパスワード&gt;
+PGADMIN_PASSWORD=&lt;新しいパスワード&gt;</code></pre></div>
+        <p>Compose は Postgres、pgAdmin、Web アプリをホストに公開するので、既定のパスワードはすべて差し替えてから起動してください。<code>.env.example</code> にはモデルロールごとの API キー行もあります。各 <code>nvapi-your-api-key-here</code> を自分のキーにするか、行を消して <code>DEFAULT_MODELS_API_KEY</code> にフォールバックさせます。</p>
+      </li>
+      <li>
+        <p>Postgres を起動し、サンプル DB を投入します。シードスクリプトは評価用リポジトリ auto-ontology-eval にあります。</p>
+        <div class="ve-code-block"><pre><code>docker compose up -d --wait postgres
+git clone https://github.com/NVIDIA/auto-ontology-eval.git ../auto-ontology-eval
+(cd ../auto-ontology-eval &amp;&amp; uv sync &amp;&amp; cp .env.example .env &amp;&amp; \
+  POSTGRES_PASSWORD='&lt;同じパスワード&gt;' \
+  uv run python scripts/seed/seed_wwi.py --database-name wideworldimporters --drop)</code></pre></div>
+      </li>
+      <li>
+        <p>残りのスタックをビルドして起動します。</p>
+        <div class="ve-code-block"><pre><code>docker compose up -d --build</code></pre></div>
+      </li>
+      <li>
+        <p><code>http://localhost:3000</code> を開き、<code>.env</code> の <code>AUTO_ONTOLOGY_ADMIN_EMAIL</code> と <code>AUTO_ONTOLOGY_ADMIN_PASSWORD</code> でサインインします。<strong>Settings → Semantic Compilation</strong> をオンにすると、起動時に済んだ取り込みに続いてコンパイルが始まり、終わると「Semantic compilation is ready」と表示されます。</p>
+      </li>
+      <li>
+        <p><strong>Chat</strong> で質問します。エージェントは revenue、product、state を用語に解決し、関係をたどって結合を決め、クエリを実行します。</p>
+        <div class="ve-code-block"><pre><code>質問:   What was revenue for the USB food flash drive - sushi roll in Pennsylvania in June 2015?
+
+Answer: Revenue ... in June 2015 was $588.80, from 3 invoice lines.
+SQL:    SELECT SUM(il.extendedprice) AS revenue, COUNT(*) AS invoice_lines
+        FROM sales.invoicelines il
+        JOIN sales.invoices i        ON il.invoiceid = i.invoiceid
+        JOIN warehouse.stockitems si ON il.stockitemid = si.stockitemid
+        JOIN sales.customers c       ON i.customerid = c.customerid
+        JOIN application.cities ct   ON c.deliverycityid = ct.cityid
+        JOIN application.stateprovinces sp ON ct.stateprovinceid = sp.stateprovinceid
+        WHERE ...
+Steps:  Resolved terms: Invoice Line (revenue), Stock Item, State Province, Invoice
+        Joined: invoice line -&gt; invoice -&gt; customer -&gt; city -&gt; state province
+        Validated the filter values against the data, then executed</code></pre></div>
+      </li>
+      <li>
+        <p>データにない質問もしてみます。Wide World Importers には広告データがないので、広告費に関する質問は解決先の用語がありません。MCP 経由のエージェントは先に回答可能性を確かめ、確認を求めます。</p>
+        <div class="ve-card ve-card--recessed transcript">
+          <div><span class="who">You:</span> What was return on ad spend for the sushi roll flash drive in June 2015?</div>
+          <div><span class="ag">Agent:</span> check_answerable -&gt; coverage 0.5; no term covers "ad spend"</div>
+          <div><span class="ag">Agent:</span> その製品の売上は出せますが、広告費のデータがないため ROAS は計算できません。6 月の売上で代わりにしますか、それとも広告費を持つ別のソースを接続しますか。</div>
+        </div>
+      </li>
+    </ol>
+    <div class="ve-callout">再起動後に UI の左ナビゲーションが出ない場合は、古いセッション Cookie が残っています。<code>localhost:3000</code> のサイトデータを消してサインインし直してください。その他の失敗は <code>skills/nvidia-ontology-setup/references/troubleshooting.md</code> にまとまっています。</div>
+
+    <h2 class="sec-head" id="helm">Kubernetes への導入（Helm）</h2>
+    <p>正式な導入方法は Helm です。リリースは NGC Catalog の <code>nvidia</code> 組織に公開され、イメージにはチャートと同じバージョンのタグが付きます。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>成果物</th><th>場所</th></tr></thead>
+        <tbody>
+          <tr><td>Backend + ingestion イメージ</td><td><code>nvcr.io/nvidia/auto-ontology</code></td></tr>
+          <tr><td>Frontend イメージ</td><td><code>nvcr.io/nvidia/auto-ontology-frontend</code></td></tr>
+          <tr><td>MCP サーバーイメージ</td><td><code>nvcr.io/nvidia/auto-ontology-mcp</code></td></tr>
+          <tr><td>Helm チャート</td><td><code>https://helm.ngc.nvidia.com/nvidia</code> の <code>auto-ontology</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-code-block"><pre><code>helm repo add nvidia https://helm.ngc.nvidia.com/nvidia
+helm repo update
+
+# auto-ontology-secrets.yaml（エディタで作成し chmod 600、git に入れない）
+defaultModelsApiKey: &lt;API-KEY&gt;
+postgresPassword: &lt;POSTGRES-PASSWORD&gt;
+adminEmail: &lt;ADMIN-EMAIL&gt;
+adminPassword: &lt;ADMIN-PASSWORD&gt;
+connectionStrings: &lt;CONNECTION-STRINGS&gt;   # 任意。UI で追加してもよい
+
+helm install auto-ontology nvidia/auto-ontology -f auto-ontology-secrets.yaml</code></pre></div>
+    <p><code>--version</code> を付けると特定のリリースに固定できます。セルフサインアップは無効なので、<code>adminEmail</code> と <code>adminPassword</code> は必須です。最初の管理者がこの 2 つで作られます。秘密情報をコマンドライン引数に書かず値ファイルに置くのは、シェル履歴やプロセス引数に残さないためです。</p>
+
+    <h2 class="sec-head" id="sources">接続先と認証情報</h2>
+    <p>接続できる DB エンジンは 10 種類です。</p>
+    <div class="chips"><span>PostgreSQL</span><span>MySQL</span><span>Databricks</span><span>Snowflake</span><span>ClickHouse</span><span>Trino</span><span>Apache Kyuubi</span><span>HeavyDB</span><span>DuckDB*</span><span>SQLite*</span></div>
+    <p>* DuckDB と SQLite は接続文字列（<code>duckdb://</code>、<code>sqlite://</code>）でのみ指定でき、UI からは追加できません。</p>
+    <p>接続の登録先は 2 つあります。<strong>Settings → Connections</strong>（API では <code>POST /api/connections/test</code> の後に <code>POST /api/connections</code>、権限 <code>connection:manage</code>）と、環境変数 <code>CONNECTION_STRINGS</code> です。UI の接続はスキーマの許可リストと <code>table_allow_regex</code> / <code>table_deny_regex</code> で範囲を絞れます（deny が優先、名前は修飾なし・大文字小文字を区別）。<code>CONNECTION_STRINGS</code> には絞り込みがありません。</p>
+    <div class="ve-callout ve-callout--warn"><strong>1 つのデプロイではどちらか一方だけを使う。</strong> 質問への回答は UI の接続を優先し、なければ <code>CONNECTION_STRINGS</code> を使います。取り込みは逆で、<code>CONNECTION_STRINGS</code> があればそちらを使い、空のときだけ UI の接続を読みます。両方あると、取り込んだ DB と問い合わせる DB が食い違います。</div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>Vault の設定</th><th>UI で追加した接続の認証情報の置き場所</th></tr></thead>
+        <tbody>
+          <tr><td>なし（既定）</td><td>パスワードを含む接続オブジェクト全体を JSON にし、Postgres のカタログ行に<strong>暗号化せず</strong>保存する</td></tr>
+          <tr><td>あり</td><td>DB 名をキーに Vault へ書き込み、カタログ行には保存しない</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Vault は <code>VAULT_ADDR</code>、<code>VAULT_NAMESPACE</code>、<code>VAULT_ROLE_ID</code>、<code>VAULT_SECRET_ID</code> の 4 つがすべて設定されたときだけ有効になります。一部だけの設定は警告付きで無視され、平文保存に戻ります。</p>
+
+    <h2 class="sec-head" id="models">モデルの割り当て</h2>
+    <p>モデルは 4 つのロールに分かれています。<code>nvapi-</code> キーを使う場合、既定はすべて build.nvidia.com の NVIDIA NIM です。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>ロール</th><th>既定モデル</th><th>担当</th></tr></thead>
+        <tbody>
+          <tr><td><code>REASONING</code></td><td><code>nvidia/nemotron-3.5-lightning-30b-a3b</code></td><td>オントロジー構築（用語、関係、SQL 属性）、回答の SQL と説明の作成、回答可能性の採点</td></tr>
+          <tr><td><code>NON_REASONING</code></td><td><code>nvidia/nemotron-3.5-lightning-30b-a3b</code></td><td>エージェントの軽い工程。意図分類、エンティティ抽出、候補選択、SQL のチェックと修復</td></tr>
+          <tr><td><code>EMBED</code></td><td><code>nvidia/nemotron-3.5-embed-1b</code></td><td>テーブル、カラム、用語、SQL 属性を pgvector に索引し、質問と照合する</td></tr>
+          <tr><td><code>RERANK</code></td><td><code>nvidia/nemotron-3.5-rerank-8b</code></td><td>ブリッジテーブル用 SQL 属性を作るときに候補テーブルを順位付けする</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>自前の NIM や OpenAI 互換エンドポイントを使うときは <code>&lt;ROLE&gt;_ENDPOINT</code>、<code>&lt;ROLE&gt;_API_KEY</code>、<code>&lt;ROLE&gt;_MODEL</code> を設定します。未設定の項目は <code>DEFAULT_MODELS_&lt;FIELD&gt;</code> にフォールバックするので、<code>DEFAULT_MODELS_*</code> を埋めて差分だけ上書きするのが最も簡単です。構造化出力に対応したモデルを選び、埋め込みモデルは取り込み時と問い合わせ時で同じものにしてください。</p>
+    <h3>予測（KumoRFM）</h3>
+    <p><code>KUMO_RFM_API_KEY</code> を設定すると、予測を求める質問は KumoRFM に回されます。KumoRFM はホスト型サービスで、回答のために接続先のテーブルをアップロードします。上限は <code>KUMO_MAX_TABLES</code>（既定 20）と <code>KUMO_MAX_ROWS_PER_TABLE</code>（未設定なら無制限）です。有効にする前に、何が送られるかを確認し、組織のデータレビューを済ませてください。</p>
+
+    <h2 class="sec-head" id="mcp">MCP サーバー</h2>
+    <p>MCP サーバーは、MCP クライアントにオントロジー上の読み取り専用ツールを提供します。各ユーザーは Auto-Ontology でサインインし、すべての呼び出しがそのユーザーの権限で実行されます。設定ファイルに認証情報は書きません。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>用途</th><th>ツール</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>準備状態</td><td><code>check_readiness</code></td><td>このデプロイで何か答えられる状態か。全ブロッカーを一度に返す</td></tr>
+          <tr><td>回答可能性</td><td><code>check_answerable</code></td><td>オントロジーが質問をカバーしているか。<code>ask_question</code> 前の安価な事前確認</td></tr>
+          <tr><td>質問</td><td><code>ask_question</code></td><td>答え、実行した SQL、行を別々のフィールドで返す。最大 100 行</td></tr>
+          <tr><td>用語</td><td><code>search_terms</code>、<code>get_term</code>、<code>get_term_columns</code>、<code>get_term_sql_attributes</code>、<code>get_sql_attribute</code>、<code>describe_table</code></td><td>用語集の検索と、用語・カラム・SQL 属性・テーブルの参照</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>DB、スキーマ、生のカラムを閲覧するツールは意図的に置いていません。カタログを閲覧できると、エージェントがセマンティック層ではなく生のテーブルで推論し始めるからです。サーバーはハンドシェイク時にツールの使う順番を説明する instructions も送ります。何も指示がないとモデルはいきなり <code>ask_question</code> を呼びがちなためです。</p>
+    <p><code>check_readiness</code> が分けて見るのは、コンパイル済みのセマンティック層と、SQL を実行できる DB 接続の 2 つです。片方だけある状態では用語集は読めて用語も解決するのに、質問は数分のモデル呼び出しの後に曖昧に失敗します。</p>
+    <div class="ve-code-block"><pre><code># サーバーを起動（リポジトリの clone は不要）
+AUTO_ONTOLOGY_API_URL=http://localhost:3000 \
+  uvx --from "git+https://github.com/NVIDIA/auto-ontology.git#subdirectory=mcp" auto-ontology-mcp
+
+# Cursor（~/.cursor/mcp.json）
+{ "mcpServers": { "auto-ontology": { "url": "http://localhost:3003/mcp" } } }
+
+# Claude Desktop（mcp-remote でブリッジ）
+{ "mcpServers": { "auto-ontology": { "command": "npx", "args": ["mcp-remote", "http://localhost:3003/mcp"] } } }</code></pre></div>
+    <p>設定後にクライアントを再起動し、求められたらサインインします。公開 API には 87 のオペレーションがありますが、ツールは <code>mcp/auto_ontology_mcp/tools.py</code> の許可リストで絞っています。リスト上のオペレーションが仕様から消えると起動時に失敗するので、上流での名前変更でツールが黙って消えることはありません。</p>
+
+    <h2 class="sec-head" id="skills">Agent Skills</h2>
+    <p>コーディングエージェント向けに 3 つのスキルがあり、入口は <code>AGENTS.md</code> です。スキルは <a href="https://github.com/nvidia/skills">nvidia/skills</a> にも同期され、<code>npx skills add nvidia/skills</code> で導入できます。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>スキル</th><th>担当</th><th>使う場面</th></tr></thead>
+        <tbody>
+          <tr><td><code>nvidia-ontology-setup</code></td><td>インストール、接続、取り込み、コンパイル、準備状態の確認、トラブルシュート</td><td>まだ起動していない、または起動中に失敗した</td></tr>
+          <tr><td><code>nvidia-ontology-management</code></td><td>確認、モデリング、変更、認定、Import/Export、公開とロールバック</td><td>定義を直したい。MCP は書き込めないので、承認された書き込み経路をここで扱う</td></tr>
+          <tr><td><code>nvidia-ontology-query</code></td><td>MCP 優先・REST 予備での呼び出し、SQL・行・回答文の検証</td><td>デプロイ済みで質問したい</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>想定されている一連の流れは次のとおりです。製品が対応していない手順に当たったら、操作を作り出さずに「未対応」と明示して返すことがスキル側の約束になっています。</p>
+    <div class="order"><span class="step">導入・接続・準備確認</span><span class="arrow">→</span><span class="step">確認・モデリング</span><span class="arrow">→</span><span class="step">段階適用と読み戻し</span><span class="arrow">→</span><span class="step">質問で検証</span><span class="arrow">→</span><span class="step">公開</span><span class="arrow">→</span><span class="step">再度質問して確認</span></div>
+
+    <h2 class="sec-head" id="rest">REST API と認証</h2>
+    <p>質問は Web アプリと同じオリジンの <code>POST /api/chat/completions</code> で送ります。応答は Server-Sent Events で、<code>result</code> イベントに答えが入り、<code>data: [DONE]</code> で終わります。API トークンはユーザーメニューの <strong>API Tokens</strong> で発行します。</p>
+    <div class="ve-code-block"><pre><code>curl -N http://localhost:3000/api/chat/completions \
+  -H "x-api-key: $AUTO_ONTOLOGY_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How many orders shipped last week?"}'</code></pre></div>
+    <div class="ve-code-block"><pre><code>for line in response.iter_lines(decode_unicode=True):
+    if not line or not line.startswith("data:"):
+        continue
+    payload = line.removeprefix("data:").strip()
+    if payload == "[DONE]":
+        break
+    event = json.loads(payload)
+    if event["type"] == "result":
+        print(event["answer"]["response"])
+        print(event["answer"]["sql_code"])
+    elif event["type"] == "error":
+        raise RuntimeError(event["message"])</code></pre></div>
+    <p>認証は Better Auth で、各呼び出しを呼び出し元のロールで認可します。<code>/api/...</code> の全ルートは <code>frontend/auth/resolve-user.ts</code> で次の順に呼び出し元を解決します。</p>
+    <div class="order"><span class="step">ブラウザのセッション Cookie</span><span class="arrow">→</span><span class="step">API トークン（<code>x-api-key</code> / Bearer）</span><span class="arrow">→</span><span class="step">MCP クライアントに発行した OAuth Bearer</span><span class="arrow">→</span><span class="step">信頼済み呼び出し元が転送した SSO ID トークン</span></div>
+    <p>API トークンは SHA-256 のハッシュだけが保存されるため、表示されるのは発行時の 1 回だけです。失くしたら新しく発行します。有効期限の既定は無期限です。SSO は <strong>Settings → Single Sign-On</strong> で設定し、IdP にはリダイレクト URI <code>&lt;APP_URL&gt;/api/auth/sso/callback</code> を登録します。</p>
+
+    <h2 class="sec-head" id="eval">評価</h2>
+    <p>精度の測定は別リポジトリ <a href="https://github.com/NVIDIA/auto-ontology-eval">NVIDIA/auto-ontology-eval</a> で行います。BIRD、BEAVER、FDABench-Lite、Wide World Importers では、各問題が質問と正解 SQL の組になっていて、同じモデルに 2 通りで答えさせます。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>アーム</th><th>モデルに渡すもの</th></tr></thead>
+        <tbody>
+          <tr><td>Control</td><td>プロンプトに DB スキーマを入れる</td></tr>
+          <tr><td>Treatment</td><td>Chat と同じ Auto-Ontology の回答エージェントが、コンパイル済みオントロジーを使う</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>決定的な検証器が両アームの SQL を実行結果の一致で採点します（ベンチマークに公式ルールがあればそれに従う）。レポートには正答率の差と、オントロジーで直った問題・壊れた問題の一覧が出ます。確認質問をする多ターンのベンチマーク BIRD-Interact は専用のハーネスで動かします。README には具体的な正答率の数値は載っていません。</p>
+    <div class="ve-code-block"><pre><code>uv run python main.py --database-name bird</code></pre></div>
+
+    <h2 class="sec-head" id="cautions">注意点</h2>
+    <ul>
+      <li><strong>非公開ポート:</strong> 3001（Backend）と 3002（取り込み）はヘッダーを信頼するか認証がないため、プライベートネットワークに置く。</li>
+      <li><strong>平文の認証情報:</strong> Vault を設定しないと、UI で追加した接続のパスワードは Postgres に暗号化されずに入る。Vault の 4 変数は一部だけでは無効。</li>
+      <li><strong>Compose の既定パスワード:</strong> Postgres、pgAdmin、Web アプリがホストに公開されるので、起動前にすべて変更する。</li>
+      <li><strong>外部へのデータ送信:</strong> 既定のモデルエンドポイントは NVIDIA API カタログ（<code>integrate.api.nvidia.com</code>、<code>ai.api.nvidia.com</code>）。KumoRFM を有効にするとテーブルの内容がアップロードされる。</li>
+      <li><strong>接続設定の二重化:</strong> UI の接続と <code>CONNECTION_STRINGS</code> を併用すると、取り込み対象と問い合わせ対象が分かれる。</li>
+      <li><strong>MCP は読み取り専用:</strong> 定義の変更は Web UI か Next.js の <code>/api/...</code> を使う。</li>
+      <li><strong>貢献の受け付け:</strong> 外部からのプルリクエストは受け付けていない。連携の要望とバグ報告は Issue、脆弱性は SECURITY.md の手順で報告する。</li>
+      <li><strong>ライセンス:</strong> Apache-2.0。サードパーティ部品は THIRD_PARTY_NOTICES.md と CONTAINER_THIRD_PARTY_NOTICES.md に記載。</li>
+    </ul>
+
+    <h2 class="sec-head" id="links">参考資料</h2>
+    <ul>
+      <li><a href="https://github.com/NVIDIA/auto-ontology">NVIDIA/auto-ontology</a>（README.md、AGENTS.md、DEPLOYMENT.md）</li>
+      <li><a href="https://github.com/NVIDIA/auto-ontology/blob/main/docs/mcp.md">docs/mcp.md</a> — MCP サーバーのサインイン、設定、トラブルシュート</li>
+      <li><a href="https://github.com/NVIDIA/auto-ontology/blob/main/docs/connections.md">docs/connections.md</a> — 接続、範囲指定、Vault</li>
+      <li><a href="https://github.com/NVIDIA/auto-ontology/blob/main/docs/authentication.md">docs/authentication.md</a> — 認証、SSO、API トークン</li>
+      <li><a href="https://github.com/NVIDIA/auto-ontology/blob/main/docs/conversation-api.md">docs/conversation-api.md</a> — 会話 API のイベント型と多ターン会話</li>
+      <li><a href="https://github.com/NVIDIA/auto-ontology-eval">NVIDIA/auto-ontology-eval</a> — 評価ハーネス</li>
+      <li><a href="https://ossie.apache.org/">Apache Ossie</a> — セマンティックモデル交換の標準</li>
+    </ul>
+    <p class="source-note">2026-11-03 時点の main ブランチ（pyproject.toml のバージョン 1.1.0）の README.md、docs/、AGENTS.md、DEPLOYMENT.md、auto_ontology/retrieval/text_to_sql/text_to_sql_graph.py、auto_ontology/semantic/pipeline.py をもとに作成しました。</p>
+  </main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
+
