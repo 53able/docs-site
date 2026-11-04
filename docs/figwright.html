@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Figwright — Figma プラグイン経由でデザインを読み書きする、無料の双方向 Figma MCP サーバー</title>
+  <meta name="description" content="awdr74100/figwright（v0.7.0）の解説。MCP サーバーと Figma プラグインをローカル WebSocket でつなぐ構成、読み取り・書き込み・グラウンディングの 135 ツール、figma-codegen と figma-build の手順、リーダー選出と複数ファイルの扱い、サーバーとプラグインのバージョンずれ、エディタ別の制限、セキュリティモデル、起動トラブルの対処をまとめます。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Figwright — Figma プラグイン経由でデザインを読み書きする、無料の双方向 Figma MCP サーバー">
+  <meta property="og:description" content="awdr74100/figwright（v0.7.0）の解説。MCP サーバーと Figma プラグインをローカル WebSocket でつなぐ構成、読み取り・書き込み・グラウンディングの 135 ツール、figma-codegen と figma-build の手順、リーダー選出と複数ファイルの扱い、サーバーとプラグインのバージョンずれ、エディタ別の制限、セキュリティモデル、起動トラブルの対処をまとめます。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/figwright.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Figwright — Figma プラグイン経由でデザインを読み書きする、無料の双方向 Figma MCP サーバー">
+  <meta name="twitter:description" content="awdr74100/figwright（v0.7.0）の解説。MCP サーバーと Figma プラグインをローカル WebSocket でつなぐ構成、読み取り・書き込み・グラウンディングの 135 ツール、figma-codegen と figma-build の手順、リーダー選出と複数ファイルの扱い、サーバーとプラグインのバージョンずれ、エディタ別の制限、セキュリティモデル、起動トラブルの対処をまとめます。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Reddit+Sans:wght@400;500;600;700&family=Ubuntu+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.5rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(0.985 0.004 80);
+      --foreground: oklch(0.2 0.01 60);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.2 0.01 60);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.2 0.01 60);
+      --primary: oklch(0.22 0.01 60);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.965 0.005 80);
+      --secondary-foreground: oklch(0.22 0.01 60);
+      --muted: oklch(0.955 0.006 80);
+      --muted-foreground: oklch(0.52 0.012 60);
+      --accent: oklch(0.965 0.005 80);
+      --accent-foreground: oklch(0.22 0.01 60);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.9 0.008 80);
+      --input: oklch(0.9 0.008 80);
+      --ring: oklch(0.72 0.01 60);
+      --chart-1: oklch(0.56 0.17 38);   /* read: vermilion */
+      --chart-2: oklch(0.5 0.11 155);   /* write: forest */
+      --chart-3: oklch(0.42 0.13 38);
+      --chart-4: oklch(0.7 0.13 80);
+      --chart-5: oklch(0.6 0.1 240);
+      --code-bg: oklch(0.96 0.006 80);
+      --code-text: #3a2418;
+      --font-body: 'Reddit Sans', 'Hiragino Sans', system-ui, sans-serif;
+      --font-mono: 'Ubuntu Sans Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.16 0.006 60);
+        --foreground: oklch(0.95 0.005 80);
+        --card: oklch(0.21 0.007 60);
+        --card-foreground: oklch(0.95 0.005 80);
+        --popover: oklch(0.21 0.007 60);
+        --popover-foreground: oklch(0.95 0.005 80);
+        --primary: oklch(0.92 0.005 80);
+        --primary-foreground: oklch(0.2 0.01 60);
+        --secondary: oklch(0.25 0.007 60);
+        --secondary-foreground: oklch(0.95 0.005 80);
+        --muted: oklch(0.26 0.008 60);
+        --muted-foreground: oklch(0.72 0.01 70);
+        --accent: oklch(0.25 0.007 60);
+        --accent-foreground: oklch(0.95 0.005 80);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.55 0.01 60);
+        --chart-1: oklch(0.74 0.14 45);
+        --chart-2: oklch(0.74 0.11 155);
+        --chart-3: oklch(0.84 0.09 45);
+        --chart-4: oklch(0.8 0.12 85);
+        --chart-5: oklch(0.75 0.09 240);
+        --code-bg: oklch(0.13 0.005 60);
+        --code-text: #f1d6c4;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 93%, var(--chart-1) 7%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 26rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; font-family: var(--font-mono); }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); margin: 1rem 0; }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.75rem; background: color-mix(in oklch, var(--chart-1) 12%, transparent); color: var(--chart-3); padding: 1px 5px; border-radius: var(--radius-sm); }
+    .ve-callout--warn { border-left-color: var(--chart-4); }
+    .ve-callout--write { border-left-color: var(--chart-2); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(to right, oklch(0.5 0.02 60 / 0.045) 1px, transparent 1px),
+        linear-gradient(to bottom, oklch(0.5 0.02 60 / 0.045) 1px, transparent 1px);
+      background-size: 24px 24px;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image:
+          linear-gradient(to right, oklch(1 0 0 / 0.035) 1px, transparent 1px),
+          linear-gradient(to bottom, oklch(1 0 0 / 0.035) 1px, transparent 1px);
+      }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.5rem; text-wrap: balance; line-height: 1.35; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.75rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.0625rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.75; margin-bottom: 0.75rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.4rem; line-height: 1.7; font-size: 0.9375rem; }
+    a { color: var(--chart-3); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-1); }
+    a:focus-visible { outline: 2px solid var(--chart-1); outline-offset: 4px; }
+    @media (prefers-color-scheme: dark) { a { color: var(--chart-1); } a:hover { color: var(--chart-3); } }
+    .ve-code-block { margin: 1rem 0; }
+    .ve-code-block .label { font-family: var(--font-mono); font-size: .6875rem; color: var(--text-dim); padding: .45rem 1rem; border-bottom: 1px solid var(--border); }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block pre code { display: block; background: transparent; padding: 0; border-radius: 0; color: var(--code-text); overflow-wrap: anywhere; tab-size: 2; }
+    .ve-table-wrap { overflow-x: auto; margin: 1rem 0; }
+    .ve-table-wrap table { min-width: 560px; }
+    .ve-table-wrap td:first-child { white-space: nowrap; font-weight: 600; }
+
+    /* Hero: canvas frame with selection handles */
+    .hero { display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem; margin-bottom: 1.25rem; }
+    .hero-frame { position: relative; display: inline-block; padding: .3em .55em; font-family: var(--font-mono); font-weight: 600; font-size: clamp(2.2rem, 6vw, 3.4rem); line-height: 1; border: 1.5px solid var(--chart-1); }
+    .hero-frame::before { content: 'Frame 1'; position: absolute; left: -1.5px; top: -1.45rem; font-size: .7rem; font-weight: 500; color: var(--chart-1); letter-spacing: .02em; }
+    .hero-frame i { position: absolute; width: 8px; height: 8px; background: var(--card); border: 1.5px solid var(--chart-1); }
+    .hero-frame i:nth-child(1) { left: -5px; top: -5px; } .hero-frame i:nth-child(2) { right: -5px; top: -5px; }
+    .hero-frame i:nth-child(3) { left: -5px; bottom: -5px; } .hero-frame i:nth-child(4) { right: -5px; bottom: -5px; }
+    .hero-dir { display: flex; flex-direction: column; gap: .35rem; font-family: var(--font-mono); font-size: .8rem; }
+    .hero-dir .r { color: var(--chart-1); } .hero-dir .w { color: var(--chart-2); }
+
+    .kpi-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    .kpi-row .ve-kpi-card:first-child { background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%); border-color: color-mix(in oklch, var(--border) 50%, var(--chart-1) 50%); }
+    .kpi-row .ve-kpi-card:first-child .ve-kpi-card__value { font-size: 2.6rem; color: var(--chart-3); }
+    @media (prefers-color-scheme: dark) { .kpi-row .ve-kpi-card:first-child .ve-kpi-card__value { color: var(--chart-1); } }
+    @media (max-width: 720px) { .kpi-row { grid-template-columns: 1fr 1fr; } }
+
+    /* Read / write split */
+    .dirs { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .dirs > * { min-width: 0; }
+    .dirs .read { border-top: 3px solid var(--chart-1); }
+    .dirs .write { border-top: 3px solid var(--chart-2); }
+    .dirs h3 { margin-top: 0; display: flex; align-items: baseline; gap: .6rem; }
+    .dirs h3 small { font-family: var(--font-mono); font-size: .75rem; font-weight: 500; color: var(--text-dim); }
+    .dirs p, .dirs li { font-size: .875rem; }
+    @media (max-width: 760px) { .dirs { grid-template-columns: 1fr; } }
+
+    /* Architecture */
+    .arch { display: grid; gap: 0; margin: 1rem 0; }
+    .tier { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); padding: 1rem 1.25rem; min-width: 0; }
+    .tier-title { font-family: var(--font-mono); font-size: .6875rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-dim); margin-bottom: .6rem; }
+    .tier-title b { color: var(--text); font-size: .8125rem; text-transform: none; letter-spacing: 0; margin-right: .4rem; }
+    .tier-cols { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .tier-cols > div { min-width: 0; border: 1px solid var(--border); border-radius: var(--radius-md); padding: .7rem .85rem; background: var(--muted); }
+    .tier-cols b { display: block; font-size: .875rem; margin-bottom: .3rem; }
+    .tier-cols ul { margin: 0; padding-left: 1.1rem; }
+    .tier-cols li { font-size: .8125rem; margin-bottom: .2rem; line-height: 1.55; }
+    .tier.leader { border-color: color-mix(in oklch, var(--border) 40%, var(--chart-1) 60%); }
+    .tier.figma { border-color: color-mix(in oklch, var(--border) 40%, var(--chart-2) 60%); }
+    .link { display: flex; align-items: center; gap: .6rem; padding: .45rem 0 .45rem 1.4rem; font-family: var(--font-mono); font-size: .75rem; color: var(--text-dim); }
+    .link::before { content: ''; width: 1px; height: 1.4rem; background: var(--ring); }
+    .link span::before { content: '↓ '; color: var(--chart-1); }
+    @media (max-width: 760px) { .tier-cols { grid-template-columns: 1fr; } }
+
+    /* Steps */
+    .steps { counter-reset: s; list-style: none; padding-left: 0; }
+    .steps > li { counter-increment: s; position: relative; padding-left: 2.25rem; margin-bottom: 1.1rem; }
+    .steps > li::before { content: counter(s); position: absolute; left: 0; top: .15rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-mono); font-size: .75rem; background: var(--chart-1); color: var(--primary-foreground); }
+    @media (prefers-color-scheme: dark) { .steps > li::before { color: var(--background); } }
+    .steps.write > li::before { background: var(--chart-2); }
+    .steps > li > b { display: block; margin-bottom: .2rem; }
+
+    /* Tool groups */
+    .groups { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .groups > * { min-width: 0; }
+    .groups h3 { margin-top: 0; font-size: 1rem; }
+    .groups p { font-size: .8125rem; line-height: 1.6; }
+    .groups .g-read { border-left: 3px solid var(--chart-1); }
+    .groups .g-write { border-left: 3px solid var(--chart-2); }
+    .groups .g-ground { border-left: 3px solid var(--chart-4); }
+    .chips { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
+    .chips span { font-family: var(--font-mono); font-size: .7rem; padding: .12rem .45rem; border-radius: 4px; border: 1px solid var(--border); background: var(--muted); overflow-wrap: anywhere; }
+    @media (max-width: 900px) { .groups { grid-template-columns: 1fr; } }
+
+    /* Status marks */
+    .ok, .part, .no { display: inline-block; font-family: var(--font-mono); font-size: .7rem; padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+    .ok { background: color-mix(in oklch, var(--chart-2) 16%, transparent); color: var(--chart-2); }
+    .part { background: color-mix(in oklch, var(--chart-4) 20%, transparent); color: color-mix(in oklch, var(--chart-4) 60%, var(--foreground)); }
+    .no { background: color-mix(in oklch, var(--destructive) 14%, transparent); color: var(--destructive); }
+
+    .order { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .75rem 0 1rem; font-size: .8125rem; }
+    .order .step { background: var(--muted); padding: .35rem .6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: .75rem; }
+    .order .arrow { color: var(--text-dim); }
+
+    details.faq { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); margin: .6rem 0; }
+    details.faq summary { cursor: pointer; padding: .8rem 1.1rem; font-weight: 600; font-size: .9375rem; }
+    details.faq[open] summary { border-bottom: 1px solid var(--border); }
+    details.faq > div { padding: .9rem 1.1rem .4rem; }
+
+    .source-note { margin-top: 2rem; color: var(--text-dim); font-size: .8rem; line-height: 1.6; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card, .ve-kpi-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc" id="toc" aria-label="目次">
+    <div class="toc-title">Figwright / Contents</div>
+    <a href="#overview">概要</a><a href="#directions">読む方向と書く方向</a><a href="#arch">構成</a><a href="#setup">セットアップ</a><a href="#update">更新とバージョンずれ</a><a href="#tools">ツール</a><a href="#codegen">figma-codegen</a><a href="#build">figma-build</a><a href="#files">複数エージェントと複数ファイル</a><a href="#editors">プラグインとエディタ別の制限</a><a href="#security">セキュリティ</a><a href="#trouble">起動トラブル</a><a href="#dev">開発者向け</a><a href="#cautions">注意点</a><a href="#links">参考資料</a>
+  </nav>
+  <main class="main">
+    <a href="../index.html">資料一覧へ</a>
+    <header style="margin-top:3rem">
+      <div class="hero">
+        <div class="hero-frame" aria-label="Figwright">Figwright<i></i><i></i><i></i><i></i></div>
+        <div class="hero-dir" aria-hidden="true"><span class="r">canvas → code　get_design_context</span><span class="w">code → canvas　create_frame</span></div>
+      </div>
+      <h1>Figma プラグイン経由でデザインを読み書きする、無料の双方向 Figma MCP サーバー</h1>
+      <p class="subtitle">awdr74100/figwright · @figwright/mcp v0.7.0 · 2026-11-02 時点の main · MIT</p>
+    </header>
+
+    <h2 class="sec-head" id="overview">概要</h2>
+    <p>Figwright は、MCP サーバー <code>@figwright/mcp</code> と Figma プラグインを、ローカルの WebSocket でつなぐツールです。Claude Code、Cursor、Codex などの MCP クライアントから、Figma のデザインを読んでコードにすることも、コードや仕様から Figma のキャンバスに直接デザインを組むこともできます。</p>
+    <p>Figma 公式の Dev Mode MCP は有料の Dev Mode シートが必要です。Figwright は Plugin API を使うので、Figma の無料プランで動きます（プラグインの読み込みにはデスクトップアプリが要ります）。サーバー、リレー、プラグインはすべて手元のマシンで動き、デザインデータを外部へ送りません。</p>
+
+    <div class="kpi-row">
+      <div class="ve-kpi-card" style="--i:0"><div class="ve-kpi-card__value">135</div><div class="ve-kpi-card__label">MCP ツール（読み取り・書き込み・グラウンディング）</div></div>
+      <div class="ve-kpi-card" style="--i:1"><div class="ve-kpi-card__value">2</div><div class="ve-kpi-card__label">Agent Skills</div></div>
+      <div class="ve-kpi-card" style="--i:2"><div class="ve-kpi-card__value">3055</div><div class="ve-kpi-card__label">ローカルリレーのポート</div></div>
+      <div class="ve-kpi-card" style="--i:3"><div class="ve-kpi-card__value">0</div><div class="ve-kpi-card__label">外部送信・テレメトリ</div></div>
+    </div>
+
+    <h3>README が挙げる特徴</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>項目</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>有料シート不要</td><td>Dev Mode シートなしで、Figma の無料プランで動く。</td></tr>
+          <tr><td>双方向</td><td>読み取り専用ではない。135 ツールでキャンバスの読み取りと書き込みの両方を扱う。</td></tr>
+          <tr><td>provider-first のコード生成</td><td>プロジェクトのフレームワークとスタイリング方式を検出し、既存のコンポーネント、トークン、アイコンを再利用する。</td></tr>
+          <tr><td>1 エージェント 1 ファイル</td><td>複数のエージェントが、それぞれ自分の Figma ファイルを claim して同時に作業できる。</td></tr>
+          <tr><td>スキルで拡張</td><td>読み取りと書き込みの手順を Agent Skills として配布し、そのまま使うことも fork することもできる。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="sec-head" id="directions">読む方向と書く方向</h2>
+    <div class="dirs">
+      <article class="ve-card read" style="--i:0">
+        <h3>Read <small>Figma → コード</small></h3>
+        <p>Figma で選択したフレームを、プロジェクトのスタックに合わせたコードにします。レイアウト、タイポグラフィ、変数、コンポーネントを重複を除いた形で取り出し、スクリーンショットからの推測に頼りません。</p>
+        <p>依頼の例: 「この Figma の選択範囲を React コンポーネントにして」</p>
+      </article>
+      <article class="ve-card write" style="--i:1">
+        <h3>Write <small>コード・仕様 → Figma</small></h3>
+        <p>フレームやテキストから、オートレイアウト、スタイル、変数、コンポーネント、画面全体まで、キャンバスを直接作成・編集します。ファイルにある既存のコンポーネントと変数を優先して使います。</p>
+        <p>依頼の例: 「この仕様から料金セクションを Figma に作って」</p>
+      </article>
+    </div>
+    <p>どちらの方向も、固定のコンパイラで変換するのではなく、ツールが正確なデザイン情報を返し、モデルがそれをもとに利用者のコードベースや Figma ファイルに合わせて生成します。リポジトリではこの方針を <strong>provider-first</strong> と呼んでいます。</p>
+
+    <h2 class="sec-head" id="arch">構成</h2>
+    <p>MCP クライアントは <code>@figwright/mcp</code> を起動し、stdio で通信します。サーバーはツール呼び出しをローカルの WebSocket で Figma プラグインへ中継し、プラグインが Figma の Plugin API で実行します。エージェントごとにサーバープロセスが 1 つ起動し、プロセス同士でリーダーを 1 つ選びます。</p>
+    <div class="arch">
+      <div class="tier">
+        <div class="tier-title"><b>MCP クライアント</b>エージェントごとに自分のサーバーを起動</div>
+        <p style="font-size:.875rem;margin:0">Claude Code · Cursor · Codex · その他の MCP クライアント</p>
+      </div>
+      <div class="link"><span>MCP プロトコル（stdio）</span></div>
+      <div class="tier leader">
+        <div class="tier-title"><b>@figwright/mcp</b>サーバープロセス同士でリーダーを選出</div>
+        <div class="tier-cols">
+          <div>
+            <b>リーダー（すべてのプラグイン接続を保持）</b>
+            <ul>
+              <li><code>127.0.0.1:3055</code> の WebSocket リレー。Host と Origin を検査</li>
+              <li>エージェントを <code>use_file</code> で claim したファイルへ、なければ最後に操作したファイルへ振り分け</li>
+              <li>プラグインが切れても 30 秒は再接続を待ち、その間の呼び出しは失敗させずに待機</li>
+              <li>処理中のプラグインを切断と誤判定しないハートビート</li>
+              <li>エンドポイント: <code>/ws</code>（プラグイン）、<code>/ping</code>、<code>/rpc</code>（フォロワー）、<code>/abdicate</code></li>
+            </ul>
+          </div>
+          <div>
+            <b>フォロワー</b>
+            <ul>
+              <li>ツール呼び出しを HTTP の <code>/rpc</code> でリーダーへ転送</li>
+              <li>リーダー交代の最中だった呼び出しを再試行</li>
+              <li>リーダーが終了すると自動で引き継ぐ</li>
+              <li>新しいビルドが勝つ。古いビルドのリーダーには、手が空いた時点で退くよう求める</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="link"><span>ローカル WebSocket · msgpack（バイナリ）</span></div>
+      <div class="tier figma">
+        <div class="tier-title"><b>Figma</b>デスクトップまたはブラウザ。開いたファイルごとにプラグイン</div>
+        <div class="tier-cols">
+          <div>
+            <b>UI（Vue 3 の iframe）</b>
+            <ul>
+              <li>WebSocket クライアント、ハートビート、再接続</li>
+              <li>Activity・Payload・Debug のパネル</li>
+            </ul>
+          </div>
+          <div>
+            <b>sandbox（Plugin API を実行）</b>
+            <ul>
+              <li>再試行された書き込みは二重適用せず、前回の結果を返す</li>
+              <li>長い読み取りは約 40 ms ごとに処理を譲り、Figma を固まらせない</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p>リーダーが止まっているのにポートを握ったまま応答しない場合（ターミナルで Ctrl-Z した、デバッガで止めたなど）、フォロワーは約 12 秒で異常と判断し、待ち続けずに即座にエラーを返します。リーダーはポートを取った時点で <code>$TMPDIR/figwright/leader-3055.json</code> に PID などを書き残します。フォロワーはプロセス表と突き合わせて本人だと確かめてから PID を名指しし、停止状態なら <code>SIGCONT</code> を送って復帰を試みます。Windows ではこの特定と復帰は行わず、汎用のメッセージだけを出します。</p>
+
+    <h2 class="sec-head" id="setup">セットアップ</h2>
+    <p>必要なもの: MCP クライアント、<strong>Node.js 20.19 以上または 22.12 以上</strong>、Figma。サーバーは <code>npx</code> で独立したプロセスとして動くので、プロジェクトのビルドに使う Node のバージョンとは無関係です。Node 18、21、22.0〜22.11 は対象外です。</p>
+    <ol class="steps">
+      <li><b>MCP クライアントにサーバーを登録する</b>Claude Code なら <code>.mcp.json</code> に追加します。ほかのクライアントも同じ形です。グローバルインストールは不要です。
+        <div class="ve-code-block"><div class="label">.mcp.json</div><pre><code>{
+  "mcpServers": {
+    "figwright": {
+      "command": "npx",
+      "args": ["-y", "@figwright/mcp@latest"]
+    }
+  }
+}</code></pre></div>
+      </li>
+      <li><b>Figma プラグインを読み込む</b>Figma Community にはまだ公開されていません。<a href="https://github.com/awdr74100/figwright/releases/latest">最新の GitHub Release</a> からプラグインの zip を取得して展開し、Figma デスクトップアプリで <strong>Menu → Plugins → Development → Import plugin from manifest…</strong> から <code>manifest.json</code> を選びます。</li>
+      <li><b>接続する</b>Figma で <strong>Plugins → Development → Figwright</strong> を開くと、ローカルのサーバーに自動で接続し <strong>Connected</strong> と表示されます。エージェントに <code>ping</code> を実行させて確認します。</li>
+      <li><b>スキルを入れる（任意）</b>エージェントが適切な場面で Figwright を使い、決まった手順に沿うようになります。
+        <div class="ve-code-block"><pre><code>npx skills add awdr74100/figwright/skills</code></pre></div>
+      </li>
+      <li><b>試す</b>Figma でフレームを選んだ状態で「この Figma の選択範囲を React コンポーネントにして」、または「この仕様から料金セクションを Figma に作って」と依頼します。</li>
+    </ol>
+
+    <h2 class="sec-head" id="update">更新とバージョンずれ</h2>
+    <p>リリースごとにサーバーとプラグインが一緒に出るので、両方を更新します。スキルは任意で、入れた方法で更新します。</p>
+    <ol class="steps">
+      <li><b>サーバーを再起動する</b><code>@latest</code> の設定なら起動のたびに最新版を取得するので、インストール作業はありません。ただし開いているセッションは起動時のサーバーを使い続けます。Claude Code では <code>/mcp</code> で <strong>figwright</strong> を選び <strong>Reconnect</strong> します。ほかのクライアントは再起動します。パッケージとして入れている場合は、先に <code>npm i -D @figwright/mcp@latest</code>（またはグローバルに <code>-g</code>）で更新します。</li>
+      <li><b>プラグインを差し替える</b>最新リリースの zip を展開し、<code>manifest.json</code> と <code>dist</code> を、最初に読み込んだフォルダへ上書きします。開発用プラグインはそのフォルダから直接動くので、再インポートは不要です。プラグインを閉じて開き直します。</li>
+      <li><b>スキルを更新する</b><code>npx skills update</code> を実行します。その後に始めたエージェントのセッションから新しい版が使われます。</li>
+    </ol>
+    <div class="ve-callout ve-callout--warn"><strong>サーバーとプラグインはずれるのが普通の状態です。</strong> サーバーは <code>npx @latest</code> で毎回更新され、プラグインは手で入れた zip のまま残ります。古いプラグインは新しい引数を無視し、エラーを出さずに <code>{ ok: true }</code> を返すので、書き込みが一部しか反映されないまま成功と報告されることがあります。プラグインが <code>MIN_PLUGIN_VERSION</code>（現在 0.7.0）より古いと、パネルのヘッダーに警告が出て、プラグインに届くツールの結果すべてに「未検証」の注記が付きます。パネルの <strong>Debug</strong> タブでサーバーとプラグインのバージョンを並べて確認できます。</div>
+    <p>古いプラグインの接続を拒否する方式も実装して試されましたが、拒否された古いプラグインが毎秒 7 回ほど再接続を繰り返したため取りやめています。現在は接続を拒否せず、結果に注記を付けて知らせる方式です。プロトコル自体を解釈できない場合（<code>PROTOCOL_VERSION</code> の不一致）だけは接続を拒否します。</p>
+
+    <h2 class="sec-head" id="tools">ツール</h2>
+    <p>135 の MCP ツールは 3 つに分かれます。最新の一覧は、MCP クライアントが接続時に受け取るツール一覧が正です。</p>
+    <div class="groups">
+      <article class="ve-card g-read" style="--i:0">
+        <h3>読み取り</h3>
+        <p>選択範囲、ドキュメントとノードの検査、スタイル、変数、コンポーネント、フォント、プロトタイプのリアクションとフロー、Motion の状態、スクリーンショット、画像フィルの元画像、PDF 書き出し、アニメーションするフレームの動画書き出し（MP4 / GIF / WebM）。</p>
+        <div class="chips"><span>get_selection</span><span>get_node</span><span>get_variable_defs</span><span>get_styles</span><span>get_screenshot</span><span>save_image_fills</span><span>export_pdf</span><span>export_video</span><span>list_files</span><span>use_file</span></div>
+      </article>
+      <article class="ve-card g-write" style="--i:1">
+        <h3>書き込み</h3>
+        <p>フレーム、テキスト、図形（線、多角形、星、ブーリアン演算、平坦化）、オートレイアウト、整列と分布、エフェクト、画像、スタイル、変数（チームライブラリからの取り込み、Dark などのモード切り替えを含む）、コンポーネントとそのプロパティ、ページ、プロトタイプ、Motion、Figma Draw（SVG パスからのベクター、ストロークのアウトライン化、リピート、パス上のテキスト、ブラシ、パターン）。</p>
+        <div class="chips"><span>create_frame</span><span>create_text</span><span>create_instance</span><span>set_auto_layout</span><span>set_layout_props</span><span>bind_variable_to_paint</span><span>create_vector</span><span>apply_animation_style</span><span>batch</span></div>
+      </article>
+      <article class="ve-card g-ground" style="--i:2">
+        <h3>グラウンディング</h3>
+        <p>Figma のデータを利用者のコードベースと突き合わせるツール群。コード生成で既存のものを再利用するための土台です。<code>design_diff</code> は保存した基準からの変更点だけを返します。</p>
+        <div class="chips"><span>get_design_context</span><span>component_map</span><span>token_map</span><span>icon_map</span><span>design_diff</span></div>
+      </article>
+    </div>
+    <p>ツールのほかに、MCP プロンプト <code>figma_to_code</code> と <code>code_to_figma</code> も登録されています。<code>figma_to_code</code> は読み取り結果のうち、コードへの対応が自明でないフィールドの読み方を説明します。<code>batch</code> は複数の編集を 1 回でまとめて適用し、途中で失敗したら巻き戻します。</p>
+
+    <h2 class="sec-head" id="codegen">figma-codegen（Figma → コード）</h2>
+    <p>Figma の選択範囲を、プロジェクトの他の部分と同じ書き方のコードにするスキルです。既存のコンポーネントとトークンを再利用し、足りないものだけを新しく作ります。基本は「描画されたスクリーンショットより、グラウンディングツールの結果を信じる」です。</p>
+    <ol class="steps">
+      <li><b><code>get_design_context</code>（detail <code>full</code>、<code>dedupeComponents: true</code>）</b>構造ツリーを取得します。トークンは <code>Primary/500</code> や <code>spacing/4</code> のような名前に解決され、スタイルは <code>globalVars</code> に重複なくまとめられ、各インスタンスに <code>mainComponent</code> と <code>componentProperties</code> が付きます。レイアウトとバインディングはこれが正です。</li>
+      <li><b><code>component_map</code></b>Figma のコンポーネントをローカルのコードコンポーネントに対応付け、<code>high / medium / low / unmapped</code> の状態を付けます。high と medium は <code>candidate.filePath</code> から import して再利用し、作り直しません。<code>ambiguousWith</code> が付いたものは候補が拮抗しているので、確認してから使います。コンポーネントにないプロパティ（<code>unmatchedProps</code>）は、その場しのぎのマークアップで埋めず、拡張の TODO として残します。</li>
+      <li><b><code>token_map</code></b>Figma の変数（と単色のペイントスタイル）をプロジェクトのトークンに対応付けます。対応があれば生の hex や px ではなく <code>candidate.ref</code>（<code>bg-primary-500</code>、<code>var(--color-primary-500)</code> など）を使います。Tailwind や UnoCSS の標準スケールに当たるものは <code>framework-builtin</code> として <code>p-4</code> のようなユーティリティにします。<code>figmaModes</code> を持つトークンはテーマで値が変わるので、プロジェクトのダークモードの仕組みに載せます。</li>
+      <li><b>グラウンディングで運べない素材を書き出す</b>ロゴ、写真、アイコンは画素を持たないので、放っておくと灰色の箱になります。画像フィルは <code>save_image_fills</code> で元画像を、アイコンは先に <code>icon_map</code> で既存の SVG を探し、合成後の見た目が必要なときだけ <code>get_screenshot</code> を使います。</li>
+    </ol>
+    <p>最後に、検出したスタックでコードを出力します。スタック情報は <code>component_map</code> と <code>token_map</code> の結果に含まれるので、<code>analyze_project</code> を別に呼ぶ必要はありません。</p>
+    <h3>デザインの変更に追従する</h3>
+    <div class="order"><span class="step">生成後に design_diff</span><span class="arrow">→</span><span class="step">.figwright/snapshots/ に基準を保存</span><span class="arrow">→</span><span class="step">デザイン変更後に再度 design_diff</span><span class="arrow">→</span><span class="step">変わったノードのコードだけ直す</span></div>
+    <p>2 回目の <code>design_diff</code> は、ノード単位・プロパティ単位の差分（追加・削除・変更、解決済みの値、<code>Card / Header / Title</code> のようなパス）を返します。画面全体を作り直さず、該当するコードだけを編集します。基準ファイルをコミットすればチームで共有できます。ツール自身は git を操作しません。</p>
+
+    <h2 class="sec-head" id="build">figma-build（コード・仕様 → Figma）</h2>
+    <p>figma-codegen の逆方向です。接続中の Figma ファイルのデザインシステムを再利用し、ハードコードした値で図形を描くことを避けます。URL からファイルを開く機能はないので、対象ファイルを Figma で開いておき、最初に <code>ping</code> で接続を確かめます。</p>
+    <ol class="steps write">
+      <li><b>Figma ファイル側を読む</b><code>get_variable_defs</code> で変数、<code>scan_components</code> / <code>get_local_components</code> で既存コンポーネント、<code>get_styles</code> で共有スタイルを確認します。結果が空でもチームライブラリを使っているファイルなら、トークンはライブラリ側にあります。「トークンなし」と判断して値をハードコードしないでください。</li>
+      <li><b>元のコードを読む</b>スタック（Tailwind、Chakra、MUI、CSS Modules など）と、設定・テーマ・トークンのファイルを確認します。値はそこから取ります。</li>
+      <li><b>組み立てる</b>値の出どころは、既存のコンポーネント・変数・スタイル → 元コードの実際の値 → 一貫したスケール、の順です。<code>create_instance</code> でコンポーネントを配置し、色は <code>bind_variable_to_paint</code>、数値は <code>bind_variable_to_node</code>、共有スタイルは <code>apply_style_to_node</code> で結びます。関連する子要素はオートレイアウトにし、サイズは <code>set_layout_props</code> の HUG / FILL / FIXED で決めます。</li>
+      <li><b>見た目で確かめる</b><code>get_screenshot</code> で描画結果を見て直し、再度スクリーンショットを撮ります。元の意図との一致に加え、はみ出しやクリップ、端の揃い、余白のスケール、文字の階層も見ます。</li>
+    </ol>
+    <div class="ve-callout ve-callout--write"><strong>新しく作った TEXT ノードの既定フォントは Inter です。</strong> 実際のフォントを指定します。コード由来の色は sRGB なので、Display P3 のファイルでは <code>space: "SRGB"</code> を付けて書きます。付けないとコードより彩度が高く塗られます。</div>
+    <p>新しいデザインシステムの要素（変数、スタイル、コンポーネントとバリアント）を作るのは、既存のものに相当するものがないときだけです。アニメーションを含むソースは、Figma の Motion（beta）として <code>apply_animation_style</code> や <code>apply_manual_keyframe_track</code> で付けます。少しずつずらして動く行は、<code>timelineOffset</code> を増やした <code>apply_animation_style</code> を 1 回の <code>batch</code> にまとめます。</p>
+
+    <h2 class="sec-head" id="files">複数エージェントと複数ファイル</h2>
+    <p>複数の MCP サーバーが、リーダーとフォロワーに分かれて 1 つのプラグインを共有できます。さらに、各エージェントが自分のファイルを claim すれば、別々の Figma ファイルで同時に作業できます。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>状況</th><th>動作</th></tr></thead>
+        <tbody>
+          <tr><td>claim していない</td><td>呼び出しは、利用者が最後に操作したファイルに向かう。タブを切り替えると、エージェントが見るファイルも変わる。</td></tr>
+          <tr><td>複数ファイルが開いていて未 claim</td><td>すべての結果に <code>MORE THAN ONE FIGMA FILE IS OPEN</code> の注記が付く。スキルはこれを見たら最初に claim するよう指示している。</td></tr>
+          <tr><td><code>list_files</code></td><td>プラグインが開いているファイルを一覧する。</td></tr>
+          <tr><td><code>use_file({ fileName })</code></td><td>そのファイルをこのサーバープロセスに固定する。パネルを閉じて開き直しても、タブが裏にあっても届く。</td></tr>
+          <tr><td>同名のファイルが 2 つ</td><td>名前での指定を拒否し、<code>list_files</code> が出す <code>sessionId</code> での指定を求める。</td></tr>
+          <tr><td><code>use_file({ release: true })</code></td><td>claim を外し、前面のファイルに従う動作に戻す。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout"><strong>claim の単位は MCP クライアントのサーバープロセスです。</strong> 2 つのエージェントで別々のファイルを扱うなら、エディタを 2 つ、またはターミナルを 2 つ使います。1 つのクライアント内のサブエージェントは同じサーバーを共有するので、claim も共有されます。</div>
+
+    <h2 class="sec-head" id="editors">プラグインとエディタ別の制限</h2>
+    <p>Figma 側のパネルには 3 つのタブがあります。<strong>Activity</strong> はすべての呼び出しを所要時間付きで並べ、触ったノードへ移動できます。<strong>Payload</strong> はモデルが受け取った内容そのものを表示します。<strong>Debug</strong> は接続状態、バージョン、ワンクリックの診断バンドルを出します。パネルは Figma のライト・ダークテーマに追従し、右下をドラッグして大きさを変えられ、その大きさは次回も保たれます。ヘッダーの <strong>Run in background</strong> でパネルを隠しても接続は保たれます。その上の ✕ はプラグインごと閉じ、接続も切れます。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>エディタ</th><th>読み取り・書き出し</th><th>書き込み</th><th>補足</th></tr></thead>
+        <tbody>
+          <tr><td>Figma Design</td><td><span class="ok">可</span></td><td><span class="ok">可</span></td><td>すべての機能が使える。</td></tr>
+          <tr><td>Dev Mode</td><td><span class="ok">可</span></td><td><span class="no">不可</span></td><td>Figma がプラグインを読み取り専用にするため、ノード・ページ・変数・スタイルの書き込みはすべて失敗する。コード生成には向く。パネルのリサイズと Run in background もない。</td></tr>
+          <tr><td>FigJam</td><td><span class="part">一部</span></td><td><span class="part">一部</span></td><td>フレーム、セクション、図形、テキストは使える。コンポーネント、変数、スタイル、Motion はこのエディタに存在しない。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><code>get_metadata</code> がエディタの種類（<code>editorType</code> / <code>mode</code>）を返し、エディタの制約で失敗したツールはエラーにその理由を書きます。エージェントは再試行せずに計画を変えられます。</p>
+
+    <h2 class="sec-head" id="security">セキュリティ</h2>
+    <p>Figwright にクラウドサービスはなく、テレメトリも送りません。デザインデータが流れるのは、プラグイン、ローカルリレー、MCP クライアントの間だけです。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>境界</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>待ち受け</td><td>WebSocket は <code>127.0.0.1:3055</code> にだけ bind し、ネットワークからは届かない。</td></tr>
+          <tr><td>Host の検査</td><td>ループバック（<code>localhost</code>、<code>127.0.0.1</code>、<code>[::1]</code>）以外を拒否する。ブラウザ経由の DNS リバインディングはここで止まる。</td></tr>
+          <tr><td>Origin の検査</td><td>Origin がない（フォロワーかプラグインのホスト）か、プラグインの sandbox の Origin だけを通す。リーダーの HTTP エンドポイント（<code>/rpc</code>、<code>/ping</code>、<code>/abdicate</code>）は Origin 付きの要求をすべて拒否し、CORS プリフライトなしでは送れない media type を要求する。</td></tr>
+          <tr><td>Figma 側</td><td>プラグインは公開の Plugin API だけを使い、開いているファイルにしか触れない。他のファイル、アカウント、組織のデータには届かない。</td></tr>
+          <tr><td>ファイル書き込み</td><td>書き出し系ツールは、エージェントが渡したパスにだけ書く。</td></tr>
+          <tr><td>ファイル読み込み</td><td><code>import_image</code> と <code>set_image_fill</code> は渡されたパスを読むが、先頭 8 バイトが PNG・JPEG・GIF でなければ拒否する。<code>/rpc</code> 経由の呼び出しではパスを解決しない。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout ve-callout--warn"><strong>エージェントの操作のレビューは省けません。</strong> 書き込みツールは Figma ファイルを変更し、書き出しツールはエージェントが選んだパスにファイルを書きます。悪意のあるデザインや、プロンプトインジェクションされた指示に従うエージェントは、どちらも誤用できます。最終的な境界は MCP クライアントのツール承認です。同じユーザー権限で動くマルウェアも防げません。</div>
+    <p>環境によってプラグインのホストが拒否される場合は <code>FIGWRIGHT_ALLOW_ANY_ORIGIN=1</code> で Origin の検査を外せますが、Host の検査は外れません。SECURITY.md は設定したままにせず報告するよう求めています。脆弱性は GitHub の private vulnerability reporting で受け付け、セキュリティ修正の対象は最新リリースだけです。</p>
+
+    <h2 class="sec-head" id="trouble">起動トラブル</h2>
+    <p>MCP クライアントはサーバーの <code>command</code> を対話シェルを通さずに直接起動します。fnm、nvm、asdf、volta、mise などシェルのフックで <code>PATH</code> を設定するバージョン管理ツールを使っていると、その設定が効きません。Figwright 固有ではなく、<code>npx</code> で起動する MCP サーバー全般に起きる問題です。</p>
+    <details class="faq" open>
+      <summary><code>command not found</code>（npx や node が見つからない）</summary>
+      <div>
+        <p>通常のターミナルで <code>which npx</code> を実行し、その絶対パスを <code>command</code> に書きます。クライアントがサーバーごとの <code>env</code> に対応していれば、<code>env.PATH</code> にバージョン管理ツールの <code>bin</code> を足す方法もあります。</p>
+      </div>
+    </details>
+    <details class="faq" open>
+      <summary><code>-32000</code> / Connection closed / いつまでも接続しない</summary>
+      <div>
+        <p><code>npx … @latest</code> は起動のたびにレジストリへ問い合わせます。直接起動された環境では npm の設定、社内プロキシ、プライベートレジストリが効かずに失敗することがあり、MCP のハンドシェイク前にプロセスが終わります。パッケージを入れて、起動時の問い合わせをなくします。</p>
+        <div class="ve-code-block"><div class="label">プロジェクトに入れる（@latest を外す）</div><pre><code>pnpm add -D @figwright/mcp   # または npm i -D @figwright/mcp
+
+# .mcp.json の args を ["-y", "@figwright/mcp"] にする</code></pre></div>
+        <div class="ve-code-block"><div class="label">グローバルに入れてバイナリを直接指定する</div><pre><code>npm i -g @figwright/mcp
+which figwright-mcp
+# .mcp.json の command に、出力された絶対パスを書く</code></pre></div>
+      </div>
+    </details>
+    <details class="faq">
+      <summary>プラグインが Waiting のまま接続しない</summary>
+      <div>
+        <ul>
+          <li>MCP クライアントが起動していて、Figwright が設定されているか（<code>ping</code> を試す）。サーバーはクライアントが開いている間しか動きません。</li>
+          <li>プラグインを同じマシンの Figma で開いているか。リレーは <code>127.0.0.1</code> 限定です。</li>
+          <li>ファイアウォールやセキュリティツールがループバック接続を止めていないか。</li>
+        </ul>
+      </div>
+    </details>
+
+    <h2 class="sec-head" id="dev">開発者向け</h2>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>パッケージ</th><th>役割</th></tr></thead>
+        <tbody>
+          <tr><td><code>packages/mcp</code></td><td>npm に公開する <code>@figwright/mcp</code>。リレー、リーダー選出、ツール、コードベースとの突き合わせ（<code>join/</code>）、スタック検出（<code>profile/</code>）、<code>design_diff</code>（<code>diff/</code>）、プロンプト。</td></tr>
+          <tr><td><code>packages/plugin</code></td><td>Figma プラグイン。<code>ui/</code> は Vue 3 + Vite + Tailwind v4 のパネル、<code>src/</code> は Plugin API を実行する sandbox（ツールごとの handler）、<code>protocol/</code> は両者が共有するパネル制御の取り決め。</td></tr>
+          <tr><td><code>packages/shared</code></td><td>型、Zod スキーマ、msgpack のコーデック、プラグインとサーバーのプロトコル。ビルド時にサーバーへ同梱し、単独では公開しない。</td></tr>
+          <tr><td><code>skills/</code></td><td><code>figma-codegen</code> と <code>figma-build</code>。各 <code>SKILL.md</code> が入口で、詳細は <code>references/</code> に分かれる。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Node 26、pnpm 12、TypeScript（strict）、tsdown、Vite、Vitest、oxlint、oxfmt、knip を使います。CI は typecheck、lint、format:check、knip、build、test を通すことを求め、Windows では build と test だけを別ジョブで実行します。</p>
+    <ul>
+      <li><strong>サーバーはソースではなくビルド済みの <code>dist</code> で動きます。</strong> <code>packages/mcp</code> や <code>packages/shared</code> を変えたら <code>pnpm build</code> してサーバーを再起動します。<code>dist</code> を使う e2e テストは、<code>dist</code> がないと skip されます。</li>
+      <li>MCP SDK と Zod は実行時に各ツールの JSON Schema を生成するため、型検査が通っても公開スキーマが変わることがあります。<code>mcp-wire.test.ts</code> と <code>json-schema-generation.test.ts</code> がそれを検出します。</li>
+      <li>既存ツールへの引数追加は、すでに入っている古いプラグインでは黙って捨てられます。<code>test/plugin-contract.test.ts</code> がプラグインへ届く引数の一覧を記録し、変化を検出して互換性の判断を促します。</li>
+      <li>コミットと PR は Conventional Commits で、scope は <code>codegen</code>、<code>design</code>、<code>grounding</code>、<code>tools</code>、<code>relay</code>、<code>plugin</code>、<code>skills</code>、<code>deps</code>、<code>repo</code> の 9 種類に限られます。</li>
+    </ul>
+
+    <h2 class="sec-head" id="cautions">注意点</h2>
+    <ul>
+      <li>プラグインは Figma Community 未公開で、GitHub Release の zip を開発用プラグインとして読み込みます。読み込みにはデスクトップアプリが必要です。</li>
+      <li>更新時はサーバーの再接続とプラグインの差し替えの両方が必要です。プラグインだけ古いと、書き込みが一部しか反映されないことがあります。結果に「未検証」の注記が出たら、プラグインを更新してください。</li>
+      <li>複数ファイルを開いたまま claim せずに作業すると、タブの切り替えで読み書きの対象が変わります。<code>use_file</code> で固定してください。</li>
+      <li>Dev Mode では書き込みができません。デザインを組むときは Design モードで開きます。</li>
+      <li>ツールの中身が正しくても、エージェントの判断は誤り得ます。書き込みと書き出しは MCP クライアントのツール承認で確認してください。</li>
+      <li>バージョンは 0.x で、v0.7.0 時点でも描画の忠実度に関わる修正が続いています。</li>
+    </ul>
+
+    <h2 class="sec-head" id="links">参考資料</h2>
+    <ul>
+      <li><a href="https://github.com/awdr74100/figwright">awdr74100/figwright</a> — リポジトリと README</li>
+      <li><a href="https://www.npmjs.com/package/@figwright/mcp">@figwright/mcp</a> — npm パッケージ</li>
+      <li><a href="https://github.com/awdr74100/figwright/releases/latest">Latest release</a> — プラグインの zip</li>
+      <li><a href="https://github.com/awdr74100/figwright/blob/main/skills/figma-codegen/SKILL.md">skills/figma-codegen/SKILL.md</a> — コード生成の手順</li>
+      <li><a href="https://github.com/awdr74100/figwright/blob/main/skills/figma-build/SKILL.md">skills/figma-build/SKILL.md</a> — Figma への組み立て手順</li>
+      <li><a href="https://github.com/awdr74100/figwright/blob/main/SECURITY.md">SECURITY.md</a> — 脅威モデルと報告方法</li>
+      <li><a href="https://github.com/awdr74100/figwright/blob/main/AGENTS.md">AGENTS.md</a> — アーキテクチャと開発上の注意</li>
+      <li><a href="https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices">MCP Security Best Practices</a></li>
+    </ul>
+    <p class="source-note">2026-11-02 時点の main ブランチ（@figwright/mcp 0.7.0）の README.md、AGENTS.md、SECURITY.md、CHANGELOG.md、skills/figma-codegen/SKILL.md、skills/figma-build/SKILL.md、packages/shared/src/version.ts、packages/mcp/package.json をもとに作成しました。</p>
+  </main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
