@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Website Cloner Template — AIエージェントでサイトをピクセル完全複製</title>
-  <meta name="description" content="任意のURLを指定してAIエージェントにURLを渡すだけで、デザイントークン抽出・並列ビルドを経てピクセル完全なクローンを自動生成するNext.jsテンプレートの解説。">
+  <title>AI Website Cloner Template — AIエージェントで既存サイトを Next.js に再構築</title>
+  <meta name="description" content="AIコーディングエージェントに URL を渡し、Map → Observe → Build → Compare の4ステップで既存サイトを編集可能な Next.js ページとして再構築するテンプレート（v0.6.1）の解説。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="AI Website Cloner Template — AIエージェントでサイトをピクセル完全複製">
-  <meta property="og:description" content="任意のURLを指定してAIエージェントにURLを渡すだけで、デザイントークン抽出・並列ビルドを経てピクセル完全なクローンを自動生成するNext.jsテンプレートの解説。">
+  <meta property="og:title" content="AI Website Cloner Template — AIエージェントで既存サイトを Next.js に再構築">
+  <meta property="og:description" content="AIコーディングエージェントに URL を渡し、Map → Observe → Build → Compare の4ステップで既存サイトを編集可能な Next.js ページとして再構築するテンプレート（v0.6.1）の解説。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/ai-website-cloner.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="AI Website Cloner Template — AIエージェントでサイトをピクセル完全複製">
-  <meta name="twitter:description" content="任意のURLを指定してAIエージェントにURLを渡すだけで、デザイントークン抽出・並列ビルドを経てピクセル完全なクローンを自動生成するNext.jsテンプレートの解説。">
+  <meta name="twitter:title" content="AI Website Cloner Template — AIエージェントで既存サイトを Next.js に再構築">
+  <meta name="twitter:description" content="AIコーディングエージェントに URL を渡し、Map → Observe → Build → Compare の4ステップで既存サイトを編集可能な Next.js ページとして再構築するテンプレート（v0.6.1）の解説。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -183,6 +183,7 @@
     .ve-section-label .ve-dot { background: var(--chart-1); }
     .ve-code-block { margin: 1rem 0; }
     code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
 
     /* KPI row */
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
@@ -249,34 +250,40 @@
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
     <a href="#quickstart">クイックスタート</a>
-    <a href="#pipeline">パイプライン</a>
+    <a href="#workflow">4ステップ</a>
+    <a href="#observe">観察と動きの扱い</a>
     <a href="#agents">対応エージェント</a>
     <a href="#structure">プロジェクト構成</a>
+    <a href="#usage">用途と禁止事項</a>
+    <a href="#changes">主な変更</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
     <h1>AI Website Cloner Template</h1>
-    <p class="subtitle">URL を渡すだけ — AI エージェントがサイトをピクセル完全に複製する Next.js テンプレート</p>
+    <p class="subtitle">URL を渡すと、AI エージェントが既存サイトを編集可能な Next.js ページとして再構築する — v0.6.1（2026-10-05）</p>
 
     <!-- ===== 1 概要 ===== -->
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="ve-card ve-card--hero gap" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
       <p>
-        <strong>AI Website Cloner Template</strong> は、任意のウェブサイトを逆引きし、
-        AIコーディングエージェントがデザイントークン・アセット・コンポーネントを自動抽出・並列ビルドして
-        ピクセル完全なクローンを生成するための Next.js テンプレート。
-        <code>/clone-website &lt;url&gt;</code> を叩くだけで、
-        スクリーンショット取得からビジュアル差分確認まで全フェーズが自走する。
+        <strong>AI Website Cloner Template</strong> は、既存のウェブページを AI コーディングエージェントに再現させるための
+        Next.js テンプレート。Next.js + shadcn/ui + Tailwind CSS v4 の土台が用意されており、
+        エージェントに <code>/clone-website &lt;url1&gt; [&lt;url2&gt; ...]</code> を実行させると、
+        ソースの実テキスト・実アセット・レスポンシブ挙動・インタラクションを観察してページを組み立てる。
+      </p>
+      <p>
+        成果物は <strong>動作する編集可能なコード</strong>。スクリーンショット、iframe、ダウンロードした本番バンドルは参照資料として扱い、
+        実装そのものには使わない。
       </p>
       <div class="kpi-row">
         <div class="ve-kpi-card">
-          <div class="ve-kpi-card__value">5</div>
-          <div class="ve-kpi-card__label">パイプラインフェーズ</div>
+          <div class="ve-kpi-card__value">4</div>
+          <div class="ve-kpi-card__label">ワークフローのステップ</div>
         </div>
         <div class="ve-kpi-card">
-          <div class="ve-kpi-card__value">13</div>
+          <div class="ve-kpi-card__value">4</div>
           <div class="ve-kpi-card__label">対応 AI エージェント</div>
         </div>
         <div class="ve-kpi-card">
@@ -293,78 +300,74 @@
     <div class="ve-card ve-card--elevated gap" style="--i:1">
       <span class="ve-section-label"><span class="ve-dot"></span> テックスタック</span>
       <ul>
-        <li><strong>Next.js 16</strong> — App Router / React 19 / TypeScript strict</li>
-        <li><strong>shadcn/ui</strong> — Radix プリミティブ + Tailwind CSS v4</li>
+        <li><strong>Next.js 16</strong>（16.3.5 に固定）— App Router / React 19.2.4 / TypeScript strict</li>
+        <li><strong>shadcn/ui</strong> — Base UI プリミティブ（<code>@base-ui/react</code>、style は <code>base-nova</code>）+ Tailwind CSS v4</li>
         <li><strong>Tailwind CSS v4</strong> — oklch デザイントークン</li>
-        <li><strong>Lucide React</strong> — デフォルトアイコン（クローン時に対象サイトの SVG で置換）</li>
+        <li><strong>Lucide React</strong> — デフォルトアイコン（クローン時にソースから抽出した SVG で置き換える）</li>
+        <li><strong>Node.js 24 以上</strong> — ローカル開発・CI・Docker で共通の基準</li>
       </ul>
     </div>
 
     <div class="ve-callout gap">
-      <strong>推奨エージェント:</strong> <code>Claude Code (Opus 4.6)</code> を <code>claude --chrome</code> で起動するのが最高精度。
-      Chrome MCP 連携でリアルタイムにページを検査しながらクローンを構築する。
+      <strong>推奨構成:</strong> README は <code>Claude Code + Opus 5.5</code> を最良の組み合わせとしている。
+      どのエージェントでも、ブラウザを操作できる状態でプロジェクトを開いてから実行する。
+      本ページは 2026-10-05 リリースの v0.6.1 と、その後の main（CI のトークン数バッジ修正のみ）を元にしている。
     </div>
 
     <!-- ===== 2 クイックスタート ===== -->
     <section id="quickstart" class="sec-head">2 — クイックスタート</section>
     <div class="ve-card gap" style="--i:2">
-      <span class="ve-section-label"><span class="ve-dot"></span> セットアップ</span>
-      <div class="step-list">
-        <div class="step-item">
-          <div class="step-num">1</div>
-          <div class="step-body">
-            <strong>リポジトリをクローン</strong>
-            <p>テンプレートを手元に持ってきて作業ディレクトリへ移動する。</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-num">2</div>
-          <div class="step-body">
-            <strong>依存パッケージをインストール</strong>
-            <p><code>npm install</code> で Next.js / shadcn/ui / Tailwind v4 一式を取得。</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-num">3</div>
-          <div class="step-body">
-            <strong>AI エージェントを起動</strong>
-            <p>Claude Code 推奨: <code>claude --chrome</code>。他エージェントは <code>AGENTS.md</code> を読んで自動的に設定を取得する。</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-num">4</div>
-          <div class="step-body">
-            <strong>スキルを実行</strong>
-            <p>エージェントに <code>/clone-website &lt;url&gt;</code> と入力。複数 URL も空白区切りで同時指定できる。</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-num">5</div>
-          <div class="step-body">
-            <strong>（任意）カスタマイズ</strong>
-            <p>ベースクローン完成後、自由にデザイン・コンテンツを改変する。</p>
-          </div>
-        </div>
+      <span class="ve-section-label"><span class="ve-dot"></span> 1. プロジェクトを用意する</span>
+      <p>方法は 2 つ。README が推奨するのは、エージェントにセットアップを任せる方法。</p>
+      <h3>A. エージェントに頼む（推奨）</h3>
+      <p>Codex、Claude Code などのエージェントに次の文面を貼り付ける。保存先を尋ねられたら答える。</p>
+      <div class="ve-code-block">
+        <pre><code>Set up https://github.com/JCodesMore/ai-website-cloner-template
+as a standalone project in a new folder on my computer.
+Ask me where to put it. Clone the repository, remove its origin remote,
+install dependencies, and run npm run check. Leave it ready for me
+to clone a website.</code></pre>
       </div>
+      <p>エージェントはリポジトリを clone し、<code>origin</code> リモートを外し、依存関係を入れて <code>npm run check</code> を通す。</p>
+      <h3>B. 自分の GitHub リポジトリを作る</h3>
+      <p>
+        GitHub の <a href="https://github.com/JCodesMore/ai-website-cloner-template/generate" target="_blank" rel="noopener">Use this template</a> から名前を付けて
+        <strong>Create repository</strong> を押す。作成したリポジトリの URL をエージェントに渡し、
+        手元への clone、依存関係のインストール、<code>npm run check</code> の実行を依頼する。
+      </p>
     </div>
 
-    <div class="ve-card ve-card--recessed gap" style="--i:3">
+    <div class="ve-card gap" style="--i:3">
+      <span class="ve-section-label"><span class="ve-dot"></span> 2. サイトを再現する</span>
+      <p>ブラウザを使える状態でエージェントにプロジェクトを開かせ、Claude Code または Cursor で次を実行する。</p>
+      <div class="ve-code-block">
+        <pre><code>/clone-website https://example.com</code></pre>
+      </div>
+      <p>URL は空白区切りで複数渡せる。完成後は、追加の変更をそのままエージェントに依頼する。</p>
+    </div>
+
+    <div class="ve-card ve-card--recessed gap" style="--i:4">
       <span class="ve-section-label"><span class="ve-dot"></span> よく使うコマンド</span>
       <div class="ve-code-block">
         <pre><code>npm run dev        # 開発サーバー起動
 npm run build      # プロダクションビルド
 npm run lint       # ESLint チェック
 npm run typecheck  # TypeScript 型チェック
-npm run check      # lint + typecheck + build をまとめて実行</code></pre>
+npm run check      # lint + typecheck + build をまとめて実行
+
+# Docker を使う場合
+docker compose up app --build   # ビルドして起動
+docker compose up dev --build   # 開発モード（ポート 3001）</code></pre>
       </div>
     </div>
 
-    <!-- ===== 3 パイプライン ===== -->
-    <section id="pipeline" class="sec-head">3 — パイプライン</section>
-    <div class="ve-card gap" style="--i:4">
-      <span class="ve-section-label"><span class="ve-dot"></span> /clone-website の5フェーズ</span>
+    <!-- ===== 3 4ステップ ===== -->
+    <section id="workflow" class="sec-head">3 — /clone-website の 4 ステップ</section>
+    <div class="ve-card gap" style="--i:5">
+      <span class="ve-section-label"><span class="ve-dot"></span> Map → Observe → Build → Compare</span>
       <p style="margin-bottom:1rem;font-size:0.875rem;color:var(--text-dim);">
-        スキルは次の順序で自律実行される。各フェーズの成果物が次フェーズへ引き継がれる。
+        v0.6.0 で旧来の 5 フェーズ（偵察・基盤構築・コンポーネント仕様化と振り分け・ページ組み立て・ビジュアル QA）が 4 ステップに整理された。
+        Compare の中で差分を直し、影響した表示を見直す（Compare, repair, repeat）。
       </p>
       <div class="mermaid-wrap">
         <div class="mermaid-zoom-controls">
@@ -391,32 +394,34 @@ npm run check      # lint + typecheck + build をまとめて実行</code></pre>
   }
 }}%%
 flowchart TD
-    A["Phase 1: Reconnaissance
-スクリーンショット取得
-デザイントークン抽出
-インタラクション調査"]
-    B["Phase 2: Foundation
-フォント・カラー更新
-globals.css 書き換え
-アセット一括ダウンロード"]
-    C["Phase 3: Component Specs
-コンポーネント仕様書生成
-docs/research/components/ へ出力
-computed CSS 値・状態・レスポンシブ"]
-    D["Phase 4: Parallel Build
-git worktree で並列ビルダー起動
-各セクション独立ビルド
-エージェントチームが同時並走"]
-    E["Phase 5: Assembly & QA
-worktree マージ
-ページ配線
-ビジュアル差分確認"]
+    A["1. Map
+ソース URL → ローカルルートの対応表
+各ページが持つファイルを決める
+既存の作業は保持する"]
+    B["2. Observe
+デスクトップ / モバイルで全体を確認
+実アセット・フォントを取得
+状態とトリガーを記録"]
+    C["3. Build
+共通部品を全状態込みで先に作る
+実コンテンツでセクションを実装
+独立したセクションは委譲可"]
+    D["4. Compare
+同じ幅・スクロール位置・状態で比較
+大きな差から修正
+本番チェックを通す"]
+    E["Deliver
+起動手順・ルート対応表
+比較スクリーンショット
+残った差分"]
 
-    A --> B --> C --> D --> E
+    A --> B --> C --> D
+    D -- "差分を修正して再比較" --> D
+    D -- "build 成功 + 描画比較済み" --> E
 
     style A fill:#d4eef5,stroke:#5da9c0,color:#033d52
     style B fill:#d4eef5,stroke:#5da9c0,color:#033d52
-    style C fill:#d4eef5,stroke:#5da9c0,color:#033d52
+    style C fill:#b8e3ef,stroke:#3d97b4,color:#033d52
     style D fill:#b8e3ef,stroke:#3d97b4,color:#033d52
     style E fill:#9ed5e8,stroke:#2283a0,color:#033d52
           </div>
@@ -424,154 +429,266 @@ worktree マージ
       </div>
     </div>
 
-    <div class="ve-card ve-card--elevated gap" style="--i:5">
-      <span class="ve-section-label"><span class="ve-dot"></span> Phase 4 — 並列ビルドの仕組み</span>
-      <p>
-        最も特徴的なのが Phase 4 の並列ビルド。各セクション・コンポーネントに対して
-        <strong>独立した git worktree ブランチ</strong>上でビルダーエージェントを起動し、
-        オーケストレーターが最後にマージする。コンポーネント仕様書にはレンダリング済みの
-        <code>getComputedStyle()</code> 値、インタラクションモデル、レスポンシブブレークポイント、
-        アセットパスがすべてインラインで渡されるため、<strong>推測なしで実装できる</strong>。
-      </p>
+    <div class="ve-card ve-card--elevated gap" style="--i:6">
+      <span class="ve-section-label"><span class="ve-dot"></span> 各ステップの終了条件</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>ステップ</th><th>主な作業</th><th>終了条件</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Map</strong></td>
+              <td>プロジェクト指示・スクリプト・既存ルートを読み、ソース URL をローカルルートへ対応付ける。サイトごとに <code>src/components/sites/&lt;site&gt;/</code> などの置き場所を分ける。</td>
+              <td>すべての URL に行き先があり、ファイルの持ち主が明確</td>
+            </tr>
+            <tr>
+              <td><strong>2. Observe</strong></td>
+              <td>ページ全体をスクロールして遅延読み込みを発火させ、メニュー・タブ・カルーセル・ホバーを操作する。スクリーンショットに幅・スクロール位置・状態を記録し、ページブリーフにまとめる。</td>
+              <td>全セクションと意味のある状態について、作るのに足りる証拠がある</td>
+            </tr>
+            <tr>
+              <td><strong>3. Build</strong></td>
+              <td>フォント・ページ幅・色・アセット・ルート・共通部品を先に確定し、実コンテンツでセクションを作る。独立したページやセクションは、スクリーンショットと寸法、保存先を添えて他のエージェントへ渡せる。</td>
+              <td>すべてのルートが実アセットで描画され、主要な操作が動く</td>
+            </tr>
+            <tr>
+              <td><strong>4. Compare</strong></td>
+              <td>ソースとローカルを同じ条件で並べ、形・欠けたレイヤー・文字組み・切り抜き・余白・動きの順に直す。ナビゲーション、モバイルメニュー、横スクロールの発生、アセット欠落も確かめる。</td>
+              <td>本番ビルドの成功 <strong>かつ</strong> 描画比較。未確認の結果をピクセル完全と呼ばない</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- ===== 4 対応エージェント ===== -->
-    <section id="agents" class="sec-head">4 — 対応エージェント</section>
-    <div class="ve-card gap" style="--i:6">
+    <div class="ve-callout gap">
+      <strong>複数 URL と既存クローン:</strong> 同じオリジンの複数ページはパス名を保つ。クエリやフラグメントの違いは同じルートの状態として再現する。
+      オリジンが異なる場合は、指示がない限り別アプリに分ける。既存ページは保持し、要求のないルート衝突は置き換え前に解消する。
+    </div>
+
+    <!-- ===== 4 観察と動き ===== -->
+    <section id="observe" class="sec-head">4 — 観察と動きの扱い</section>
+    <div class="ve-card gap" style="--i:7">
+      <span class="ve-section-label"><span class="ve-dot"></span> 観察は「規則」のサンプルとして扱う</span>
+      <p>v0.6.1 で追加された考え方。1 回の描画結果から値を推測せず、次のようにして変化の原因を突き止める。</p>
+      <ul>
+        <li>computed style、CSS 変数、ライブラリの実行時オプションなど、<strong>宣言された値</strong>を読む</li>
+        <li>ビューポートの幅（デザイン幅より広い幅を含む）、高さ、入力、状態を変えて、何が変化を起こすかを確かめる</li>
+        <li>ホイール・タッチ・キーボード・ポインタなど、訪問者と同じ入力で操作する。スクリプトでのスクロールはスムーススクロールなど入力に紐づく挙動を素通りする</li>
+        <li>ソースが実際に読み込むフォント・画像・SVG・動画を使う。同名の代替品はメトリクスや形が違う</li>
+        <li>URL の拡張子を信用しない。<code>.png</code> の URL が AVIF を返すことがあるため、Content-Type と寸法を確認する</li>
+      </ul>
+    </div>
+
+    <div class="ve-card ve-card--elevated gap" style="--i:8">
+      <span class="ve-section-label"><span class="ve-dot"></span> 動きの駆動源を見分ける</span>
+      <p style="font-size:0.875rem;">スクロールで動くセクションをクリックで真似すると別物になる。<code>references/framer-and-motion.md</code> は駆動源ごとに確認すべき証拠と実装手段を挙げている。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>駆動源</th><th>確認する証拠</th><th>典型的な実装</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>時間</td><td>周期、停止、方向、ループする動画</td><td>CSS keyframes、video、アニメーションライブラリ</td></tr>
+            <tr><td>スクロールで出現</td><td>出現境界、開始・終了位置、逆スクロール時の再生</td><td>IntersectionObserver + CSS</td></tr>
+            <tr><td>連続スクロール</td><td>進行度、ピン留めの長さ、レイヤーごとの速度</td><td>スクロール進行度 + CSS 変数、またはライブラリ</td></tr>
+            <tr><td>クリック / ホバー</td><td>切り替わる内容、遷移、閉じ方・移動先</td><td>React state + CSS</td></tr>
+            <tr><td>ポインタ / canvas</td><td>反応の仕方、レンダラーやメディアの正体</td><td>同じレンダラー、または近似であることを明記</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ve-card ve-card--recessed gap" style="--i:9">
+      <span class="ve-section-label"><span class="ve-dot"></span> Framer サイトの注意点</span>
+      <ul>
+        <li>デスクトップとモバイルの両バリアントが DOM にあり、片方をクラスで隠していることがある。各幅で<strong>見えている</strong>要素のスタイルを読む</li>
+        <li><code>data-framer-name</code> はセクションの手がかりになるが、生成クラス名はコンポーネント設計ではない</li>
+        <li>静的な Medium ウェイトのファイルを可変フォントとして宣言すると、本文が太くなる。<code>@font-face</code> の前に実ファイルのウェイトを確かめる</li>
+        <li>Framer のスムーススクロールは Lenis。<code>html</code> の <code>lenis</code> クラスか <code>window.lenis</code> からオプションを読む</li>
+        <li>デプロイ用スクリプトや minify 済みラッパーは証拠であり、新しいアプリに貼り付けるコードではない</li>
+      </ul>
+    </div>
+
+    <!-- ===== 5 対応エージェント ===== -->
+    <section id="agents" class="sec-head">5 — 対応エージェント</section>
+    <div class="ve-card gap" style="--i:10">
       <span class="ve-section-label"><span class="ve-dot"></span> サポートマトリクス</span>
       <div class="ve-table-wrap">
         <table>
           <thead>
-            <tr>
-              <th>エージェント</th>
-              <th>ステータス</th>
-              <th>備考</th>
-            </tr>
+            <tr><th>エージェント</th><th>ステータス</th><th>スキルの読み込み方</th></tr>
           </thead>
           <tbody>
             <tr>
               <td><a href="https://docs.anthropic.com/en/docs/claude-code" target="_blank" rel="noopener">Claude Code</a></td>
-              <td><span class="badge">推奨</span></td>
-              <td>Opus 4.6 + <code>--chrome</code> フラグで最高精度</td>
+              <td><span class="badge">推奨 — Opus 5.5</span></td>
+              <td><code>.claude/commands/clone-website.md</code> のコマンドブリッジ経由</td>
             </tr>
             <tr>
               <td><a href="https://github.com/openai/codex" target="_blank" rel="noopener">Codex CLI</a></td>
               <td><span class="badge--muted badge">対応</span></td>
-              <td></td>
+              <td><code>.agents/skills/clone-website/</code> を直接読む</td>
             </tr>
             <tr>
               <td><a href="https://opencode.ai/" target="_blank" rel="noopener">OpenCode</a></td>
               <td><span class="badge--muted badge">対応</span></td>
-              <td></td>
+              <td><code>.agents/skills/clone-website/</code> を直接読む</td>
             </tr>
             <tr>
               <td><a href="https://cursor.com/" target="_blank" rel="noopener">Cursor</a></td>
               <td><span class="badge--muted badge">対応</span></td>
-              <td></td>
-            </tr>
-            <tr>
-              <td><a href="https://codeium.com/windsurf" target="_blank" rel="noopener">Windsurf</a></td>
-              <td><span class="badge--muted badge">対応</span></td>
-              <td></td>
-            </tr>
-            <tr>
-              <td><a href="https://github.com/google-gemini/gemini-cli" target="_blank" rel="noopener">Gemini CLI</a></td>
-              <td><span class="badge--muted badge">対応</span></td>
-              <td></td>
-            </tr>
-            <tr>
-              <td><a href="https://github.com/cline/cline" target="_blank" rel="noopener">Cline</a></td>
-              <td><span class="badge--muted badge">対応</span></td>
-              <td></td>
-            </tr>
-            <tr>
-              <td><a href="https://github.com/RooCodeInc/Roo-Code" target="_blank" rel="noopener">Roo Code</a></td>
-              <td><span class="badge--muted badge">対応</span></td>
-              <td></td>
-            </tr>
-            <tr>
-              <td>GitHub Copilot / Continue / Amazon Q / Augment Code / Aider</td>
-              <td><span class="badge--muted badge">対応</span></td>
-              <td></td>
+              <td><code>.agents/skills/clone-website/</code> を直接読む</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <div class="ve-card ve-card--recessed gap" style="--i:7">
-      <span class="ve-section-label"><span class="ve-dot"></span> 真実のソース管理</span>
-      <p style="font-size:0.875rem;margin-bottom:0.5rem;">
-        すべてのエージェント設定は <code>AGENTS.md</code> が唯一の正とする。
-        変更後は同期スクリプトで各プラットフォーム向けファイルを自動生成する。
+    <div class="ve-card ve-card--recessed gap" style="--i:11">
+      <span class="ve-section-label"><span class="ve-dot"></span> スキルは 1 つ、Claude Code にはブリッジ</span>
+      <p style="font-size:0.875rem;">
+        v0.5.0 で、v0.2.0 以降に増えていた多数のプラットフォーム向けのスキル・指示ファイルのコピーと、
+        <code>sync-agent-rules.sh</code> / <code>sync-skills.mjs</code> の同期スクリプト、生成ファイルの CI チェックが削除された。
+        現在の構成は次の 3 ファイルが中心。
       </p>
       <div class="ve-table-wrap">
         <table>
           <thead>
-            <tr><th>何を変えるか</th><th>真実のソース</th><th>同期コマンド</th></tr>
+            <tr><th>ファイル</th><th>役割</th></tr>
           </thead>
           <tbody>
             <tr>
-              <td>プロジェクト指示</td>
-              <td><code>AGENTS.md</code></td>
-              <td><code>bash scripts/sync-agent-rules.sh</code></td>
+              <td><code>.agents/skills/clone-website/SKILL.md</code></td>
+              <td>正のスキル。ワークフローを変えるときはここを編集する。<code>references/</code> に検査ガイドと Framer・動きのガイドを置き、必要な時だけ読ませる</td>
             </tr>
             <tr>
-              <td>/clone-website スキル</td>
-              <td><code>.claude/skills/clone-website/SKILL.md</code></td>
-              <td><code>node scripts/sync-skills.mjs</code></td>
+              <td><code>.claude/commands/clone-website.md</code></td>
+              <td>Claude Code 用の薄いブリッジ。SKILL.md を読んで従うよう指示し、<code>$ARGUMENTS</code> で URL を渡す。他のエージェントに重複スキルを見せないための構成で、ワークフローはここに書かない</td>
+            </tr>
+            <tr>
+              <td><code>AGENTS.md</code>（<code>CLAUDE.md</code> は <code>@AGENTS.md</code> を読み込むだけ）</td>
+              <td>プロジェクト指示の正。テックスタック、コマンド、コードスタイル、設計原則を持つ</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- ===== 5 プロジェクト構成 ===== -->
-    <section id="structure" class="sec-head">5 — プロジェクト構成</section>
-    <div class="ve-card gap" style="--i:8">
+    <div class="ve-callout gap">
+      <strong>Next.js のバージョン差に注意:</strong> <code>AGENTS.md</code> の先頭には「これはあなたの知っている Next.js ではない」というブロックがあり、
+      コードを書く前に <code>node_modules/next/dist/docs/</code> の該当ガイドを読むようエージェントに求めている。このブロックは <code>next dev</code> が自動で書き戻す。
+    </div>
+
+    <!-- ===== 6 プロジェクト構成 ===== -->
+    <section id="structure" class="sec-head">6 — プロジェクト構成</section>
+    <div class="ve-card gap" style="--i:12">
       <span class="ve-section-label"><span class="ve-dot"></span> ディレクトリツリー</span>
+      <p style="font-size:0.875rem;">v0.4.0 以降、クローン対象ごとに <code>&lt;site&gt;</code> ディレクトリを分け、後から別サイトを追加しても既存ページを壊さない。</p>
       <div class="ve-code-block">
         <pre><code>src/
-  app/              # Next.js ルート (App Router)
+  app/                # Next.js ルート (App Router)
   components/
-    ui/             # shadcn/ui プリミティブ
-    icons.tsx       # 抽出 SVG アイコン (React コンポーネント)
-  lib/utils.ts      # cn() ユーティリティ
-  types/            # TypeScript インターフェース
-  hooks/            # カスタム React hooks
+    ui/               # shadcn/ui プリミティブ
+    sites/&lt;site&gt;/     # サイト固有のコンポーネントと抽出 SVG
+  lib/utils.ts        # cn() ユーティリティ
+  types/              # TypeScript インターフェース
+  hooks/              # カスタム React hooks
 public/
-  images/           # 対象サイトからダウンロードした画像
-  videos/           # 対象サイトからダウンロードした動画
-  seo/              # Favicon / OG 画像 / webmanifest
+  sites/&lt;site&gt;/       # サイト固有の画像・フォント・動画など
 docs/
-  research/         # 抽出結果 & コンポーネント仕様書
-  design-references/ # スクリーンショット
-scripts/
-  sync-agent-rules.sh  # エージェント指示ファイル再生成
-  sync-skills.mjs      # /clone-website を全プラットフォームへ再生成
-AGENTS.md           # エージェント指示 (唯一の真実のソース)
-CLAUDE.md           # Claude Code 設定 (AGENTS.md をインポート)
-GEMINI.md           # Gemini CLI 設定 (AGENTS.md をインポート)</code></pre>
+  research/&lt;site&gt;/    # ページブリーフ、アセット対応表、検査の証拠
+  design-references/  # スクリーンショット
+scripts/              # アセットのダウンロードスクリプト置き場（AGENTS.md の記載。テンプレートでは空）
+.agents/skills/
+  clone-website/      # 正のスキルと検査リファレンス
+.claude/commands/
+  clone-website.md    # Claude Code 用の薄いブリッジ
+AGENTS.md             # エージェント指示（唯一の正）
+CLAUDE.md             # Claude Code 設定（AGENTS.md を読み込む）</code></pre>
       </div>
     </div>
 
-    <div class="ve-card ve-card--elevated gap" style="--i:9">
-      <span class="ve-section-label"><span class="ve-dot"></span> コードスタイル規約</span>
+    <div class="ve-card ve-card--elevated gap" style="--i:13">
+      <span class="ve-section-label"><span class="ve-dot"></span> コードスタイルと設計原則（AGENTS.md）</span>
       <ul>
-        <li>TypeScript strict モード / <code>any</code> 禁止</li>
-        <li>Named exports / PascalCase コンポーネント / camelCase ユーティリティ</li>
-        <li>Tailwind ユーティリティクラスのみ — インラインスタイル禁止</li>
-        <li>インデント 2 スペース / モバイルファーストのレスポンシブ設計</li>
-        <li>エミュレーション中は個人的なデザイン変更をしない — 1:1 で合わせてから改変</li>
+        <li>TypeScript strict モード、<code>any</code> 禁止</li>
+        <li>Named exports、PascalCase のコンポーネント、camelCase のユーティリティ</li>
+        <li>Tailwind ユーティリティかスコープ付き CSS を使う。インラインスタイルは動的な値が必要なときだけ</li>
+        <li>インデント 2 スペース、モバイルファースト</li>
+        <li>再現中は個人の好みでデザインを変えない。まず 1:1 で合わせ、カスタマイズは後で行う</li>
+        <li>プレースホルダーではなく、ソースの実テキストと実アセットを使う</li>
       </ul>
     </div>
 
-    <!-- ===== 6 参考リンク ===== -->
-    <section id="links" class="sec-head">6 — 参考リンク</section>
-    <div class="ve-card" style="--i:10">
+    <!-- ===== 7 用途と禁止事項 ===== -->
+    <section id="usage" class="sec-head">7 — 用途と禁止事項</section>
+    <div class="ve-card gap" style="--i:14">
+      <span class="ve-section-label"><span class="ve-dot"></span> README が挙げる用途</span>
+      <ul>
+        <li><strong>プラットフォーム移行</strong> — 自分が所有するサイトを WordPress / Webflow / Squarespace から Next.js へ作り直す</li>
+        <li><strong>ソースコードの喪失</strong> — サイトは公開中だがリポジトリが無い、開発者が去った、スタックが古い場合に、現代的な形でコードを取り戻す</li>
+        <li><strong>学習</strong> — 本番サイトのレイアウト、アニメーション、レスポンシブ挙動の作り方を、実際のコードで分解する</li>
+      </ul>
+    </div>
+
+    <div class="ve-callout gap">
+      <strong>想定外の用途:</strong> フィッシングやなりすまし、違法行為への利用は禁止。ロゴ、ブランド資産、オリジナルの文章は所有者のものであり、
+      他人のデザインを自分のものとして出さない。スクレイピングや複製を利用規約で禁じているサイトもあるため、事前に確認する。
+    </div>
+
+    <!-- ===== 8 主な変更 ===== -->
+    <section id="changes" class="sec-head">8 — 主な変更（v0.3.1 以降）</section>
+    <div class="ve-card gap" style="--i:15">
+      <span class="ve-section-label"><span class="ve-dot"></span> CHANGELOG より</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>バージョン</th><th>日付</th><th>内容</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge">v0.6.1</span></td>
+              <td>2026-10-05</td>
+              <td>観察を「幅・高さ・入力・状態を変えて見つける規則のサンプル」として扱う方針に一般化。ソースの実ファイルを使い、共通部品は観察した全状態から作る</td>
+            </tr>
+            <tr>
+              <td><span class="badge">v0.6.0</span></td>
+              <td>2026-10-05</td>
+              <td>ワークフローを Map / Observe / Build / Compare の 4 ステップに簡素化。レスポンシブと動きのガイドを改善</td>
+            </tr>
+            <tr>
+              <td><span class="badge--muted badge">v0.5.1</span></td>
+              <td>2026-09-26</td>
+              <td>推奨を Claude Code + Opus 5.5 に変更。Next.js と eslint-config-next を 16.3.5 に完全固定し、脆弱な推移的依存を更新</td>
+            </tr>
+            <tr>
+              <td><span class="badge--muted badge">v0.5.0</span></td>
+              <td>2026-09-17</td>
+              <td>対応を Claude Code / Codex / Cursor / OpenCode に集約し、正のスキルを <code>.agents/skills/clone-website/</code> に一本化。同期スクリプト、他プラットフォーム向け生成ファイル、日本語・簡体字 README を削除。クイックスタートをエージェント向けプロンプト中心に変更</td>
+            </tr>
+            <tr>
+              <td><span class="badge--muted badge">v0.4.0</span></td>
+              <td>2026-08-10</td>
+              <td>Docker ワークフロー、Node.js 24 基準、Next.js 16.3。後続の実行で既存ページを保持し、ルート・調査資料・コンポーネント・アセットをサイトごとに分離。Aider を公式サポートから外す</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.8125rem;color:var(--text-dim);margin-top:0.75rem;margin-bottom:0;">
+        v0.6.1 以降の main には、README のトークン数バッジを CI で数え直す修正（未リリース）が入っている。
+      </p>
+    </div>
+
+    <!-- ===== 9 参考リンク ===== -->
+    <section id="links" class="sec-head">9 — 参考リンク</section>
+    <div class="ve-card" style="--i:16">
       <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
       <ul>
         <li><a href="https://github.com/JCodesMore/ai-website-cloner-template" target="_blank" rel="noopener">GitHub: JCodesMore/ai-website-cloner-template</a> — 本体リポジトリ</li>
+        <li><a href="https://github.com/JCodesMore/ai-website-cloner-template/blob/master/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> — バージョンごとの変更点</li>
+        <li><a href="https://github.com/JCodesMore/ai-website-cloner-template/blob/master/.agents/skills/clone-website/SKILL.md" target="_blank" rel="noopener">.agents/skills/clone-website/SKILL.md</a> — 4 ステップのワークフロー本体</li>
         <li><a href="https://youtu.be/O669pVZ_qr0" target="_blank" rel="noopener">デモ動画 (YouTube)</a> — 実際のクローン生成の流れ</li>
         <li><a href="https://docs.anthropic.com/en/docs/claude-code" target="_blank" rel="noopener">Claude Code ドキュメント</a> — 推奨エージェントの公式ガイド</li>
         <li><a href="https://discord.gg/hrTSX5yTpB" target="_blank" rel="noopener">Discord コミュニティ</a> — 質問・フィードバック</li>
