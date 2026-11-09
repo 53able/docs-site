@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>issue-graph — Issue・PR の関連をたどる調査ツール</title>
+  <meta name="description" content="GitHub と Linear の関連課題・既存の修正・競合 PR をグラフで確認する issue-graph。導入、ダッシュボード、エージェント連携、取得範囲と公開時の注意を解説。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="issue-graph — Issue・PR の関連をたどる調査ツール">
+  <meta property="og:description" content="GitHub と Linear の関連課題・既存の修正・競合 PR をグラフで確認する issue-graph。導入、ダッシュボード、エージェント連携、取得範囲と公開時の注意を解説。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/issue-graph.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="issue-graph — Issue・PR の関連をたどる調査ツール">
+  <meta name="twitter:description" content="GitHub と Linear の関連課題・既存の修正・競合 PR をグラフで確認する issue-graph。導入、ダッシュボード、エージェント連携、取得範囲と公開時の注意を解説。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.42 0.09 152);
+      --chart-2: oklch(0.6 0.118 184.704);
+      --chart-3: oklch(0.398 0.07 227.392);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #032f62;
+      --font-body: 'Commissioner', 'Hiragino Sans', system-ui, sans-serif;
+      --font-mono: 'Spline Sans Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.78 0.10 152);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #9ecbff;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--elevated { background: var(--accent); color: var(--accent-foreground); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); }
+    .ve-card--recessed { background: var(--muted); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04); }
+    .ve-card--hero {
+      background: color-mix(in oklch, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in oklch, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in oklch, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in oklch, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-section-label { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .ve-section-label .ve-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--chart-1); }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 20rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.7; color: var(--code-text); white-space: pre-wrap; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+    .ve-callout code { font-family: var(--font-mono); font-size: 0.6875rem; background: oklch(0.42 0.09 152 / 0.1); color: var(--chart-1); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.42 0.09 152 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.78 0.10 152 / 0.08) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .sec-head:first-of-type { margin-top: 0; }
+    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    .ve-section-label .ve-dot { background: var(--chart-1); }
+    .ve-code-block { margin: 1rem 0; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Pipeline diagram */
+    .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+    .pipeline .step { background: var(--muted); padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .pipeline .arrow { color: var(--text-dim); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+  
+    /* Page-specific graph and reading layout */
+    .ve-code-block pre code { display: block; background: transparent; padding: 0; border-radius: 0; tab-size: 2; }
+    body { line-height: 1.7; }
+    .subtitle { font-family: var(--font-body); max-width: 48rem; }
+    .hero-title { font-size: clamp(1.5rem, 3vw, 2.4rem); line-height: 1.5; margin: .3rem 0 1rem; }
+    .eyebrow { font-family: var(--font-mono); color: var(--chart-1); font-size: .75rem; letter-spacing: .08em; }
+    .card-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; margin: 1rem 0; }
+    .card-grid h3 { margin-top: 0; }
+    .card-grid p:last-child { margin-bottom: 0; }
+    .graph-example { margin: 1.5rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+    .graph-example svg { display: block; width: 100%; height: auto; color: var(--foreground); }
+    .graph-example rect { fill: var(--muted); stroke: var(--border); }
+    .graph-example .fix { fill: color-mix(in oklch,var(--card) 90%,var(--chart-1)); stroke: var(--chart-1); }
+    .graph-example path { fill: none; stroke: var(--chart-1); stroke-width: 2; }
+    .graph-example text { fill: currentColor; font-family: var(--font-body); font-size: 15px; }
+    .graph-example .edge-label { fill: var(--chart-1); font-size: 13px; }
+    figcaption { font-size: .8rem; color: var(--text-dim); margin-top: .75rem; }
+    .ve-table-wrap { overflow-x: auto; margin: 1rem 0; }
+    .ve-table-wrap table { min-width: 540px; font-size: .875rem; }
+    .ve-table-wrap td { vertical-align: top; }
+    .ve-callout { margin: 1rem 0; font-size: .9rem; }
+    .steps { padding-left: 1.5rem; }
+    .steps > li { padding-left: .5rem; margin-bottom: 1.5rem; }
+    .steps > li::marker { color: var(--chart-1); font-weight: 700; }
+    .steps h3 { margin: 0 0 .5rem; }
+    .source-note { font-size: .8rem; color: var(--text-dim); overflow-wrap: anywhere; }
+    a:focus-visible { outline: 2px solid var(--chart-1); outline-offset: 4px; }
+    .skip-link { position: absolute; left: 1rem; top: -5rem; padding: .5rem 1rem; background: var(--card); z-index: 20; }
+    .skip-link:focus { top: 1rem; }
+    @media (max-width: 640px) { body { padding: 20px; } .toc { margin-inline: -20px; padding-inline: 20px; } .card-grid { grid-template-columns: 1fr; } .ve-card { padding: 1rem; } h1 { font-size: 1.8rem; } }
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#main">本文へ移動</a>
+<div class="wrap">
+<nav class="toc" id="toc" aria-label="目次"><div class="toc-title">issue-graph</div>
+<a href="#overview">概要</a>
+<a href="#graph">参照関係</a>
+<a href="#start">導入</a>
+<a href="#dashboard">画面と検索</a>
+<a href="#agents">エージェント連携</a>
+<a href="#architecture">構成</a>
+<a href="#limits">制約とデータ</a>
+<a href="#sources">出典</a>
+</nav>
+<main class="main" id="main">
+<p><a href="../index.html">← 資料一覧</a></p>
+<h1>issue-graph</h1>
+<p class="subtitle">vercel-labs/issue-graph · GitHub / Linear · CLI + ローカルダッシュボード</p>
+<section id="overview" aria-labelledby="overview-title">
+<h2 class="sec-head" id="overview-title">01 — 作業前に、関連する課題と修正を調べる</h2>
+<div class="ve-card ve-card--hero">
+<span class="eyebrow">RELATED WORK, BEFORE NEW WORK</span>
+<p class="hero-title"><strong>この課題には、すでに<br>修正 PR があるだろうか。</strong></p>
+<p>issue-graph は、GitHub の Issue・Pull Request、または Linear の Issue を読み、本文・コメント・参照イベントなどのつながりをたどる調査ツールです。既存の修正、競合する PR、残ったフォローアップをまとめて確認し、人とエージェントが次に読むべき対象を見つけられます。</p>
+<p>GitHub／Linear に対する操作は読み取り専用。課題のクローズや PR のマージは行いません。Vercel Labs の実験的プロジェクトで、ライセンスは Apache-2.0 です。</p>
+</div>
+<div class="card-grid">
+<article class="ve-card"><h3>実装前の確認</h3><p>1 件の Issue から関連 PR と後続課題へ。重複した実装を始める前に、先行する作業を読みます。</p></article>
+<article class="ve-card"><h3>バックログの整理</h3><p>未解決の作業をクラスタにまとめ、議論の活発さや関連する修正を手がかりに、調査・レビューの順序を考えます。</p></article>
+</div>
+</section>
+<section id="graph" aria-labelledby="graph-title">
+<h2 class="sec-head" id="graph-title">02 — 「言及」と「解決リンク」を区別する</h2>
+<p>ノードは Issue／PR、エッジは参照関係です。GitHub では本文・コメントの言及、タイムラインの相互参照、接続イベント、クローズ用のリンクを区別します。Linear ではブロック関係、関連課題、親子関係、添付リンクなどを読み取ります。</p>
+<figure class="graph-example">
+<svg viewBox="0 0 700 340" role="img" aria-labelledby="graph-svg-title graph-svg-desc">
+<title id="graph-svg-title">課題と修正 PR の参照関係の概念図</title>
+<desc id="graph-svg-desc">修正 PR A と修正 PR B は同じ元の課題への解決リンクを持つ。後続課題は元の課題に言及している。これは実際の取得データではなく説明用の例。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9" /></marker></defs>
+<path d="M 230 70 C 300 70 320 150 390 150" marker-end="url(#arrow)"/>
+<path d="M 230 185 C 300 185 320 168 390 168" marker-end="url(#arrow)"/>
+<path d="M 475 270 L 475 202" marker-end="url(#arrow)" stroke-dasharray="5 5"/>
+<rect class="fix" x="20" y="30" width="210" height="80" rx="10"/>
+<text x="40" y="63">PR A · 修正案</text><text x="40" y="88">OPEN</text>
+<rect class="fix" x="20" y="145" width="210" height="80" rx="10"/>
+<text x="40" y="178">PR B · 別の修正案</text><text x="40" y="203">OPEN</text>
+<rect x="390" y="122" width="265" height="80" rx="10"/>
+<text x="410" y="155">元の Issue · 不具合</text><text x="410" y="180">OPEN</text>
+<rect x="390" y="270" width="265" height="55" rx="10"/>
+<text x="410" y="303">後続 Issue · 残った課題</text>
+<text class="edge-label" x="267" y="65">closes</text><text class="edge-label" x="275" y="210">closes</text><text class="edge-label" x="490" y="240">mentions</text>
+</svg>
+<figcaption>説明用の概念図。2 本の PR が同じ課題を解決しようとしている場合は競合候補として確認します。リンクは修正の正しさや因果関係を証明しません。</figcaption>
+</figure>
+<div class="ve-callout"><strong>本文の「fixes」と実際の解決リンクは別です。</strong> PR 本文で解決を宣言していても、GitHub の構造的な closing link がなければ、自動クローズされない可能性をレポートします。競合 PR や変更ファイルの重なりも、実装を読むための手がかりです。</div>
+</section>
+<section id="start" aria-labelledby="start-title">
+<h2 class="sec-head" id="start-title">03 — 導入して、最初のグラフを取得する</h2>
+<ol class="steps">
+<li><h3>Node.js 20 以上と GitHub CLI を用意</h3><p>GitHub の取得には <code>gh</code> のログインを使います。アカウントが未設定ならログインしてください。</p>
+<div class="ve-code-block"><pre><code>npm install --global issue-graph@latest
+gh auth status
+# アカウントが未設定の場合
+gh auth login</code></pre></div>
+<p>インストールせずにヘルプを確認するなら <code>npx issue-graph@latest --help</code>。</p></li>
+<li><h3>リポジトリ全体、または特定の課題を指定</h3><p>GitHub リポジトリのチェックアウト内では <code>issue-graph</code> だけで未解決の Issue・PR を取得し、ダッシュボードを開きます。明示的な指定もできます。</p>
+<div class="ve-code-block"><pre><code># 未解決の作業を取得してダッシュボードへ
+issue-graph open vercel-labs/portless
+
+# 1 件の課題を起点に参照をたどる
+issue-graph graph vercel-labs/agent-browser#1113 --depth 1 --budget 12</code></pre></div></li>
+<li><h3>Linear は別途接続する</h3><p>ブラウザで一度ログインしてから、課題の周辺やプロジェクトを取得します。下のワークスペース名・課題番号・UUID は対象に置き換えてください。</p>
+<div class="ve-code-block"><pre><code>issue-graph linear login
+issue-graph linear ENG-123 --workspace your-workspace --open
+issue-graph linear --project &lt;project-uuid&gt; --open</code></pre></div>
+<p>Linear の MCP サーバーを通じた読み取り用の認可を使います。対応する環境では <code>LINEAR_API_KEY</code> または <code>LINEAR_ACCESS_TOKEN</code> も利用できます。</p></li>
+</ol>
+</section>
+<section id="dashboard" aria-labelledby="dashboard-title">
+<h2 class="sec-head" id="dashboard-title">04 — GitHub の作業を 4 つの表示で読む</h2>
+<p>GitHub は以下の 4 ビューに対応します。Linear は Explore／Swarm に対応し、Impact と議論のランキングは GitHub 向けです。</p>
+<div class="card-grid">
+<article class="ve-card"><span class="eyebrow">EXPLORE</span><h3>クラスタと個別の文脈</h3><p>まとまりを選び、個々の課題とリンク先を読みます。標準のまとまりは連結成分で、根本原因の分類とは限りません。</p></article>
+<article class="ve-card"><span class="eyebrow">IMPACT</span><h3>関係と影響先</h3><p>取得したグラフ内のつながりを調べます。表示された関連は因果関係を保証しません。</p></article>
+<article class="ve-card"><span class="eyebrow">SWARM</span><h3>作業をまとめて比較</h3><p>クラスタ・状態・種類などでグループ化し、未解決の作業を横断して確認します。</p></article>
+<article class="ve-card"><span class="eyebrow">RANK</span><h3>議論の Heat で並べる</h3><p>コメント・参加者・リアクション・被参照数・経過時間を重み付けします。深刻度やマージ可能性の点数ではありません。</p></article>
+</div>
+<h3>保存済みデータを CLI で絞り込む</h3>
+<div class="ve-code-block"><pre><code># まず取得・保存（ブラウザは開かない）
+issue-graph open vercel-labs/agent-browser --no-open --agent none
+
+# 保存したモデルから、未解決 Issue を Heat 順で確認
+issue-graph query github:vercel-labs/agent-browser --state open --kind Issue --view rank --json --no-open
+
+# 保存済みプロジェクトを切り替えて閲覧
+issue-graph dashboard</code></pre></div>
+<p><code>query</code> は保存したモデルを読むだけで、API を呼んで更新したり、不足ノードを取得したりしません。新しい状態が必要なら <code>open</code> を再実行します。返る <code>viewUrl</code> は条件を含んだローカルファイルの URL で、公開ホスティングされた共有 URL ではありません。</p>
+</section>
+<section id="agents" aria-labelledby="agents-title">
+<h2 class="sec-head" id="agents-title">05 — エージェントに調査の文脈を渡す</h2>
+<p>CLI とスキルは別に導入します。スキルはインストール済み CLI に同梱されたガイドを読み、バージョンに合うコマンドの使い方をエージェントへ渡します。通常のグラフ取得・状態確認・計画作成にはモデルは不要です。</p>
+<div class="ve-code-block"><pre><code>npx skills@latest add vercel-labs/issue-graph
+issue-graph skills get core
+issue-graph schema</code></pre></div>
+<div class="ve-table-wrap"><table>
+<caption>調査したい内容とコマンド</caption>
+<thead><tr><th scope="col">目的</th><th scope="col">コマンド</th><th scope="col">読むポイント</th></tr></thead>
+<tbody>
+<tr><td>関連課題と競合修正</td><td><code>graph</code></td><td>参照・解決リンク・変更ファイルの重なり</td></tr>
+<tr><td>調査の優先順</td><td><code>rank</code></td><td>未解決の作業と議論の Heat</td></tr>
+<tr><td>整理候補と次の作業</td><td><code>reconcile</code> / <code>plan</code></td><td>検証すべきバックログ候補と次の調査・レビュー</td></tr>
+<tr><td>レビュー状態</td><td><code>status</code></td><td>PR 件数・担当・レビュー状況。CI と未解決スレッドは別途確認</td></tr>
+<tr><td>条件を指定した再閲覧</td><td><code>query</code></td><td>保存済みモデル、取得範囲、正確な表示 URL</td></tr>
+</tbody></table></div>
+<h3>根本原因によるクラスタは、提案として作る</h3>
+<div class="ve-code-block"><pre><code># エージェント向けの分類タスクを出力
+issue-graph cluster owner/repo
+
+# 提案を確認し、回答 JSON をダッシュボードに適用
+issue-graph cluster owner/repo --apply clusters.json</code></pre></div>
+<p><code>owner/repo</code> は対象へ置き換えます。<code>--apply</code> が更新するのは保存済みモデルと HTML 出力です。外部エージェントを起動する <code>--agent claude</code> / <code>--agent codex</code> は任意で、そのエージェントの認証・課金・データ保持設定に従います。</p>
+</section>
+<section id="architecture" aria-labelledby="architecture-title">
+<h2 class="sec-head" id="architecture-title">06 — 取得・分析・表示の構成</h2>
+<div class="card-grid">
+<article class="ve-card ve-card--elevated"><span class="eyebrow">COLLECT</span><h3>CLI と取得層</h3><p><code>src/cli.ts</code> が実行をまとめます。GitHub の取得は <code>gh</code> 経由、ライブラリではトークンを使う HTTP transport も選べます。</p></article>
+<article class="ve-card"><span class="eyebrow">ANALYZE</span><h3>ランタイム非依存のコア</h3><p><code>src/index.ts</code> からグラフ探索・分類・ランキング・描画を公開。Node.js 固有の取得処理は transport として分離されています。</p></article>
+<article class="ve-card"><span class="eyebrow">INSPECT</span><h3>静的なダッシュボード</h3><p><code>apps/dashboard/</code> は Next.js の静的エクスポート。埋め込みデータを読むため、閲覧用サーバーを起動する必要はありません。</p></article>
+<article class="ve-card ve-card--recessed"><span class="eyebrow">REUSE</span><h3>保存と再検索</h3><p>標準の保存先は <code>~/.issue-graph/</code>。取得モデルや検索履歴を残し、<code>ISSUE_GRAPH_HOME</code> で保存先を変更できます。</p></article>
+</div>
+<p>自分のコードから使う場合は <code>npm install issue-graph@latest</code> でライブラリを導入できます。CLI の導入条件と、ソースから開発する場合の Node.js 条件は異なるため、開発時は公式の Contributing を確認してください。</p>
+</section>
+<section id="limits" aria-labelledby="limits-title">
+<h2 class="sec-head" id="limits-title">07 — 見つからないことを、不在の証拠にしない</h2>
+<div class="ve-table-wrap"><table>
+<caption>GitHub グラフの主な取得制限</caption>
+<thead><tr><th scope="col">設定・境界</th><th scope="col">標準値／挙動</th></tr></thead>
+<tbody>
+<tr><td><code>--depth</code></td><td>2。同一リポジトリ内を seed の深さ 0 から探索</td></tr>
+<tr><td><code>--budget</code></td><td>通常 80 ノード。絞り込みなしのリポジトリ全体を対象とする open / rank / cluster では 1000。指定範囲は 1〜1000</td></tr>
+<tr><td><code>--hub-threshold</code></td><td>12。参照の多い非 seed ノードは取得しても、その先へ展開しない</td></tr>
+<tr><td>リポジトリをまたぐ参照</td><td>1 hop だけ取得</td></tr>
+<tr><td>1 ノードの取得上限</td><td>コメント 100、タイムライン 100、PR ファイル 100、closing reference 50。上限を超えるページは取得しない</td></tr>
+</tbody></table></div>
+<div class="ve-callout"><strong>レポートの欠落を確認してください。</strong> 深さ・ノード上限、未展開の hub、権限不足、削除済み参照、API エラーによって関連作業は抜け落ちます。<code>coverage</code> や <code>cappedOut</code>、未取得ノードを読み、クローズやマージの前にはコードと現在の挙動を確認します。</div>
+<h3>HTML の絞り込みは、データの削除ではありません</h3>
+<p>保存結果・HTML エクスポート・クラスタ用プロンプトには、非公開のタイトル、リポジトリ名、URL、担当者、変更パスが含まれ得ます。HTML にはフィルタで隠れた項目も含めて取得データが埋め込まれています。共有前にデータ全体を確認してください。</p>
+<p>ダッシュボードを移動する場合は HTML と隣接する <code>_next/</code>、<code>font-LICENSE.txt</code> を一緒に扱います。<code>--no-save</code> でも出力指定によるファイル作成は止まりません。<code>query</code> はローカル履歴を保存し、<code>--no-open</code> はブラウザを開かない指定です。</p>
+<p>Issue の本文や分類の提案は信頼されていない入力です。そこに書かれたコマンドを実行したり、GitHub を変更する許可として扱ったりしないでください。</p>
+</section>
+<section id="sources" aria-labelledby="sources-title">
+<h2 class="sec-head" id="sources-title">08 — 公式資料と確認したソース</h2>
+<ul>
+<li><a href="https://github.com/vercel-labs/issue-graph">vercel-labs/issue-graph</a> — README、ソース、Apache-2.0 ライセンス</li>
+<li><a href="https://issue-graph.dev/docs/get-started">Get started</a> / <a href="https://issue-graph.dev/docs/graph">Graph</a> — 導入と取得範囲</li>
+<li><a href="https://issue-graph.dev/docs/dashboard">Dashboard and saved queries</a> — 4 つの表示と保存済み検索</li>
+<li><a href="https://issue-graph.dev/docs/agents">Agents and skills</a> / <a href="https://issue-graph.dev/docs/linear">Linear</a> — スキルとプロバイダ接続</li>
+<li><a href="https://issue-graph.dev/docs/security">Permissions and privacy</a> / <a href="https://issue-graph.dev/docs/library">Library</a> — データの扱いと組み込み</li>
+</ul>
+<p class="source-note">確認日: 2026-11-10 · ソース: <a href="https://github.com/vercel-labs/issue-graph/tree/f2fa275f324be4eff620a880e4e41b454f97139f">f2fa275</a>。README、公式ドキュメントのソース、公開 API の構成に基づく解説です。コマンドと制限は変更されるため、利用時にはインストール済み CLI の --help も確認してください。</p>
+</section>
+</main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
