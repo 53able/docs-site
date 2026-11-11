@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Astryx — React/StyleX オープンソース Design System（facebook/astryx）</title>
-  <meta name="description" content="facebook/astryx は Meta 由来の React + StyleX デザインシステム。150+ コンポーネント、テーマ CSS、CLI/JSON API、人と AI が同じ参照で組み立てる構成を解説。">
+  <title>Astryx — React/StyleX オープンソース Design System（meta/astryx）</title>
+  <meta name="description" content="meta/astryx は Meta 由来の React + StyleX デザインシステム。150+ コンポーネント、テーマ CSS、CLI/JSON API、人と AI が同じ参照で組み立てる構成を解説。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
-  <meta property="og:title" content="Astryx — React/StyleX オープンソース Design System（facebook/astryx）">
-  <meta property="og:description" content="facebook/astryx は Meta 由来の React + StyleX デザインシステム。150+ コンポーネント、テーマ CSS、CLI/JSON API、人と AI が同じ参照で組み立てる構成を解説。">
+  <meta property="og:title" content="Astryx — React/StyleX オープンソース Design System（meta/astryx）">
+  <meta property="og:description" content="meta/astryx は Meta 由来の React + StyleX デザインシステム。150+ コンポーネント、テーマ CSS、CLI/JSON API、人と AI が同じ参照で組み立てる構成を解説。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/astryx.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Astryx — React/StyleX オープンソース Design System（facebook/astryx）">
-  <meta name="twitter:description" content="facebook/astryx は Meta 由来の React + StyleX デザインシステム。150+ コンポーネント、テーマ CSS、CLI/JSON API を解説。">
+  <meta name="twitter:title" content="Astryx — React/StyleX オープンソース Design System（meta/astryx）">
+  <meta name="twitter:description" content="meta/astryx は Meta 由来の React + StyleX デザインシステム。150+ コンポーネント、テーマ CSS、CLI/JSON API を解説。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=Red+Hat+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -245,7 +245,7 @@
 
   <div class="main">
   <h1>Astryx</h1>
-  <p class="subtitle">facebook/astryx — Meta 由来の React + StyleX オープンソース Design System（Beta）。150+ コンポーネント、テーマ CSS、CLI を人と AI が同じ参照で使う。</p>
+  <p class="subtitle">meta/astryx — Meta 由来の React + StyleX オープンソース Design System（Beta）。150+ コンポーネント、テーマ CSS、CLI を人と AI が同じ参照で使う。</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
@@ -337,7 +337,7 @@ flowchart TB
   tooling -.->|"docs / scaffold"| APP
       </pre>
     </div>
-    <p>利用者は StyleX を意識しない。作者側だけ StyleX でコンポーネントを実装し、利用者には pre-built CSS と React API だけが見える。</p>
+    <p>利用者は StyleX のビルド設定を追加する必要がない。作者側は StyleX でコンポーネントを実装し、利用者は pre-built CSS と React API を使う。peer dependency の <code>@stylexjs/stylex</code> はインストールする。</p>
   </div>
 
   <section id="packages" class="sec-head">4 — パッケージ一覧</section>
@@ -386,13 +386,15 @@ flowchart TB
   <section id="cli" class="sec-head">5 — CLI / JSON API</section>
   <div class="ve-card ve-card--elevated" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 主要コマンド</span>
-    <p><code>@astryxdesign/cli</code> は Design System の一次インターフェース。初回や単発実行は、同名の別 npm パッケージを避けるため <code>npx @astryxdesign/cli</code> を使う。devDependency に追加した後は <code>npx astryx</code> または <code>pnpm exec astryx</code> へ短縮できる。コンポーネント名が分からないときは <code>astryx search</code> が component / hook / doc / template を横断検索し、続くコマンドを結果に付ける。</p>
+    <p><code>@astryxdesign/cli</code> は Design System の一次インターフェース。初回や単発実行は、同名の別 npm パッケージを避けるため <code>npx @astryxdesign/cli</code> を使う。devDependency に追加した後は <code>npx astryx</code> または <code>pnpm exec astryx</code> へ短縮できる。コンポーネント名が分からないときは <code>astryx search</code> が component / hook / doc / template / theme を横断検索し、続くコマンドを結果に付ける。</p>
     <div class="ve-table-wrap" style="margin-top:1rem">
       <table>
         <thead>
           <tr><th>コマンド</th><th>用途</th></tr>
         </thead>
         <tbody>
+          <tr><td><code>astryx manifest --json</code></td><td>コマンド・オプション・応答型と JSON 対応範囲を取得</td></tr>
+          <tr><td><code>astryx build &lt;query&gt;</code></td><td>ページ制作の開始テンプレートを検索。引数なしなら作業手順を表示</td></tr>
           <tr><td><code>astryx search &lt;query&gt;</code></td><td>横断検索（関連度順、ドメインタグ付き）</td></tr>
           <tr><td><code>astryx component Button</code></td><td>props・使用例・ソースを出力</td></tr>
           <tr><td><code>astryx hook useMediaQuery</code></td><td>hooks の一覧とリファレンスを出力</td></tr>
@@ -408,23 +410,26 @@ flowchart TB
       </table>
     </div>
     <h3>JSON エンベロープ</h3>
-    <p>全コマンドに <code>--json</code> を付けると <code>{ type, data }</code> 形式で返る。エラーは <code>code</code> フィールド（例: <code>ERR_UNKNOWN_COMPONENT</code>）で機械判定し、人間向け <code>error</code> 文字列には依存しない。</p>
+    <p><code>astryx manifest --json</code> の <code>jsonSupported</code> に載るコマンドへ <code>--json</code> を付けると <code>{ apiVersion, type, package?, data, meta? }</code> 形式で返る。<code>astryx theme</code> のようなサブコマンド未指定のグループは対象外。エラーは <code>code</code> フィールド（例: <code>ERR_UNKNOWN_COMPONENT</code>）で機械判定し、人間向け <code>error</code> 文字列には依存しない。</p>
     <div class="ve-code-block">
-      <pre><code>{"type": "component.detail", "data": {"name": "Button", ...}}
+      <pre><code>// 成功レスポンスの抜粋（data の詳細は省略）
+{"apiVersion": 1, "type": "component.detail", "data": {"name": "Button"},
+ "meta": {"answeredBy": {"cli": "0.7.14", "core": "0.7.14", "copy": "project"}}}
 
-{"error": "No component named \"Buttn\"",
+{"apiVersion": 1, "error": "No component named \"Buttn\"",
  "code": "ERR_UNKNOWN_COMPONENT",
  "suggestions": [{"name": "Button", "reason": "similar name"}]}</code></pre>
     </div>
-    <p>グローバルオプション: <code>--detail brief|compact|full</code>、<code>--dense</code>（トークン効率）、<code>--lang en|zh|dense</code>。</p>
+    <p><code>apiVersion</code> は <code>1</code>。成功時の <code>meta.answeredBy</code> は、応答した CLI / Core のバージョンと使用コピーを示す（上記バージョンは例）。<code>--detail brief|compact|full</code> は component / hook / docs ツリー参照、<code>--dense</code> と <code>--lang en|zh|dense</code> は component / docs 参照向け。</p>
   </div>
 
   <section id="quickstart" class="sec-head">6 — クイックスタート</section>
+  <p>React / React DOM 19 以上が必要。CLI は Node.js 22.13.0 以上で実行する。以下は既存の Next.js アプリへ追加する例。</p>
   <div class="step-flow">
     <div class="step-card">
       <div class="step-card__num">Step 1</div>
       <div class="step-card__title">パッケージ導入</div>
-      <div class="step-card__body"><code>core</code> + テーマ + dev の <code>cli</code> を install。AI や新規参加者向けに <code>package.json</code> に <code>astryx</code> スクリプトを足すとパス問題を避けやすい。</div>
+      <div class="step-card__body"><code>core</code> + テーマ + peer dependency の <code>@stylexjs/stylex</code>、dev の <code>cli</code> を install。AI や新規参加者向けに <code>package.json</code> に <code>astryx</code> スクリプトを足すとパス問題を避けやすい。</div>
     </div>
     <div class="step-card">
       <div class="step-card__num">Step 2</div>
@@ -446,21 +451,36 @@ flowchart TB
     <span class="ve-section-label"><span class="ve-dot"></span> Next.js 最小例</span>
     <div class="ve-code-block">
       <pre><code># install
-npm install @astryxdesign/core @astryxdesign/theme-neutral
+npm install @astryxdesign/core @astryxdesign/theme-neutral @stylexjs/stylex
 npm install -D @astryxdesign/cli
 
-# globals.css（順序がカスケード契約）
+# src/app/globals.css（順序がカスケード契約）
 @import '@astryxdesign/core/reset.css';
 @import '@astryxdesign/core/astryx.css';
 @import '@astryxdesign/theme-neutral/theme.css';</code></pre>
     </div>
     <div class="ve-code-block">
-      <pre><code>'use client';
+      <pre><code>// src/app/providers.tsx
+'use client';
 import { Theme } from '@astryxdesign/core/theme';
 import { neutralTheme } from '@astryxdesign/theme-neutral/built';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return &lt;Theme theme={neutralTheme}&gt;{children}&lt;/Theme&gt;;
+}</code></pre>
+    </div>
+    <p><code>src/app/providers.tsx</code> を作成したら、ルートレイアウトで CSS を読み込み、アプリ全体を Providers で囲む。</p>
+    <div class="ve-code-block">
+      <pre><code>// src/app/layout.tsx
+import './globals.css';
+import { Providers } from './providers';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    &lt;html lang="ja"&gt;
+      &lt;body&gt;&lt;Providers&gt;{children}&lt;/Providers&gt;&lt;/body&gt;
+    &lt;/html&gt;
+  );
 }</code></pre>
     </div>
     <p>Vite・Tailwind 併用・CDN 配布などフレームワーク別手順は <code>@astryxdesign/core</code> の README Quick Start を参照。</p>
@@ -482,16 +502,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
   <section id="links" class="sec-head">8 — 参考リンク</section>
   <div class="ve-card ve-card--recessed" style="--i:0">
     <ul>
-      <li><a href="https://github.com/facebook/astryx" rel="noopener noreferrer">GitHub — facebook/astryx</a></li>
+      <li><a href="https://github.com/meta/astryx" rel="noopener noreferrer">GitHub — meta/astryx</a></li>
       <li><a href="https://astryx.atmeta.com" rel="noopener noreferrer">公式ドキュメント</a></li>
-      <li><a href="https://facebook.github.io/astryx/storybook/" rel="noopener noreferrer">Component Storybook</a></li>
-      <li><a href="https://facebook.github.io/astryx/sandbox/" rel="noopener noreferrer">Sandbox</a></li>
-      <li><a href="https://github.com/facebook/astryx/blob/main/README.md" rel="noopener noreferrer">README.md</a></li>
-      <li><a href="https://github.com/facebook/astryx/blob/main/packages/core/README.md" rel="noopener noreferrer">@astryxdesign/core README（Quick Start）</a></li>
-      <li><a href="https://github.com/facebook/astryx/blob/main/packages/cli/README.md" rel="noopener noreferrer">@astryxdesign/cli README</a></li>
+      <li><a href="https://astryx.atmeta.com/storybook/" rel="noopener noreferrer">Component Storybook</a></li>
+      <li><a href="https://astryx.atmeta.com/sandbox/" rel="noopener noreferrer">Sandbox</a></li>
+      <li><a href="https://github.com/meta/astryx/blob/main/README.md" rel="noopener noreferrer">README.md</a></li>
+      <li><a href="https://github.com/meta/astryx/blob/main/packages/core/README.md" rel="noopener noreferrer">@astryxdesign/core README（Quick Start）</a></li>
+      <li><a href="https://github.com/meta/astryx/blob/main/packages/cli/README.md" rel="noopener noreferrer">@astryxdesign/cli README</a></li>
       <li><a href="https://stylexjs.com" rel="noopener noreferrer">StyleX</a></li>
     </ul>
-    <p style="margin-top:1rem; font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim)">出典: README.md · packages/core/README.md · packages/cli/README.md · packages/{lab,vega,charts}/package.json（source snapshot: d762f825, 2026-07-22）</p>
+    <p style="margin-top:1rem; font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim)">出典: README.md · packages/core/README.md · packages/cli/README.md · packages/{lab,vega,charts}/package.json（<a href="https://github.com/meta/astryx/tree/29f6996bf7d8e46576b544873a4a2312bc70ec96">source snapshot: 29f6996b</a>, 2026-11-11）</p>
   </div>
   </div>
 </div>
