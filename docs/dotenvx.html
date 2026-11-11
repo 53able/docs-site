@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>dotenvx — .env の暗号化と実行時の変数注入</title>
-  <meta name="description" content="dotenvx の run、複数環境、暗号化、鍵の分離、Node.js API をソースコードに沿って図解します。">
+  <meta name="description" content="dotenvx の run、複数環境、暗号化と鍵の保管先、Dotenvxfile による検証と伏せ字、protect による Git 保護をソースコードに沿って図解します。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="dotenvx — .env の暗号化と実行時の変数注入">
-  <meta property="og:description" content="dotenvx の実行フロー、複数 .env の優先順位、暗号化と秘密鍵の扱いを解説します。">
+  <meta property="og:description" content="dotenvx の実行フロー、複数 .env の優先順位、暗号化と秘密鍵の保管先、Dotenvxfile、protect を解説します。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/dotenvx.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="dotenvx — .env の暗号化と実行時の変数注入">
-  <meta name="twitter:description" content="dotenvx の run、複数環境、暗号化、鍵の分離を図解します。">
+  <meta name="twitter:description" content="dotenvx の run、暗号化と鍵の保管先、Dotenvxfile、protect を図解します。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -46,11 +46,12 @@
     .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
     .ve-code-block pre { margin: 0; padding: 1rem 1.25rem; overflow-x: auto; }
     .ve-code-block code { font: .84rem/1.7 var(--font-mono); color: var(--code-text); white-space: pre; }
-    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-x: auto; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-x: auto; margin: 1rem 0; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: .86rem; line-height: 1.6; }
     .ve-table-wrap th { background: var(--muted); text-align: left; padding: .8rem 1rem; border-bottom: 2px solid var(--ring); }
     .ve-table-wrap td { padding: .8rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
-    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 1rem 1.2rem; line-height: 1.7; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 1rem 1.2rem; line-height: 1.7; margin: 1rem 0; }
+    .ve-callout--warn { border-left-color: var(--chart-2); }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body { margin: 0; padding: 36px; min-height: 100vh; color: var(--text); font-family: var(--font-body); background: var(--bg); background-image: linear-gradient(#27714c0a 1px, transparent 1px), linear-gradient(90deg, #27714c0a 1px, transparent 1px); background-size: 32px 32px; }
@@ -79,9 +80,10 @@
     .grid .ve-card { height: 100%; }
     .grid p { margin-bottom: 0; font-size: .88rem; }
     .pill { display: inline-block; border: 1px solid var(--border); border-radius: 99px; padding: .25rem .6rem; background: var(--card); font: .69rem var(--font-mono); margin: .2rem .3rem .2rem 0; }
+    .tag { display: inline-block; font: 600 .66rem var(--font-mono); padding: .1rem .45rem; border-radius: 4px; border: 1px solid var(--chart-2); color: var(--chart-2); vertical-align: middle; margin-left: .35rem; }
     .source { font: .72rem var(--font-mono); color: var(--text-dim); margin: .6rem 0 0; }
     @media (max-width: 900px) { body { padding: 22px; } .wrap { display: block; } .toc { position: sticky; top: 0; z-index: 2; display: flex; gap: 5px; overflow-x: auto; max-height: none; margin: 0 -22px 20px; padding: 9px 22px; background: var(--bg); border-bottom: 1px solid var(--border); } .toc-title { display: none; } .toc a { white-space: nowrap; border-left: 0; border-bottom: 2px solid transparent; } .toc a.active { border-bottom-color: var(--chart-1); } .sec-head { scroll-margin-top: 70px; } }
-    @media (max-width: 680px) { .flow, .grid { grid-template-columns: 1fr; } .flow .ve-card:not(:last-child)::after { content: '↓'; left: 50%; top: auto; right: auto; bottom: -.72rem; } .ve-card { padding: 1rem; } }
+    @media (max-width: 680px) { body { padding: 16px; } .toc { margin: 0 -16px 20px; padding: 9px 16px; } .flow, .grid { grid-template-columns: 1fr; } .flow .ve-card:not(:last-child)::after { content: '↓'; left: 50%; top: auto; right: auto; bottom: -.72rem; } .ve-card { padding: 1rem; } }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   </style>
 </head>
@@ -93,85 +95,165 @@
     <a href="#run">実行フロー</a>
     <a href="#environments">複数環境</a>
     <a href="#encryption">暗号化と鍵</a>
+    <a href="#dotenvxfile">Dotenvxfile</a>
+    <a href="#protect">protect</a>
     <a href="#interfaces">利用方法</a>
+    <a href="#changes">変更点</a>
     <a href="#sources">ソース</a>
   </nav>
   <main class="main">
     <span class="eyebrow">SOURCE GUIDE / DOTENVX</span>
     <h1>dotenvx</h1>
-    <p class="subtitle">.env の値を読み込み、必要なら復号して、コマンドや Node.js のプロセスへ渡す。</p>
+    <p class="subtitle">.env の値を読み込み、必要なら復号して、コマンドや Node.js のプロセスへ渡す。暗号化した .env は Git に入れ、秘密鍵だけを別に持つ。</p>
 
     <section id="overview" aria-labelledby="overview-title">
       <h2 class="sec-head" id="overview-title">1 — 何を担うか</h2>
       <div class="ve-card ve-card--hero">
         <span class="ve-section-label"><span class="ve-dot"></span> ENV FILE → PROCESS ENV</span>
-        <p><strong>dotenvx</strong> は、`.env` の変数をアプリに渡す CLI と Node.js ライブラリ。環境別ファイルの選択、暗号化された値の復号、コマンド実行をひとつのワークフローにまとめる。値を暗号化した `.env` はコードと共に管理できるが、復号に使う秘密鍵は別に保持する。</p>
-        <span class="pill">Source: v2.30.0</span><span class="pill">CLI: dotenvx / dx</span><span class="pill">Library: config()</span><span class="pill">License: BSD-3-Clause</span>
+        <p><strong>dotenvx</strong> は、<code>.env</code> の変数をアプリに渡す CLI と Node.js ライブラリ。dotenv の作者が開発している。README は「Encrypt → Commit → Ship」の 3 段階で使い方を示す。値を暗号化した <code>.env</code> はコードと一緒にコミットし、復号用の秘密鍵は実行環境に別途置く。</p>
+        <span class="pill">Source: main 441c796 (2026-10-30)</span><span class="pill">npm latest: 2.38.2</span><span class="pill">CLI: dotenvx</span><span class="pill">Library: config()</span><span class="pill">License: BSD-3-Clause</span>
       </div>
-      <p class="source">根拠: README.md「Usage」「Design」、package.json</p>
+      <div class="ve-callout ve-callout--warn"><strong>対象バージョン:</strong> このページは main ブランチ（v2.38.2 以降の未リリース変更を含む）を読んで書いている。<code>Dotenvxfile</code>、<code>protect</code> のメインコマンド化、<code>transfer</code> は 2026-11-11 時点で npm に未公開。<span class="tag">未リリース</span> の印を付けた。v2.38.2 を使う場合は <a href="#changes">変更点</a> を確認する。</div>
+      <p class="source">根拠: README.md「Usage」「Design」、CHANGELOG.md「Unreleased」、package.json</p>
     </section>
 
     <section id="run" aria-labelledby="run-title">
       <h2 class="sec-head" id="run-title">2 — <code>run</code> の実行フロー</h2>
       <div class="flow" aria-label="環境変数をコマンドへ渡すまでの流れ">
-        <div class="ve-card"><b>01 / SELECT</b><h3>.env を選ぶ</h3><p><code>-f</code>、環境規約、またはデフォルトのファイルを解決する。</p></div>
-        <div class="ve-card"><b>02 / RESOLVE</b><h3>値を読む</h3><p>ファイルを解析し、暗号化された値は利用可能な鍵で復号する。</p></div>
-        <div class="ve-card"><b>03 / INJECT</b><h3>環境を組み立てる</h3><p>既存のプロセス環境と読み込んだ変数を優先規則に沿って統合する。</p></div>
-        <div class="ve-card"><b>04 / EXECUTE</b><h3>子コマンドを実行</h3><p><code>--</code> より後のコマンドに環境変数を渡す。</p></div>
+        <div class="ve-card"><b>01 / SELECT</b><h3>.env を選ぶ</h3><p><code>-f</code>、<code>--convention</code>、または既定の <code>.env</code> を解決する。</p></div>
+        <div class="ve-card"><b>02 / DECRYPT</b><h3>値を読む</h3><p>ファイルを解析し、<code>encrypted:</code> の値を保管先から見つけた秘密鍵で復号する。</p></div>
+        <div class="ve-card"><b>03 / CHECK</b><h3>規則で検証</h3><p>カレントに <code>Dotenvxfile</code> があれば、最終的な値を規則と照合する。</p></div>
+        <div class="ve-card"><b>04 / EXECUTE</b><h3>子コマンドを実行</h3><p><code>--</code> より後のコマンドに変数を渡す。伏せ字対象の値は出力から隠す。</p></div>
       </div>
       <div class="ve-code-block"><pre><code>echo 'HELLO=World' &gt; .env
-dotenvx run -- node index.js</code></pre></div>
-      <div class="ve-callout"><strong>区切りの <code>--</code>:</strong> オプションと実行コマンドを明確に分ける。コマンドがない場合、<code>run</code> はエラーを返す。</div>
-      <p class="source">根拠: README.md「Run Anywhere」、src/cli/actions/run.js、src/lib/services/validate.js</p>
+dotenvx run -- node index.js
+# ⟐ injected env (1) from .env</code></pre></div>
+      <div class="ve-callout"><strong>エラーの扱い:</strong> 読み込み・検証のエラーは既定ではログに出して実行を続ける。<code>--strict</code> を付けるか、<code>Dotenvxfile</code> で <code>strict true</code> とした規則に違反した場合は、子コマンドを起動せずに終了する。</div>
+      <p class="source">根拠: README.md「Run Anywhere」、src/cli/actions/run.js、src/lib/resolvers/envs.js</p>
     </section>
 
     <section id="environments" aria-labelledby="environments-title">
       <h2 class="sec-head" id="environments-title">3 — 複数環境の読み込み順</h2>
-      <p><code>-f</code> でファイルを指定できる。複数のファイルはカンマ区切りで並べる。通常は先に解決された値と既存の環境変数が優先される。<code>--overload</code> を付けると、後から読み込む値で上書きする。</p>
+      <p><code>-f</code> でファイルを指定する。複数ファイルはカンマ区切りで並べる。既定では、先に読んだファイルと既存の環境変数が優先される。<code>--overload</code> を付けると、後から読んだ値で上書きする。</p>
       <div class="ve-table-wrap"><table>
         <thead><tr><th scope="col">指定</th><th scope="col">読み込み結果</th><th scope="col">用途</th></tr></thead>
         <tbody>
           <tr><td><code>-f .env.production</code></td><td>指定したファイルを読む</td><td>環境を明示する</td></tr>
-          <tr><td><code>-f .env.local,.env</code></td><td>通常は先の <code>.env.local</code> が優先</td><td>ローカル設定を共通設定に重ねる</td></tr>
+          <tr><td><code>-f .env.local,.env</code></td><td>先の <code>.env.local</code> が優先</td><td>ローカル設定を共通設定に重ねる</td></tr>
           <tr><td><code>-f .env.local,.env --overload</code></td><td>後の <code>.env</code> が上書き</td><td>上書き順を切り替える</td></tr>
-          <tr><td><code>--convention=nextjs</code></td><td><code>DOTENV_ENV</code>（なければ <code>NODE_ENV</code>）に応じ、<code>.env.&lt;環境&gt;.local</code> → <code>.env.local</code> → <code>.env.&lt;環境&gt;</code> → <code>.env</code> の順。test では <code>.env.local</code> を除く</td><td>フレームワークの慣習に合わせる</td></tr>
+          <tr><td><code>-f ../..</code></td><td>ディレクトリ内の <code>.env</code> を読む。<code>--convention</code> の基準ディレクトリにもなる</td><td>モノレポでルートの <code>.env</code> を共有する</td></tr>
+          <tr><td><code>--convention=nextjs</code> / <code>flow</code></td><td>Next.js または dotenv-flow の順序で <code>.env.&lt;環境&gt;.local</code> などを探す</td><td>フレームワークの慣習に合わせる</td></tr>
         </tbody>
       </table></div>
-      <p class="source">根拠: README.md「Multiple Environments」、src/lib/main.js</p>
+      <p>秘密鍵の変数名からも読み込むファイルが決まる。<code>DOTENV_PRIVATE_KEY_PRODUCTION</code> があれば <code>.env.production</code>、<code>DOTENV_PRIVATE_KEY</code> があれば <code>.env</code> を読む。</p>
+      <p class="source">根拠: README.md「Multiple Environments」「Encryption」、src/lib/helpers/envResolution/determine.js</p>
     </section>
 
     <section id="encryption" aria-labelledby="encryption-title">
-      <h2 class="sec-head" id="encryption-title">4 — 暗号化と鍵の分離</h2>
+      <h2 class="sec-head" id="encryption-title">4 — 暗号化と鍵の保管先</h2>
       <div class="grid">
-        <div class="ve-card"><span class="ve-section-label"><span class="ve-dot"></span> REPOSITORY</span><h3>暗号化した .env</h3><p><code>dotenvx encrypt</code> は値を暗号文に変換する。公開鍵と暗号化した値は `.env` に置ける。</p></div>
-        <div class="ve-card"><span class="ve-section-label"><span class="ve-dot"></span> RUNTIME</span><h3>復号用の秘密鍵</h3><p>実行環境に秘密鍵を別経路で渡す。<code>run</code> は実行時に復号し、アプリへ変数を渡す。</p></div>
+        <div class="ve-card"><span class="ve-section-label"><span class="ve-dot"></span> REPOSITORY</span><h3>暗号化した .env</h3><p><code>dotenvx encrypt</code> は値ごとに <code>encrypted:</code> 付きの暗号文へ変換し、公開鍵 <code>DOTENV_PUBLIC_KEY*</code> をファイルに書く。この状態でコミットする。</p></div>
+        <div class="ve-card"><span class="ve-section-label"><span class="ve-dot"></span> RUNTIME</span><h3>復号用の秘密鍵</h3><p>秘密鍵は下表のいずれかに保管する。CI などでは環境変数 <code>DOTENV_PRIVATE_KEY*</code> で渡す。<code>run</code> は実行時に復号する。</p></div>
       </div>
+      <p>暗号方式は secp256k1 の ECIES。値ごとに使い捨ての AES-256 鍵で暗号化し、その鍵を公開鍵で包む。同じ値を暗号化しても毎回異なる暗号文になる。</p>
+      <div class="ve-table-wrap"><table>
+        <thead><tr><th scope="col">保管先</th><th scope="col">内容</th></tr></thead>
+        <tbody>
+          <tr><td>File（<code>.env.keys</code>）</td><td>リポジトリ内のファイルに書く。CI や非対話端末ではこれが既定</td></tr>
+          <tr><td>OS のシークレットストア</td><td>macOS Keychain / Windows Credential Manager / Linux Secret Service。同じマシンの別ワークスペースからも見つかる</td></tr>
+          <tr><td>1Password / Bitwarden</td><td>各 CLI（<code>op</code> / <code>bw</code>）が必要。<code>DOTENVX_NO_1PASSWORD</code> などで無効化できる</td></tr>
+          <tr><td>Dotenvx Armor</td><td>dotenvx のマネージドサービス。ログインが必要。秘密鍵をリモート側に置いたままにする Enclaved 鍵もある</td></tr>
+        </tbody>
+      </table></div>
       <div class="ve-code-block"><pre><code>dotenvx encrypt -f .env.production
-DOTENV_PRIVATE_KEY_PRODUCTION="&lt;private key&gt;" dotenvx run -- node index.js</code></pre></div>
-      <div class="ve-callout"><strong>鍵の扱い:</strong> 暗号化した `.env` と秘密鍵を同じ公開範囲へ置かない。`.env.production` の鍵は <code>DOTENV_PRIVATE_KEY_PRODUCTION</code> で渡せる。鍵ファイルの初期値は <code>.env.keys</code>。</div>
-      <p class="source">根拠: README.md「Encryption」、src/cli/actions/encrypt.js</p>
+DOTENV_PRIVATE_KEY_PRODUCTION="&lt;private key&gt;" dotenvx run -- node index.js
+
+# 別の場所で作った公開鍵で暗号化する（秘密鍵は生成も保存もしない）
+dotenvx encrypt -f .env.production --with &lt;public-key&gt;</code></pre></div>
+      <p>対話端末では、<code>encrypt</code> で新しい鍵を作るときに保管先を選ぶ。保管先は後から <code>dotenvx transfer</code><span class="tag">未リリース</span> で移せる（対話端末のみ）。</p>
+      <div class="ve-callout ve-callout--warn"><strong>鍵の扱い:</strong> 既定の <code>.env.keys</code> は暗号化した <code>.env</code> と同じディレクトリにできる。コミットすると暗号化の意味がなくなるので、次節の <code>protect</code> か <code>.gitignore</code> で除外する。v2.34.0 でパスワード付きの <code>lock</code> 系コマンドは削除された。</div>
+      <p class="source">根拠: README.md「Usage」「Encryption」「FAQ」、src/lib/helpers/selectKeyStorage.js、src/lib/custodians/index.js、src/cli/actions/transfer.js</p>
+    </section>
+
+    <section id="dotenvxfile" aria-labelledby="dotenvxfile-title">
+      <h2 class="sec-head" id="dotenvxfile-title">5 — Dotenvxfile で検証・保存形式・伏せ字を決める <span class="tag">未リリース</span></h2>
+      <p>カレントディレクトリの <code>Dotenvxfile</code> に、変数ごとの規則を書く。同じファイルから 2 種類のポリシーが作られる。実行時の最終値に対する検証・伏せ字（<code>policy</code>）と、ファイルに保存された文字列に対する保存形式の検証（<code>storagepolicy</code>）。</p>
+      <div class="ve-code-block"><pre><code># Dotenvxfile
+strict true
+redacted true
+storage "encrypted"
+env "PORT", storage: "plaintext", redacted: false
+env "DATABASE_URL", required: true</code></pre></div>
+      <div class="ve-table-wrap"><table>
+        <thead><tr><th scope="col">規則</th><th scope="col">効果</th><th scope="col">効く場面</th></tr></thead>
+        <tbody>
+          <tr><td><code>required: true</code></td><td>最終値にキーがなければ <code>INVALID_ENV</code></td><td><code>run</code>、<code>config()</code> の読み込み時</td></tr>
+          <tr><td><code>strict true</code></td><td>違反をエラー終了にする（既定は警告）</td><td>同上</td></tr>
+          <tr><td><code>redacted</code></td><td>対象の値を出力で <code>[REDACTED]</code> に置き換える。ルートに書くと宣言していないキーにも効く</td><td><code>run</code> の子コマンド出力、<code>config()</code> 後の stdout / stderr</td></tr>
+          <tr><td><code>storage "encrypted"</code> / <code>"plaintext"</code></td><td>保存された文字列が暗号文か平文かを検査し、違反は <code>INVALID_STORAGE</code></td><td><code>encrypt</code>、<code>set</code>、<code>protect</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>上の例では <code>PORT</code> だけ平文での保存を許し、表示もそのまま。それ以外のキーは暗号化必須で、出力では伏せ字になる。<code>DATABASE_URL</code> がなければ <code>run</code> は子コマンドを起動しない。</p>
+      <div class="ve-code-block"><pre><code>echo 'redacted true' &gt; Dotenvxfile
+dotenvx run -- claude -p 'Run `dotenvx get HELLO` and echo back just Hello VALUE'
+# Hello [REDACTED]</code></pre></div>
+      <div class="ve-callout ve-callout--warn"><strong>伏せ字の限界:</strong> 伏せ字は値の文字列一致で置き換える。base64 化や一部だけの切り出しなど、元の値と一致しない形に加工された出力は隠れない。README は Claude Code、Codex、Cursor などのエージェントに本物の値を渡しつつ出力を伏せる例を載せているが、エージェント自身は値を読める。ログやトランスクリプトに残る前提で扱う。</div>
+      <p class="source">根拠: CHANGELOG.md「Unreleased」、README.md「Run Anywhere」、src/lib/resolvers/envs.js、src/lib/helpers/readStoragePolicy.js、@dotenvx/primitives README（policy / storagepolicy）</p>
+    </section>
+
+    <section id="protect" aria-labelledby="protect-title">
+      <h2 class="sec-head" id="protect-title">6 — <code>protect</code> で平文と鍵のコミットを止める</h2>
+      <p><code>dotenvx protect</code> は Git の clean フィルターを登録し、ステージ時に <code>.env*</code> を検査する。平文の値が残っていれば <code>PLAINTEXT_ENV</code>、<code>.env.keys*</code> をステージしようとすれば <code>PRIVATE_KEY_FILE</code> で失敗する。<code>Dotenvxfile</code> の <code>storage "plaintext"</code> で許可したキーは平文でも通る。<code>.env.example</code> と <code>.env.vault</code> は対象外。</p>
+      <div class="ve-code-block"><pre><code>dotenvx protect
+# ⛉ protection: full (.env*, .env.keys*)
+
+git add .env
+# [PLAINTEXT_ENV] ".env" contains plaintext secrets. fix: run [dotenvx encrypt -f .env]
+
+dotenvx protect --docker   # .env が保存ポリシーを満たすか .dockerignore 済みかを検査</code></pre></div>
+      <div class="ve-callout ve-callout--warn"><strong>影響範囲:</strong> フィルターは <code>git config --global</code>（<code>core.attributesFile</code> と <code>filter.dotenvx.*</code>）に書かれ、そのマシンの全リポジトリに効く。<code>filter.dotenvx.required=true</code> なので、登録したパスの dotenvx を削除・移動すると <code>.env*</code> を扱う Git 操作が失敗する。旧 <code>precommit</code> フックは自動で外される。</div>
+      <p class="source">根拠: src/cli/actions/protect.js、src/cli/actions/protectStdin.js、src/lib/helpers/installProtectFilter.js</p>
     </section>
 
     <section id="interfaces" aria-labelledby="interfaces-title">
-      <h2 class="sec-head" id="interfaces-title">5 — CLI と Node.js から使う</h2>
+      <h2 class="sec-head" id="interfaces-title">7 — CLI と Node.js から使う</h2>
       <div class="grid">
-        <div class="ve-card"><h3>CLI</h3><p><code>dotenvx run -- &lt;command&gt;</code> は言語を問わず子プロセスへ変数を渡す。<code>encrypt</code> は `.env` の値を暗号化する。</p></div>
-        <div class="ve-card"><h3>Node.js API</h3><p><code>require('@dotenvx/dotenvx').config()</code> はアプリのプロセス環境へ値を読み込む。ESM 向けに <code>@dotenvx/dotenvx/config</code> も公開されている。</p></div>
+        <div class="ve-card"><h3>CLI</h3><p><code>run</code> は言語を問わず子プロセスへ変数を渡す。<code>get</code> / <code>set</code> / <code>del</code> で個別の値を読み書きし、<code>set</code> は既定で暗号化して書く。<code>encrypt</code> / <code>decrypt</code> でファイル全体を変換する。</p></div>
+        <div class="ve-card"><h3>Node.js API</h3><p><code>require('@dotenvx/dotenvx').config()</code> でプロセス環境へ読み込む。ESM では <code>import '@dotenvx/dotenvx/config'</code> または <code>import { config } from '@dotenvx/dotenvx'</code>。v2.38.0 で <code>getSync</code> が追加された。</p></div>
       </div>
       <div class="ve-code-block"><pre><code>// Node.js のエントリポイント
 require('@dotenvx/dotenvx').config()
 console.log(process.env.HELLO)</code></pre></div>
-      <p><code>run --redact</code> は子コマンドの標準出力・標準エラーに現れる機密値を伏せるオプション。値の加工・変換後など、元の値と一致しない文字列は対象外なので、出力を転送・保存するときは表示結果を確認する。</p>
-      <p class="source">根拠: README.md「Quickstart」、package.json、src/lib/main.js、src/cli/actions/run.js</p>
+      <p>インストールは npm のほか、curl、Homebrew、Docker、GitHub Releases、winget に対応する。グローバルに入れると Node.js 以外のプロジェクトでも <code>run</code> を使える。</p>
+      <p class="source">根拠: README.md「Quickstart」「Advanced」、src/cli/dotenvx.js、src/lib/main.js</p>
+    </section>
+
+    <section id="changes" aria-labelledby="changes-title">
+      <h2 class="sec-head" id="changes-title">8 — v2.30.0 以降の主な変更</h2>
+      <div class="ve-table-wrap"><table>
+        <thead><tr><th scope="col">バージョン</th><th scope="col">変更</th></tr></thead>
+        <tbody>
+          <tr><td>未リリース（main）</td><td><code>Envfile</code> を <code>Dotenvxfile</code> に置き換え。<code>--profile</code>、<code>spec</code>、単独の <code>check</code> を削除し、検証は読み込み時に自動実行。<code>protect</code> をメインコマンド化し、<code>gitignore</code> / <code>precommit</code> / <code>prebuild</code> を削除。<code>--mask</code> と <code>run --redact</code> を削除（伏せ字は <code>Dotenvxfile</code> で設定）。<code>transfer</code> を追加</td></tr>
+          <tr><td>2.38.0</td><td><code>getSync</code> を追加。非対話モードの鍵保管先の既定を File に変更</td></tr>
+          <tr><td>2.35.0 – 2.37.0</td><td><code>encrypt --with</code>、<code>armor invite</code>、Armor の Enclaved 鍵を追加</td></tr>
+          <tr><td>2.34.0</td><td><code>lock</code> 系コマンドとパスワードによる鍵のロック解除を削除</td></tr>
+          <tr><td>2.31.0 – 2.33.0</td><td><code>validate</code> を <code>check</code> に改名し <code>.env.example</code> 対応を廃止。<code>define</code> を削除。ファイル名が <code>Envfile</code> → <code>Envspec</code> → <code>Dotenvspec</code> → <code>Envfile</code> と変遷</td></tr>
+        </tbody>
+      </table></div>
+      <div class="ve-callout ve-callout--warn"><strong>移行時の注意:</strong> 2.31.0 以降はマイナーバージョンでも破壊的変更が入っている。<code>^2.x</code> で依存を固定していると CLI の挙動が変わる。設定ファイル名も短期間に何度も変わったので、バージョンを固定して CHANGELOG を確認してから上げる。</div>
+      <p class="source">根拠: CHANGELOG.md</p>
     </section>
 
     <section id="sources" aria-labelledby="sources-title">
-      <h2 class="sec-head" id="sources-title">6 — 参照先</h2>
+      <h2 class="sec-head" id="sources-title">9 — 参照先</h2>
       <div class="ve-card ve-card--recessed">
-        <p><a href="https://github.com/dotenvx/dotenvx/tree/25950d8203b78ee3a5c1e32949ed69c2e1f28d11" target="_blank" rel="noopener">dotenvx / dotenvx</a> — このページで参照したソース（v2.30.0）</p>
-        <p><a href="https://github.com/dotenvx/dotenvx/blob/25950d8203b78ee3a5c1e32949ed69c2e1f28d11/src/cli/actions/run.js" target="_blank" rel="noopener">run.js</a> — コマンド実行と変数注入</p>
-        <p><a href="https://github.com/dotenvx/dotenvx/blob/25950d8203b78ee3a5c1e32949ed69c2e1f28d11/src/lib/main.js" target="_blank" rel="noopener">main.js</a> — Node.js の <code>config()</code></p>
-        <p><a href="https://github.com/dotenvx/dotenvx/blob/25950d8203b78ee3a5c1e32949ed69c2e1f28d11/src/cli/actions/encrypt.js" target="_blank" rel="noopener">encrypt.js</a> — 暗号化コマンド</p>
+        <p><a href="https://github.com/dotenvx/dotenvx/tree/441c7968bea20f54fb66917c4264aa3bae73622d" target="_blank" rel="noopener">dotenvx / dotenvx</a> — このページで参照したソース（main 441c796、v2.38.2 + 未リリース変更）</p>
+        <p><a href="https://github.com/dotenvx/dotenvx/blob/441c7968bea20f54fb66917c4264aa3bae73622d/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> — 破壊的変更の一覧</p>
+        <p><a href="https://github.com/dotenvx/dotenvx/blob/441c7968bea20f54fb66917c4264aa3bae73622d/src/cli/actions/run.js" target="_blank" rel="noopener">run.js</a> — コマンド実行と変数注入</p>
+        <p><a href="https://github.com/dotenvx/dotenvx/blob/441c7968bea20f54fb66917c4264aa3bae73622d/src/lib/resolvers/envs.js" target="_blank" rel="noopener">envs.js</a> — ファイル読み込みと Dotenvxfile の検証</p>
+        <p><a href="https://github.com/dotenvx/dotenvx/blob/441c7968bea20f54fb66917c4264aa3bae73622d/src/cli/actions/protectStdin.js" target="_blank" rel="noopener">protectStdin.js</a> — Git フィルターでの検査</p>
+        <p><a href="https://github.com/dotenvx/dotenvx/blob/441c7968bea20f54fb66917c4264aa3bae73622d/src/lib/custodians/index.js" target="_blank" rel="noopener">custodians/index.js</a> — 秘密鍵の保管先</p>
+        <p><a href="https://www.npmjs.com/package/@dotenvx/primitives" target="_blank" rel="noopener">@dotenvx/primitives</a> — Dotenvxfile の構文と policy / storagepolicy</p>
       </div>
     </section>
   </main>
