@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Modern Web Guidance — コーディングエージェント向けモダン Web API ガイド</title>
-  <meta name="description" content="GoogleChrome/modern-web-guidance は SKILL.md と CLI で、HTML/CSS/クライアント JS 実装時にモダン Web プラットフォームのベストプラクティスを検索・取得するエージェントスキル。search/retrieve、128 ユースケース、eval ハーネスを README から要約。">
+  <meta name="description" content="GoogleChrome/modern-web-guidance は SKILL.md と CLI で、HTML/CSS/クライアント JS 実装時にモダン Web プラットフォームのベストプラクティスを検索・取得するエージェントスキル。v1.0.0 の search / retrieve / legacy-scan、203 ユースケース、.mwgrc の機能ゲート、eval ハーネスを README と SKILL.md から要約。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Modern Web Guidance — コーディングエージェント向けモダン Web API ガイド">
-  <meta property="og:description" content="レガシー回避とネイティブ API パターンをエージェントのコンテキストへ注入。search → retrieve の CLI、スキルパック、Playwright eval の技術概要。">
+  <meta property="og:description" content="レガシー回避とネイティブ API パターンをエージェントのコンテキストへ注入。search → retrieve の手順、legacy-scan、機能ゲート、スキルパック、Playwright eval の概要（v1.0.0）。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/modern-web-guidance.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Modern Web Guidance — コーディングエージェント向けモダン Web API ガイド">
-  <meta name="twitter:description" content="Google Chrome / Microsoft Edge チーム支援のエージェントスキル。README と SKILL.md から要約したビジュアル解説。">
+  <meta name="twitter:description" content="Google Chrome / Microsoft Edge / Mozilla Firefox / MDN チームが管理するエージェントスキル。v1.0.0 の README と SKILL.md から要約。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -105,7 +105,7 @@
     .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.95rem 1rem; flex: 1; min-height: 0; }
     .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.72; color: var(--code-text); white-space: pre-wrap; }
     .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
-    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 1rem 0; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-x: auto; margin: 1rem 0; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.875rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; text-align: left; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
     .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
@@ -219,9 +219,11 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
-    <a href="#workflow">CLI の流れ</a>
-    <a href="#disciplines">分野</a>
-    <a href="#packs">スキルパック</a>
+    <a href="#workflow">エージェントの手順</a>
+    <a href="#legacy-scan">既存コードの近代化</a>
+    <a href="#support">サポート方針とゲート</a>
+    <a href="#disciplines">収録ガイド</a>
+    <a href="#packs">構成とパック</a>
     <a href="#install">インストール</a>
     <a href="#evals">評価</a>
     <a href="#refs">参照</a>
@@ -229,73 +231,157 @@
 
   <div class="main">
     <h1>Modern Web Guidance</h1>
-    <p class="subtitle"><a href="https://github.com/GoogleChrome/modern-web-guidance" target="_blank" rel="noopener">GoogleChrome/modern-web-guidance</a> — コーディングエージェントに <strong>モダン Web プラットフォームの専門知識</strong>を注入する SKILL.md + CLI。Google Chrome / Microsoft Edge チームとコミュニティが支援。README と SKILL.md から要約。</p>
+    <p class="subtitle"><a href="https://github.com/GoogleChrome/modern-web-guidance" target="_blank" rel="noopener">GoogleChrome/modern-web-guidance</a> — コーディングエージェントに <strong>モダン Web プラットフォームの実装パターンとブラウザ互換性データ</strong>を渡す SKILL.md + CLI。Google Chrome / Microsoft Edge / Mozilla Firefox / MDN の各チームとコミュニティが管理。v1.0.0（2026-11-10 時点の main）の README と SKILL.md から要約。</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="kpi-row">
-      <div class="ve-kpi-card" style="--i:0"><div class="ve-kpi-card__value">102</div><div class="ve-kpi-card__label">Web 機能（機能一覧）</div></div>
-      <div class="ve-kpi-card" style="--i:1"><div class="ve-kpi-card__value">128</div><div class="ve-kpi-card__label">ユースケースガイド</div></div>
+      <div class="ve-kpi-card" style="--i:0"><div class="ve-kpi-card__value">250</div><div class="ve-kpi-card__label">対象 Web 機能</div></div>
+      <div class="ve-kpi-card" style="--i:1"><div class="ve-kpi-card__value">203</div><div class="ve-kpi-card__label">ユースケースガイド</div></div>
       <div class="ve-kpi-card" style="--i:2"><div class="ve-kpi-card__value">2</div><div class="ve-kpi-card__label">スキルパック</div></div>
-      <div class="ve-kpi-card" style="--i:3"><div class="ve-kpi-card__value">+33pp</div><div class="ve-kpi-card__label">eval 代表 uplift（guided）</div></div>
+      <div class="ve-kpi-card" style="--i:3"><div class="ve-kpi-card__value">+28〜36pp</div><div class="ve-kpi-card__label">eval uplift（11/8、3 エージェント）</div></div>
     </div>
 
     <div class="hero-grid">
       <div class="ve-card ve-card--hero hero-copy" style="--i:0">
         <span class="ve-section-label"><span class="ve-dot"></span> 解決する問題</span>
-        <p>LLM の学習データにはレガシー実装が多く、エージェントは <strong>肥大化した JavaScript</strong> で、すでにネイティブ API がある課題を実装しがちです。Modern Web Guidance は、トークン効率を意識した <strong>実運用向けガイド</strong>をコンテキストへ返し、パフォーマンス・アクセシビリティ・適切なフォールバックを揃えます。</p>
-        <p>HTML/CSS とクライアント JS のタスクでは、SKILL.md が <strong>最初に実行</strong>することを要求します（View Transitions、Popover、INP、Passkeys、Built-in AI など）。</p>
+        <p>LLM の学習データにはレガシー実装が多く、エージェントはネイティブ API で足りる課題にも <strong>肥大化した JavaScript</strong> を書きがちです。API の存在を知っていても、本番で使える実装パターンの密度が足りません。</p>
+        <p>Modern Web Guidance は、CLI 経由で <strong>トークン量を絞ったガイド</strong>をエージェントのコンテキストへ返します。重点は 3 つ: モデルが誤用しやすいブラウザ API の正しい構成、プラットフォーム API によるパフォーマンスとアクセシビリティ、重いポリフィルに頼らない軽量なフォールバック。</p>
+        <p>検索は <strong>ローカルで完結</strong>します。依存ゼロの埋め込みモデルと BM25 を npm パッケージに同梱しており、API キーは不要です。</p>
       </div>
       <div class="flow-sheet" aria-label="エージェントへの注入">
         <div class="flow-step"><strong>開発者プロンプト</strong> — 「ダイアログのバックドロップをアニメーション」</div>
         <div class="flow-arrow">↓ search</div>
-        <div class="flow-step"><strong>CLI</strong> — 類似ユースケース ID を JSON で返す</div>
+        <div class="flow-step"><strong>CLI</strong> — 近いガイドの <code>id</code> と <code>description</code> を JSON で返す</div>
         <div class="flow-arrow">↓ retrieve</div>
-        <div class="flow-step"><strong>ガイド Markdown</strong> — エージェントのコンテキストへ</div>
+        <div class="flow-step"><strong>ガイド Markdown</strong> — 実装パターン・落とし穴・フォールバック</div>
+        <div class="flow-arrow">↓ 実装と照合</div>
+        <div class="flow-step"><strong>回答</strong> — 適用したガイドを末尾に明記</div>
       </div>
     </div>
 
-    <section id="workflow" class="sec-head">2 — CLI の流れ（search → retrieve）</section>
+    <section id="workflow" class="sec-head">2 — エージェントの手順（search → retrieve → 照合 → 開示）</section>
     <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> SKILL.md の手順</span>
-      <p>エントリは npm パッケージ <code>modern-web-guidance</code>（<code>bin</code> → <code>modern-web.mjs</code>）。実装の詳細は <a href="https://github.com/GoogleChrome/modern-web-guidance-src" target="_blank" rel="noopener">modern-web-guidance-src</a>、公開用リポジトリはスキル配布専用です。</p>
+      <span class="ve-section-label"><span class="ve-dot"></span> SKILL.md の Primary Workflow</span>
+      <p>SKILL.md は、HTML/CSS とクライアント JS のタスクで <strong>最初に実行</strong>することを要求します（ダイアログ、フォーム検証、ダークモード、Core Web Vitals、Passkeys、Built-in AI、WebAssembly など）。バックエンド、CI/CD や Docker、Vite・ESLint・テストなどのツール設定は対象外です。</p>
 
       <h3>Step 1 — search</h3>
       <div class="ve-code-block">
         <div class="code-label">ユースケース検索</div>
-        <pre><code>npx -y modern-web-guidance@latest search "animate a dialog modal backdrop"</code></pre>
+        <pre><code>npx -y modern-web-guidance@latest search "light dismiss dialog"</code></pre>
       </div>
-      <p>返却は JSON 配列（<code>id</code>、<code>description</code>、<code>category</code>、<code>featuresUsed</code>、<code>tokenCount</code>、<code>similarity</code>）。曖昧なときは <code>list</code> で全ガイドを一覧できます。</p>
+      <p>返却は <code>[{ "id", "description" }, ...]</code> の JSON 配列です。クエリの書き方に規則があります。</p>
+      <ul>
+        <li><strong>2〜5 語、1 機能に絞る。</strong>「動詞 + UI / プラットフォームの対象」で書きます。複数機能のタスクは検索を分けます。</li>
+        <li><strong>フレームワーク名とアプリ固有の名詞を入れない。</strong><code>React</code>、<code>Tailwind</code>、コンポーネント名やルート名は除きます。</li>
+        <li><strong>意図を UI 部品に言い換える。</strong>「削除前に確認」は <code>"confirmation modal dialog"</code>、「日付を選ぶ」は <code>"date picker input"</code> とします。</li>
+        <li><strong>結果が弱いとき。</strong>具体的な部品名で 1 回だけ言い換え、それでも合わなければ <code>list</code> で全件を見ます。該当なしなら無関係なガイドを取得せずに進めます。</li>
+      </ul>
 
       <h3>Step 2 — retrieve</h3>
       <div class="ve-code-block">
         <div class="code-label">ガイド本文の取得</div>
         <pre><code>npx -y modern-web-guidance@latest retrieve "animate-to-from-top-layer"</code></pre>
       </div>
-      <p>複数 ID はカンマ区切り。出力は Markdown の実装手順。フレームワーク非依存なので、React / Vue / Angular へはプロジェクトに合わせて適用します。</p>
+      <p>複数 ID はカンマ区切りで渡します。個別ユースケースに加えて、該当する分野ガイド（<code>html</code>、<code>css</code>、<code>forms</code>、<code>accessibility</code>、<code>performance</code>、<code>security</code> など）も併せて取得します。出力が 9.5 KB を超えると一時ファイルに保存されるため、そのファイルを全文読みます。</p>
+
+      <h3>Step 3 — ガイドとの照合</h3>
+      <p>実装を終える前に、取得したガイドのパターンとフォールバックが正しく入っているか、依頼を満たしているかを確認します。依頼されていない機能を足す必要はありません。</p>
+
+      <h3>Step 4 — 利用の開示</h3>
+      <p>回答の末尾に <code>### Modern Web Guidance</code> 節を置き、適用したガイド <code>id</code> ごとに 1 項目で、採用した API やフォールバックと、防いだ落とし穴を書きます。ガイドの該当ルールを短く逐語引用します。検索したが適用しなかった場合は、確認した範囲と不採用の理由を 1 文で書きます。</p>
 
       <div class="ve-callout">
-        <strong>ブラウザサポート:</strong> Baseline Widely available はフォールバック不要が既定。それ以外はガイドの推奨に従い、ユーザーがブラウザ方針（例: Safari 17.4+、ポリフィル禁止）を定義していればそれを優先します。
+        <strong>フレームワークへの適用:</strong> ガイドは素の HTML/CSS/JS で書かれています。React などへ移すときも、新しい HTML 属性（<code>popover</code>、<code>commandfor</code> など）を型エラーを理由に削らず、キャストして残します。SSR では <code>window</code> を参照する処理をガードし、<code>showModal()</code> は ref 経由で呼びます。
       </div>
     </div>
 
     <div class="mermaid-wrap">
       <pre class="mermaid">
 flowchart TD
-  A[エージェント: Web 実装タスク] --> B{SKILL トリガー?}
-  B -->|HTML/CSS/クライアント JS| C[npx modern-web-guidance search]
-  B -->|バックエンド/CI のみ| Z[スキップ]
-  C --> D[関連 id を選択]
-  D --> E[npx retrieve id]
-  E --> F[ガイドをコンテキストに載せる]
-  F --> G[ネイティブ API で実装]
+  A["Web 実装タスク"] --> B{"SKILL.md の対象か"}
+  B -->|"HTML / CSS / クライアント JS"| C["search（2〜5 語、1 機能）"]
+  B -->|"バックエンド / インフラ / ツール設定"| Z["スキップ"]
+  C --> D{"description が合うか"}
+  D -->|"合う"| E["retrieve（id 指定）"]
+  D -->|"弱い・空"| R["言い換えて再検索、または list"]
+  R --> D
+  D -->|"該当なし"| N["ガイドなしで実装"]
+  E --> F["ガイドに沿って実装"]
+  F --> G["ガイドと照合"]
+  G --> H["回答末尾で利用を開示"]
       </pre>
     </div>
 
-    <section id="disciplines" class="sec-head">3 — カバーする分野</section>
+    <div class="ve-card" style="--i:1">
+      <span class="ve-section-label"><span class="ve-dot"></span> npx 実行時の注意</span>
+      <ul>
+        <li><strong>許可リスト:</strong> <code>npx -y modern-web-guidance@latest *</code> を個別に許可します。<code>npx *</code> 全体は許可しません。pnpm があれば <code>pnpx</code> を使います（<code>-y</code> は不要）。</li>
+        <li><strong>サンドボックス:</strong> パッケージ取得に外向きネットワークが必要です。承認制の環境では初回実行の前に許可を求めます。<code>~/.npm</code> が読み取り専用なら <code>NPM_CONFIG_CACHE=/tmp/npm-cache</code> を指定します。</li>
+        <li><strong>オフライン・Windows:</strong> 応答しない場合は <code>npx --offline</code>、Windows では <code>npx.cmd</code> を使います。</li>
+        <li><strong>実行環境:</strong> <code>package.json</code> の <code>engines</code> は Node.js 22 以上です。</li>
+      </ul>
+    </div>
+
+    <section id="legacy-scan" class="sec-head">3 — 既存コードの近代化（legacy-scan）</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 別系統のフロー</span>
+      <p><code>legacy-scan</code> はコードベースを走査し、レガシーな Web プラットフォーム実装を検出します。使うのは、対象の機能やコンポーネントを指定しない <strong>広い近代化依頼</strong>のときだけです。特定機能の追加・修正・監査では実行しません。</p>
+      <div class="ve-code-block">
+        <div class="code-label">レガシーパターンの検出</div>
+        <pre><code>npx -y modern-web-guidance@latest legacy-scan . --json</code></pre>
+      </div>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>段階</th><th>内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1. Scan</td><td><code>legacy-scan &lt;path&gt; --json</code> で検出結果を取得する。</td></tr>
+            <tr><td>2. Verify</td><td>各検出を <code>keepWhen</code> / <code>dropWhen</code> の基準で確認し、誤検出（フォールバック、ベンダーコード、類似コード）を除く。</td></tr>
+            <tr><td>3. Report</td><td>確認済みの検出と計画を報告する。走査対象がガイド全体の一部であることも伝える。</td></tr>
+            <tr><td>4. Modernize</td><td>修正まで依頼されている場合のみ、各検出のガイドを <code>retrieve</code> して置き換え、再スキャンで解消を確認する。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>オプションは <code>--json</code>、<code>--guide &lt;guideId&gt;</code>（特定ガイドに絞る）、<code>--include-docs-and-tests</code>（ドキュメント・デモ・テストも対象にする）です。パス省略時はカレントディレクトリを走査します。</p>
+      <div class="ve-callout">
+        <strong>検出範囲は一部です:</strong> <code>legacy-scan</code> が持つ決定的なルールは、ガイド全体の約 20% 分です。検出 0 件は「レガシー実装がない」ことを意味しません。意図して残したフォールバックは再スキャンでも検出され続けるため、0 件にするためのコード変更はしません。
+      </div>
+    </div>
+
+    <section id="support" class="sec-head">4 — ブラウザサポート方針と機能ゲート</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> フォールバックの判断</span>
+      <ul>
+        <li><strong>既定:</strong> Baseline Widely available の機能はフォールバックなしで使います。それ以外はガイドのフォールバック推奨に従います。</li>
+        <li><strong>独自方針がある場合:</strong> ユーザーの方針を優先します（例:「Safari 17.4+」「ポリフィル禁止、軽量な自前フォールバックのみ」）。<code>Baseline YYYY</code> を目標にする場合、ガイドの「Baseline since」が YYYY 以前なら条件を満たします。</li>
+        <li><strong>方針の記録:</strong> Electron / Tauri など対象が限られる環境や、ポリフィルの大きさを気にする場面では、<code>AGENTS.md</code> か <code>CLAUDE.md</code> に方針を書くようエージェントが提案します。</li>
+      </ul>
+      <p>ガイド側は、古いブラウザが無視しても害のない追加的な機能（投機的プリロードなど）と、代替が必須の挙動（ダイアログ制御、ネットワークビーコンなど）を区別しています。フォールバックは 50 行未満の自前実装か条件付きポリフィルを優先し、<code>fetchLater()</code> の 64KB 上限のような制限も記載します。</p>
+    </div>
+
+    <div class="ve-card" style="--i:1; margin-top: 1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> Origin Trial と不安定な機能（.mwgrc）</span>
+      <p>Origin Trial の実験的 API と、<strong>volatile な機能</strong>（単一エンジンのみで出荷後 3 か月以内、または安定化途上）のガイドは、<code>search</code> には出ますが <code>retrieve</code> で止まります。開発者が明示的に同意するまで、エージェントは不安定な API を採用しません。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>CLI コマンド</th><th>.mwgrc のキー</th><th>効果</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>set-allow-origin-trials</code></td><td><code>"allowOriginTrials": true</code></td><td>Origin Trial API のガイドを取得可能にする</td></tr>
+            <tr><td><code>set-allow-volatile-features</code></td><td><code>"allowVolatileFeatures": true</code></td><td>volatile な単一エンジン機能のガイドを取得可能にする</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>.mwgrc</code> はプロジェクトルートに置く JSON ファイルです。コミットすればチームで共有できます。プロジェクトに無い場合は <code>~/.mwgrc</code> が使われます。</p>
+    </div>
+
+    <section id="disciplines" class="sec-head">5 — 収録ガイド</section>
     <div class="disc-grid">
       <div class="ve-card disc-card" style="--i:0">
         <div class="disc-title">User Experience</div>
-        <p class="disc-body">View Transitions、スクロール駆動アニメ、<code>:has()</code>、ダークモード、パララックス、3D シーン内 UI など。</p>
+        <p class="disc-body">View Transitions、出入りのアニメーション、パララックス、<code>scrollbar-color</code>。</p>
       </div>
       <div class="ve-card disc-card" style="--i:1">
         <div class="disc-title">CSS Layout</div>
@@ -303,94 +389,164 @@ flowchart TD
       </div>
       <div class="ve-card disc-card" style="--i:2">
         <div class="disc-title">Performance</div>
-        <p class="disc-body">LCP / INP、<code>content-visibility</code>、Fetch Priority、<code>scheduler.yield</code>、長タスク分割。</p>
+        <p class="disc-body">即時プリロード、INP の診断、<code>scheduler.yield</code> によるタスク分割。</p>
       </div>
       <div class="ve-card disc-card" style="--i:3">
         <div class="disc-title">Forms &amp; UI</div>
-        <p class="disc-body">Anchor Positioning、Popover API、<code>:user-invalid</code>、オートフィル、カスタム <code>&lt;select&gt;</code>。</p>
+        <p class="disc-body">Anchor Positioning、Popover API、<code>&lt;dialog&gt;</code>、<code>:user-invalid</code>、自動サイズの入力欄。</p>
       </div>
       <div class="ve-card disc-card" style="--i:4">
         <div class="disc-title">Accessibility</div>
-        <p class="disc-body">エラー告知と <code>aria-invalid</code> の同期、キーボードフォーカス管理。</p>
+        <p class="disc-body">スクリーンリーダーとキーボードでの操作、コンテンツの移動と発見しやすさ。</p>
       </div>
       <div class="ve-card disc-card" style="--i:5">
-        <div class="disc-title">Built-in AI / WebMCP</div>
-        <p class="disc-body">オンデバイス翻訳・要約・言語検出、宣言的 WebMCP（エージェント向けフォーム）。</p>
+        <div class="disc-title">Built-in AI</div>
+        <p class="disc-body">クライアント側モデルによる翻訳・要約・言語検出。</p>
       </div>
     </div>
-    <p>ガイド例: <a href="https://github.com/GoogleChrome/modern-web-guidance/blob/main/skills/modern-web-guidance/guides/user-experience/navigation-drawer.md" target="_blank" rel="noopener">navigation-drawer</a>（README 参照）。</p>
 
-    <section id="packs" class="sec-head">4 — リポジトリ構成とスキルパック</section>
+    <h3>カテゴリ別のユースケース数</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>カテゴリ</th><th>件数</th><th>カテゴリ</th><th>件数</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>ui-behaviors</code></td><td>40</td><td><code>security</code></td><td>16</td></tr>
+          <tr><td><code>performance</code></td><td>25</td><td><code>ui-atoms</code></td><td>13</td></tr>
+          <tr><td><code>ui-components</code></td><td>22</td><td><code>html</code></td><td>7</td></tr>
+          <tr><td><code>visual-design</code></td><td>22</td><td><code>js</code></td><td>5</td></tr>
+          <tr><td><code>css</code></td><td>18</td><td><code>built-in-ai</code></td><td>4</td></tr>
+          <tr><td><code>forms</code></td><td>18</td><td><code>accessibility</code> / <code>user-experience</code> / <code>webmcp</code></td><td>各 3</td></tr>
+          <tr><td><code>pwa</code></td><td>2</td><td><code>privacy</code> / <code>wasm</code></td><td>各 1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <small>出典: README の一覧（17 カテゴリ、計 203 件）。対象 Web 機能 250 件の内訳は CSS &amp; Layout 140、HTML &amp; DOM 36、JavaScript &amp; APIs 74。</small>
+    <p style="margin-top: 0.75rem;">ガイド例: <a href="https://github.com/GoogleChrome/modern-web-guidance/blob/main/skills/modern-web-guidance/guides/ui-components/navigation-drawer.md" target="_blank" rel="noopener">navigation-drawer</a>。トップレイヤー要素、スクロールスナップ、スクロール駆動アニメーション、<code>IntersectionObserver</code> を組み合わせ、スワイプ処理の JavaScript を書かずにドロワーを実装する手順です。</p>
+
+    <section id="packs" class="sec-head">6 — リポジトリ構成とスキルパック</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 配布物</span>
       <div class="ve-table-wrap">
         <table>
           <thead>
-            <tr><th>パス / パック</th><th>役割</th></tr>
+            <tr><th>パス</th><th>役割</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>skills/modern-web-guidance/SKILL.md</code></td><td>メインスキル（search / retrieve 手順、トリガー条件）</td></tr>
-            <tr><td><code>skills/modern-web-guidance/guides/</code></td><td>カテゴリ別 Markdown ガイド（accessibility, css, forms, performance 等）</td></tr>
-            <tr><td><code>skills/chrome-extensions/</code></td><td>Manifest V3・拡張 API・Web Store 向け別パック（~181 tokens 見出し）</td></tr>
-            <tr><td><code>policies/modern-web-guidance.toml</code></td><td>ポリシー定義</td></tr>
-            <tr><td><code>.cursor-plugin/</code> / <code>.claude-plugin/</code></td><td>Cursor / Claude Code マーケットプレイス用メタデータ</td></tr>
+            <tr><td><code>skills/modern-web-guidance/SKILL.md</code></td><td>メインスキル。トリガー条件と search / retrieve / legacy-scan の手順</td></tr>
+            <tr><td><code>skills/modern-web-guidance/guides/</code></td><td>17 カテゴリの Markdown ガイド</td></tr>
+            <tr><td><code>skills/chrome-extensions/</code></td><td>Manifest V3 の拡張機能開発と Chrome Web Store 公開の別パック。<code>references/extensions/</code> に 19 件、<code>references/webstore/</code> に 4 件</td></tr>
+            <tr><td><code>policies/modern-web-guidance.toml</code></td><td>plan モードで <code>modern-web</code> を含むシェルコマンドの実行時にユーザー確認を求めるルール</td></tr>
+            <tr><td><code>.claude-plugin/</code>、<code>.codex-plugin/</code>、<code>.cursor-plugin/</code>、<code>.grok-plugin/</code>、<code>gemini-extension.json</code>、<code>kimi.plugin.json</code> ほか</td><td>各エージェントのプラグイン / マーケットプレイス用メタデータ</td></tr>
           </tbody>
         </table>
       </div>
-      <p><code>npx modern-web-guidance@latest install --choose</code> でインストールするパックを選択できます。</p>
-    </div>
-
-    <section id="install" class="sec-head">5 — インストール</section>
-    <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 代表的な方法</span>
-      <div class="ve-code-block">
-        <div class="code-label">対話式ウィザード（推奨）</div>
-        <pre><code>npx modern-web-guidance@latest install</code></pre>
-      </div>
-      <p>インストールせず試す場合:</p>
-      <div class="ve-code-block">
-        <div class="code-label">検索・取得のみ</div>
-        <pre><code>npx modern-web-guidance@latest search "…"
-npx modern-web-guidance@latest retrieve "guide-id"</code></pre>
-      </div>
-      <h3>その他</h3>
-      <ul>
-        <li>更新: <code>npx modern-web-guidance@latest update</code>（install 経由の場合）</li>
-        <li>Claude Code: <code>/plugin marketplace add GoogleChrome/modern-web-guidance</code> など（README 参照）</li>
-        <li>テレメトリ無効: シェルに <code>DISABLE_TELEMETRY=1</code>（収集内容は serving 実装を参照）</li>
-      </ul>
-      <div class="ve-callout">
-        <strong>Windows:</strong> <code>npx</code> が失敗する場合は <code>npx.cmd</code>。オフライン時は <code>npx --offline</code> を試します。
-      </div>
-    </div>
-
-    <section id="evals" class="sec-head">6 — 評価ハーネス</section>
-    <div class="ve-card" style="--i:0">
-      <span class="ve-section-label"><span class="ve-dot"></span> 校正ループ</span>
-      <p>ガイドは Playwright グレーダーと E2E エージェント eval で検証されます。開発者プロンプトは API 名を避け、エージェントがガイドを自然に発見できるかを測ります。</p>
+      <p>このリポジトリは配布専用です。CLI の実装とコントリビュート窓口は <a href="https://github.com/GoogleChrome/modern-web-guidance-src" target="_blank" rel="noopener">modern-web-guidance-src</a> にあります。<code>package.json</code> の <code>bin</code> が指す <code>modern-web.mjs</code> はこのリポジトリには含まれず、npm パッケージ側に同梱されます。</p>
       <div class="ve-table-wrap">
         <table>
           <thead>
-            <tr><th>日付</th><th>エージェント</th><th>タスク / アサーション</th><th>Unguided → Guided</th></tr>
+            <tr><th>パック</th><th>トークン数（README 記載）</th><th>内容</th></tr>
           </thead>
           <tbody>
-            <tr><td>2026-05-18</td><td>claude_code (opus-4-7)</td><td>75 / 603</td><td>52% → 85%（+33pp）</td></tr>
-            <tr><td>2026-05-16</td><td>codex_cli (gpt-5.5)</td><td>75 / 603</td><td>49% → 82%（+33pp）</td></tr>
-            <tr><td>2026-05-15</td><td>antigravity</td><td>74 / 600</td><td>47% → 91%（+44pp）</td></tr>
+            <tr><td><code>modern-web-guidance</code></td><td>約 205 トークン</td><td>モダンなブラウザ API、レイアウト、パフォーマンス</td></tr>
+            <tr><td><code>chrome-extensions</code></td><td>約 175 トークン</td><td>Manifest V3、サービスワーカー、拡張 API、Chrome Web Store 公開</td></tr>
           </tbody>
         </table>
       </div>
-      <small>出典: README「Recent eval results snapshot」（抜粋）。</small>
+      <p><code>npx modern-web-guidance@latest install --choose</code> でインストールするパックを選べます。</p>
     </div>
 
-    <section id="refs" class="sec-head">7 — 参照</section>
+    <section id="install" class="sec-head">7 — インストール</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 対話式ウィザード</span>
+      <div class="ve-code-block">
+        <div class="code-label">インストール</div>
+        <pre><code>npx modern-web-guidance@latest install</code></pre>
+      </div>
+      <p>インストールせずに試す場合:</p>
+      <div class="ve-code-block">
+        <div class="code-label">検索・取得・スキャンのみ</div>
+        <pre><code>npx modern-web-guidance@latest search "animate a dialog modal backdrop"
+npx modern-web-guidance@latest retrieve "animate-to-from-top-layer"
+npx modern-web-guidance@latest legacy-scan .</code></pre>
+      </div>
+
+      <h3>エージェント別の導入方法</h3>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>経路</th><th>コマンド</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Vercel Skills CLI</td><td><code>npx skills add GoogleChrome/modern-web-guidance</code></td></tr>
+            <tr><td>GitHub CLI</td><td><code>gh skill install GoogleChrome/modern-web-guidance</code></td></tr>
+            <tr><td>Claude Code / GitHub Copilot CLI</td><td><code>/plugin marketplace add GoogleChrome/modern-web-guidance</code><br><code>/plugin install modern-web-guidance@googlechrome</code></td></tr>
+            <tr><td>OpenAI Codex</td><td><code>codex plugin marketplace add GoogleChrome/modern-web-guidance</code><br><code>codex plugin add modern-web-guidance@googlechrome</code></td></tr>
+            <tr><td>Google Antigravity</td><td><code>agy plugin install https://github.com/GoogleChrome/modern-web-guidance</code></td></tr>
+            <tr><td>Grok Build CLI</td><td><code>grok plugin install https://github.com/GoogleChrome/modern-web-guidance --trust</code></td></tr>
+            <tr><td>Kimi Code</td><td><code>/plugins install https://github.com/GoogleChrome/modern-web-guidance</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Claude Code では、インストール後に <code>/plugin</code> で GoogleChrome マーケットプレイスの自動更新を有効にし、<code>/reload-plugins</code> を実行します。</p>
+
+      <h3>更新と削除</h3>
+      <ul>
+        <li>更新: <code>npx modern-web-guidance@latest update</code>（<code>install</code> 経由で入れた場合）。それ以外は各エージェントのプラグイン更新手順に従います。</li>
+        <li>削除: <code>npx modern-web-guidance@latest uninstall</code></li>
+      </ul>
+
+      <div class="ve-callout">
+        <strong>テレメトリは既定で有効です:</strong> インストール数、呼び出し元エージェント名、取得したガイド ID、エージェントが生成した検索クエリ（例: <code>dark mode scrollbar color-scheme</code>）が匿名で Google に送信されます。ユーザーのプロンプト原文は収集されません。検索処理自体はローカルで動きますが、クエリは送信対象です。無効にするにはシェルのプロファイルに <code>export DISABLE_TELEMETRY=1</code> を追加します。
+      </div>
+    </div>
+
+    <section id="evals" class="sec-head">8 — 評価ハーネス</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 校正ループ</span>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>段階</th><th>内容</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>開発者タスクの模擬</td><td>ベースアプリ（<code>daily-grind</code>、<code>devtools-times</code>）に対する現実的な依頼文。API 名や機能名を書かず、エージェントが自力でガイドに到達できるかを測る。</td></tr>
+            <tr><td>静的・ブラウザ上のアサーション</td><td>Playwright のグレーダーがソースのパターン、計算済みスタイル、実行時の DOM 挙動、アクセシビリティ状態を検査する。</td></tr>
+            <tr><td>グレーダーの校正</td><td>複数エージェント（Claude / Codex / AGY）による模範解答で 100% 合格、未変更のベースアプリで 0% 合格になることを確認する。</td></tr>
+            <tr><td>E2E 評価</td><td>スキルあり（guided）となし（unguided）で合格率を比較する。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>指標は <strong>opportunity</strong>（100% − unguided の合格率）と <strong>uplift</strong>（guided − unguided）です。ガイドなしで通る内容は削り、エージェントがつまずく箇所のガイドを改善します。トークン量を抑えられているのはこの剪定によります。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead>
+            <tr><th>日付</th><th>エージェント + モデル</th><th>タスク / アサーション</th><th>Unguided → Guided</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>11/8</td><td>antigravity_cli (gemini-4-argon)</td><td>214 / 1673</td><td>58% → 94%（+36pp）</td></tr>
+            <tr><td>11/8</td><td>codex_cli (gpt-6.1-sol)</td><td>215 / 1795</td><td>54% → 82%（+28pp）</td></tr>
+            <tr><td>11/8</td><td>claude_code (opus-5-5)</td><td>215 / 1801</td><td>57% → 88%（+31pp）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <small>出典: README「Recent eval results snapshot」の最新 3 行。直近 10 回（11/2〜11/8）の uplift は +27〜36pp。エージェント別・ガイド別の内訳は <a href="https://googlechrome.github.io/modern-web-guidance-src/" target="_blank" rel="noopener">Eval Dashboard</a> で確認できます。</small>
+      <div class="ve-callout">
+        <strong>数値の読み方:</strong> 評価はプロジェクト自身が用意したタスクとグレーダーによるものです。guided でも合格率は 82〜94% で、ガイドを渡しても落ちるアサーションが残ります。
+      </div>
+    </div>
+
+    <section id="refs" class="sec-head">9 — 参照</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 公式リンク</span>
       <ul>
         <li><a href="https://github.com/GoogleChrome/modern-web-guidance" target="_blank" rel="noopener">GitHub: GoogleChrome/modern-web-guidance</a> — スキル配布リポジトリ</li>
-        <li><a href="https://github.com/GoogleChrome/modern-web-guidance-src" target="_blank" rel="noopener">modern-web-guidance-src</a> — 実装・CONTRIBUTING</li>
+        <li><a href="https://developer.chrome.com/docs/modern-web-guidance" target="_blank" rel="noopener">公式ドキュメント（developer.chrome.com）</a></li>
+        <li><a href="https://github.com/GoogleChrome/modern-web-guidance-src" target="_blank" rel="noopener">modern-web-guidance-src</a> — CLI 実装、Issue、CONTRIBUTING</li>
+        <li><a href="https://googlechrome.github.io/modern-web-guidance-src/" target="_blank" rel="noopener">Eval Dashboard</a></li>
         <li><a href="https://www.npmjs.com/package/modern-web-guidance" target="_blank" rel="noopener">npm: modern-web-guidance</a></li>
-        <li>ドキュメント由来: <a href="https://developer.mozilla.org/" target="_blank" rel="noopener">MDN Web Docs</a>、W3C / WHATWG / IETF 仕様（README Attribution）</li>
+        <li>ライセンス: コードは Apache License 2.0、<code>guides/</code> 配下のガイドは CC-BY 4.0。一部は <a href="https://developer.mozilla.org/" target="_blank" rel="noopener">MDN Web Docs</a> と W3C / WHATWG / IETF 仕様に由来します。</li>
       </ul>
     </div>
   </div>
