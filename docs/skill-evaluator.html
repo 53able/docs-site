@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillEvaluator — エージェントスキルを 3 段階で検査し、効果を測る CLI</title>
+  <meta name="description" content="NVIDIA/SkillEvaluator の解説。エージェントスキルとプラグインを、静的検査（Tier 1）、重複検出（Tier 2）、スキルあり・なしでエージェントを走らせる比較評価（Tier 3）の 3 段階で調べる Python CLI。各 Tier の中身、Skill Lift の計算、結果の読み方と限界、導入と CI、注意点。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="SkillEvaluator — エージェントスキルを 3 段階で検査し、効果を測る CLI">
+  <meta property="og:description" content="NVIDIA/SkillEvaluator の解説。エージェントスキルとプラグインを、静的検査（Tier 1）、重複検出（Tier 2）、スキルあり・なしでエージェントを走らせる比較評価（Tier 3）の 3 段階で調べる Python CLI。各 Tier の中身、Skill Lift の計算、結果の読み方と限界、導入と CI、注意点。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/skill-evaluator.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="SkillEvaluator — エージェントスキルを 3 段階で検査し、効果を測る CLI">
+  <meta name="twitter:description" content="NVIDIA/SkillEvaluator の解説。エージェントスキルとプラグインを、静的検査（Tier 1）、重複検出（Tier 2）、スキルあり・なしでエージェントを走らせる比較評価（Tier 3）の 3 段階で調べる Python CLI。各 Tier の中身、Skill Lift の計算、結果の読み方と限界、導入と CI、注意点。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mona+Sans:wght@400;500;600;700&family=Ubuntu+Sans+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.5 0.13 138);
+      --chart-2: oklch(0.62 0.1 160);
+      --chart-3: oklch(0.4 0.1 140);
+      --chart-4: oklch(0.7 0.1 140);
+      --chart-5: oklch(0.65 0.12 90);
+      --code-bg: var(--muted);
+      --code-text: #24410f;
+      --font-body: 'Mona Sans', 'Hiragino Sans', system-ui, sans-serif;
+      --font-mono: 'Ubuntu Sans Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.8 0.15 135);
+        --chart-2: oklch(0.8 0.1 150);
+        --chart-3: oklch(0.88 0.09 135);
+        --chart-4: oklch(0.75 0.1 140);
+        --chart-5: oklch(0.8 0.12 90);
+        --code-bg: #0f0f0f;
+        --code-text: #c4eba4;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--hero {
+      background: color-mix(in srgb, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in srgb, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in srgb, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in srgb, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 26rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap caption { text-align: left; font-size: .75rem; color: var(--text-dim); padding: .6rem 1rem; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.5 0.13 138 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.8 0.15 135 / 0.08) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; max-width: 48rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.0625rem; font-weight: 600; margin: 1.5rem 0 0.6rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    a:focus-visible { outline: 2px solid var(--chart-1); outline-offset: 4px; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    .hero-title { font-size: clamp(1.4rem, 2.8vw, 2.2rem); line-height: 1.5; margin: .3rem 0 1rem; }
+    .eyebrow { font-family: var(--font-mono); color: var(--chart-1); font-size: .75rem; letter-spacing: .08em; }
+    .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .card-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card-grid h3 { margin-top: .25rem; }
+    .card-grid p:last-child { margin-bottom: 0; }
+    .graph-example { margin: 1.5rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+    .graph-example svg { display: block; width: 100%; height: auto; color: var(--foreground); }
+    .graph-example rect { fill: var(--muted); stroke: var(--border); }
+    .graph-example .fix { fill: color-mix(in srgb, var(--card) 88%, var(--chart-1)); stroke: var(--chart-1); }
+    .graph-example .dash { fill: none; stroke: var(--ring); stroke-dasharray: 5 4; }
+    .graph-example path { fill: none; stroke: var(--chart-1); stroke-width: 2; }
+    .graph-example path.back { stroke-dasharray: 6 4; }
+    .graph-example text { fill: currentColor; font-family: var(--font-body); font-size: 15px; }
+    .graph-example .small { font-size: 12px; }
+    .graph-example .edge-label { fill: var(--chart-1); font-size: 13px; }
+    figcaption { font-size: .8rem; color: var(--text-dim); margin-top: .75rem; }
+    .ve-table-wrap { overflow-x: auto; margin: 1rem 0; }
+    .ve-table-wrap table { min-width: 560px; font-size: .875rem; }
+    .ve-table-wrap td { vertical-align: top; }
+    .ve-table-wrap td:first-child { white-space: nowrap; }
+    .ve-table-wrap.wrap-first td:first-child { white-space: normal; }
+    .ve-table-wrap td.c { text-align: center; }
+    .ve-table-wrap th.c { text-align: center; }
+    .ve-callout { margin: 1rem 0; font-size: .9rem; }
+    .steps { padding-left: 1.5rem; }
+    .steps > li { padding-left: .5rem; margin-bottom: 1.25rem; }
+    .steps > li::marker { color: var(--chart-1); font-weight: 700; font-family: var(--font-mono); }
+    .steps h3 { margin: 0 0 .4rem; }
+    .source-note { font-size: .8rem; color: var(--text-dim); overflow-wrap: anywhere; }
+    .skip-link { position: absolute; left: 1rem; top: -5rem; padding: .5rem 1rem; background: var(--card); z-index: 20; }
+    .skip-link:focus { top: 1rem; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+    @media (max-width: 760px) { .card-grid.three { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) {
+      body { padding: 20px; }
+      .toc { margin-inline: -20px; padding-inline: 20px; }
+      .card-grid { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .ve-card { padding: 1rem; }
+      h1 { font-size: 1.8rem; }
+    }
+    .graph-example .arm-a { fill: color-mix(in srgb, var(--card) 85%, var(--chart-1)); stroke: var(--chart-1); }
+    .graph-example .arm-b { fill: var(--muted); stroke: var(--ring); stroke-dasharray: 5 4; }
+    .formula { font-family: var(--font-mono); font-size: .875rem; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .75rem 1rem; margin: 1rem 0; overflow-x: auto; white-space: pre; }
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#main">本文へ移動</a>
+<div class="wrap">
+<nav class="toc" id="toc" aria-label="目次"><div class="toc-title">SkillEvaluator</div>
+<a href="#overview">概要</a>
+<a href="#tiers">3 つの Tier</a>
+<a href="#tier1">Tier 1 静的検査</a>
+<a href="#harness">ハーネスチェック</a>
+<a href="#tier2">Tier 2 重複検出</a>
+<a href="#tier3">Tier 3 比較評価</a>
+<a href="#scores">スコアの計算</a>
+<a href="#limits">結果の読み方と限界</a>
+<a href="#install">導入と実行</a>
+<a href="#ci">CI とエージェントから使う</a>
+<a href="#cautions">注意点</a>
+<a href="#sources">出典</a>
+</nav>
+<main class="main" id="main">
+<p><a href="../index.html">← 資料一覧</a></p>
+<h1>SkillEvaluator</h1>
+<p class="subtitle">NVIDIA/SkillEvaluator · PyPI 0.9.0（main は未リリースの変更を含む） · Python 3.12〜3.14 · CLI <code>skillevaluator</code> · サポートレベル Experimental · Apache-2.0</p>
+
+<section id="overview" aria-labelledby="overview-title">
+<h2 class="sec-head" id="overview-title">01 — スキルの品質と、エージェントへの効果を測る</h2>
+<div class="ve-card ve-card--hero">
+<span class="eyebrow">VALIDATE → DEDUPLICATE → RUN WITH / WITHOUT SKILL → REPORT</span>
+<p class="hero-title"><strong>スキルが正しく書けているかを静的に調べ、次に同じタスクをスキルあり・なしでエージェントに解かせて差を出す。</strong></p>
+<p>SkillEvaluator は、<a href="https://agentskills.io/">Agent Skills 仕様</a>のスキル（<code>SKILL.md</code> と付随ファイルのフォルダー）や、ルール・ワークフロー・プラグインを検査する Python の CLI です。NVIDIA の <a href="https://github.com/NVIDIA/skills">Verified Skills パイプライン</a>の一部として公開されています。</p>
+<p>検査は 3 つの Tier に分かれます。Tier 1 は API キーなしで動く静的検査（構造、セキュリティ、PII、品質スコアなど）、Tier 2 は埋め込みと LLM による重複・類似の検出、Tier 3 は Docker などのサンドボックスで実際のエージェントを動かし、スキルあり・なしの結果の差（Skill Lift）を測ります。各 Tier は独立していて、必要なものだけを実行できます。</p>
+</div>
+<div class="kpi-row">
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">3</div><div class="ve-kpi-card__label">Tier（静的・重複・実行）</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">6</div><div class="ve-kpi-card__label">ハーネスチェックの対象エージェント</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">0–100</div><div class="ve-kpi-card__label">Tier 1 品質スコア（合格 70）</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">5</div><div class="ve-kpi-card__label">Tier 3 の評価次元</div></div>
+</div>
+<div class="card-grid three">
+<article class="ve-card"><span class="eyebrow">TERMINAL</span><h3>CLI で直接</h3><p><code>skillevaluator quality-check ./my-skill</code> はキー・スキャナー・GPU・Docker なしで 100 点満点のスコアと指摘を出します。</p></article>
+<article class="ve-card"><span class="eyebrow">CI</span><h3>リポジトリの CI に組み込む</h3><p><code>skillevaluator ci init</code> が GitHub リポジトリにセットアップ用の PR を作ります。GitLab 用の手順もあります。</p></article>
+<article class="ve-card"><span class="eyebrow">AGENT</span><h3>エージェントから呼ぶ</h3><p><code>npx skills add NVIDIA/SkillEvaluator</code> でスキルとして追加し、「Is my skill any good?」と聞くと、エージェントが CLI を実行します。</p></article>
+</div>
+</section>
+
+<section id="tiers" aria-labelledby="tiers-title">
+<h2 class="sec-head" id="tiers-title">02 — 3 つの Tier の役割</h2>
+<p>まとめて実行するコマンドは <code>skillevaluator validate</code> です。<code>--tiers</code> を指定しなければ、スキルに対しては 3 つの Tier をすべて実行します。終了コードへの影響（ゲート）は Tier ごとに異なります。</p>
+<figure class="graph-example">
+<svg viewBox="0 0 960 250" role="img" aria-labelledby="tiers-svg-title">
+<title id="tiers-svg-title">validate の流れ。スキルのフォルダーを入力に、Tier 1 の静的検査、Tier 2 の重複検出、Tier 3 のスキルあり・なしの比較評価を行い、HTML・JSON などのレポートを出す。Tier 1 は常に終了コードを決め、Tier 2 は既定で決め、Tier 3 は既定では参考扱い。</title>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--chart-1); stroke: none;"/></marker></defs>
+<rect x="10" y="60" width="140" height="90" rx="8"/>
+<text x="80" y="98" text-anchor="middle">スキル</text>
+<text x="80" y="122" text-anchor="middle" class="small">SKILL.md ほか</text>
+<rect class="fix" x="185" y="40" width="170" height="130" rx="8"/>
+<text x="270" y="78" text-anchor="middle">Tier 1</text>
+<text x="270" y="102" text-anchor="middle" class="small">静的検査</text>
+<text x="270" y="124" text-anchor="middle" class="small">キー不要</text>
+<text x="270" y="152" text-anchor="middle" class="small">常にゲート</text>
+<rect x="390" y="40" width="170" height="130" rx="8"/>
+<text x="475" y="78" text-anchor="middle">Tier 2</text>
+<text x="475" y="102" text-anchor="middle" class="small">重複・類似の検出</text>
+<text x="475" y="124" text-anchor="middle" class="small">埋め込み＋チャット</text>
+<text x="475" y="152" text-anchor="middle" class="small">既定でゲート</text>
+<rect x="595" y="40" width="170" height="130" rx="8"/>
+<text x="680" y="78" text-anchor="middle">Tier 3</text>
+<text x="680" y="102" text-anchor="middle" class="small">エージェント実行</text>
+<text x="680" y="124" text-anchor="middle" class="small">あり / なし比較</text>
+<text x="680" y="152" text-anchor="middle" class="small">既定は参考扱い</text>
+<rect x="800" y="60" width="150" height="90" rx="8"/>
+<text x="875" y="98" text-anchor="middle">レポート</text>
+<text x="875" y="122" text-anchor="middle" class="small">HTML / JSON ほか</text>
+<path d="M150,105 L181,105" marker-end="url(#arr)"/>
+<path d="M355,105 L386,105" marker-end="url(#arr)"/>
+<path d="M560,105 L591,105" marker-end="url(#arr)"/>
+<path d="M765,105 L796,105" marker-end="url(#arr)"/>
+<text class="edge-label" x="475" y="215" text-anchor="middle">--tiers 1 / --tiers 1,2 で途中までに絞れる。各 Tier は単独のコマンドでも実行できる</text>
+</svg>
+<figcaption>README の「Three-tier overview」と docs/ci-integration.mdx の終了コードの説明をもとに作図。</figcaption>
+</figure>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>README「Three-tier overview」より</caption>
+<thead><tr><th>Tier</th><th>答える問い</th><th>単独のコマンド</th><th>追加で必要なもの</th></tr></thead>
+<tbody>
+<tr><td>Tier 1：Validation</td><td>安全で、形式が正しく、ハーネスと互換か</td><td><code>skillevaluator tier1 ./my-skill --no-llm</code></td><td>静的検査を完全に行うには外部スキャナー。LLM 検査にはプロバイダー</td></tr>
+<tr><td>Tier 1：Harness Check</td><td>エージェントがスキルを読み込むか</td><td><code>skillevaluator harness-check ./my-skill</code></td><td>GitHub のソースからのインストール。キーもエージェント実行も不要</td></tr>
+<tr><td>Tier 2：Deduplication</td><td>指示が繰り返されていないか、他のスキルと重ならないか</td><td><code>skillevaluator tier2 ./my-skill</code></td><td>埋め込みとチャットのモデル。スキル間の比較には <code>--catalog</code></td></tr>
+<tr><td>Tier 3：Live Agent Evaluation</td><td>スキルがエージェントの役に立つか</td><td><code>skillevaluator tier3 ./my-skill</code></td><td>プロバイダー、対応エージェント、サンドボックス（既定は Docker）</td></tr>
+</tbody>
+</table>
+</div>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>validate のゲートの既定（docs/tier1-reference.mdx、docs/ci-integration.mdx より）</caption>
+<thead><tr><th>Tier</th><th>終了コードへの影響</th><th>切り替え</th></tr></thead>
+<tbody>
+<tr><td>Tier 1</td><td>常にゲート。失敗、または必須スキャナーの証拠が不完全なら非 0</td><td>—</td></tr>
+<tr><td>Tier 2</td><td>既定でゲート</td><td><code>--no-block-on-dedup</code> で参考扱い</td></tr>
+<tr><td>Tier 3</td><td>既定は参考扱い</td><td><code>--block-on-agent-eval</code> でゲートに含める</td></tr>
+</tbody>
+</table>
+</div>
+<p>終了コードは <code>0</code>（全ゲート合格）、<code>1</code>（ゲート失敗、実行が完了しなかった、内部エラー）、<code>2</code>（未知のフラグや存在しないパスなどの使い方の誤り）の 3 種類です。対象はスキルのほか、ルール（<code>.mdc</code>）、ワークフロー、プラグイン（<code>agent_plugin.yaml</code> または <code>.claude-plugin/plugin.json</code>）で、<code>--type</code> を省くと自動判定されます。</p>
+</section>
+
+<section id="tier1" aria-labelledby="tier1-title">
+<h2 class="sec-head" id="tier1-title">03 — Tier 1：静的検査</h2>
+<p>静的検査はモデルのキーを必要としません。<code>validate</code> の既定のチェックは次の 9 つで、<code>dependency</code> は <code>--checks</code> で明示したときだけ実行されます。</p>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>docs/tier1-reference.mdx「The checks」より</caption>
+<thead><tr><th>チェック</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td><code>schema</code></td><td>frontmatter と配置。<code>name</code>（1〜64 文字の kebab-case、ディレクトリ名と一致、<code>anthropic</code> と <code>claude</code> は使えない）と <code>description</code>（1〜1024 文字）が必須。重複キーや BOM などハーネスごとに読み込みが変わる書き方も指摘する。<code>SKILL.md</code> は 500 行以下が推奨</td></tr>
+<tr><td><code>version</code></td><td>任意の <code>metadata.version</code> が <code>major.minor.patch</code> 形式か</td></tr>
+<tr><td><code>security</code></td><td><a href="https://github.com/NVIDIA/SkillSpector">SkillSpector</a> による静的スキャン。<code>--llm</code> で LLM の分析を追加</td></tr>
+<tr><td><code>pii</code></td><td>個人情報、認証情報、シークレット、ローカルの識別子の検出</td></tr>
+<tr><td><code>license</code></td><td>ライセンスの適合。ブロック対象のライセンスは CRITICAL</td></tr>
+<tr><td><code>code-integrity</code></td><td>コードのリスク、シークレット（Gitleaks）、衛生</td></tr>
+<tr><td><code>unicode</code></td><td>ASCII smuggling や trojan-source に使われる不可視の Unicode 文字の検出</td></tr>
+<tr><td><code>quality</code></td><td>重み付きの品質スコア（下表）</td></tr>
+<tr><td><code>lint</code></td><td>Python スクリプトの AST ベースの検査。参考扱い</td></tr>
+<tr><td><code>dependency</code></td><td>依存パッケージの CVE 監査（pip-audit）。明示指定時のみ</td></tr>
+</tbody>
+</table>
+</div>
+<h3>品質スコアの内訳</h3>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>quality-check の 4 カテゴリ（docs/tier1-reference.mdx より）</caption>
+<thead><tr><th>カテゴリ</th><th class="c">重み</th><th>見ているもの</th></tr></thead>
+<tbody>
+<tr><td>Correctness</td><td class="c">35%</td><td>frontmatter、命名、例、パス、スキルの種類ごとの構造</td></tr>
+<tr><td>Discoverability</td><td class="c">25%</td><td>description の質、起動条件の書き方、目的、範囲、命名</td></tr>
+<tr><td>Reliability</td><td class="c">25%</td><td>エラー処理、前提条件、制限、トラブルシューティング、実装上の安全策</td></tr>
+<tr><td>Efficiency</td><td class="c">15%</td><td>推定トークン量、本文の長さ、繰り返し、指示の明確さ、参照ファイルの使い方</td></tr>
+</tbody>
+</table>
+</div>
+<p>評価は 90 以上が A、80 以上が B、70 以上が C、60 以上が D、それ未満が F です。合格には既定の <code>--min-score 70</code> 以上で、かつ HIGH / CRITICAL の品質指摘がないことが必要です。<code>SKILL.md</code> の推奨トークン量は 5,000 で、文字数を 4 で割った推定値を使います。超えると MEDIUM の指摘と Efficiency から 15 点の減点がつきます。</p>
+<h3>LLM を使う検査（任意）</h3>
+<p>プロバイダーを設定すると、<code>rubric-eval</code> が 9 項目の LLM-as-judge 評価を行います。項目は、description と使う場面の明確さ、指示の明確さ、例の質、文書の網羅性、範囲の定義、書式、肯定・否定のクエリでの起動シミュレーション、手順全体の完結性、エラー処理です。各項目 0〜10 点で 7 以上が合格、全体は重要度で重み付けした平均で、全項目の合格が必要です。<code>--llm-verify</code> は静的検査の指摘を LLM が文脈つきで見直し、確信度の高い誤検知を INFO に下げます（指摘自体は残ります）。</p>
+<h3>ポリシー</h3>
+<p>同梱のポリシーは <code>default</code> と <code>registry</code> の 2 つです。<code>default</code> では <code>metadata.author</code> と <code>metadata.id</code> は推奨にとどまり、<code>registry</code> では欠けると HIGH でブロックされます。<code>--policy ./policy.yaml</code> で重大度の上書きなどを重ねられます。</p>
+</section>
+
+<section id="harness" aria-labelledby="harness-title">
+<h2 class="sec-head" id="harness-title">04 — ハーネスチェック：エージェントがスキルを読み込むか</h2>
+<p>仕様どおりに書かれたスキルでも、エージェント（ハーネス）ごとに YAML パーサー、探索するフォルダー、サイズ上限が違うため、あるエージェントでは読み込まれ、別のエージェントでは黙って捨てられることがあります。<code>harness-check</code> はファイルを読むだけで、モデルもエージェントも実行せずに、6 つのハーネスでの扱いを「読み込む」「劣化する」「読み込まない」で予測し、直し方を示します。</p>
+<div class="ve-code-block"><pre><code>skillevaluator harness-check ./my-skill
+
+╭─ Harness compatibility · my-skill ──────────────────────────────────────────────────────╮
+│  ⚠️ codex        degraded    Description cut to 1,021 chars + '...' in the skill list   │
+│  ❌ claude-code  not loaded  .agents/skills is not scanned                              │
+│  ✅ opencode     loads                                                                  │
+│  ✅ hermes       loads                                                                  │
+│  ✅ openclaw     loads                                                                  │
+│  ❌ copilot-cli  not loaded  description is 1,028 UTF-16 units, 4 over the 1,024 limit  │
+╰────────────────────────────────────────────────────────────────── ❌ 2 of 6 not loaded ─╯</code></pre></div>
+<p class="source-note">README の出力例（README 自身が「バージョン付きプロファイルの要約の例示」と注記）。</p>
+<p>対象は Claude Code、Codex、Copilot CLI、Hermes、OpenClaw、OpenCode で、判定規則はハーネスごとのバージョン付きプロファイル（<code>src/skillevaluator/harness/profiles/*.yaml</code>）に入っています。<code>-v</code> で各プロファイルの確認済みバージョンと日付を表示し、<code>--harness-version HARNESS=VERSION</code> で別のリリースを指定できます。</p>
+<div class="ve-callout"><strong>PyPI 0.9.0 には含まれない：</strong>ハーネスチェックは GitHub のソースからインストールした場合だけ使えます。ソース版の <code>validate</code> では Tier 1 に含まれます。</div>
+</section>
+
+<section id="tier2" aria-labelledby="tier2-title">
+<h2 class="sec-head" id="tier2-title">05 — Tier 2：重複と類似の検出</h2>
+<p>Tier 2 には 2 種類の検査があります。Docker や評価データセットは不要ですが、スキルの本文をプロバイダーに送ります。</p>
+<div class="card-grid">
+<article class="ve-card"><span class="eyebrow">INTRA-SKILL</span><h3>1 つのスキルの中の繰り返し</h3><p><code>context-optimization-check</code>（別名 <code>dedup-scan</code>）。Markdown は見出し単位、Python はドキュメント文字列とシグネチャ、シェルは関数とコメントで分割し、埋め込みのコサイン類似度 0.80 以上の組をまとめた後、チャット LLM がその重なりが意図的か（例：<code>references/</code> での詳細化）を判定し、作者への対応案を返します。</p></article>
+<article class="ve-card"><span class="eyebrow">INTER-SKILL</span><h3>スキル同士の重なり</h3><p><code>similarity-check</code>。コレクション内、または保存したカタログ（<code>--catalog</code>）と比べます。既定ではスキルの name と description だけを埋め込み、<code>--full-body</code> で <code>SKILL.md</code> 全体を使います。埋め込みだけで動きます。</p></article>
+</div>
+<div class="ve-table-wrap">
+<table>
+<caption>スキル間の類似度の分類（docs/tier2-reference.mdx より）。既定の報告しきい値は 0.75</caption>
+<thead><tr><th>分類</th><th class="c">コサイン類似度</th><th>重大度</th></tr></thead>
+<tbody>
+<tr><td><code>EXACT_DUPLICATE</code></td><td class="c">≥ 0.95</td><td>CRITICAL（ブロック）</td></tr>
+<tr><td><code>HIGH_SIMILARITY</code></td><td class="c">≥ 0.90</td><td>HIGH（ブロック）</td></tr>
+<tr><td><code>SIMILAR</code></td><td class="c">≥ 0.75</td><td>MEDIUM（参考）</td></tr>
+<tr><td><code>LOOSELY_RELATED</code></td><td class="c">≥ 0.50</td><td>LOW（参考）</td></tr>
+<tr><td><code>DISTINCT</code></td><td class="c">&lt; 0.50</td><td>INFO（既定では報告しない）</td></tr>
+</tbody>
+</table>
+</div>
+<p>カタログを渡さずに 1 つのスキルだけを調べた場合、スキル間の比較はレポートに「not run」と表示されます。</p>
+</section>
+
+<section id="tier3" aria-labelledby="tier3-title">
+<h2 class="sec-head" id="tier3-title">06 — Tier 3：スキルあり・なしでエージェントを走らせる</h2>
+<p>Tier 3 は、同じ評価ケースを「スキルを入れたエージェント」と「入れないエージェント」（ベースライン）の 2 つの系統（arm）で実行し、採点結果の差を Skill Lift として出します。実行は <a href="https://github.com/harbor-framework/harbor">Harbor</a>（オープンソースのエージェント評価フレームワーク）が担い、実験的なバックエンドとして NeMo Gym も選べます。</p>
+<figure class="graph-example">
+<svg viewBox="0 0 960 300" role="img" aria-labelledby="t3-svg-title">
+<title id="t3-svg-title">Tier 3 の流れ。evals/evals.json の評価ケースを用意してレビューし、同じケースをスキルありとスキルなしの 2 系統でサンドボックス内のエージェントに実行させる。各試行の記録を決定的なチェックと LLM ジャッジで採点し、5 つの次元と総合スコアを出し、総合スコアの差を Skill Lift とする。</title>
+<defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--chart-1); stroke: none;"/></marker></defs>
+<rect x="10" y="105" width="160" height="90" rx="8"/>
+<text x="90" y="140" text-anchor="middle">評価ケース</text>
+<text x="90" y="164" text-anchor="middle" class="small">evals.json をレビュー</text>
+<rect class="arm-a" x="230" y="30" width="200" height="90" rx="8"/>
+<text x="330" y="65" text-anchor="middle">スキルあり</text>
+<text x="330" y="89" text-anchor="middle" class="small">エージェント＋スキル</text>
+<rect class="arm-b" x="230" y="180" width="200" height="90" rx="8"/>
+<text x="330" y="215" text-anchor="middle">スキルなし</text>
+<text x="330" y="239" text-anchor="middle" class="small">ベースライン</text>
+<rect x="490" y="105" width="190" height="90" rx="8"/>
+<text x="585" y="140" text-anchor="middle">採点</text>
+<text x="585" y="164" text-anchor="middle" class="small">決定的チェック＋ジャッジ</text>
+<rect class="fix" x="740" y="105" width="210" height="90" rx="8"/>
+<text x="845" y="140" text-anchor="middle">Skill Lift</text>
+<text x="845" y="164" text-anchor="middle" class="small">総合スコアの差</text>
+<path d="M170,140 L226,80" marker-end="url(#arr2)"/>
+<path d="M170,160 L226,220" marker-end="url(#arr2)"/>
+<path d="M430,75 L486,135" marker-end="url(#arr2)"/>
+<path d="M430,225 L486,165" marker-end="url(#arr2)"/>
+<path d="M680,150 L736,150" marker-end="url(#arr2)"/>
+<text class="edge-label" x="330" y="155" text-anchor="middle">同じケース・同じ環境</text>
+</svg>
+<figcaption>docs/tier3-live-evaluation.mdx、docs/tier3-runtime.mdx「How a run works」、docs/metrics-reference.mdx をもとに作図。</figcaption>
+</figure>
+<ol class="steps">
+<li><h3>評価ケースを用意する</h3><p>現実的な依頼、観察できる成功条件、範囲外の依頼（否定ケース）を書いたガイダンスから生成します。成果物は <code>./my-skill/evals/evals.json</code> で、明示・暗黙・文脈・否定のカテゴリにまたがるケースができます。<code>--no-llm</code> ではモデルを使わずテンプレートの下書きを作ります。</p>
+<div class="ve-code-block"><pre><code>skillevaluator create-eval-dataset ./my-skill --full --prompt eval-guidance.md</code></pre></div>
+<p>文書は、スキルのファイルを読むことやスクリプトを使うことを成功条件にしないよう求めています。ベースラインに不利になり、比較が成り立たなくなるためです。</p></li>
+<li><h3>ケースをレビューして検証する</h3><div class="ve-code-block"><pre><code>skillevaluator tier3 validate ./my-skill --strict</code></pre></div><p>この検証は構造と表現を調べるだけで、ケースが実際の使われ方を代表しているかは人が確認します。<code>evals/</code> がないと、終了コードが失敗にならずに「missing」と報告されることがあるため、ファイルの存在は先に確認します。</p></li>
+<li><h3>準備状態を確かめる</h3><div class="ve-code-block"><pre><code>skillevaluator doctor --env-mode docker</code></pre></div><p><code>doctor</code> が確かめるのは準備状態で、推論が成功するかまでは保証しません。</p></li>
+<li><h3>2 系統で実行する</h3><div class="ve-code-block"><pre><code>skillevaluator tier3 evaluate ./my-skill --env-mode docker --n-attempts 1</code></pre></div><p><code>--n-attempts 1</code> は、選んだケースを各系統で 1 回ずつ試すという意味です。モデルの呼び出しには料金がかかります。</p></li>
+<li><h3>レポートを開く</h3><div class="ve-code-block"><pre><code>skillevaluator view ./my-skill</code></pre></div><p>既定の出力先は <code>./my-skill/evals/results/</code> で、<code>report.html</code> と <code>result.json</code> ができます。文書は、実行状況と網羅、Skill Lift、個々の試行（エージェントが何をしたか、スキルが起動したか）の順に見るよう勧めています。</p></li>
+</ol>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>対応エージェント（docs/agents-and-sandboxes.mdx より）。プロバイダーごとの既定は NVIDIA Build → OpenCode、OpenAI → Codex、Anthropic → Claude Code</caption>
+<thead><tr><th>エージェント</th><th>備考</th></tr></thead>
+<tbody>
+<tr><td><code>claude-code</code></td><td>Harbor が Claude Code 2.1.292 をインストール。別名 <code>claude</code></td></tr>
+<tr><td><code>codex</code></td><td>Harbor が Codex 0.161.0 をインストール。<code>reasoning_effort=high</code> で実行</td></tr>
+<tr><td><code>opencode</code></td><td>Harbor が OpenCode 1.19.5 をインストール</td></tr>
+<tr><td><code>hermes</code></td><td>実験的。Docker と NVIDIA Build の組み合わせのみ</td></tr>
+</tbody>
+</table>
+</div>
+<p>実行場所（<code>--env-mode</code>）は既定の <code>docker</code> のほか、<code>kata</code>、<code>local</code>（手元にインストール済みの CLI を OS のサンドボックスポリシーの下で実行）、Daytona・E2B・Modal・EC2・GKE・Apple Container などの Harbor 対応の環境から選べます。</p>
+</section>
+
+<section id="scores" aria-labelledby="scores-title">
+<h2 class="sec-head" id="scores-title">07 — Tier 3 のスコアの計算</h2>
+<p>docs/metrics-reference.mdx は、すべての数値の出所を式と実装ファイルつきで説明し、「文書と実装が食い違ったら実装が正で、文書のバグ」としています。Tier 1 の品質スコア（0〜100）と Tier 3 のスコア（0.0〜1.0）は、次元名を 4 つ共有するだけの別物で、互いの入力にはなりません。</p>
+<h3>6 つのシグナル → 5 つの次元</h3>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>docs/metrics-reference.mdx「The five dimensions」「What is measured and what is judged」より</caption>
+<thead><tr><th>次元</th><th>問い</th><th>元のシグナル</th><th>採点方法</th></tr></thead>
+<tbody>
+<tr><td>Security</td><td>安全に使えるか</td><td><code>security</code></td><td>実行記録のコマンド・ツール呼び出し・出力へのパターン検査（決定的）</td></tr>
+<tr><td>Correctness</td><td>答えが正しいか</td><td><code>accuracy</code></td><td>LLM ジャッジ（5 つの真偽項目、0.2 刻み）</td></tr>
+<tr><td>Discoverability</td><td>必要なときに正しいスキルが読み込まれたか</td><td><code>skill_execution</code></td><td>ツール呼び出し列の構造検査（決定的）</td></tr>
+<tr><td>Effectiveness</td><td>スキルがタスクの完了を助けたか</td><td><code>goal_accuracy</code> と <code>behavior_check</code> の平均（0.5 / 0.5）</td><td>LLM ジャッジ。ケースに宣言済みのチェックがあればそれも</td></tr>
+<tr><td>Efficiency</td><td>ツールやスキルを無駄に使わなかったか</td><td><code>skill_efficiency</code></td><td>各ツール呼び出しの分類（決定的）</td></tr>
+</tbody>
+</table>
+</div>
+<p>測れないシグナル（期待出力のないケースの <code>accuracy</code>、ベースラインの <code>skill_execution</code> など）は N/A として平均から外し、0 としては数えません。ジャッジがエラーやタイムアウトになった場合は 0 点ではなく、その試行全体を失敗にします。</p>
+<h3>総合スコアと Skill Lift</h3>
+<div class="formula">overall    = mean(Security, Correctness, Discoverability, Effectiveness, Efficiency)
+Skill Lift = overall(スキルあり) − overall(スキルなし)</div>
+<p>Skill Lift は両系統が実行したケースと両系統が採点できたシグナルだけで計算するため、表示された 2 つの総合スコアの単純な差と一致しないことがあります。範囲は −1.0〜+1.0 で、+0.20 は「総合スコアが 0.20 高い」という意味であり、20% の改善ではありません。判定の目安は +0.05 以上で PASS、−0.10 以下で FAIL、その間が NEUTRAL です。ケース単位の対応のある値があれば、ブートストラップ（シード 0、2,000 回以上、95%）の区間も出します。</p>
+<h3>試行の合否と pass@k</h3>
+<p><code>--n-attempts k</code> では各ケースを各系統で k 回実行します。1 回の試行は、<code>goal_accuracy</code> が 1.0、<code>security</code> が 1.0、総合スコアが <code>--pass-threshold</code>（既定 0.50）以上、の順に確かめて合格になります。ケースは k 回のうち 1 回でも合格すれば合格です。合格率には 95% の Wilson 区間がつき、両系統が同じケースを実行した場合は McNemar の正確検定の値も記録されます。</p>
+</section>
+
+<section id="limits" aria-labelledby="limits-title">
+<h2 class="sec-head" id="limits-title">08 — 結果の読み方と、文書が認めている限界</h2>
+<p>metrics-reference には、確立していないことを列挙した節があります。結果を社内外に示す前に読んでおく内容です。</p>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>docs/metrics-reference.mdx「What has not been established」「What the project has done about judge reliability」より</caption>
+<thead><tr><th>項目</th><th>文書の記述</th></tr></thead>
+<tbody>
+<tr><td>ジャッジの一致度</td><td>人手でラベル付けした実行記録との評価者間一致度の研究は公開されていない。<code>tier3 validate-grader</code> は 16 ケースの小さな同梱スイートとの一致を測るだけ</td></tr>
+<tr><td>ジャッジの実測値</td><td>同梱スイートの評価用分割では、試した 2 つのジャッジモデルとも、既知の失敗タスクを総合スコアのしきい値で全件合格にした（15/15 の誤合格）。<code>accuracy</code> は形式違いや偽の成功報告にも部分点を与えた</td></tr>
+<tr><td>次元と重み</td><td>次元の定義、Effectiveness 内の 0.5 / 0.5、5 次元の等重みは設計上の選択で、妥当性は検証されていない</td></tr>
+<tr><td>しきい値</td><td>0.50 の合格ライン、Lift の ±帯、10 ケースの十分性基準などは議論のための既定値で、誤差モデルから導いたものではない</td></tr>
+<tr><td>対照群</td><td>比較はスキルあり・なしのみ。スキルの「内容」の効果と、「指示が 1 つ増えたこと」の効果を分けていない</td></tr>
+<tr><td>統計区間</td><td>Wilson 区間やブートストラップ区間は、その 1 回の構成（データセット、エージェント、モデル、環境）の範囲を述べるだけで、汎化の主張にはならない</td></tr>
+</tbody>
+</table>
+</div>
+<p>総合スコアのうち Correctness と Effectiveness の 2 次元（およそ 5 分の 2）が LLM ジャッジのばらつきを含みます。決定的なチェックも、エージェント自体が確率的に動くため、再実行すれば値は動きます。</p>
+<h3>データセットの十分性</h3>
+<p>各結果には <code>dataset_sufficiency</code> が付き、次の 3 条件をすべて満たすと sufficient、そうでなければ provisional と表示されます。この表示は判定、スコア、終了コードを変えません。</p>
+<ul>
+<li>否定ケースを 1 件以上含む 10 件以上のケース</li>
+<li>合格率の 95% Wilson 区間の半幅が 0.20 以下</li>
+<li>両系統で採点されたケースが 10 件以上</li>
+</ul>
+<div class="ve-callout"><strong>文書の例：</strong>「この 20 ケースで、このエージェントとモデルでは、スキルありの総合スコアが共通の基準で 0.21 高く、ブートストラップ区間は 0 を含まなかった」は妥当な読み方。「このスキルはエージェントの性能を 21% 上げる」は妥当でない。<code>--n-attempts 1</code> で数ケースの実行は、ベンチマークではなく動作確認として扱うよう書かれています。</div>
+</section>
+
+<section id="install" aria-labelledby="install-title">
+<h2 class="sec-head" id="install-title">09 — 導入と実行</h2>
+<h3>A. キーなしで品質を見る</h3>
+<div class="ve-code-block"><pre><code>pip install skillevaluator          # または: uv tool install --python 3.13 skillevaluator
+skillevaluator quality-check ./my-skill</code></pre></div>
+<p>API キー、スキャナー、GPU、Docker のいずれも不要です。100 点満点のスコア、評価、指摘が出ます。これは静的な品質だけで、公開用の証拠（publication evidence）は <code>INCOMPLETE</code> のままです。手元にスキルがなければ、リポジトリ同梱の <code>src/skillevaluator/tier3/reference_skills/text-analyzer</code> を使えます。</p>
+<h3>B. 3 つの Tier をすべて実行する</h3>
+<div class="ve-code-block"><pre><code>pip install "skillevaluator[all]"
+export SKILL_EVAL_LLM_PROVIDER=nv_build      # または openai
+export NVIDIA_API_KEY='nvapi-...'            # openai なら OPENAI_API_KEY
+
+skillevaluator doctor --env-mode docker
+skillevaluator validate ./my-skill           # --tiers 1,2 で Tier 3 を省く</code></pre></div>
+<p>事前に、スキャナーの準備、Docker の起動、レビュー済みデータセットの用意が必要です。NVIDIA Build（<a href="https://build.nvidia.com/">build.nvidia.com</a>）のキー 1 つで、Tier 2 の埋め込みとチャット、Tier 3 の対応エージェントをまかなえます。NVIDIA Developer Program の対象者は試作用途で無料で使えますが、利用規約とレート制限があります。Anthropic など他のプロバイダーは docs/configuration.mdx に設定方法があります。</p>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>外部スキャナー（docs/installation-options.mdx より）</caption>
+<thead><tr><th>ツール</th><th>扱い</th></tr></thead>
+<tbody>
+<tr><td>SkillSpector</td><td>対応バージョンがあれば使い、なければ初回に固定版を用意する。uv が必要</td></tr>
+<tr><td>Gitleaks</td><td>Linux と macOS では初回に固定版をダウンロード</td></tr>
+<tr><td>Semgrep</td><td>ポリシーで必須にしない限り任意。別途インストール</td></tr>
+<tr><td>pip-audit</td><td><code>[all]</code> または <code>[security]</code> に含まれる。依存監査（opt-in）用</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>--no-llm</code> を付けてもスキャナーは必要です。スキャナーが動かなければ結果は <code>INCOMPLETE</code> になり、終了コードは非 0 です。</p>
+<h3>C. ソースからインストールする</h3>
+<p>ハーネスチェックと JUnit 形式のレポートは PyPI 0.9.0 には含まれず、GitHub のソースからのインストールが必要です。手順は docs/installation.mdx と docs/developer-guide.mdx にあります。</p>
+</section>
+
+<section id="ci" aria-labelledby="ci-title">
+<h2 class="sec-head" id="ci-title">10 — CI とエージェントから使う</h2>
+<h3>CI のゲート</h3>
+<p>文書が推奨するキー不要のゲートは次のとおりです。終了コードで合否が決まるため、出力を解析する必要はありません。</p>
+<div class="ve-code-block"><pre><code>skillevaluator validate ./skills --profile default --tiers 1 \
+  -r json,markdown,sarif -o reports --min-score 70</code></pre></div>
+<p>JSON は機械処理用、Markdown は PR コメント用、SARIF は GitHub Code Scanning 用です。<code>skillevaluator ci init</code> を使うと、Tier 1 を必須ゲート、Tier 2 と Tier 3 を独立した参考チェックとする設定の PR が作られます。<code>.pre-commit-hooks.yaml</code> には、キー・ネットワーク・Docker なしで動く pre-commit フック（<code>skillevaluator-quality</code>、<code>skillevaluator-schema</code>、<code>skillevaluator-lint-scripts</code>）もあります（CHANGELOG の Unreleased 項目）。</p>
+<h3>エージェントのスキルとして使う</h3>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>docs/agent-skill.mdx「What you can ask」より</caption>
+<thead><tr><th>依頼の例</th><th>エージェントが実行するもの</th></tr></thead>
+<tbody>
+<tr><td>Is my skill any good?</td><td><code>skillevaluator tier1 &lt;skill-dir&gt; --no-llm</code></td></tr>
+<tr><td>Score the quality of this SKILL.md</td><td><code>quality-check</code> と <code>rubric-eval</code></td></tr>
+<tr><td>Does it overlap with my other skills?</td><td><code>skillevaluator tier2</code></td></tr>
+<tr><td>Write eval cases for my skill</td><td>実際のタスクと成功条件を聞いて <code>evals/EVAL.md</code> を書き、データセット生成と <code>tier3 validate --strict</code> を実行</td></tr>
+<tr><td>Does my skill actually make the agent better?</td><td><code>skillevaluator tier3 evaluate</code></td></tr>
+<tr><td>Gate skills in our CI</td><td><code>skillevaluator ci init</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>スコアはエージェントの意見ではなく CLI が出したものです。スキルは、CLI や追加パッケージのインストール、認証情報の使用、トークンの消費、エージェントの実行の前に許可を求め、評価ケースの中身を勝手に作らずに利用者に聞く、と文書にあります。</p>
+</section>
+
+<section id="cautions" aria-labelledby="cautions-title">
+<h2 class="sec-head" id="cautions-title">11 — 注意点</h2>
+<h3>サポートは Experimental</h3>
+<p>README はサポートレベルを Experimental とし、コミュニティによるベストエフォートで SLA や NVIDIA のエンタープライズサポートはないと明記しています。不具合は GitHub Issues、脆弱性は SECURITY.md の非公開の手順で報告します。</p>
+<h3>PyPI 版と main の差</h3>
+<p>本ページは main の文書をもとにしており、ハーネスチェック、JUnit レポート、pre-commit フックなどは PyPI 0.9.0 にまだ含まれていません。SkillSpector の固定バージョンも 0.9.0（2.13.3）とソース（2.13.4）で異なります。</p>
+<h3>データの送信と料金</h3>
+<ul>
+<li>Tier 1 の LLM 検査、Tier 2、Tier 3 の採点とデータセット生成は、スキルの本文や実行記録を設定したプロバイダーに送ります。社外に出せないスキルでは、送信先のモデルを先に決めておく必要があります。</li>
+<li>Tier 3 はエージェントとジャッジの両方でモデルを呼ぶため、料金がかかります。マネージドのサンドボックスを使う場合はその費用も発生します。</li>
+<li><code>validate</code> を <code>--tiers</code> なしで実行すると、データセットがなくても autopilot が 1 件のスターターケースを作って Tier 3 まで進みます。1 件のケースは動作確認であり、性能の評価にはなりません。</li>
+</ul>
+<h3>スコアの扱い</h3>
+<ul>
+<li>Tier 1 の品質スコアは静的な文章・構造の評価で、スキルがエージェントの役に立つかは示しません。効果を見るのは Tier 3 です。</li>
+<li>Tier 3 の結果は、1 つのスキル・データセット・エージェント・モデル・環境の 1 回の測定です。08 節の限界を踏まえて読みます。</li>
+</ul>
+<h3>その他</h3>
+<ul>
+<li>このプロジェクトは追加のサードパーティ製 OSS（スキャナー、Harbor、エージェント CLI など）をダウンロード・インストールします。README は利用前にそれぞれのライセンスを確認するよう求めています。</li>
+<li>研究成果として論文（<a href="https://arxiv.org/abs/2608.20614">arXiv:2608.20614</a>）と NVIDIA Developer のブログ記事が出ています。引用する場合はリリースかコミットも記録するよう CITATION.cff で求めています。</li>
+</ul>
+</section>
+
+<section id="sources" aria-labelledby="sources-title">
+<h2 class="sec-head" id="sources-title">12 — 公式資料と確認したソース</h2>
+<ul>
+<li><a href="https://github.com/NVIDIA/SkillEvaluator">NVIDIA/SkillEvaluator</a> — README.md、CHANGELOG.md、pyproject.toml、<code>src/skillevaluator/harness/profiles/</code></li>
+<li><a href="https://docs.nvidia.com/skills/skillevaluator/">SkillEvaluator ドキュメント</a> — リポジトリの <code>docs/</code> と同じ内容。本ページでは tier1-reference、harness-check、tier2-deduplication、tier2-reference、tier3-live-evaluation、tier3-runtime、prepare-dataset、agents-and-sandboxes、metrics-reference、installation-options、ci-integration、agent-skill を参照</li>
+<li><a href="https://github.com/NVIDIA/SkillEvaluator/blob/main/docs/metrics-reference.mdx">docs/metrics-reference.mdx</a> — Tier 3 のスコアの式、ジャッジの信頼性、確立していないこと</li>
+<li><a href="https://arxiv.org/abs/2608.20614">論文（arXiv:2608.20614）</a> · <a href="https://developer.nvidia.com/blog/evaluating-ai-agent-skill-performance-with-nvidia-skillevaluator/">NVIDIA Developer ブログ</a> · <a href="https://pypi.org/project/skillevaluator/">PyPI</a></li>
+</ul>
+<p class="source-note">確認日: 2026-11-17 · ソース: <a href="https://github.com/NVIDIA/SkillEvaluator/tree/64b237f017264e7a82447d7e1a217d8893ed7e84">64b237f</a>（2026-11-17、pyproject のバージョン 0.9.0）。原文は英語で、本ページの引用・要約は日本語訳です。動作は実行して確認しておらず、ソースと文書の記述にもとづきます。</p>
+</section>
+</main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
