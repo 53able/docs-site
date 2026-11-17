@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude-BugHunter — バグバウンティと外部レッドチーム向けの Claude Code スキル集</title>
+  <meta name="description" content="elementalsouls/Claude-BugHunter の解説。83 のスキルと 15 のスラッシュコマンド、決定論的なエンゲージメントエンジン、cbh CLI で、スコープ確認 → 偵察 → 調査 → 検証 → 証跡 → 報告の 6 フェーズを支援する。対象範囲、7-Question Gate、導入方法、評価結果と注意点。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Claude-BugHunter — バグバウンティと外部レッドチーム向けの Claude Code スキル集">
+  <meta property="og:description" content="elementalsouls/Claude-BugHunter の解説。83 のスキルと 15 のスラッシュコマンド、決定論的なエンゲージメントエンジン、cbh CLI で、スコープ確認 → 偵察 → 調査 → 検証 → 証跡 → 報告の 6 フェーズを支援する。対象範囲、7-Question Gate、導入方法、評価結果と注意点。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/claude-bughunter.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Claude-BugHunter — バグバウンティと外部レッドチーム向けの Claude Code スキル集">
+  <meta name="twitter:description" content="elementalsouls/Claude-BugHunter の解説。83 のスキルと 15 のスラッシュコマンド、決定論的なエンゲージメントエンジン、cbh CLI で、スコープ確認 → 偵察 → 調査 → 検証 → 証跡 → 報告の 6 フェーズを支援する。対象範囲、7-Question Gate、導入方法、評価結果と注意点。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Wix+Madefor+Text:wght@400;500;600;700&family=Atkinson+Hyperlegible+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.55 0.15 45);
+      --chart-2: oklch(0.62 0.12 75);
+      --chart-3: oklch(0.42 0.12 35);
+      --chart-4: oklch(0.828 0.189 84.429);
+      --chart-5: oklch(0.769 0.188 70.08);
+      --code-bg: var(--muted);
+      --code-text: #4a2208;
+      --font-body: 'Wix Madefor Text', 'Hiragino Sans', system-ui, sans-serif;
+      --font-mono: 'Atkinson Hyperlegible Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.76 0.13 50);
+        --chart-2: oklch(0.78 0.12 75);
+        --chart-3: oklch(0.82 0.09 40);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --code-bg: #0f0f0f;
+        --code-text: #f3c9a4;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--hero {
+      background: color-mix(in srgb, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in srgb, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in srgb, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in srgb, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 22rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap caption { text-align: left; font-size: .75rem; color: var(--text-dim); padding: .6rem 1rem; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.55 0.15 45 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.76 0.13 50 / 0.08) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; max-width: 48rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.0625rem; font-weight: 600; margin: 1.5rem 0 0.6rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    a:focus-visible { outline: 2px solid var(--chart-1); outline-offset: 4px; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    .hero-title { font-size: clamp(1.4rem, 2.8vw, 2.2rem); line-height: 1.5; margin: .3rem 0 1rem; }
+    .eyebrow { font-family: var(--font-mono); color: var(--chart-1); font-size: .75rem; letter-spacing: .08em; }
+    .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .card-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card-grid h3 { margin-top: .25rem; }
+    .card-grid p:last-child { margin-bottom: 0; }
+    .graph-example { margin: 1.5rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+    .graph-example svg { display: block; width: 100%; height: auto; color: var(--foreground); }
+    .graph-example rect { fill: var(--muted); stroke: var(--border); }
+    .graph-example .fix { fill: color-mix(in srgb, var(--card) 88%, var(--chart-1)); stroke: var(--chart-1); }
+    .graph-example .dash { fill: none; stroke: var(--ring); stroke-dasharray: 5 4; }
+    .graph-example path { fill: none; stroke: var(--chart-1); stroke-width: 2; }
+    .graph-example text { fill: currentColor; font-family: var(--font-body); font-size: 15px; }
+    .graph-example .small { font-size: 12px; }
+    .graph-example .edge-label { fill: var(--chart-1); font-size: 13px; }
+    figcaption { font-size: .8rem; color: var(--text-dim); margin-top: .75rem; }
+    .ve-table-wrap { overflow-x: auto; margin: 1rem 0; }
+    .ve-table-wrap table { min-width: 560px; font-size: .875rem; }
+    .ve-table-wrap td { vertical-align: top; }
+    .ve-table-wrap td:first-child { white-space: nowrap; }
+    .ve-table-wrap.wrap-first td:first-child { white-space: normal; }
+    .ve-callout { margin: 1rem 0; font-size: .9rem; }
+    .steps { padding-left: 1.5rem; }
+    .steps > li { padding-left: .5rem; margin-bottom: 1.25rem; }
+    .steps > li::marker { color: var(--chart-1); font-weight: 700; font-family: var(--font-mono); }
+    .steps h3 { margin: 0 0 .4rem; }
+    .chain { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: 1rem 0; font-size: .8125rem; padding: 0; list-style: none; }
+    .chain li { margin: 0; background: var(--muted); padding: .3rem .6rem; border-radius: var(--radius-sm); font-family: var(--font-mono); }
+    .chain li + li::before { content: "→"; color: var(--text-dim); margin-right: .55rem; font-family: var(--font-body); }
+    .chain li { display: inline-flex; align-items: center; }
+    .chain li + li { background: none; padding-left: 0; }
+    .chain li + li span { background: var(--muted); padding: .3rem .6rem; border-radius: var(--radius-sm); }
+    .tag { display: inline-block; font-family: var(--font-mono); font-size: .7rem; padding: 1px 6px; border-radius: var(--radius-sm); border: 1px solid var(--chart-1); color: var(--chart-1); margin-right: .25rem; }
+    .source-note { font-size: .8rem; color: var(--text-dim); overflow-wrap: anywhere; }
+    .skip-link { position: absolute; left: 1rem; top: -5rem; padding: .5rem 1rem; background: var(--card); z-index: 20; }
+    .skip-link:focus { top: 1rem; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+    @media (max-width: 760px) { .card-grid.three { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) {
+      body { padding: 20px; }
+      .toc { margin-inline: -20px; padding-inline: 20px; }
+      .card-grid { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .ve-card { padding: 1rem; }
+      h1 { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#main">本文へ移動</a>
+<div class="wrap">
+<nav class="toc" id="toc" aria-label="目次"><div class="toc-title">Claude-BugHunter</div>
+<a href="#overview">概要</a>
+<a href="#scope">対象範囲</a>
+<a href="#layers">スキルの構成</a>
+<a href="#phases">6 フェーズ</a>
+<a href="#gate">7-Question Gate</a>
+<a href="#commands">スラッシュコマンド</a>
+<a href="#engine">エンジン</a>
+<a href="#cbh">cbh CLI</a>
+<a href="#install">導入</a>
+<a href="#cautions">評価と注意点</a>
+<a href="#sources">出典</a>
+</nav>
+<main class="main" id="main">
+<p><a href="../index.html">← 資料一覧</a></p>
+<h1>Claude-BugHunter</h1>
+<p class="subtitle">elementalsouls/Claude-BugHunter · plugin v2.1.0 · Claude Code プラグイン / Agent Skills · Python 3.9+ · コード MIT / コンテンツ CC BY 4.0</p>
+
+<section id="overview" aria-labelledby="overview-title">
+<h2 class="sec-head" id="overview-title">01 — バグバウンティと外部レッドチーム向けのスキル集</h2>
+<div class="ve-card ve-card--hero">
+<span class="eyebrow">SCOPE → RECON → HUNT → VALIDATE → CAPTURE → REPORT</span>
+<p class="hero-title"><strong>スコープを先に確かめ、7 つの問いを通った発見だけを報告する。</strong></p>
+<p>Claude-BugHunter は、Claude Code に脆弱性調査の手順と知識を読み込ませるスキル集です。83 のスキル、15 のスラッシュコマンド、攻撃面を決定論的に整理するエンゲージメントエンジン（<code>engine/</code>）、ターミナルから使う <code>cbh</code> CLI で構成されます。対象は、書面で許可を得た資産（バグバウンティのスコープ内資産、ペネトレーションテストの契約範囲、CTF、自分のインフラ）に限られます。</p>
+<p>スキルは名前で呼び出さず、テスト内容を自然文で書くと説明文が一致したものが読み込まれます。たとえば「このエンドポイントに <code>?url=</code> パラメーターがある」と書けば <code>hunt-ssrf</code> だけが読み込まれます。</p>
+</div>
+<div class="kpi-row">
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">83</div><div class="ve-kpi-card__label">スキル（うち hunt-* 58）</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">15</div><div class="ve-kpi-card__label">スラッシュコマンド</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">433</div><div class="ve-kpi-card__label">個別に引用した公開報告</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">5</div><div class="ve-kpi-card__label">対応するエージェント環境</div></div>
+</div>
+<div class="card-grid">
+<article class="ve-card"><span class="eyebrow">作られた経緯</span><h3>実案件で見つかった不足から</h3><p>README は、バグバウンティ案件で「検証前に報告を書く」「プログラムごとの重大度の付け方を知らない」「証拠のスクリーンショットに Cookie や他人の個人情報が写る」といった不足が見つかり、レッドチーム案件では SOC による途中の修正に気づけない、エンタープライズ製品の攻撃チェーンを知らない、といった不足が見つかったと説明しています。各スキルはこれらを埋めるために追加されました。</p></article>
+<article class="ve-card"><span class="eyebrow">数字の定義</span><h3>681 と 433 の違い</h3><p>README の見出しにある 681 は、公開された HackerOne 報告から整理したパターンの数です。433 は、そのうち報告の URL を個別に引用し、<code>verify_citations.py</code> で内容の一致を確認した件数です。CHANGELOG によると、裏付けのなかった件数は下方修正されています（例: <code>hunt-source-leak</code> 31→7）。</p></article>
+</div>
+</section>
+
+<section id="scope" aria-labelledby="scope-title">
+<h2 class="sec-head" id="scope-title">02 — 対象範囲：外部から届く攻撃面だけ</h2>
+<p>このスキル集は、内部の端末を侵害しなくてもインターネットから到達できる範囲を扱います。境界を越えた後の作業は、意図的に対象外です。</p>
+<div class="ve-table-wrap">
+<table>
+<caption>README と SECURITY.md の「Scope」より</caption>
+<thead><tr><th>区分</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>対象</td><td>バグバウンティ（Web アプリ、API、SaaS、GraphQL、OAuth、JWT、ファイルアップロード、IDOR、SSRF など）、Web アプリのペネトレーションテスト</td></tr>
+<tr><td>対象</td><td>外部レッドチームの初期侵入：M365 / Entra ID、Okta、SharePoint オンプレミス、VMware vCenter、SSL VPN 機器、Android / iOS アプリ、サプライチェーンの偵察</td></tr>
+<tr><td>対象</td><td>クラウドの設定不備と、認証情報を得た後の権限の確認（公開 S3、IMDS、STS AssumeRole など）</td></tr>
+<tr><td>対象</td><td>偵察と OSINT、報告書の作成（HackerOne、Bugcrowd、Intigriti、Immunefi、レッドチームの顧客向け報告書）</td></tr>
+<tr><td>対象外</td><td>内部 Active Directory への攻撃、C2 フレームワーク、侵入後の永続化・横展開、AV/EDR の回避、ハードウェア・無線・ICS、バイナリエクスプロイト</td></tr>
+<tr><td>対象外</td><td>許可のない対象への 0-day の悪用、マルウェア開発、大量スキャン、上流プロジェクトのサプライチェーン侵害、クレデンシャルスタッフィング</td></tr>
+</tbody>
+</table>
+</div>
+<div class="ve-callout"><strong>境界の扱い：</strong>影響を示すためにスコープ外へ出る必要がある場合、検証ゲートは「さらに攻撃して証明する」ではなく <code>DOWNGRADE</code> か <code>CHAIN-REQUIRED</code> を返す設計です。ドメイン管理者級の目標に届いた場合も、チェーンは「認証情報を発見し、アクセスを確認した」時点で終わり、内部向けの専用ツールへ引き渡します。</div>
+</section>
+
+<section id="layers" aria-labelledby="layers-title">
+<h2 class="sec-head" id="layers-title">03 — スキルの構成：4 つの層</h2>
+<p>README は 83 のスキルを、考え方・Web アプリの調査・境界の攻撃・報告の 4 層で説明しています。</p>
+<div class="card-grid">
+<article class="ve-card"><span class="eyebrow">THINK</span><h3>方法論と心構え</h3><p><code>bb-methodology</code> の非線形な 5 フェーズの作業手順と、<code>redteam-mindset</code> のオペレーターとしての規律。防御側の脆弱性診断の感覚で早く手を止めてしまう癖を補正します。</p></article>
+<article class="ve-card"><span class="eyebrow">HUNT WEBAPPS</span><h3>脆弱性クラスごとの hunt-*</h3><p>XSS、SQLi、SSRF、IDOR、LFI、SSTI、OAuth、GraphQL などのクラス別と、Next.js、Spring Boot、Laravel などのフレームワーク別のスキル。検出パターン、回避の表、チェーンの型を持ちます。</p></article>
+<article class="ve-card"><span class="eyebrow">HIT THE PERIMETER</span><h3>エンタープライズ製品の攻撃チェーン</h3><p>M365 / Entra、Okta、クラウド IAM、vCenter、SSL VPN、APK / iOS、サプライチェーン偵察。2024〜2026 年の CVE チェーンと、認証情報を得た後の権限昇格の考え方をまとめています。</p></article>
+<article class="ve-card"><span class="eyebrow">SHIP IT</span><h3>検証・証跡・報告</h3><p><code>triage-validation</code> の 7-Question Gate、<code>evidence-hygiene</code> による Cookie と個人情報の伏せ字、Bugcrowd の VRT に沿った重大度、レッドチームの顧客向け報告書（MD + DOCX）。</p></article>
+</div>
+<div class="ve-table-wrap">
+<table>
+<caption>カテゴリ別のスキル数（README「What's inside」より）</caption>
+<thead><tr><th>カテゴリ</th><th>数</th><th>例</th></tr></thead>
+<tbody>
+<tr><td>Web アプリの脆弱性クラス（hunt-*）</td><td>58</td><td>hunt-xss、hunt-sqli、hunt-ssrf、hunt-idor、hunt-oauth、hunt-graphql、hunt-nextjs</td></tr>
+<tr><td>エンタープライズ製品の攻撃</td><td>10</td><td>m365-entra-attack、okta-attack、cloud-iam-deep、vmware-vcenter-attack、enterprise-vpn-attack</td></tr>
+<tr><td>報告と検証</td><td>6</td><td>triage-validation、evidence-hygiene、report-writing、bugcrowd-reporting</td></tr>
+<tr><td>偵察と OSINT</td><td>5</td><td>web2-recon、offensive-osint、osint-methodology、recon-scope-triage</td></tr>
+<tr><td>方法論と心構え</td><td>4</td><td>bb-methodology、bug-bounty、redteam-mindset、bb-local-toolkit</td></tr>
+</tbody>
+</table>
+</div>
+<p class="source-note">hunt-* の 58 には、<code>/hunt</code> が内部で使うルーター <code>hunt-dispatch</code> が含まれます。出自は 55 がこのリポジトリのオリジナル、20 がコミュニティ寄稿、8 が <a href="https://github.com/shuvonsec/claude-bug-bounty">shuvonsec/claude-bug-bounty</a>（MIT）からの取り込みです（docs/architecture.md）。</p>
+</section>
+
+<section id="phases" aria-labelledby="phases-title">
+<h2 class="sec-head" id="phases-title">04 — 6 フェーズの作業の流れ</h2>
+<p>作業は 6 フェーズに分かれ、左から右へ進みます。途中のフェーズから始めることもできます。Validate の結果は 4 つに分岐します。</p>
+<figure class="graph-example">
+<svg viewBox="0 0 960 300" role="img" aria-labelledby="phases-svg-title">
+<title id="phases-svg-title">Claude-BugHunter の 6 フェーズ。Scope、Recon、Hunt、Validate、Capture、Report の順に進む。Validate の結果は PASS なら Capture へ、KILL なら報告しない、CHAIN-REQUIRED なら Hunt に戻って別の脆弱性と組み合わせる、DOWNGRADE なら重大度を下げて Capture へ進む。</title>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--chart-1); stroke: none;"/></marker></defs>
+<rect x="10" y="40" width="135" height="80" rx="8"/>
+<text x="77" y="72" text-anchor="middle">1 Scope</text>
+<text x="77" y="96" text-anchor="middle" class="small">scope.md・/scope</text>
+<rect x="167" y="40" width="135" height="80" rx="8"/>
+<text x="234" y="72" text-anchor="middle">2 Recon</text>
+<text x="234" y="96" text-anchor="middle" class="small">サブドメイン・JS</text>
+<rect x="324" y="40" width="135" height="80" rx="8"/>
+<text x="391" y="72" text-anchor="middle">3 Hunt</text>
+<text x="391" y="96" text-anchor="middle" class="small">hunt-* が読み込まれる</text>
+<rect class="fix" x="481" y="40" width="135" height="80" rx="8"/>
+<text x="548" y="72" text-anchor="middle">4 Validate</text>
+<text x="548" y="96" text-anchor="middle" class="small">7-Question Gate</text>
+<rect x="638" y="40" width="135" height="80" rx="8"/>
+<text x="705" y="72" text-anchor="middle">5 Capture</text>
+<text x="705" y="96" text-anchor="middle" class="small">伏せ字・HAR 整理</text>
+<rect x="795" y="40" width="135" height="80" rx="8"/>
+<text x="862" y="72" text-anchor="middle">6 Report</text>
+<text x="862" y="96" text-anchor="middle" class="small">H1・Bugcrowd など</text>
+<path d="M145,80 L163,80" marker-end="url(#arr)"/>
+<path d="M302,80 L320,80" marker-end="url(#arr)"/>
+<path d="M459,80 L477,80" marker-end="url(#arr)"/>
+<path d="M616,80 L634,80" marker-end="url(#arr)"/>
+<path d="M773,80 L791,80" marker-end="url(#arr)"/>
+<text class="edge-label" x="625" y="30" text-anchor="middle">PASS</text>
+<path d="M548,120 L548,196" marker-end="url(#arr)"/>
+<path d="M548,160 L420,160 L420,196" marker-end="url(#arr)"/>
+<path d="M548,160 L690,160 L690,196" marker-end="url(#arr)"/>
+<rect class="dash" x="473" y="200" width="150" height="64" rx="8"/>
+<text x="548" y="228" text-anchor="middle">KILL</text>
+<text x="548" y="250" text-anchor="middle" class="small">報告を書かない</text>
+<rect x="300" y="200" width="150" height="64" rx="8"/>
+<text x="375" y="228" text-anchor="middle">CHAIN-REQUIRED</text>
+<text x="375" y="250" text-anchor="middle" class="small">別の脆弱性と連鎖</text>
+<rect x="645" y="200" width="150" height="64" rx="8"/>
+<text x="720" y="228" text-anchor="middle">DOWNGRADE</text>
+<text x="720" y="250" text-anchor="middle" class="small">重大度を下げて続行</text>
+<path d="M340,200 L340,124" marker-end="url(#arr)"/>
+<path d="M760,200 L760,124" marker-end="url(#arr)"/>
+</svg>
+<figcaption>docs/architecture.md の 6 フェーズの表と、engagement-flow 図の「Validate の 4 つの分岐」をもとに作図。</figcaption>
+</figure>
+<div class="ve-table-wrap">
+<table>
+<caption>フェーズと主なスキル（docs/architecture.md より）</caption>
+<thead><tr><th>フェーズ</th><th>使う場面</th><th>主なスキル・コマンド</th></tr></thead>
+<tbody>
+<tr><td>1 Scope</td><td>プログラムの受付、スコープの整理</td><td><code>bug-bounty</code>、<code>bb-methodology</code>、<code>osint-methodology</code>、<code>hunt &lt;name&gt;</code>（作業フォルダーの作成）</td></tr>
+<tr><td>2 Recon</td><td>資産の列挙、サブドメイン、秘密情報、ID 基盤の把握</td><td><code>offensive-osint</code>、<code>recon-scope-triage</code>、<code>web2-recon</code></td></tr>
+<tr><td>3 Hunt</td><td>脆弱性クラスごとのテスト</td><td>hunt-* 58、エンタープライズ製品の 8 スキル、<code>security-arsenal</code>、<code>web3-audit</code></td></tr>
+<tr><td>4 Validate</td><td>報告を書く前の判定</td><td><code>triage-validation</code>、<code>/triage</code>、<code>/validate</code></td></tr>
+<tr><td>5 Capture</td><td>スクリーンショットや HAR を添付する前</td><td><code>evidence-hygiene</code>（Cookie の伏せ字、他人の個人情報の黒塗り、HAR の整理）</td></tr>
+<tr><td>6 Report</td><td>最終報告の作成</td><td><code>report-writing</code>（CVSS 3.1 / 4.0）、<code>bugcrowd-reporting</code>、<code>redteam-report-template</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><code>redteam-mindset</code> と <code>mid-engagement-ir-detection</code> はフェーズをまたいで使います。後者は、テスト中に SOC が修正を入れた、別の攻撃者が動いている、といった変化を検知し、報告書の所見に変える手順です。</p>
+</section>
+
+<section id="gate" aria-labelledby="gate-title">
+<h2 class="sec-head" id="gate-title">05 — 7-Question Gate：報告前の判定</h2>
+<p><code>triage-validation</code> は、報告を書く前に次の 7 問を確認させます。1 つでも「いいえ」なら KILL です。</p>
+<ol class="steps">
+<li>攻撃者が実際の HTTP リクエストで、今すぐ使えるか。</li>
+<li>影響が、プログラムが受け付ける影響の一覧に入っているか。</li>
+<li>資産がスコープ内か。</li>
+<li>攻撃者が得られない特権アクセスなしで成立するか。</li>
+<li>既知の挙動や、文書化された仕様ではないか。</li>
+<li>「技術的には可能」以上の影響を示せるか。</li>
+<li>提出しない一覧（self-XSS、セキュリティヘッダーの欠如だけ、など）に入っていないか。</li>
+</ol>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>判定の結果</caption>
+<thead><tr><th>結果</th><th>意味</th></tr></thead>
+<tbody>
+<tr><td><code>PASS</code></td><td>7 問すべてに証拠付きで答えられた。報告へ進む。</td></tr>
+<tr><td><code>KILL</code></td><td>報告を書かない。提出しない一覧に該当した場合も KILL。</td></tr>
+<tr><td><code>CHAIN-REQUIRED</code></td><td>単体では影響が足りない。別の脆弱性と組み合わせる（<code>/chain</code>）。</td></tr>
+<tr><td><code>DOWNGRADE</code></td><td>重大度か重複の問いだけで落ちた。重大度の主張を下げて続ける。</td></tr>
+</tbody>
+</table>
+</div>
+<p>README は、この判定を「生産的な研究者とノイズを分ける規律」と位置づけています。無効な提出はプラットフォーム上の有効率を下げるため、報告の前に止めることが目的です。</p>
+</section>
+
+<section id="commands" aria-labelledby="commands-title">
+<h2 class="sec-head" id="commands-title">06 — 15 のスラッシュコマンド</h2>
+<p>スキルは自動で読み込まれますが、コマンドを使うと特定の手順を明示的に始められます。プラグインとして導入した場合は <code>claude-bughunter:</code> の名前空間に入ります。</p>
+<div class="ve-table-wrap">
+<table>
+<caption>commands/ の各ファイルの description より</caption>
+<thead><tr><th>コマンド</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td><code>/scope</code></td><td>HTTP で触れる前に、資産がスコープ内かを確認する。<code>engine/scope.py</code> による決定論的な判定で、拒否が優先し、記載のないものは拒否。</td></tr>
+<tr><td><code>/recon</code></td><td>サブドメイン列挙、生存ホストの確認、URL のクロール、パターン分類、nuclei による走査。結果は <code>recon/&lt;target&gt;/</code> に出力。</td></tr>
+<tr><td><code>/surface</code></td><td>偵察結果のマニフェストと過去の記録から、優先順位付きの攻撃面を表示する。</td></tr>
+<tr><td><code>/hunt</code></td><td>調査の入口。Red Team か WAPT / バグバウンティかを 1 回だけ尋ね、<code>hunt-dispatch</code> に渡す。<code>--vuln-class</code> で 1 クラスに絞れる。</td></tr>
+<tr><td><code>/autopilot</code></td><td>スコープ確認から報告の下書きまでを自動で回す。<code>--paranoid</code>（既定）・<code>--normal</code>・<code>--yolo</code> で人の確認を挟む頻度を変える。<code>--yolo</code> でも報告の承認は必要。</td></tr>
+<tr><td><code>/chain</code></td><td>見つけた脆弱性 A に B・C を組み合わせ、重大度を上げるチェーンを組む。</td></tr>
+<tr><td><code>/triage</code></td><td>7-Question Gate による短い go / no-go 判定。</td></tr>
+<tr><td><code>/validate</code></td><td>7-Question Gate と 4 つのチェックリストによる完全な検証。</td></tr>
+<tr><td><code>/report</code></td><td>HackerOne / Bugcrowd / Intigriti / Immunefi 形式の報告を作る。先に <code>/validate</code> を通す前提。</td></tr>
+<tr><td><code>/intel</code></td><td>対象の CVE（NVD、GitHub Advisory）、同梱の公開報告、過去の記録をまとめて取得する。</td></tr>
+<tr><td><code>/pickup</code></td><td>以前の調査の履歴と、まだテストしていない攻撃面を表示して再開する。</td></tr>
+<tr><td><code>/remember</code></td><td>対象や直前の発見に手動でメモを残す（autopilot 中の記録は自動）。</td></tr>
+<tr><td><code>/memory-gc</code></td><td>autopilot の記録（<code>findings.jsonl</code>、<code>negatives.jsonl</code>）のサイズを確認し、ローテーションする。</td></tr>
+<tr><td><code>/web3-audit</code></td><td>スマートコントラクトを 10 のバグクラスで監査し、確認できたものに Foundry の PoC テンプレートを作る。</td></tr>
+<tr><td><code>/token-scan</code></td><td>ミームコインやトークンのラグプル要因（隠れた mint、ハニーポット、手数料操作など）を確認する。</td></tr>
+</tbody>
+</table>
+</div>
+<div class="ve-callout"><strong>セッションを分ける：</strong><code>/autopilot</code> の説明は、対象ごとに新しい Claude Code セッションを使うよう求めています。1 つのセッションで複数の対象を扱うと、対象 A の発見や技術スタックの前提が対象 B に混ざるためです。切り替える場合は <code>/pickup</code> で対象の文脈を読み直します。</div>
+</section>
+
+<section id="engine" aria-labelledby="engine-title">
+<h2 class="sec-head" id="engine-title">07 — エンゲージメントエンジン：既定は地図まで</h2>
+<p><code>engine/</code> は自律的にテストするロボットではなく、判断を支える道具として作られています。既定の実行は、攻撃面を決定論的に整理し、どこにどの hunt-* スキルを当てるかの「地図」（<code>arsenal.md</code>）を出して止まります。エージェントを使った調査は <code>--hunt</code> を付けたときだけ動きます。</p>
+<ul class="chain" aria-label="エンジンの処理順">
+<li>recon</li>
+<li><span>rank</span></li>
+<li><span>map（既定はここまで）</span></li>
+<li><span>hunt（--hunt）</span></li>
+<li><span>validate</span></li>
+<li><span>report</span></li>
+</ul>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>engine/README.md の構成表より</caption>
+<thead><tr><th>モジュール</th><th>役割</th></tr></thead>
+<tbody>
+<tr><td><code>scope.py</code></td><td>apex・ワイルドカード・CIDR・正規表現による許可リスト。拒否が優先し、記載のないものは拒否。偵察と調査の両方で強制する。</td></tr>
+<tr><td><code>recon.py</code></td><td>技術スタックの判定、JS バンドルからのエンドポイント抽出、JS 内の秘密情報の検出（伏せ字で記録）、<code>gau</code> と <code>katana</code> による入力パラメーターの収集。LLM は使わない。</td></tr>
+<tr><td><code>skill_map.py</code></td><td>各エンドポイント・パラメーターと脆弱性クラスの組を、実際にインストールされている hunt-* スキルと、最初に試す curl に対応付ける。</td></tr>
+<tr><td><code>state.py</code></td><td>再開できる作業記録（<code>state.json</code>、<code>evidence/</code>、<code>engine.log</code>、<code>arsenal.md</code>、<code>report.md</code>）。</td></tr>
+<tr><td><code>agent.py</code></td><td>ヘッドレスの <code>claude -p</code> を呼び、JSON を取り出す。スキルは既定でオフ。</td></tr>
+<tr><td><code>engine.py</code></td><td>フェーズの進行、スコープの強制、順位付け、地図、並列の調査と検証、報告をまとめる。</td></tr>
+</tbody>
+</table>
+</div>
+<div class="card-grid three">
+<article class="ve-card"><span class="eyebrow">READ-ONLY</span><h3>既定は読み取りのみ</h3><p>調査と検証のエージェントには、スコープ内のホストだけを扱い、メール送信・書き込み・削除・露出した認証情報の使用など状態を変える操作をしないよう指示します。<code>--allow-intrusive</code> を付けたときだけ解除されます。</p></article>
+<article class="ve-card"><span class="eyebrow">SCOPE AUDIT</span><h3>PoC のスコープ外ホストを検出</h3><p>確認済みの発見ごとに、PoC にスコープ外のホストが含まれていないかを決定論的に確認し、含まれていれば報告書に警告を付けます。</p></article>
+<article class="ve-card"><span class="eyebrow">SEVERITY</span><h3>検証側の重大度を採用</h3><p>保存される重大度は、調査エージェントの推定ではなく、反対の立場で確認する検証エージェントが付けたものです。</p></article>
+</div>
+<div class="ve-code-block"><pre><code># 既定：決定論的な地図だけ（エージェントなし）
+python3 engine/engine.py --scope my-engagement.json
+
+# 地図にもとづいてエージェントで調査（読み取りのみ、並列 3、最大 12 件）
+python3 engine/engine.py --scope my-engagement.json --hunt --parallel 3 --max-hunts 12
+
+# 実際の出力を使わずに配線だけ確認
+python3 engine/engine.py --scope engine/engagement.example.json --base /tmp/eng --mock --hunt</code></pre></div>
+<p>サブドメインや資産の列挙（OSINT）はエンジンの外にあり、姉妹プロジェクトの <a href="https://github.com/elementalsouls/Claude-OSINT">Claude-OSINT</a> が担当します。エンジンはスコープ内の起点ホストから偵察を始めます。</p>
+</section>
+
+<section id="cbh" aria-labelledby="cbh-title">
+<h2 class="sec-head" id="cbh-title">08 — cbh CLI：ターミナルから使う決定論的な実行役</h2>
+<p><code>cbh</code> は補助的なインターフェイスです。会話の中で判断を伴う調査をするときはスラッシュコマンドを使い、CI や定期実行、ラボでの再現など、毎回同じ出力が欲しいときに <code>cbh</code> を使います。どちらも同じ <code>skills/</code> と <code>docs/disclosed-reports/</code> を参照します。</p>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>docs/cbh-cli.md「The five subcommands」より</caption>
+<thead><tr><th>サブコマンド</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td><code>cbh recon &lt;target&gt;</code></td><td>証明書の透明性ログ（crt.sh）と subfinder でサブドメインを集め、DNS を解決し、生存ホストのステータスとヘッダー、タイトルを取得する。偵察から調査への受け渡し用に <code>manifest.json</code> を出力する。</td></tr>
+<tr><td><code>cbh surface &lt;target&gt;</code></td><td>マニフェストから攻撃面を P1 / P2 / Kill に分ける（api・auth・admin は P1、静的ファイルや CDN は Kill）。</td></tr>
+<tr><td><code>cbh classify &lt;url&gt;</code></td><td>18 の URL パターンと、スキルの description のキーワードで、URL を hunt-* スキルに対応付ける。</td></tr>
+<tr><td><code>cbh triage &lt;finding.md&gt;</code></td><td>発見の記述に 7-Question Gate をキーワード照合で当て、PASS / DOWNGRADE / KILL を返す。証拠の記述がない問いは「未回答」扱い。</td></tr>
+<tr><td><code>cbh report &lt;finding.md&gt;</code></td><td>発見の frontmatter と見出しから、<code>--platform</code> で指定したプラットフォーム向けの下書きを作る。</td></tr>
+</tbody>
+</table>
+</div>
+<p>HTTP は既定で Python 標準ライブラリから送ります。<code>--burp</code> を付けると Burp Suite のプロキシ経由になり、リクエストとレスポンスが Burp の履歴に残ります。会話の中から Burp を操作する場合は、Burp の MCP サーバーを Claude Code に登録します。</p>
+</section>
+
+<section id="install" aria-labelledby="install-title">
+<h2 class="sec-head" id="install-title">09 — 導入</h2>
+<h3>A. Claude Code プラグインとして導入する（推奨）</h3>
+<div class="ve-code-block"><pre><code>/plugin marketplace add elementalsouls/Claude-BugHunter
+/plugin install claude-bughunter@elementalsouls</code></pre></div>
+<p>83 のスキルと 15 のコマンドが <code>claude-bughunter:</code> の名前空間で読み込まれます。<code>cbh</code> は含まれないため、必要なら <code>pipx install git+https://github.com/elementalsouls/Claude-BugHunter</code> で別に入れます。作業フォルダーを作る <code>hunt</code> コマンドはクローンでのみ使えます。</p>
+<h3>B. クローンしてコピーで導入する</h3>
+<div class="ve-code-block"><pre><code>git clone https://github.com/elementalsouls/Claude-BugHunter.git
+cd Claude-BugHunter
+bash scripts/install.sh            # macOS / Linux
+pwsh ./scripts/install.ps1         # Windows
+
+# 検出したエージェント環境すべてに入れ、Burp MCP も設定する
+bash scripts/install.sh --all --burp-mcp
+
+# 取り除く（インストール時のマニフェストにもとづく）
+bash scripts/install.sh --uninstall</code></pre></div>
+<p>スキルとコマンドを <code>~/.claude/</code> にコピーし、シェルの設定ファイルに <code>hunt</code> を読み込む 1 行を追加します（<code>--no-shell</code> で省略可）。<code>hunt acme</code> は <code>~/Targets/acme/</code> に CLAUDE.md、scope.md、findings/、evidence/、提出の記録などのひな形を作ります。</p>
+<div class="ve-table-wrap">
+<table>
+<caption>対応するエージェント環境（README「Runs on multiple agent harnesses」より）</caption>
+<thead><tr><th>環境</th><th>スキルの配置先</th><th>フラグ</th></tr></thead>
+<tbody>
+<tr><td>Claude Code</td><td><code>~/.claude/skills/</code></td><td>既定</td></tr>
+<tr><td>OpenCode</td><td><code>~/.claude/skills/</code> と <code>~/.agents/skills/</code> を読む</td><td>既定 / <code>--agents</code></td></tr>
+<tr><td>OpenAI Codex CLI</td><td><code>~/.agents/skills/</code></td><td><code>--agents</code></td></tr>
+<tr><td>Hermes Agent</td><td><code>~/.hermes/skills/</code></td><td><code>--hermes</code></td></tr>
+<tr><td>Google AntiGravity</td><td><code>~/.gemini/config/skills/</code></td><td><code>--antigravity</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>知識としてのスキルは 5 つの環境すべてで使えます。スラッシュコマンドと <code>/hunt</code> のエンジン連携は Claude Code 専用です。</p>
+</section>
+
+<section id="cautions" aria-labelledby="cautions-title">
+<h2 class="sec-head" id="cautions-title">10 — 評価結果と注意点</h2>
+<h3>スキルの効果は測定上ほぼゼロ</h3>
+<p><code>eval/BASELINE.md</code> の最新の記録（2026-08-25、claude-opus-4-8、OWASP Juice Shop の 3 課題）では、スキルあり・なしのどちらも 3/3 を解き、スキルありのほうがターン数とコストが多くなりました。リポジトリ自身はこれを「よく知られた課題での天井効果」と説明し、スキルの価値を測るにはより新しい PortSwigger Web Security Academy のラボで測る必要があるが、まだ実施できていないと書いています。engine/README.md も「スキルは測定可能なタスクでほぼ能力を上げず、1 エージェントあたり 1.2〜1.5 万トークンを消費する」として、エンジンのエージェントはスキルを既定でオフにしています。3 課題の結果なので、効果の有無はまだ判断できません。</p>
+<h3>許可の確認は利用者に委ねられている</h3>
+<p><code>/hunt</code> は、呼び出した時点で利用者が書面の許可を持っていると見なし、作業範囲記述書（SOW）を尋ねません。機微な顧客データを取り込まないためです。スコープは <code>/scope</code> と 7-Question Gate で確認しますが、許可そのものの有無はツールでは確認しません。許可のない対象に使うと、各国の不正アクセス関連法に触れます。</p>
+<h3>Anthropic の安全機構にかかる場合がある</h3>
+<p>README は、許可を得た作業でも Anthropic のサイバー関連の安全機構で応答が拒否されることがあり、正当な攻撃的セキュリティの作業には Cyber Verification Program（CVP）への申請が案内されていると説明しています。また、一部の高リスクな依頼では応答するモデルが自動で切り替わることがあり、長いエージェント実行では気づきにくいと注意しています。防御目的の作業に見せかけて回避するのではなく、CVP に申請するよう明記しています。</p>
+<h3>サードパーティのスキルとして検証してから入れる</h3>
+<p>83 の SKILL.md とシェル・Python の補助スクリプトがエージェントの文脈に入ります。SECURITY.md は、公開スキルにプロンプトインジェクションが含まれる例があるとして、リリースのタグやコミットに固定してから導入することを勧めています。リポジトリ側では、PR ごとに <code>scripts/lint_skills.py</code> で構造の検査と秘密情報・顧客識別子の混入検査を行い、インストーラーはネットワークに接続しません。</p>
+<h3>その他</h3>
+<ul>
+<li>README の冒頭にある実行例は説明用の架空のトランスクリプトです。</li>
+<li>ライセンスは 2 つに分かれます。<code>*.py</code>・<code>*.sh</code> などのコードは MIT、<code>*.md</code> の手順・ワードリスト・重大度の基準などは CC BY 4.0 で、再利用時には作者名とリポジトリへのリンクが必要です。</li>
+<li><code>offensive-osint</code> と <code>osint-methodology</code> は Claude-OSINT と同一内容で、両方入れても、片方のアンインストールでもう片方が壊れないようインストーラーが管理します。</li>
+</ul>
+</section>
+
+<section id="sources" aria-labelledby="sources-title">
+<h2 class="sec-head" id="sources-title">11 — 公式資料と確認したソース</h2>
+<ul>
+<li><a href="https://github.com/elementalsouls/Claude-BugHunter">elementalsouls/Claude-BugHunter</a> — README、SECURITY.md、CHANGELOG.md、<code>.claude-plugin/plugin.json</code>、<code>commands/</code></li>
+<li><a href="https://github.com/elementalsouls/Claude-BugHunter/blob/main/docs/architecture.md">docs/architecture.md</a> — 6 フェーズとスキルの対応</li>
+<li><a href="https://github.com/elementalsouls/Claude-BugHunter/blob/main/engine/README.md">engine/README.md</a> — エンゲージメントエンジンの設計と安全上の既定値</li>
+<li><a href="https://github.com/elementalsouls/Claude-BugHunter/blob/main/docs/cbh-cli.md">docs/cbh-cli.md</a> — cbh CLI の 5 つのサブコマンド</li>
+<li><a href="https://github.com/elementalsouls/Claude-BugHunter/blob/main/eval/BASELINE.md">eval/BASELINE.md</a> — スキルあり・なしの比較結果</li>
+<li><a href="https://elementalsouls.github.io/Claude-BugHunter">Claude-BugHunter の Web サイト</a></li>
+</ul>
+<p class="source-note">確認日: 2026-11-17 · ソース: <a href="https://github.com/elementalsouls/Claude-BugHunter/tree/64410edb7f445e1837665e2fd713d47958a51094">64410ed</a>（plugin v2.1.0、2026-11-17）。原文は英語で、本ページの引用・要約は日本語訳です。攻撃手法やペイロードの詳細は扱っていません。</p>
+</section>
+</main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
