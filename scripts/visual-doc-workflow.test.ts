@@ -158,6 +158,13 @@ describe("visual-doc-workflow pure helpers", () => {
     expect(matchesScope("docs/pi-mono.html", "docs/system-design.html")).toBe(false);
     expect(matchesScope("docs/llmfit.html", "docs/alexs-jones-llmfit.html")).toBe(true);
     expect(matchesScope("docs/llmfit.html", "docs/pi.html")).toBe(false);
+    expect(matchesScope("docs/media/tw93-kaku.mp4", "docs/tw93-kaku.html")).toBe(true);
+    expect(matchesScope("docs/media/tw93-kaku-remote.mp4", "docs/tw93-kaku.html")).toBe(true);
+    expect(matchesScope("docs/media/tw93-kaku-remote-poster.jpg", "docs/tw93-kaku.html")).toBe(true);
+    expect(matchesScope("docs/media/tw93-kaku-remote.mov", "docs/tw93-kaku.html")).toBe(false);
+    expect(matchesScope("docs/media/tw93-kakuX.mp4", "docs/tw93-kaku.html")).toBe(false);
+    expect(matchesScope("docs/media/other-doc.mp4", "docs/tw93-kaku.html")).toBe(false);
+    expect(matchesScope("docs/media/sub/tw93-kaku.mp4", "docs/tw93-kaku.html")).toBe(false);
   });
 
   it("evaluates review gate findings through an injected environment", async () => {

@@ -188,6 +188,15 @@ const REVIEW_SCOPE_RULES: ReviewScopeRule[] = [
     matches: (file) => file === "index.html",
   },
   {
+    pattern: "docs/media/{docSlug}*.(mp4|webm|jpg|jpeg|png|webp|gif)",
+    matches: (file, docPath) => {
+      const slug = path.posix.basename(docPath, ".html");
+      if (!file.startsWith(`docs/media/${slug}`)) return false;
+      const rest = file.slice(`docs/media/${slug}`.length);
+      return /^(?:[-.][^/]*)?\.(?:mp4|webm|jpe?g|png|webp|gif)$/u.test(rest);
+    },
+  },
+  {
     pattern: "docs/pi-mono.html (removed when validating docs/pi.html)",
     matches: (file, docPath) => file === "docs/pi-mono.html" && docPath === "docs/pi.html",
   },
@@ -866,7 +875,11 @@ const gitChangedNames = (): string[] => [
 
 /** 対象ドキュメントに対するレビュースコープの人間可読パターン一覧。 */
 const allowedReviewScope = (docPath: string): string[] =>
-  REVIEW_SCOPE_RULES.map((rule) => (rule.pattern === "{docPath}" ? docPath : rule.pattern));
+  REVIEW_SCOPE_RULES.map((rule) =>
+    rule.pattern === "{docPath}"
+      ? docPath
+      : rule.pattern.replace("{docSlug}", path.posix.basename(docPath, ".html")),
+  );
 
 /**
  * 変更ファイルがレビュースコープ（許容変更範囲）に含まれるか。
