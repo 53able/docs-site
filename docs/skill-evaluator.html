@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SkillEvaluator — エージェントスキルを 3 段階で検査し、効果を測る CLI</title>
-  <meta name="description" content="NVIDIA/SkillEvaluator の解説。エージェントスキルとプラグインを、静的検査（Tier 1）、重複検出（Tier 2）、スキルあり・なしでエージェントを走らせる比較評価（Tier 3）の 3 段階で調べる Python CLI。各 Tier の中身、Skill Lift の計算、結果の読み方と限界、導入と CI、注意点。">
+  <meta name="description" content="NVIDIA/SkillEvaluator の解説。エージェントスキルとプラグインを、静的検査（Tier 1）、重複検出（Tier 2）、スキルあり・なしでエージェントを走らせる比較評価（Tier 3）の 3 段階で調べる Python CLI。1.0 での変更、各 Tier の中身、Skill Lift の計算、結果の読み方と限界、導入と CI、注意点。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="SkillEvaluator — エージェントスキルを 3 段階で検査し、効果を測る CLI">
-  <meta property="og:description" content="NVIDIA/SkillEvaluator の解説。エージェントスキルとプラグインを、静的検査（Tier 1）、重複検出（Tier 2）、スキルあり・なしでエージェントを走らせる比較評価（Tier 3）の 3 段階で調べる Python CLI。各 Tier の中身、Skill Lift の計算、結果の読み方と限界、導入と CI、注意点。">
+  <meta property="og:description" content="NVIDIA/SkillEvaluator の解説。エージェントスキルとプラグインを、静的検査（Tier 1）、重複検出（Tier 2）、スキルあり・なしでエージェントを走らせる比較評価（Tier 3）の 3 段階で調べる Python CLI。1.0 での変更、各 Tier の中身、Skill Lift の計算、結果の読み方と限界、導入と CI、注意点。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/skill-evaluator.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="SkillEvaluator — エージェントスキルを 3 段階で検査し、効果を測る CLI">
-  <meta name="twitter:description" content="NVIDIA/SkillEvaluator の解説。エージェントスキルとプラグインを、静的検査（Tier 1）、重複検出（Tier 2）、スキルあり・なしでエージェントを走らせる比較評価（Tier 3）の 3 段階で調べる Python CLI。各 Tier の中身、Skill Lift の計算、結果の読み方と限界、導入と CI、注意点。">
+  <meta name="twitter:description" content="NVIDIA/SkillEvaluator の解説。エージェントスキルとプラグインを、静的検査（Tier 1）、重複検出（Tier 2）、スキルあり・なしでエージェントを走らせる比較評価（Tier 3）の 3 段階で調べる Python CLI。1.0 での変更、各 Tier の中身、Skill Lift の計算、結果の読み方と限界、導入と CI、注意点。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Mona+Sans:wght@400;500;600;700&family=Ubuntu+Sans+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -237,6 +237,7 @@
 <div class="wrap">
 <nav class="toc" id="toc" aria-label="目次"><div class="toc-title">SkillEvaluator</div>
 <a href="#overview">概要</a>
+<a href="#v1">1.0 での変更</a>
 <a href="#tiers">3 つの Tier</a>
 <a href="#tier1">Tier 1 静的検査</a>
 <a href="#harness">ハーネスチェック</a>
@@ -252,7 +253,7 @@
 <main class="main" id="main">
 <p><a href="../index.html">← 資料一覧</a></p>
 <h1>SkillEvaluator</h1>
-<p class="subtitle">NVIDIA/SkillEvaluator · PyPI 0.9.0（main は未リリースの変更を含む） · Python 3.12〜3.14 · CLI <code>skillevaluator</code> · サポートレベル Experimental · Apache-2.0</p>
+<p class="subtitle">NVIDIA/SkillEvaluator · PyPI 1.0.1（2026-11-18） · Python 3.12〜3.14 · CLI <code>skillevaluator</code> · サポートレベル Experimental · Apache-2.0</p>
 
 <section id="overview" aria-labelledby="overview-title">
 <h2 class="sec-head" id="overview-title">01 — スキルの品質と、エージェントへの効果を測る</h2>
@@ -269,14 +270,50 @@
 <div class="ve-kpi-card"><div class="ve-kpi-card__value">5</div><div class="ve-kpi-card__label">Tier 3 の評価次元</div></div>
 </div>
 <div class="card-grid three">
-<article class="ve-card"><span class="eyebrow">TERMINAL</span><h3>CLI で直接</h3><p><code>skillevaluator quality-check ./my-skill</code> はキー・スキャナー・GPU・Docker なしで 100 点満点のスコアと指摘を出します。</p></article>
+<article class="ve-card"><span class="eyebrow">TERMINAL</span><h3>CLI で直接</h3><p><code>skillevaluator validate ./my-skill --tiers 1</code> は LLM のキーなしで Tier 1 の静的検査を行います。README は「500 以上の静的ルールと検出パターン」と説明しています。完全に調べるにはスキャナーの準備が要ります。</p></article>
 <article class="ve-card"><span class="eyebrow">CI</span><h3>リポジトリの CI に組み込む</h3><p><code>skillevaluator ci init</code> が GitHub リポジトリにセットアップ用の PR を作ります。GitLab 用の手順もあります。</p></article>
 <article class="ve-card"><span class="eyebrow">AGENT</span><h3>エージェントから呼ぶ</h3><p><code>npx skills add NVIDIA/SkillEvaluator</code> でスキルとして追加し、「Is my skill any good?」と聞くと、エージェントが CLI を実行します。</p></article>
 </div>
 </section>
 
+<section id="v1" aria-labelledby="v1-title">
+<h2 class="sec-head" id="v1-title">02 — 1.0 での変更</h2>
+<p>2026-11-17 に 1.0.0 のタグが付き、同日に修正版の 1.0.1 がタグ付けされました。PyPI に公開されたのは 1.0.1 で（2026-11-18、PyPI に 1.0.0 はありません）、0.9.0 の次の公開版です。CHANGELOG によると、1.0.0 は公開済みの 0.9.0 から、210 件の変更 PR とリリース準備の PR を合わせた計 211 件を含みます。0.9.0 時点ではソースからのインストールが必要だった機能が、PyPI 版で使えるようになりました。</p>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>1.0.0 の主な追加（CHANGELOG.md「1.0.0 — Highlights」より）</caption>
+<thead><tr><th>項目</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>ハーネスチェック</td><td><code>skillevaluator harness-check</code> と、Tier 1 結果の後に出る互換性パネル。Claude Code、Codex、Copilot CLI、Hermes、OpenClaw、OpenCode が対象。既定ポリシーでは参考扱いで、単独の <code>harness-check</code> は常に終了コード 0（<a href="#harness">05 節</a>）</td></tr>
+<tr><td>品質ルールの設定</td><td><code>--quality-config</code> で、Efficiency のトークン上限、Discoverability の description の長さ、Correctness の予約語を変えられる。同梱の既定値ではスコアは変わらないが、該当する指摘の <code>finding_id</code> が 1 回だけ変わる（<a href="#tier1">04 節</a>）</td></tr>
+<tr><td>JUnit レポート</td><td><code>-r junit</code>。チェックグループごとに 1 つの testsuite。不完全なチェックは error、実行されなかったチェックは skipped になり、失敗は終了コードと同じゲートに従う</td></tr>
+<tr><td>pre-commit フック</td><td><code>skillevaluator-quality</code>、<code>skillevaluator-schema</code>、<code>skillevaluator-lint-scripts</code>。API キー、Docker、ネットワーク、スキャナーのダウンロードなしで動く</td></tr>
+<tr><td>NeMo Gym バックエンド</td><td>実験的な <code>tier3 evaluate --backend nemo-gym</code>。既定は Harbor のまま。JSON と HTML に使ったバックエンドが記録される</td></tr>
+<tr><td>PR コメント用ワークフロー</td><td>レポートのホスティングや GitHub Pages なしで、Tier 1 の採点結果を PR にコメントする再利用可能なワークフロー</td></tr>
+<tr><td>ジャッジの適格性確認</td><td>任意で使うジャッジ（grader）の網羅ポリシー、リスク上限、事前チェック。CHANGELOG は、これらと合成データの試験運用だけではジャッジの信頼性を確立しないと明記</td></tr>
+</tbody>
+</table>
+</div>
+<h3>0.9.0 から上げるときに影響する変更</h3>
+<ul>
+<li>基本パッケージに Bandit と uv が入りました。Tier 2・3 は引き続き extra（<code>[all]</code> など）が必要で、管理対象のスキャナーは初回利用時にダウンロードされます。</li>
+<li>著者情報（<code>metadata.author</code> など）の要求は既定で推奨扱いになりました。厳密にするには <code>--profile registry</code> を使います。ポリシーのダイジェストが変わります。</li>
+<li>重大度の上書きに使うキーが <code>SECURITY.Unknown (AE1)</code> から <code>SECURITY.Incomplete referenced artifact analysis (AE1)</code> に変わりました。<code>severity_overrides</code> で旧名を使っている場合は書き換えが必要です。</li>
+<li>検証できないフックのペイロードは Critical のセキュリティゲート失敗になり、重大度の上書きや <code>--llm-verify</code> では解除できません。</li>
+<li>管理対象の SkillSpector は 2.13.4 になりました。NVIDIA Build の既定モデルは <code>nvidia/nemotron-3.5-lightning-30b-a3b</code> です（以前の既定モデルはホスト型エンドポイントが廃止され、HTTP 404 になっていました）。SkillSpector の Anthropic / Bedrock の既定は Claude Opus 5.5 です。</li>
+<li>既存の CI ワークフローは固定したピンのままで、更新は明示的に行います。1.0.1 用のテンプレートは <code>ci/bundles/1.0.1/</code> にあります。</li>
+</ul>
+<h3>1.0.1 の修正</h3>
+<ul>
+<li>OpenCode のスナップショットを既定で無効にしました。<code>.git</code> のない作業領域で、タスク完了後に broken pipe で失敗する問題への対処です。利用者が明示した設定は保持されます。</li>
+<li>Claude のゲートウェイを使う場合に、独自形式のモデル ID が Docker、ローカル、ネイティブ Harbor の各コマンドでそのまま渡るようになりました。</li>
+<li>フォルダー単位の検査で、スキル探索の除外（<code>results</code>、<code>evals</code>、<code>.versions</code>）を、指定したルートより下だけに適用するようになりました。これらの名前のディレクトリの中にチェックアウトしたリポジトリで、スキルが 1 つも見つからなくなる問題の修正です。</li>
+<li>Tier 3 の価格ファイルで、JSON の重複キー、真偽値のレート、有限でない値、負の値を拒否します。</li>
+</ul>
+</section>
+
 <section id="tiers" aria-labelledby="tiers-title">
-<h2 class="sec-head" id="tiers-title">02 — 3 つの Tier の役割</h2>
+<h2 class="sec-head" id="tiers-title">03 — 3 つの Tier の役割</h2>
 <p>まとめて実行するコマンドは <code>skillevaluator validate</code> です。<code>--tiers</code> を指定しなければ、スキルに対しては 3 つの Tier をすべて実行します。終了コードへの影響（ゲート）は Tier ごとに異なります。</p>
 <figure class="graph-example">
 <svg viewBox="0 0 960 250" role="img" aria-labelledby="tiers-svg-title">
@@ -317,7 +354,7 @@
 <thead><tr><th>Tier</th><th>答える問い</th><th>単独のコマンド</th><th>追加で必要なもの</th></tr></thead>
 <tbody>
 <tr><td>Tier 1：Validation</td><td>安全で、形式が正しく、ハーネスと互換か</td><td><code>skillevaluator tier1 ./my-skill --no-llm</code></td><td>静的検査を完全に行うには外部スキャナー。LLM 検査にはプロバイダー</td></tr>
-<tr><td>Tier 1：Harness Check</td><td>エージェントがスキルを読み込むか</td><td><code>skillevaluator harness-check ./my-skill</code></td><td>GitHub のソースからのインストール。キーもエージェント実行も不要</td></tr>
+<tr><td>Tier 1：Harness Check</td><td>エージェントがスキルを読み込むか</td><td><code>skillevaluator harness-check ./my-skill</code></td><td>1.0.1 以降。キーもエージェント実行も不要</td></tr>
 <tr><td>Tier 2：Deduplication</td><td>指示が繰り返されていないか、他のスキルと重ならないか</td><td><code>skillevaluator tier2 ./my-skill</code></td><td>埋め込みとチャットのモデル。スキル間の比較には <code>--catalog</code></td></tr>
 <tr><td>Tier 3：Live Agent Evaluation</td><td>スキルがエージェントの役に立つか</td><td><code>skillevaluator tier3 ./my-skill</code></td><td>プロバイダー、対応エージェント、サンドボックス（既定は Docker）</td></tr>
 </tbody>
@@ -338,8 +375,8 @@
 </section>
 
 <section id="tier1" aria-labelledby="tier1-title">
-<h2 class="sec-head" id="tier1-title">03 — Tier 1：静的検査</h2>
-<p>静的検査はモデルのキーを必要としません。<code>validate</code> の既定のチェックは次の 9 つで、<code>dependency</code> は <code>--checks</code> で明示したときだけ実行されます。</p>
+<h2 class="sec-head" id="tier1-title">04 — Tier 1：静的検査</h2>
+<p>静的検査はモデルのキーを必要としません。<code>validate</code> の既定のチェックは次の 10 個で、<code>dependency</code> は <code>--checks</code> で明示したときだけ実行されます。</p>
 <div class="ve-table-wrap wrap-first">
 <table>
 <caption>docs/tier1-reference.mdx「The checks」より</caption>
@@ -354,6 +391,7 @@
 <tr><td><code>unicode</code></td><td>ASCII smuggling や trojan-source に使われる不可視の Unicode 文字の検出</td></tr>
 <tr><td><code>quality</code></td><td>重み付きの品質スコア（下表）</td></tr>
 <tr><td><code>lint</code></td><td>Python スクリプトの AST ベースの検査。参考扱い</td></tr>
+<tr><td><code>harness</code></td><td>6 つのエージェント（ハーネス）での読み込み可否の予測。既定ポリシーでは参考扱い（<a href="#harness">05 節</a>）</td></tr>
 <tr><td><code>dependency</code></td><td>依存パッケージの CVE 監査（pip-audit）。明示指定時のみ</td></tr>
 </tbody>
 </table>
@@ -372,6 +410,24 @@
 </table>
 </div>
 <p>評価は 90 以上が A、80 以上が B、70 以上が C、60 以上が D、それ未満が F です。合格には既定の <code>--min-score 70</code> 以上で、かつ HIGH / CRITICAL の品質指摘がないことが必要です。<code>SKILL.md</code> の推奨トークン量は 5,000 で、文字数を 4 で割った推定値を使います。超えると MEDIUM の指摘と Efficiency から 15 点の減点がつきます。</p>
+<h3>品質ルールの設定ファイル</h3>
+<p><code>--quality-config PATH</code>（<code>quality-check</code>、<code>tier1</code>、<code>validate</code> で使える）で一部のルールを変えられます。1.0.0 で、従来の Reliability のルールに加えて次の 4 つが設定可能になりました。どれも <code>points</code>、<code>message</code>、<code>suggestion</code> と 1 つの設定値を持ち、<code>points: 0</code> で無効になります。書かなかった項目は同梱の <code>quality-default.yaml</code> の値のままです。</p>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>設定できる品質ルール（CHANGELOG.md 1.0.0、docs/tier1-reference.mdx より）</caption>
+<thead><tr><th>ルール</th><th>設定値</th><th>同梱の値</th><th class="c">減点</th></tr></thead>
+<tbody>
+<tr><td><code>efficiency.token_budget</code></td><td><code>max_tokens</code></td><td>5,000</td><td class="c">15</td></tr>
+<tr><td><code>discoverability.description_too_short</code></td><td><code>min_chars</code></td><td>20</td><td class="c">20</td></tr>
+<tr><td><code>discoverability.description_too_long</code></td><td><code>max_chars</code></td><td>200</td><td class="c">5</td></tr>
+<tr><td><code>correctness.reserved_name</code></td><td><code>terms</code></td><td><code>anthropic</code>、<code>claude</code></td><td class="c">15</td></tr>
+</tbody>
+</table>
+</div>
+<pre class="formula">efficiency:
+  token_budget:
+    max_tokens: 8000</pre>
+<p><code>terms</code> のようなリストは同梱のリストを置き換えます（足し合わせない）。予約語のルールは HIGH の指摘なので、スコアに関係なく品質チェックを失敗させます。ただし <code>schema</code> チェックは別に固定のリスト（<code>anthropic</code>、<code>claude</code>）を持っていて、この設定ファイルでは変わりません。設定ファイルに未知のキーや範囲外の値があると、検査を始める前に終了コード 2 で止まります。</p>
 <h3>LLM を使う検査（任意）</h3>
 <p>プロバイダーを設定すると、<code>rubric-eval</code> が 9 項目の LLM-as-judge 評価を行います。項目は、description と使う場面の明確さ、指示の明確さ、例の質、文書の網羅性、範囲の定義、書式、肯定・否定のクエリでの起動シミュレーション、手順全体の完結性、エラー処理です。各項目 0〜10 点で 7 以上が合格、全体は重要度で重み付けした平均で、全項目の合格が必要です。<code>--llm-verify</code> は静的検査の指摘を LLM が文脈つきで見直し、確信度の高い誤検知を INFO に下げます（指摘自体は残ります）。</p>
 <h3>ポリシー</h3>
@@ -379,7 +435,7 @@
 </section>
 
 <section id="harness" aria-labelledby="harness-title">
-<h2 class="sec-head" id="harness-title">04 — ハーネスチェック：エージェントがスキルを読み込むか</h2>
+<h2 class="sec-head" id="harness-title">05 — ハーネスチェック：エージェントがスキルを読み込むか</h2>
 <p>仕様どおりに書かれたスキルでも、エージェント（ハーネス）ごとに YAML パーサー、探索するフォルダー、サイズ上限が違うため、あるエージェントでは読み込まれ、別のエージェントでは黙って捨てられることがあります。<code>harness-check</code> はファイルを読むだけで、モデルもエージェントも実行せずに、6 つのハーネスでの扱いを「読み込む」「劣化する」「読み込まない」で予測し、直し方を示します。</p>
 <div class="ve-code-block"><pre><code>skillevaluator harness-check ./my-skill
 
@@ -393,11 +449,11 @@
 ╰────────────────────────────────────────────────────────────────── ❌ 2 of 6 not loaded ─╯</code></pre></div>
 <p class="source-note">README の出力例（README 自身が「バージョン付きプロファイルの要約の例示」と注記）。</p>
 <p>対象は Claude Code、Codex、Copilot CLI、Hermes、OpenClaw、OpenCode で、判定規則はハーネスごとのバージョン付きプロファイル（<code>src/skillevaluator/harness/profiles/*.yaml</code>）に入っています。<code>-v</code> で各プロファイルの確認済みバージョンと日付を表示し、<code>--harness-version HARNESS=VERSION</code> で別のリリースを指定できます。</p>
-<div class="ve-callout"><strong>PyPI 0.9.0 には含まれない：</strong>ハーネスチェックは GitHub のソースからインストールした場合だけ使えます。ソース版の <code>validate</code> では Tier 1 に含まれます。</div>
+<div class="ve-callout"><strong>1.0.1 から PyPI 版に含まれる：</strong>0.9.0 にはありません。<code>validate</code> では Tier 1 の既定のチェック（<code>harness</code>）として実行され、既定ポリシーでは参考扱いです。<code>skillevaluator --version</code> で手元の版を確かめられます。</div>
 </section>
 
 <section id="tier2" aria-labelledby="tier2-title">
-<h2 class="sec-head" id="tier2-title">05 — Tier 2：重複と類似の検出</h2>
+<h2 class="sec-head" id="tier2-title">06 — Tier 2：重複と類似の検出</h2>
 <p>Tier 2 には 2 種類の検査があります。Docker や評価データセットは不要ですが、スキルの本文をプロバイダーに送ります。</p>
 <div class="card-grid">
 <article class="ve-card"><span class="eyebrow">INTRA-SKILL</span><h3>1 つのスキルの中の繰り返し</h3><p><code>context-optimization-check</code>（別名 <code>dedup-scan</code>）。Markdown は見出し単位、Python はドキュメント文字列とシグネチャ、シェルは関数とコメントで分割し、埋め込みのコサイン類似度 0.80 以上の組をまとめた後、チャット LLM がその重なりが意図的か（例：<code>references/</code> での詳細化）を判定し、作者への対応案を返します。</p></article>
@@ -420,7 +476,7 @@
 </section>
 
 <section id="tier3" aria-labelledby="tier3-title">
-<h2 class="sec-head" id="tier3-title">06 — Tier 3：スキルあり・なしでエージェントを走らせる</h2>
+<h2 class="sec-head" id="tier3-title">07 — Tier 3：スキルあり・なしでエージェントを走らせる</h2>
 <p>Tier 3 は、同じ評価ケースを「スキルを入れたエージェント」と「入れないエージェント」（ベースライン）の 2 つの系統（arm）で実行し、採点結果の差を Skill Lift として出します。実行は <a href="https://github.com/harbor-framework/harbor">Harbor</a>（オープンソースのエージェント評価フレームワーク）が担い、実験的なバックエンドとして NeMo Gym も選べます。</p>
 <figure class="graph-example">
 <svg viewBox="0 0 960 300" role="img" aria-labelledby="t3-svg-title">
@@ -471,11 +527,12 @@
 </tbody>
 </table>
 </div>
+<p>NeMo Gym バックエンド（<code>--backend nemo-gym</code>）は実験的で、<code>--env-mode docker</code> のみに対応します。Gym は Python 3.13.14 以降が必要なため SkillEvaluator とは別の環境に入れ、固定コミットの完全なソースチェックアウトを editable でインストールします（公開版の <code>nemo-gym==0.7.0</code> は非互換）。docs/tier3-runtime.mdx には、Codex、OpenCode（GPT-5.4-mini）と Claude Code（Claude Sonnet 4.6）で、スキルあり・なし両方の試行が完了した記録があります。文書は、これがスキルの品質やすべてのモデルとの互換性を示すものではないとしています。</p>
 <p>実行場所（<code>--env-mode</code>）は既定の <code>docker</code> のほか、<code>kata</code>、<code>local</code>（手元にインストール済みの CLI を OS のサンドボックスポリシーの下で実行）、Daytona・E2B・Modal・EC2・GKE・Apple Container などの Harbor 対応の環境から選べます。</p>
 </section>
 
 <section id="scores" aria-labelledby="scores-title">
-<h2 class="sec-head" id="scores-title">07 — Tier 3 のスコアの計算</h2>
+<h2 class="sec-head" id="scores-title">08 — Tier 3 のスコアの計算</h2>
 <p>docs/metrics-reference.mdx は、すべての数値の出所を式と実装ファイルつきで説明し、「文書と実装が食い違ったら実装が正で、文書のバグ」としています。Tier 1 の品質スコア（0〜100）と Tier 3 のスコア（0.0〜1.0）は、次元名を 4 つ共有するだけの別物で、互いの入力にはなりません。</p>
 <h3>6 つのシグナル → 5 つの次元</h3>
 <div class="ve-table-wrap wrap-first">
@@ -501,7 +558,7 @@ Skill Lift = overall(スキルあり) − overall(スキルなし)</div>
 </section>
 
 <section id="limits" aria-labelledby="limits-title">
-<h2 class="sec-head" id="limits-title">08 — 結果の読み方と、文書が認めている限界</h2>
+<h2 class="sec-head" id="limits-title">09 — 結果の読み方と、文書が認めている限界</h2>
 <p>metrics-reference には、確立していないことを列挙した節があります。結果を社内外に示す前に読んでおく内容です。</p>
 <div class="ve-table-wrap wrap-first">
 <table>
@@ -529,7 +586,7 @@ Skill Lift = overall(スキルあり) − overall(スキルなし)</div>
 </section>
 
 <section id="install" aria-labelledby="install-title">
-<h2 class="sec-head" id="install-title">09 — 導入と実行</h2>
+<h2 class="sec-head" id="install-title">10 — 導入と実行</h2>
 <h3>A. キーなしで品質を見る</h3>
 <div class="ve-code-block"><pre><code>pip install skillevaluator          # または: uv tool install --python 3.13 skillevaluator
 skillevaluator quality-check ./my-skill</code></pre></div>
@@ -555,17 +612,32 @@ skillevaluator validate ./my-skill           # --tiers 1,2 で Tier 3 を省く<
 </table>
 </div>
 <p><code>--no-llm</code> を付けてもスキャナーは必要です。スキャナーが動かなければ結果は <code>INCOMPLETE</code> になり、終了コードは非 0 です。</p>
-<h3>C. ソースからインストールする</h3>
-<p>ハーネスチェックと JUnit 形式のレポートは PyPI 0.9.0 には含まれず、GitHub のソースからのインストールが必要です。手順は docs/installation.mdx と docs/developer-guide.mdx にあります。</p>
+<h3>C. 版を確かめる</h3>
+<p>ハーネスチェック、JUnit レポート、NeMo Gym バックエンドは 1.0.1 に含まれ、0.9.0 にはありません。<code>skillevaluator --version</code> で手元の版を確認します。ソースのチェックアウトは公開版より新しいことがあるため、文書は版番号に加えてインストール元も確かめるよう書いています。手順は docs/installation.mdx にあります。</p>
 </section>
 
 <section id="ci" aria-labelledby="ci-title">
-<h2 class="sec-head" id="ci-title">10 — CI とエージェントから使う</h2>
+<h2 class="sec-head" id="ci-title">11 — CI とエージェントから使う</h2>
 <h3>CI のゲート</h3>
 <p>文書が推奨するキー不要のゲートは次のとおりです。終了コードで合否が決まるため、出力を解析する必要はありません。</p>
 <div class="ve-code-block"><pre><code>skillevaluator validate ./skills --profile default --tiers 1 \
   -r json,markdown,sarif -o reports --min-score 70</code></pre></div>
-<p>JSON は機械処理用、Markdown は PR コメント用、SARIF は GitHub Code Scanning 用です。<code>skillevaluator ci init</code> を使うと、Tier 1 を必須ゲート、Tier 2 と Tier 3 を独立した参考チェックとする設定の PR が作られます。<code>.pre-commit-hooks.yaml</code> には、キー・ネットワーク・Docker なしで動く pre-commit フック（<code>skillevaluator-quality</code>、<code>skillevaluator-schema</code>、<code>skillevaluator-lint-scripts</code>）もあります（CHANGELOG の Unreleased 項目）。</p>
+<p>JSON は機械処理用、Markdown は PR コメント用、SARIF は GitHub Code Scanning 用です。<code>skillevaluator ci init</code> を使うと、Tier 1 を必須ゲート、Tier 2 と Tier 3 を独立した参考チェックとする設定の PR が作られます。<code>.pre-commit-hooks.yaml</code> には、キー・ネットワーク・Docker なしで動く pre-commit フック（<code>skillevaluator-quality</code>、<code>skillevaluator-schema</code>、<code>skillevaluator-lint-scripts</code>）もあります（1.0.0 で追加）。</p>
+<h3>CI テンプレート</h3>
+<p>CLI を使わずに設定する場合は、<code>ci/bundles/1.0.1/</code> の記入済みテンプレートをコピーします。README によると、テンプレートは 11 種類の CI チェック（quality、schema、version、PII、license、Unicode、script linting、Harness Check、security、code integrity、dependency auditing）を扱い、モデルのキーは不要です。ただし dependency auditing は <code>validate</code> の既定のチェックには含まれず、脆弱性情報のサービスに接続してパッケージのメタデータを送ることがあります（docs/github-actions.mdx）。</p>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>README「Bring skill evaluation to your repository」より</caption>
+<thead><tr><th>用途</th><th>テンプレート</th><th>置き場所</th></tr></thead>
+<tbody>
+<tr><td>GitHub</td><td><code>skill-checks.yml</code></td><td><code>.github/workflows/skill-checks.yml</code></td></tr>
+<tr><td>GitLab</td><td><code>gitlab-skill-checks.yml</code></td><td><code>.gitlab-ci.yml</code>、または既存のパイプラインに統合</td></tr>
+<tr><td>GitHub の PR コメント（ホスティングなし）</td><td><code>comment-skill-checks.yml</code></td><td>2 つ目のワークフロー。1.0.1 の bundle から含まれる</td></tr>
+<tr><td>GitHub のレポートのホスティングと PR コメント</td><td><code>publish-skill-reports.yml</code></td><td>2 つ目のワークフロー。初回の publisher 設定が必要</td></tr>
+</tbody>
+</table>
+</div>
+<p>任意のフィードバック用ワークフローはどちらか 1 つを選びます。<code>skillevaluator ci init</code> の既定のフィードバックは、引き続きホスティング型の publisher を設定します。Tier 2・3 を CI に加える手順は docs/advanced-ci.mdx にあります。</p>
 <h3>エージェントのスキルとして使う</h3>
 <div class="ve-table-wrap wrap-first">
 <table>
@@ -585,11 +657,17 @@ skillevaluator validate ./my-skill           # --tiers 1,2 で Tier 3 を省く<
 </section>
 
 <section id="cautions" aria-labelledby="cautions-title">
-<h2 class="sec-head" id="cautions-title">11 — 注意点</h2>
+<h2 class="sec-head" id="cautions-title">12 — 注意点</h2>
 <h3>サポートは Experimental</h3>
 <p>README はサポートレベルを Experimental とし、コミュニティによるベストエフォートで SLA や NVIDIA のエンタープライズサポートはないと明記しています。不具合は GitHub Issues、脆弱性は SECURITY.md の非公開の手順で報告します。</p>
 <h3>PyPI 版と main の差</h3>
-<p>本ページは main の文書をもとにしており、ハーネスチェック、JUnit レポート、pre-commit フックなどは PyPI 0.9.0 にまだ含まれていません。SkillSpector の固定バージョンも 0.9.0（2.13.3）とソース（2.13.4）で異なります。</p>
+<p>本ページは main の文書をもとにしています。v1.0.1 のタグ以降、main には次のような未リリースの変更があります。</p>
+<ul>
+<li>Tier 3 のセキュリティ採点が、<code>eval</code>、<code>env -S</code>、<code>git grep -O</code> のページャーを通して実行される <code>rm</code> や、<code>"rm" -rf /workspace</code> のように引用符付きで書かれた <code>rm</code> も破壊的なコマンドとして検出する（CHANGELOG では 1.0.1 の欄に書かれているが、コミットはタグより後）</li>
+<li>Tier 3 で、実行記録の任意項目 <code>final_metrics</code> が壊れていても、結果の収集全体を中断せずに使用量を「不明」とする</li>
+<li>GitHub の全 Tier CI で、環境のシークレットを使いつつデプロイメントの記録を作らない設定（<code>environment-deployment: false</code>）ができる。既定は従来どおり記録する</li>
+</ul>
+<p>0.9.0 から上げる場合は、<a href="#v1">02 節</a>の影響する変更を先に確認します。</p>
 <h3>データの送信と料金</h3>
 <ul>
 <li>Tier 1 の LLM 検査、Tier 2、Tier 3 の採点とデータセット生成は、スキルの本文や実行記録を設定したプロバイダーに送ります。社外に出せないスキルでは、送信先のモデルを先に決めておく必要があります。</li>
@@ -609,14 +687,14 @@ skillevaluator validate ./my-skill           # --tiers 1,2 で Tier 3 を省く<
 </section>
 
 <section id="sources" aria-labelledby="sources-title">
-<h2 class="sec-head" id="sources-title">12 — 公式資料と確認したソース</h2>
+<h2 class="sec-head" id="sources-title">13 — 公式資料と確認したソース</h2>
 <ul>
-<li><a href="https://github.com/NVIDIA/SkillEvaluator">NVIDIA/SkillEvaluator</a> — README.md、CHANGELOG.md、pyproject.toml、<code>src/skillevaluator/harness/profiles/</code></li>
-<li><a href="https://docs.nvidia.com/skills/skillevaluator/">SkillEvaluator ドキュメント</a> — リポジトリの <code>docs/</code> と同じ内容。本ページでは tier1-reference、harness-check、tier2-deduplication、tier2-reference、tier3-live-evaluation、tier3-runtime、prepare-dataset、agents-and-sandboxes、metrics-reference、installation-options、ci-integration、agent-skill を参照</li>
+<li><a href="https://github.com/NVIDIA/SkillEvaluator">NVIDIA/SkillEvaluator</a> — README.md、CHANGELOG.md、pyproject.toml、<code>src/skillevaluator/harness/profiles/</code>、<code>src/skillevaluator/config/quality-default.yaml</code>、<code>ci/bundles/1.0.1/</code></li>
+<li><a href="https://docs.nvidia.com/skills/skillevaluator/">SkillEvaluator ドキュメント</a> — リポジトリの <code>docs/</code> と同じ内容。本ページでは tier1-reference、harness-check、tier2-deduplication、tier2-reference、tier3-live-evaluation、tier3-runtime、tier3-results、tier3-run-reference、prepare-dataset、agents-and-sandboxes、metrics-reference、installation、installation-options、ci-integration、github-actions、repository-integration、agent-skill を参照</li>
 <li><a href="https://github.com/NVIDIA/SkillEvaluator/blob/main/docs/metrics-reference.mdx">docs/metrics-reference.mdx</a> — Tier 3 のスコアの式、ジャッジの信頼性、確立していないこと</li>
 <li><a href="https://arxiv.org/abs/2608.20614">論文（arXiv:2608.20614）</a> · <a href="https://developer.nvidia.com/blog/evaluating-ai-agent-skill-performance-with-nvidia-skillevaluator/">NVIDIA Developer ブログ</a> · <a href="https://pypi.org/project/skillevaluator/">PyPI</a></li>
 </ul>
-<p class="source-note">確認日: 2026-11-17 · ソース: <a href="https://github.com/NVIDIA/SkillEvaluator/tree/64b237f017264e7a82447d7e1a217d8893ed7e84">64b237f</a>（2026-11-17、pyproject のバージョン 0.9.0）。原文は英語で、本ページの引用・要約は日本語訳です。動作は実行して確認しておらず、ソースと文書の記述にもとづきます。</p>
+<p class="source-note">確認日: 2026-11-19 · ソース: <a href="https://github.com/NVIDIA/SkillEvaluator/tree/affe1acc3d0a24877c5d508d96ac69663a7fd92a">affe1ac</a>（2026-11-18、pyproject のバージョン 1.0.1。v1.0.1 タグより 7 コミット後）。原文は英語で、本ページの引用・要約は日本語訳です。動作は実行して確認しておらず、ソースと文書の記述にもとづきます。</p>
 </section>
 </main>
 </div>
