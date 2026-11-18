@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>landmines — AI が書いたテストとコードの「通るだけの近道」を塞ぐ Oxlint ルール集</title>
+  <meta name="description" content="interfere-inc/landmines の解説。モジュールのモック、固定 sleep、リトライ、タイムアウト延長、説明コメントなど、コーディングエージェントが CI を通すために取りがちな近道を 4 プラグイン・10 ルールで検出する Oxlint プラグイン。各ルールの判定範囲、許可リストによる段階導入、導入手順、注意点。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="landmines — AI が書いたテストとコードの「通るだけの近道」を塞ぐ Oxlint ルール集">
+  <meta property="og:description" content="interfere-inc/landmines の解説。モジュールのモック、固定 sleep、リトライ、タイムアウト延長、説明コメントなど、コーディングエージェントが CI を通すために取りがちな近道を 4 プラグイン・10 ルールで検出する Oxlint プラグイン。各ルールの判定範囲、許可リストによる段階導入、導入手順、注意点。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/landmines.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="landmines — AI が書いたテストとコードの「通るだけの近道」を塞ぐ Oxlint ルール集">
+  <meta name="twitter:description" content="interfere-inc/landmines の解説。モジュールのモック、固定 sleep、リトライ、タイムアウト延長、説明コメントなど、コーディングエージェントが CI を通すために取りがちな近道を 4 プラグイン・10 ルールで検出する Oxlint プラグイン。各ルールの判定範囲、許可リストによる段階導入、導入手順、注意点。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mona+Sans:wght@400;500;600;700&family=Ubuntu+Sans+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.5 0.13 138);
+      --chart-2: oklch(0.62 0.1 160);
+      --chart-3: oklch(0.4 0.1 140);
+      --chart-4: oklch(0.7 0.1 140);
+      --chart-5: oklch(0.65 0.12 90);
+      --code-bg: var(--muted);
+      --code-text: #24410f;
+      --font-body: 'Mona Sans', 'Hiragino Sans', system-ui, sans-serif;
+      --font-mono: 'Ubuntu Sans Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.8 0.15 135);
+        --chart-2: oklch(0.8 0.1 150);
+        --chart-3: oklch(0.88 0.09 135);
+        --chart-4: oklch(0.75 0.1 140);
+        --chart-5: oklch(0.8 0.12 90);
+        --code-bg: #0f0f0f;
+        --code-text: #c4eba4;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--hero {
+      background: color-mix(in srgb, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in srgb, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in srgb, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in srgb, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 26rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap caption { text-align: left; font-size: .75rem; color: var(--text-dim); padding: .6rem 1rem; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.5 0.13 138 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.8 0.15 135 / 0.08) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; max-width: 48rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.0625rem; font-weight: 600; margin: 1.5rem 0 0.6rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    a:focus-visible { outline: 2px solid var(--chart-1); outline-offset: 4px; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    .hero-title { font-size: clamp(1.4rem, 2.8vw, 2.2rem); line-height: 1.5; margin: .3rem 0 1rem; }
+    .eyebrow { font-family: var(--font-mono); color: var(--chart-1); font-size: .75rem; letter-spacing: .08em; }
+    .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .card-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card-grid h3 { margin-top: .25rem; }
+    .card-grid p:last-child { margin-bottom: 0; }
+    .graph-example { margin: 1.5rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+    .graph-example svg { display: block; width: 100%; height: auto; color: var(--foreground); }
+    .graph-example rect { fill: var(--muted); stroke: var(--border); }
+    .graph-example .fix { fill: color-mix(in srgb, var(--card) 88%, var(--chart-1)); stroke: var(--chart-1); }
+    .graph-example .dash { fill: none; stroke: var(--ring); stroke-dasharray: 5 4; }
+    .graph-example path { fill: none; stroke: var(--chart-1); stroke-width: 2; }
+    .graph-example path.back { stroke-dasharray: 6 4; }
+    .graph-example text { fill: currentColor; font-family: var(--font-body); font-size: 15px; }
+    .graph-example .small { font-size: 12px; }
+    .graph-example .edge-label { fill: var(--chart-1); font-size: 13px; }
+    figcaption { font-size: .8rem; color: var(--text-dim); margin-top: .75rem; }
+    .ve-table-wrap { overflow-x: auto; margin: 1rem 0; }
+    .ve-table-wrap table { min-width: 560px; font-size: .875rem; }
+    .ve-table-wrap td { vertical-align: top; }
+    .ve-table-wrap td:first-child { white-space: nowrap; }
+    .ve-table-wrap.wrap-first td:first-child { white-space: normal; }
+    .ve-table-wrap td.c { text-align: center; }
+    .ve-table-wrap th.c { text-align: center; }
+    .ve-callout { margin: 1rem 0; font-size: .9rem; }
+    .steps { padding-left: 1.5rem; }
+    .steps > li { padding-left: .5rem; margin-bottom: 1.25rem; }
+    .steps > li::marker { color: var(--chart-1); font-weight: 700; font-family: var(--font-mono); }
+    .steps h3 { margin: 0 0 .4rem; }
+    .source-note { font-size: .8rem; color: var(--text-dim); overflow-wrap: anywhere; }
+    .skip-link { position: absolute; left: 1rem; top: -5rem; padding: .5rem 1rem; background: var(--card); z-index: 20; }
+    .skip-link:focus { top: 1rem; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+    @media (max-width: 760px) { .card-grid.three { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) {
+      body { padding: 20px; }
+      .toc { margin-inline: -20px; padding-inline: 20px; }
+      .card-grid { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .ve-card { padding: 1rem; }
+      h1 { font-size: 1.8rem; }
+    }
+    .graph-example .arm-a { fill: color-mix(in srgb, var(--card) 85%, var(--chart-1)); stroke: var(--chart-1); }
+    .graph-example .arm-b { fill: var(--muted); stroke: var(--ring); stroke-dasharray: 5 4; }
+    .formula { font-family: var(--font-mono); font-size: .875rem; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .75rem 1rem; margin: 1rem 0; overflow-x: auto; white-space: pre; }
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#main">本文へ移動</a>
+<div class="wrap">
+<nav class="toc" id="toc" aria-label="目次"><div class="toc-title">landmines</div>
+<a href="#overview">概要</a>
+<a href="#shortcuts">塞ぐ近道</a>
+<a href="#rules">ルール一覧</a>
+<a href="#test-doubles">no-test-doubles</a>
+<a href="#signals">待ち方と MSW</a>
+<a href="#ratchet">許可リストで段階導入</a>
+<a href="#comments">no-comments</a>
+<a href="#structure">構造と型のルール</a>
+<a href="#install">導入</a>
+<a href="#cautions">注意点</a>
+<a href="#sources">出典</a>
+</nav>
+<main class="main" id="main">
+<p><a href="../index.html">← 資料一覧</a></p>
+<h1>landmines</h1>
+<p class="subtitle">interfere-inc/landmines · npm <code>@interfere/landmines</code> 0.1.0 · Oxlint 1.81 以上 · Node 22.18 以上 · MIT</p>
+
+<section id="overview" aria-labelledby="overview-title">
+<h2 class="sec-head" id="overview-title">01 — CI を通すための近道を、lint で失敗させる</h2>
+<div class="ve-card ve-card--hero">
+<span class="eyebrow">MOCK · SLEEP · RETRY · TIMEOUT · COMMENT → LINT ERROR</span>
+<p class="hero-title"><strong>テスト対象をモックする、sleep で競合をやり過ごす、落ちたテストをリトライする。こうした「通るが正しくない」書き方を Oxlint のエラーにする。</strong></p>
+<p>landmines は、AI が書いたコードを対象にした <a href="https://oxc.rs/docs/guide/usage/linter.html">Oxlint</a> の JS プラグインです。README は動機を次のように説明しています。コーディングエージェントは CI を緑にすることを優先しやすく、放っておくとテスト対象をモックし、競合が大抵うまくいくまで sleep し、フレーキーなテストをリトライし、タイムアウトを延ばし、差分の説明をコメントに書く。どれも CI は通るが、どれも事実を表していない。</p>
+<p>各ルールのエラーメッセージには「代わりに何をするか」が書かれています。エージェントが lint で失敗したとき、同じループの中でそのメッセージを読んで書き直せるようにする設計です。Interfere 社が自社の本番開発で使っているものを公開したと README にあります。</p>
+</div>
+<div class="kpi-row">
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">4</div><div class="ve-kpi-card__label">プラグイン（testing / style / structure / types）</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">10</div><div class="ve-kpi-card__label">ルール数</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">10 / 10</div><div class="ve-kpi-card__label">recommended で error のルール</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">4</div><div class="ve-kpi-card__label">ファイル単位の許可リストを受け付けるルール</div></div>
+</div>
+</section>
+
+<section id="shortcuts" aria-labelledby="shortcuts-title">
+<h2 class="sec-head" id="shortcuts-title">02 — どの近道を、どのルールが塞ぐか</h2>
+<p>README の冒頭に挙がっている近道と、それを検出するルールの対応です。左が近道、右がメッセージで示される代わりの書き方です。</p>
+<figure class="graph-example">
+<svg viewBox="0 0 960 400" role="img" aria-labelledby="shortcuts-svg-title">
+<title id="shortcuts-svg-title">近道とルールと代わりの書き方の対応。依存先のモックは no-test-doubles が検出し、実装と MSW を使うよう求める。固定 sleep は no-fixed-sleep が検出し、操作やシグナルを await するよう求める。スパイやリクエスト記録のポーリングは no-unsignaled-poll が検出し、Promise.withResolvers でシグナルを待つよう求める。リトライとタイムアウト延長は no-flake-masking が検出し、原因を直すよう求める。説明コメントは no-comments が検出し、理由は PR に書くよう求める。</title>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--chart-1); stroke: none;"/></marker></defs>
+<text x="135" y="24" text-anchor="middle" class="small">エージェントの近道</text>
+<text x="480" y="24" text-anchor="middle" class="small">ルール</text>
+<text x="820" y="24" text-anchor="middle" class="small">メッセージが示す書き方</text>
+<rect x="10" y="40" width="250" height="56" rx="8"/>
+<text x="135" y="74" text-anchor="middle">依存先をモック・差し替え</text>
+<rect class="fix" x="355" y="40" width="250" height="56" rx="8"/>
+<text x="480" y="74" text-anchor="middle">no-test-doubles</text>
+<rect class="dash" x="700" y="40" width="250" height="56" rx="8"/>
+<text x="825" y="74" text-anchor="middle">実装 ＋ ネットワークは MSW</text>
+<rect x="10" y="112" width="250" height="56" rx="8"/>
+<text x="135" y="146" text-anchor="middle">固定時間の sleep</text>
+<rect class="fix" x="355" y="112" width="250" height="56" rx="8"/>
+<text x="480" y="146" text-anchor="middle">no-fixed-sleep</text>
+<rect class="dash" x="700" y="112" width="250" height="56" rx="8"/>
+<text x="825" y="146" text-anchor="middle">操作か、そのシグナルを await</text>
+<rect x="10" y="184" width="250" height="56" rx="8"/>
+<text x="135" y="218" text-anchor="middle">スパイの呼び出しをポーリング</text>
+<rect class="fix" x="355" y="184" width="250" height="56" rx="8"/>
+<text x="480" y="218" text-anchor="middle">no-unsignaled-poll</text>
+<rect class="dash" x="700" y="184" width="250" height="56" rx="8"/>
+<text x="825" y="218" text-anchor="middle">withResolvers で通知を待つ</text>
+<rect x="10" y="256" width="250" height="56" rx="8"/>
+<text x="135" y="290" text-anchor="middle">リトライ・タイムアウト延長</text>
+<rect class="fix" x="355" y="256" width="250" height="56" rx="8"/>
+<text x="480" y="290" text-anchor="middle">no-flake-masking</text>
+<rect class="dash" x="700" y="256" width="250" height="56" rx="8"/>
+<text x="825" y="290" text-anchor="middle">待つべきイベントを待つ</text>
+<rect x="10" y="328" width="250" height="56" rx="8"/>
+<text x="135" y="362" text-anchor="middle">差分の説明をコメントに書く</text>
+<rect class="fix" x="355" y="328" width="250" height="56" rx="8"/>
+<text x="480" y="362" text-anchor="middle">no-comments</text>
+<rect class="dash" x="700" y="328" width="250" height="56" rx="8"/>
+<text x="825" y="362" text-anchor="middle">意味はコードに、理由は PR に</text>
+<path d="M260,68 L351,68" marker-end="url(#arr)"/>
+<path d="M605,68 L696,68" marker-end="url(#arr)"/>
+<path d="M260,140 L351,140" marker-end="url(#arr)"/>
+<path d="M605,140 L696,140" marker-end="url(#arr)"/>
+<path d="M260,212 L351,212" marker-end="url(#arr)"/>
+<path d="M605,212 L696,212" marker-end="url(#arr)"/>
+<path d="M260,284 L351,284" marker-end="url(#arr)"/>
+<path d="M605,284 L696,284" marker-end="url(#arr)"/>
+<path d="M260,356 L351,356" marker-end="url(#arr)"/>
+<path d="M605,356 L696,356" marker-end="url(#arr)"/>
+</svg>
+<figcaption>README の冒頭と各ルールの <code>meta.messages</code> をもとに作図。右列はメッセージの要約。</figcaption>
+</figure>
+</section>
+
+<section id="rules" aria-labelledby="rules-title">
+<h2 class="sec-head" id="rules-title">03 — 4 プラグイン・10 ルールの一覧</h2>
+<p>ルールはプラグイン単位で分かれていて、パッケージのエントリーポイントも <code>@interfere/landmines/testing</code> のようにプラグインごとです。<code>configs/recommended.json</code> は 4 つのプラグインを登録し、10 ルールすべてを <code>error</code> にします。</p>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>README の Rules と各ルールの実装より</caption>
+<thead><tr><th>プラグイン</th><th>ルール</th><th>検出するもの</th><th class="c">許可リスト</th></tr></thead>
+<tbody>
+<tr><td rowspan="5"><code>landmines-testing</code></td><td><code>no-test-doubles</code></td><td>テストで依存先の振る舞いを差し替えること。モジュールのモック、実装付きの <code>vi.fn(impl)</code>、グローバルの差し替え、プロトタイプの書き換え、手書きのバインディングや固定レスポンス。観察だけのスパイは許可</td><td class="c">—</td></tr>
+<tr><td><code>strict-msw</code></td><td><code>onUnhandledRequest: "error"</code> なしで MSW を起動すること</td><td class="c">○</td></tr>
+<tr><td><code>no-fixed-sleep</code></td><td>テストやフックの中で固定時間の待機を await すること</td><td class="c">○</td></tr>
+<tr><td><code>no-unsignaled-poll</code></td><td>リクエスト記録やスパイの状態に対する <code>expect.poll</code> と <code>vi.waitFor</code></td><td class="c">○</td></tr>
+<tr><td><code>no-flake-masking</code></td><td>テストのリトライと、タイムアウトの延長</td><td class="c">○（タイムアウトのみ）</td></tr>
+<tr><td><code>landmines-style</code></td><td><code>no-comments</code></td><td>説明のコメント。機能を持つディレクティブ、1 行の <code>// WARNING:</code>、公開 API の TSDoc は許可</td><td class="c">—</td></tr>
+<tr><td rowspan="3"><code>landmines-structure</code></td><td><code>colocated-tests</code></td><td>import している実装から離れた場所にあるテスト</td><td class="c">—</td></tr>
+<tr><td><code>test-file-names</code></td><td><code>.spec.ts</code>、<code>.tests.ts</code>、<code>helpers.ts</code>、<code>mocks.ts</code> などの名前、<code>tests/</code> ディレクトリの位置</td><td class="c">—</td></tr>
+<tr><td><code>package-exports</code></td><td><code>"./*": "./src/*.ts"</code> のような、ソースを無制限に公開する exports</td><td class="c">—</td></tr>
+<tr><td><code>landmines-types</code></td><td><code>no-explicit-return-types</code></td><td>実装の関数に書かれた戻り値の型注釈</td><td class="c">—</td></tr>
+</tbody>
+</table>
+</div>
+<div class="ve-callout"><strong>README と実装の差：</strong>README は許可リストを受け付けるルールとして <code>no-fixed-sleep</code>、<code>strict-msw</code>、<code>no-flake-masking</code> の 3 つを挙げていますが、実装では <code>no-unsignaled-poll</code> も同じ <code>allowlistSchema</code> を使っています。<code>no-flake-masking</code> のリトライ（<code>retry</code>）は許可リストを通らず、常に報告されます。</div>
+</section>
+
+<section id="test-doubles" aria-labelledby="td-title">
+<h2 class="sec-head" id="td-title">04 — no-test-doubles：差し替えは禁止、観察は許可</h2>
+<p>実装は約 2,400 行あり、10 ルールの中で最も大きいルールです。方針は「依存先の振る舞いを置き換えたら報告、呼ばれたかどうかを見るだけなら許可」です。ネットワークについては、実際の実装と MSW を使うよう求めます。</p>
+<div class="card-grid">
+<article class="ve-card"><span class="eyebrow">REPORTED</span><h3>報告される例</h3>
+<div class="ve-code-block"><pre><code>vi.mock("client");
+vi.fn(() =&gt; 1);
+vi.spyOn(client, "send").mockResolvedValue({});
+vi.stubGlobal("fetch", replacement);
+globalThis.fetch = replacement;
+Object.defineProperty(navigator, "clipboard", { value });
+AbortController.prototype.abort = abort;</code></pre></div>
+</article>
+<article class="ve-card"><span class="eyebrow">ALLOWED</span><h3>許可される例</h3>
+<div class="ve-code-block"><pre><code>const received = vi.fn();
+vi.spyOn(client, "send");
+vi.spyOn(AbortSignal, "timeout");
+vi.mock("client", { spy: true });</code></pre></div>
+<p>実装を渡さない <code>vi.fn()</code>、<code>mock*</code> を続けない <code>spyOn</code>、Vitest の <code>{ spy: true }</code> 付きのモジュールモック（元の実装を保ったまま呼び出しを記録する）は観察とみなされます。</p>
+</article>
+</div>
+<h3>検出の範囲</h3>
+<ul>
+<li><strong>Vitest / Jest の API：</strong><code>mockImplementation</code>、<code>mockReturnValue</code>、<code>mockResolvedValue</code> などの置き換え系メソッド、<code>vi.mock</code>・<code>doMock</code>・<code>stubGlobal</code>・<code>jest.setMock</code>・<code>replaceProperty</code>・<code>enableAutomock</code> など。</li>
+<li><strong>書き方の言い換え：</strong><code>vi.mock.call(vi, …)</code>、<code>Reflect.apply(vi.fn, …)</code>、<code>bind</code> した関数、分割代入や別名、計算プロパティ（<code>vi[method]</code>）経由の呼び出しも、同じファイル内で追える範囲で検出します。テストファイルにはこうした言い換えの例が多数並んでいます。</li>
+<li><strong>ブラウザ・ランタイムのグローバル：</strong><code>fetch</code>、<code>Date</code>、<code>crypto</code>、<code>localStorage</code>、<code>navigator</code>、<code>matchMedia</code>、<code>ResizeObserver</code> など 41 のグローバルへの代入と、<code>Date.now</code>、<code>Math.random</code>、<code>navigator.clipboard.readText</code> などのメンバーの書き換え・削除。</li>
+<li><strong>特定のフレームワーク：</strong>Cloudflare Workers の <code>env</code> バインディングに関数を入れること（<code>withEnv</code>、<code>runInDurableObject</code> 内のインスタンス書き換えを含む）、Tauri の <code>mockIPC</code> 系、Playwright の <code>route.fulfill</code> に固定レスポンスを渡すこと、Hono の <code>app.request</code> への手書きバインディング、Knock クライアントへの偽の <code>fetch</code>、vitest.config の <code>outboundService</code> と <code>serviceBindings</code>。</li>
+<li><strong>保存して戻すパターン：</strong><code>const original = obj.method; obj.method = () =&gt; …; obj.method = original;</code> のように、元の値を保存して差し替え、後で戻すコードも報告します。</li>
+</ul>
+<p>グローバルの書き換えなどは「テストコード」と判定したファイルでだけ調べます。判定条件は、パスに <code>tests/</code>・<code>__tests__/</code>・<code>test-utils/</code> などを含むか、ファイル名が <code>.test</code>・<code>.spec</code>・<code>.fixture</code>・<code>.mock</code>・<code>setup</code> などで終わるか、<code>vitest</code>・<code>@jest/globals</code>・<code>node:test</code> を import しているかです。</p>
+</section>
+
+<section id="signals" aria-labelledby="signals-title">
+<h2 class="sec-head" id="signals-title">05 — 待ち方と MSW のルール</h2>
+<h3>no-fixed-sleep</h3>
+<p><code>test</code>・<code>it</code>・<code>beforeEach</code> などのコールバックの中で、次のような固定時間の待機を await すると報告します。</p>
+<ul>
+<li><code>new Promise((resolve) =&gt; setTimeout(resolve, 250))</code> の形</li>
+<li><code>node:timers/promises</code> から import した <code>setTimeout</code></li>
+<li><code>scheduler.wait</code>、<code>Bun.sleep</code></li>
+</ul>
+<p>同じファイルのどこかで <code>vi.useFakeTimers()</code> を呼んでいると、そのファイルでは報告しません。時間を進めたい場合は偽のタイマーで進めるよう、メッセージも案内しています。</p>
+<h3>no-unsignaled-poll</h3>
+<p><code>expect.poll</code> や <code>vi.waitFor</code> のコールバックが、<code>.mock</code> を含むパス、記録用の配列の <code>length</code>・<code>size</code>、<code>toHaveBeenCalled</code> 系の matcher を見ている場合に報告します。期限付きでカウンタをポーリングすると CPU 負荷が高いときに落ち、タイムアウトを延ばしても隠れるだけ、というのがメッセージの説明です。代わりに、記録する側のハンドラで <code>Promise.withResolvers()</code> の promise を resolve し、テスト側はそれを await します。<code>current</code> を含むパス（React の ref などを想定したものと見られます）は対象外です。</p>
+<h3>strict-msw</h3>
+<p><code>msw/node</code> の <code>setupServer().listen()</code> と <code>msw/browser</code> の <code>setupWorker().start()</code> について、引数に <code>onUnhandledRequest: "error"</code>（または関数）がなければ報告します。ハンドラのないリクエストが実際のネットワークに出ていくのを防ぐためです。ローカルの自前のオリジンは <code>passthrough()</code> で通すよう案内されます。</p>
+<h3>no-flake-masking</h3>
+<p>テストやスイートのオプション、<code>vi.setConfig</code>、設定ファイルの <code>test</code> オブジェクトにある <code>retry</code> を報告します。タイムアウトについては、<code>test("x", fn, 10_000)</code> の第 3 引数、オプションの <code>timeout</code>、<code>vi.setConfig</code> の <code>testTimeout</code>・<code>hookTimeout</code> が対象です。遅い共通の準備は <code>beforeAll</code> に移すよう案内されます。</p>
+</section>
+
+<section id="ratchet" aria-labelledby="ratchet-title">
+<h2 class="sec-head" id="ratchet-title">06 — 許可リストで段階的に導入する</h2>
+<p>既存のコードベースにいきなり入れると違反が大量に出るため、一部のルールはファイルごとに「この件数までは許す」という許可リストを受け付けます。件数は正確に一致させる必要があります。</p>
+<div class="ve-code-block"><pre><code>{
+  "landmines-testing/no-flake-masking": [
+    "error",
+    { "allow": { "src/legacy/slow.test.ts": 2 } }
+  ]
+}</code></pre></div>
+<figure class="graph-example">
+<svg viewBox="0 0 960 230" role="img" aria-labelledby="ratchet-svg-title">
+<title id="ratchet-svg-title">許可リストの判定。違反数が許可数より少ないと、許可リストの値を下げるよう 1 件報告する。違反数が許可数と同じなら何も報告しない。違反数が許可数より多いと、すべての違反を報告する。</title>
+<defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--chart-1); stroke: none;"/></marker></defs>
+<rect x="10" y="80" width="200" height="70" rx="8"/>
+<text x="110" y="110" text-anchor="middle">ファイルの違反数</text>
+<text x="110" y="132" text-anchor="middle" class="small">vs 許可数</text>
+<rect x="320" y="10" width="200" height="56" rx="8"/>
+<text x="420" y="44" text-anchor="middle">違反数 &lt; 許可数</text>
+<rect x="320" y="87" width="200" height="56" rx="8"/>
+<text x="420" y="121" text-anchor="middle">違反数 = 許可数</text>
+<rect x="320" y="164" width="200" height="56" rx="8"/>
+<text x="420" y="198" text-anchor="middle">違反数 &gt; 許可数</text>
+<rect class="fix" x="630" y="10" width="320" height="56" rx="8"/>
+<text x="790" y="34" text-anchor="middle">1 件報告（stale）</text>
+<text x="790" y="54" text-anchor="middle" class="small">許可数を現在の件数まで下げるよう求める</text>
+<rect class="dash" x="630" y="87" width="320" height="56" rx="8"/>
+<text x="790" y="121" text-anchor="middle">報告なし</text>
+<rect class="fix" x="630" y="164" width="320" height="56" rx="8"/>
+<text x="790" y="188" text-anchor="middle">すべての違反を報告</text>
+<text x="790" y="208" text-anchor="middle" class="small">超過分だけでなく全件</text>
+<path d="M210,105 L316,40" marker-end="url(#arr2)"/>
+<path d="M210,115 L316,115" marker-end="url(#arr2)"/>
+<path d="M210,125 L316,190" marker-end="url(#arr2)"/>
+<path d="M520,38 L626,38" marker-end="url(#arr2)"/>
+<path d="M520,115 L626,115" marker-end="url(#arr2)"/>
+<path d="M520,192 L626,192" marker-end="url(#arr2)"/>
+</svg>
+<figcaption><code>src/lib/allowlist.ts</code> の <code>reportAllowed</code> をもとに作図。</figcaption>
+</figure>
+<p>違反を直して件数が減ると、そのまま放置はできず、許可数を下げるよう lint が求めます。許可リストは減る方向にしか動きません（README の表現では「ratchet down」）。パスの照合は完全一致か、<code>/パス</code> での後方一致です。</p>
+</section>
+
+<section id="comments" aria-labelledby="comments-title">
+<h2 class="sec-head" id="comments-title">07 — no-comments：残してよいコメントは 3 種類だけ</h2>
+<p>説明のためのコメントはすべて報告します。メッセージは「意味はコードで表し、理由は PR に書く」です。残せるのは次の 3 種類です。</p>
+<div class="card-grid three">
+<article class="ve-card"><span class="eyebrow">DIRECTIVE</span><h3>機能を持つディレクティブ</h3><p><code>oxlint-disable</code>・<code>eslint-disable</code>、<code>@ts-expect-error</code>、<code>prettier-ignore</code>、<code>istanbul ignore</code>、<code>/* @__PURE__ */</code>、<code>webpackChunkName:</code>、<code>@jsx</code>、<code>/// &lt;reference&gt;</code>、<code>sourceMappingURL</code>、<code>SPDX-License-Identifier:</code> など。</p></article>
+<article class="ve-card"><span class="eyebrow">WARNING</span><h3>1 行の <code>// WARNING:</code></h3><p>繰り返し踏まれる危険な落とし穴のためのもの。行コメントで、1 行に収まり、<code>WARNING:</code> の後に本文があるものだけが対象です。</p></article>
+<article class="ve-card"><span class="eyebrow">TSDOC</span><h3>公開 API の TSDoc</h3><p>export された宣言の直前の <code>/** … */</code>。export された型から参照される interface・type やそのメンバーも含みます。<code>@internal</code>・<code>@private</code> を含むものは対象外です。</p></article>
+</div>
+<p>オプション <code>publicApi</code>（ファイルパスに対する正規表現の配列）を渡すと、TSDoc を残せるのはそれに一致するファイルだけになります。渡さなければ全ファイルで TSDoc を許可します。</p>
+<div class="ve-code-block"><pre><code>{
+  "landmines-style/no-comments": ["error", { "publicApi": ["/packages/sdk/"] }]
+}</code></pre></div>
+</section>
+
+<section id="structure" aria-labelledby="structure-title">
+<h2 class="sec-head" id="structure-title">08 — 構造と型のルール</h2>
+<h3>colocated-tests</h3>
+<p><code>.test.ts</code> などのテストファイルが import している実装から「持ち主」のディレクトリを推定し、テストがその隣か、持ち主の直下の <code>test/</code>・<code>tests/</code>・<code>__tests__/</code> にない場合に報告します。推定には oxc-resolver で import を解決し、<code>.fixture.</code>・<code>.test-utils.</code> などの付随ファイルが import しているものも Babel でたどります。持ち主が一意に決まらない場合は報告しません。</p>
+<h3>test-file-names</h3>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption><code>src/rules/test-file-names.ts</code> より</caption>
+<thead><tr><th>種類</th><th>報告される名前</th><th>求められる名前</th></tr></thead>
+<tbody>
+<tr><td>テスト</td><td><code>.spec.ts</code>、<code>.specs.ts</code>、<code>.tests.ts</code></td><td><code>&lt;subject&gt;.test.ts</code>（必要なら <code>.browser.test.tsx</code> のような実行環境の中置）</td></tr>
+<tr><td>テストデータ</td><td><code>fixtures.ts</code>、<code>user-fixture.ts</code> など</td><td><code>&lt;subject&gt;.fixture.ts</code></td></tr>
+<tr><td>補助コード</td><td><code>.helpers.ts</code>、<code>.mocks.ts</code>、<code>.stubs.ts</code>、<code>.harness.ts</code>、<code>.test-util.ts</code> など</td><td><code>&lt;subject&gt;.test-utils.ts</code></td></tr>
+<tr><td>ディレクトリ</td><td>パッケージ内の <code>tests/</code>・<code>__tests__/</code> 配下にあるファイル</td><td>単数形の <code>test/</code> に置く（テストでは <code>test/recovery/admission.test.ts</code> を許可、<code>src/tests/…</code> と <code>src/__tests__/…</code> を拒否）</td></tr>
+</tbody>
+</table>
+</div>
+<h3>package-exports</h3>
+<p>ファイルの属するパッケージの <code>package.json</code> を読み、<code>exports</code> の値に <code>*</code>、<code>src/*</code>、<code>src/*.ts</code> のような無制限のパターンがあれば報告します。明示したエントリーポイントか、名前を付けた公開名前空間を宣言するよう求めます。landmines 自身の <code>package.json</code> も、<code>./testing</code> などのプラグインごとのエントリーポイントだけを公開しています。</p>
+<h3>no-explicit-return-types</h3>
+<p>本体のある関数・アロー関数の戻り値の型注釈を報告します。型は推論させ、契約を固定したい場所では型付きの変数か <code>satisfies</code> を使うよう求めます。型述語（<code>x is Foo</code>）と <code>never</code> は対象外です。オーバーロードのシグネチャなど本体のない宣言も対象外です。</p>
+</section>
+
+<section id="install" aria-labelledby="install-title">
+<h2 class="sec-head" id="install-title">09 — 導入</h2>
+<ol class="steps">
+<li><h3>インストール</h3>
+<div class="ve-code-block"><pre><code>bun add -d oxlint @interfere/landmines</code></pre></div>
+<p>Oxlint 1.81 以上（peerDependency）、Node 22.18 以上が必要です。npm や pnpm でも <code>-D</code> で入れられます。</p></li>
+<li><h3>recommended をまとめて有効にする</h3>
+<div class="ve-code-block"><pre><code>{
+  "extends": ["./node_modules/@interfere/landmines/configs/recommended.json"]
+}</code></pre></div>
+<p><code>.oxlintrc.json</code> に書きます。10 ルールすべてが <code>error</code> になります。</p></li>
+<li><h3>または、必要なプラグインとルールだけを登録する</h3>
+<div class="ve-code-block"><pre><code>{
+  "jsPlugins": [
+    { "name": "landmines-testing", "specifier": "@interfere/landmines/testing" }
+  ],
+  "rules": {
+    "landmines-testing/no-test-doubles": "error"
+  }
+}</code></pre></div>
+<p>既存のコードに入れる場合は、testing プラグインから始め、違反の多いファイルを許可リストに入れて段階的に減らす使い方が README の想定です。</p></li>
+</ol>
+<p>README は、型レベルの問題（連鎖した型アサーション、安全でない辞書型、<code>unknown</code> の受け渡し）を扱う <a href="anti-slop.html">anti-slop</a> との併用を勧めています。</p>
+</section>
+
+<section id="cautions" aria-labelledby="cautions-title">
+<h2 class="sec-head" id="cautions-title">10 — 注意点</h2>
+<ul>
+<li><strong>初版：</strong>npm のバージョンは 0.1.0（CHANGELOG は初回リリースの 1 件のみ）、リポジトリのコミットは 4 件です。ルールの追加や判定の変更が今後入る前提で、バージョンを固定して使うのが無難です。</li>
+<li><strong>方針の強いルールを含む：</strong><code>no-comments</code> と <code>no-explicit-return-types</code> は、一般的な TypeScript の慣習（理由を書くコメント、公開関数の戻り値の明示）と衝突します。recommended を使うと両方が <code>error</code> になるため、チームの方針と合わなければ個別に無効にする必要があります。</li>
+<li><strong>モックを使わない前提のテスト設計が必要：</strong><code>no-test-doubles</code> は、実装をそのまま使い、外部通信は MSW で受けるテスト構成を前提にしています。外部 SDK を直接モックしてきたコードベースでは、テストの書き直しが必要になります。このルールには許可リストがありません。</li>
+<li><strong>静的な判定の限界：</strong>どのルールも型情報を使わず、同じファイル内の AST と変数のスコープで判断します。別ファイルで定義したヘルパー経由の差し替えや sleep は検出されない場合があります。逆に、<code>vi.useFakeTimers()</code> がファイルのどこかにあれば、そのファイルの固定 sleep はすべて見逃されます。</li>
+<li><strong>テスト用ディレクトリ名の食い違い：</strong><code>colocated-tests</code> と README は持ち主の <code>tests/</code> ディレクトリを置き場所として認めていますが、<code>test-file-names</code> は <code>tests/</code> と <code>__tests__/</code> を拒否します。recommended で両方を有効にすると、実際に使えるのは単数形の <code>test/</code> か、実装の隣だけです。</li>
+<li><strong>ファイルシステムを読むルール：</strong><code>colocated-tests</code>、<code>test-file-names</code>、<code>package-exports</code> は <code>package.json</code> の位置を探したり import を解決したりするため、ファイルを読みます。エディタ上の未保存のバッファでは結果が変わる可能性があります。</li>
+<li><strong>Oxlint の JS プラグイン機能に依存：</strong>ESLint では使えません。<code>@oxlint/plugins</code> のバージョンは 1.81.0 に固定されています。</li>
+</ul>
+</section>
+
+<section id="sources" aria-labelledby="sources-title">
+<h2 class="sec-head" id="sources-title">11 — 公式資料と確認したソース</h2>
+<ul>
+<li><a href="https://github.com/interfere-inc/landmines">interfere-inc/landmines</a> — README.md、packages/landmines/package.json、configs/recommended.json、CHANGELOG.md</li>
+<li><code>packages/landmines/src/rules/</code> — 10 ルールの実装とテスト（判定範囲、例外、メッセージ）</li>
+<li><code>packages/landmines/src/lib/</code> — <code>allowlist.ts</code>（許可リストの判定）、<code>test-owner.ts</code>（テストの持ち主の推定）</li>
+<li><a href="https://www.npmjs.com/package/@interfere/landmines">npm: @interfere/landmines</a> · <a href="https://oxc.rs/docs/guide/usage/linter.html">Oxlint</a></li>
+</ul>
+<p class="source-note">確認日: 2026-11-18 · ソース: <a href="https://github.com/interfere-inc/landmines/tree/92084b12872103b0f9245c0325ab571df00a574b">92084b1</a>（2026-11-17、パッケージのバージョン 0.1.0）。原文は英語で、本ページの引用・要約は日本語訳です。動作は実行して確認しておらず、ソースと文書の記述にもとづきます。</p>
+</section>
+</main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
