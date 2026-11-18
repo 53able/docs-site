@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kaku — AI コーディングのための高速 macOS ターミナル</title>
-  <meta name="description" content="tw93/Kaku は WezTerm を深くカスタムした、AI コーディング向けの高速 macOS ターミナル。AI 補助、シェル連携、Lua 設定、軽量化された Rust ワークスペースの全体像を視覚化します。">
+  <meta name="description" content="tw93/Kaku は WezTerm ベースの AI コーディング向け macOS ターミナル。V0.30.0 時点の AI アシスタントとチャット、エージェント状態連携、ブラウザからのリモートアクセス、シェル連携、Lua 設定、Rust ワークスペースを整理します。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Kaku — AI コーディングのための高速 macOS ターミナル">
-  <meta property="og:description" content="WezTerm 互換の土台に、AI 補助・シェルスイート・macOS 向けの磨かれた初期設定を重ねた Kaku の構造解説。">
+  <meta property="og:description" content="WezTerm 互換の土台に、AI チャット、Claude Code / Codex の状態連携、E2E 暗号化のリモートアクセス、macOS 向けの初期設定を重ねた Kaku の構造解説。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/tw93-kaku.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Kaku — AI コーディングのための高速 macOS ターミナル">
-  <meta name="twitter:description" content="tw93/Kaku の目的、AI 補助、シェル連携、設定、CLI、性能設計を視覚的に整理。">
+  <meta name="twitter:description" content="tw93/Kaku の目的、AI 補助、エージェント連携、リモートアクセス、シェル連携、設定、CLI、内部構成を視覚的に整理。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -240,6 +240,8 @@
     <a href="#overview">概要</a>
     <a href="#position">設計ポジション</a>
     <a href="#ai">AI ワークフロー</a>
+    <a href="#agents">エージェント連携</a>
+    <a href="#remote">リモートアクセス</a>
     <a href="#shell">シェル連携</a>
     <a href="#config">設定と CLI</a>
     <a href="#internals">内部構成</a>
@@ -248,13 +250,13 @@
 
   <main class="main">
     <h1>Kaku</h1>
-    <p class="subtitle">tw93/Kaku — a fast, out-of-the-box terminal built for AI coding.</p>
+    <p class="subtitle">tw93/Kaku — A modern Mac terminal that looks good, runs fast, and works with AI out of the box.<br>V0.30.0（2026-11-16）時点の内容。</p>
 
     <section id="overview" class="sec-head">1 — 概要</section>
     <div class="hero-grid">
       <div class="ve-card ve-card--hero" style="--i:0">
         <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-        <p class="lead"><strong>Kaku</strong> は、WezTerm をベースにした macOS 向けターミナル。ゼロ設定で使える見た目とキーバインド、AI コーディング支援、zsh/fish のシェル環境、Lua 設定互換をひとまとめにしている。</p>
+        <p class="lead"><strong>Kaku</strong> は、WezTerm をベースにした macOS 向けターミナル。設定済みのフォント・テーマ・Mac ショートカット、AI アシスタントとチャット、コーディングエージェントの状態表示、ブラウザからのリモートアクセス、zsh/fish のシェル環境を、WezTerm の Lua 設定互換を保ったままひとまとめにしている。</p>
         <p>名前の由来は日本語の「書く」。考えをコードとして形にする場所、という意味づけで、同じ作者の Waza / Kami と並ぶツール群の一部として位置づけられている。</p>
       </div>
       <div class="ve-card ve-card--elevated" style="--i:1">
@@ -263,14 +265,16 @@
         <span class="badge">WezTerm compatible</span>
         <span class="badge">Lua config</span>
         <span class="badge">AI assistant</span>
+        <span class="badge">Agent status</span>
+        <span class="badge">Remote access</span>
         <span class="badge">zsh / fish</span>
-        <p class="compact">Kaku は「設定を作り込む前から気持ちよく動く」ことを重視している。JetBrains Mono、macOS の明暗テーマ追従、低解像度ディスプレイ向けフォントサイズ、コピーやペイン操作の初期値が最初から整っている。</p>
+        <p class="compact">Kaku は「設定を作り込む前から気持ちよく動く」ことを重視している。JetBrains Mono、Kaku Dark / Light テーマ、選択時コピー、Mac 標準に近いショートカット、右クリックメニュー、タブとペインの復元が最初から入っている。インストールは DMG か <code>brew install --cask kaku</code>。</p>
       </div>
     </div>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">~40 MB</span><span class="ve-kpi-card__label">実行ファイルサイズ</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">~80 MB</span><span class="ve-kpi-card__label">リソース容量</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">~100 ms</span><span class="ve-kpi-card__label">Shell bootstrap</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">V0.30.0</span><span class="ve-kpi-card__label">最新リリース（2026-11-16）</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">OSC 7501</span><span class="ve-kpi-card__label">エージェント状態の受信</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">E2E</span><span class="ve-kpi-card__label">リモートアクセスの暗号化</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">Lua</span><span class="ve-kpi-card__label">WezTerm 設定互換</span></div>
     </div>
 
@@ -282,7 +286,7 @@
       </div>
       <div class="ve-card" style="--i:1">
         <span class="ve-section-label"><span class="ve-dot"></span> AI coding</span>
-        <p>失敗コマンドの修復提案と、自然言語からコマンドを生成する入力補助を内蔵。危険なコマンドは自動実行せず、レビュー前提でプロンプトに戻す。</p>
+        <p>失敗コマンドの修復提案、自然言語からのコマンド生成、ツールを使える AI チャットを内蔵。Claude Code や Codex の作業状態をタブ・通知・<code>kaku cli</code> に流す。危険なコマンドは自動実行しない。</p>
       </div>
       <div class="ve-card" style="--i:2">
         <span class="ve-section-label"><span class="ve-dot"></span> Compatibility</span>
@@ -290,15 +294,15 @@
       </div>
       <div class="ve-card" style="--i:3">
         <span class="ve-section-label"><span class="ve-dot"></span> Shell suite</span>
-        <p>z、zsh-completions、syntax highlighting、autosuggestions、Starship、Delta、Lazygit、Yazi などを Kaku セッション内で自然に使えるようにする。</p>
+        <p>z、zsh-completions、fast-syntax-highlighting、autosuggestions、Smart Tab、Starship、Delta、Lazygit、Yazi などを Kaku セッション内で自然に使えるようにする。</p>
       </div>
       <div class="ve-card" style="--i:4">
         <span class="ve-section-label"><span class="ve-dot"></span> macOS polish</span>
-        <p>明暗テーマの自動切り替え、macOS フォントレンダリング、ウィンドウ装飾、Option キー挙動、リモートファイル操作などを macOS 前提で磨く。</p>
+        <p><code>Cmd + Opt + Ctrl + K</code> で上から降りるドロワー端末、閉じたウィンドウのレイアウト復元（<code>Cmd + Option + Shift + T</code>）、Option+Click のカーソル移動、読み取り専用の AppleScript 辞書などを macOS 前提で磨く。</p>
       </div>
       <div class="ve-card" style="--i:5">
         <span class="ve-section-label"><span class="ve-dot"></span> Lightweight core</span>
-        <p>Rust ワークスペースの release profile は strip、LTO、panic abort などサイズと起動の軽さを重視。GPU 加速コアを削ぎ落としながら使う部分を残す。</p>
+        <p>Rust ワークスペースの release profile は <code>strip = true</code>、<code>lto = "fat"</code>、<code>codegen-units = 1</code>、<code>panic = "abort"</code> でサイズと実行速度を優先する。</p>
       </div>
     </div>
 
@@ -308,7 +312,7 @@
       <div class="flow">
         <div class="ve-card ve-card--recessed flow-card">
           <h3>設定</h3>
-          <p class="compact"><code>kaku ai</code> で AI settings panel を開き、Kaku Assistant を有効化。OpenAI-compatible な base URL、model、API key を設定する。</p>
+          <p class="compact"><code>kaku ai</code>（<code>Cmd + Shift + A</code>）で設定パネルを開く。Auth Type は <code>api_key</code>（OpenAI 互換 Base URL と API key を直接指定）か <code>codex</code>（Codex のユーザー設定に追従）。AI サービスは Kaku が提供・中継するのではなく、自分で用意する。</p>
         </div>
         <div class="ve-card ve-card--recessed flow-card">
           <h3>失敗検知</h3>
@@ -335,27 +339,125 @@
 <span class="terminal-line"># compress the src folder excluding node_modules</span></code></pre>
     </div>
     <div class="ve-callout">
-      <strong>安全側の境界:</strong> Ctrl+C、help flags、裸の package manager 呼び出し、git pull conflicts、非シェル foreground process では Assistant を起動しない。LLM 補助が「全部に割り込む」のではなく、事故りやすい範囲を避けている。
+      <strong>安全側の境界:</strong> Ctrl+C、help flags、裸の package manager 呼び出し、git pull conflicts、非シェル foreground process では Assistant を起動しない。<code>rm -rf</code> や <code>git reset --hard</code> などの危険なコマンドは貼り付けまでで、自動実行はしない。
     </div>
 
-    <section id="shell" class="sec-head">4 — シェル連携</section>
+    <h3>AI チャットとモデル構成</h3>
+    <div class="two-col">
+      <div class="ve-card" style="--i:0">
+        <span class="ve-section-label"><span class="ve-dot"></span> Chat panel</span>
+        <p><code>Cmd + L</code> で開くチャットパネル。Markdown をストリーミング表示し、ターミナルの内容を文脈として添付できる。プロジェクトのファイル、シェルコマンド、Web 検索、メモリといったツールは、対象と引数を確認して許可したものだけ実行する。</p>
+        <p class="compact">シェルからは <code>k "..."</code> または <code>kaku chat</code> で同じ会話ストアを使う。CLI 版は <code>/new</code> <code>/resume</code> <code>/clear</code> <code>/status</code> <code>/memory</code> <code>/exit</code> に絞った簡易版。</p>
+      </div>
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> Simple / Deep model</span>
+        <ul>
+          <li><strong>Simple Model（<code>model</code>）:</strong> <code>#</code> によるコマンド生成、修復提案、軽いチャット。</li>
+          <li><strong>Deep Model（<code>chat_model</code>）:</strong> <code>Cmd + L</code> / <code>k</code> の主チャットとツール利用。パネル内で <code>Shift + Tab</code> 切り替え。</li>
+          <li><strong>API Mode:</strong> <code>chat_completions</code>（既定）か <code>responses</code>。<code>responses</code> では <code>native_web_search</code> でプロバイダ側の Web 検索を使える。</li>
+          <li><strong>保存先:</strong> <code>~/.config/kaku/assistant.toml</code>。端末設定の <code>kaku.lua</code> とは分けている。</li>
+        </ul>
+      </div>
+    </div>
+
+    <section id="agents" class="sec-head">4 — エージェント連携</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> OSC 7501 で状態を受け取る</span>
+      <p>Claude Code（2.1.295 以降）と Codex（0.163 以降）は、自分の状態を OSC 7501 エスケープシーケンスで Kaku に通知する。状態は <code>working</code> / <code>blocked</code>（ユーザー待ち）/ <code>done</code> / <code>error</code> / <code>idle</code> の 5 種類。Kaku はこれを画面表示とスクリプト用 CLI の両方に使う。</p>
+      <div class="feature-grid">
+        <div class="ve-card ve-card--recessed">
+          <h3>Agent title</h3>
+          <p class="compact">アクティブペインで Claude Code・Codex・Kimi が動いていると、ウィンドウ右上にエージェントのマークと現在のトピックを出す。入力欄の枠に同じトピックがあればマークだけ残す。<code>config.show_agent_title = false</code> で無効化。</p>
+        </div>
+        <div class="ve-card ve-card--recessed">
+          <h3>Tab の注意マーク</h3>
+          <p class="compact">ユーザー待ち・完了・失敗、BEL、OSC 9;4 のエラーや一時停止を、タブ末尾の琥珀色の点で示す。Claude Code が入力を待つと通知も出る。</p>
+        </div>
+        <div class="ve-card ve-card--recessed">
+          <h3>kaku cli wait / events</h3>
+          <p class="compact"><code>kaku cli list --format json</code> は状態を <code>program_status</code> として返す。<code>wait</code> は特定ペインの状態変化まで待ち、<code>events</code> は全ペインの遷移を 1 行ずつ流す。</p>
+        </div>
+      </div>
+    </div>
+    <div class="ve-code-block" aria-label="kaku cli agent orchestration example">
+      <pre><code><span class="terminal-comment"># 隣のペインで別エージェントを動かし、終わるかユーザー待ちになるまで待つ</span>
+<span class="terminal-line">pane=$(kaku cli split-pane --right -- claude)</span>
+<span class="terminal-line">kaku cli send-text --pane-id "$pane" --no-paste $'review the changes in src/auth\r'</span>
+<span class="terminal-line">kaku cli wait --pane-id "$pane" --for done,blocked,error --next --timeout 20m</span>
+<span class="terminal-line">kaku cli get-text --pane-id "$pane" --start-line -100</span>
+<span class="terminal-comment"># 全ペインを監視し、最初にユーザー待ちになったところで止める</span>
+<span class="terminal-line">kaku cli events --for blocked --once</span></code></pre>
+    </div>
+    <div class="ve-callout">
+      <strong>wait の終了コード:</strong> 待っていた状態になれば 0、<code>--timeout</code> 超過で 2、Kaku に接続できないかペインが無ければ 1。<code>--next</code> を付けると前のターンに残った <code>done</code> では終わらない。状態を報告しないプログラム（素のシェルやビルド）は <code>--for exit</code> でしか待てない。これらの使い方は <code>docs/agent-skill.md</code> にエージェント向けスキルとしてまとめられており、<code>~/.claude/skills/kaku/SKILL.md</code> に置けば Claude Code から使える。
+    </div>
+
+    <section id="remote" class="sec-head">5 — リモートアクセス</section>
+    <div class="ve-card" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> kaku remote のペアリング</span>
+      <div class="flow">
+        <div class="ve-card ve-card--recessed flow-card">
+          <h3>有効化</h3>
+          <p class="compact">既定はオフ。<code>kaku remote</code> を実行すると、有効化してよいか確認したうえでペアリング用リンクを表示する。</p>
+        </div>
+        <div class="ve-card ve-card--recessed flow-card">
+          <h3>リンクを開く</h3>
+          <p class="compact">別のコンピュータのデスクトップブラウザで開く。リンクは 1 回限り、有効期限 10 分。</p>
+        </div>
+        <div class="ve-card ve-card--recessed flow-card">
+          <h3>6 桁コード照合</h3>
+          <p class="compact">ブラウザと端末に同じ 6 桁コードが出ていることを確認し、端末で Enter を押すと許可、Ctrl+C で拒否。リンクだけ盗まれてもペアリングできない。</p>
+        </div>
+        <div class="ve-card ve-card--recessed flow-card">
+          <h3>ブックマーク</h3>
+          <p class="compact">ブラウザが自分の鍵を保持するので、以後はブックマークから新しいリンク無しで戻れる。</p>
+        </div>
+        <div class="ve-card ve-card--recessed flow-card">
+          <h3>管理</h3>
+          <p class="compact"><code>devices</code> で一覧、<code>revoke &lt;id&gt;</code> で解除、<code>off</code> で停止、<code>--reset</code> で ID を作り直して全ブラウザを解除。</p>
+        </div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="ve-card" style="--i:1">
+        <span class="ve-section-label"><span class="ve-dot"></span> 経路と暗号化</span>
+        <ul>
+          <li><strong>Relay:</strong> Mac 側が <code>kaku-relay</code> に外向き接続し、Mac だけが持つ秘密の SHA-256 から作った ID を所有していることを証明する。</li>
+          <li><strong>E2E:</strong> ブラウザと Mac の間のメッセージは、リンクのフラグメントで渡した鍵で封をする。relay は読めないバイト列を転送するだけ。</li>
+          <li><strong>Direct path:</strong> 接続後、WebRTC データチャネル（STUN で NAT 越え、DTLS）を張れれば、対話的な応答と画面はそちらを通る。ファイルは relay 経由のまま。切れたら relay に戻る。</li>
+        </ul>
+      </div>
+      <div class="ve-card" style="--i:2">
+        <span class="ve-section-label"><span class="ve-dot"></span> ブラウザでできること</span>
+        <ul>
+          <li>タブとペイン分割、コピー＆ペースト。</li>
+          <li>ファイルをドロップして Mac へアップロード、パスを <code>Cmd + Click</code> でダウンロード。</li>
+          <li>ペアリング済みブラウザがしばらくぶりに戻ると Mac に通知が出る。relay 接続状態は <code>kaku doctor</code> で確認できる。</li>
+          <li>Mac がスリープしているか Kaku が終了していると使えない。ノート型は電源接続とスリープ抑止の設定が必要。</li>
+        </ul>
+      </div>
+    </div>
+
+    <section id="shell" class="sec-head">6 — シェル連携</section>
     <div class="two-col">
       <div class="ve-card" style="--i:0">
         <span class="ve-section-label"><span class="ve-dot"></span> Bundled shell suite</span>
         <ul>
           <li><strong>z:</strong> よく使うディレクトリを学習する smarter <code>cd</code>。</li>
           <li><strong>zsh-completions:</strong> common CLI tools の補完を拡張。</li>
-          <li><strong>zsh-syntax-highlighting:</strong> 入力中にコマンドを色分け。</li>
+          <li><strong>fast-syntax-highlighting:</strong> 入力中にコマンドを色分けし、エラーも強調。zsh-syntax-highlighting より色が豊富で起動が速い。</li>
           <li><strong>zsh-autosuggestions:</strong> fish 風の履歴ベース補完。</li>
+          <li><strong>Smart Tab:</strong> zsh の Tab を上書き。既定の <code>suggestion_first</code> は候補があれば受け入れ、無ければ補完。<code>completion_first</code> / <code>off</code> も選べる。</li>
         </ul>
+        <p class="compact">fish は <code>kaku init --shell fish</code> で <code>~/.config/kaku/fish/kaku.fish</code> を用意する。</p>
       </div>
       <div class="ve-card" style="--i:1">
         <span class="ve-section-label"><span class="ve-dot"></span> Optional tools</span>
         <ul>
           <li><strong>Starship:</strong> git と環境情報を含む高速プロンプト。</li>
           <li><strong>Delta:</strong> git diff / grep を読みやすくする pager。</li>
-          <li><strong>Lazygit:</strong> <code>Cmd + Shift + G</code> で current pane に起動。</li>
-          <li><strong>Yazi:</strong> <code>Cmd + Shift + Y</code> または <code>y</code> で起動し、終了時に cwd を同期。</li>
+          <li><strong>Lazygit:</strong> <code>Cmd + Shift + G</code> で current pane に起動。Codex や vim が動いているペインでは新しいタブで開く。</li>
+          <li><strong>Yazi:</strong> <code>Cmd + Shift + Y</code> または <code>y</code> で起動し、終了時に cwd を同期。テーマは Kaku Dark / Light に自動で合わせる。</li>
         </ul>
       </div>
     </div>
@@ -364,36 +466,42 @@
       <p>SSH セッション中に <code>Cmd + Shift + R</code> を押すと、現在の SSH target を検出して <code>sshfs</code> でローカルに mount し、Yazi で開ける。AI エージェントが遠隔サーバー上のファイルを触る場面でも、ターミナルの流れを切らずにファイル操作へ移れる。</p>
     </div>
 
-    <section id="config" class="sec-head">5 — 設定と CLI</section>
+    <section id="config" class="sec-head">7 — 設定と CLI</section>
     <div class="ve-table-wrap">
       <table>
         <thead>
           <tr><th>コマンド</th><th>役割</th><th>代表的な使いどころ</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>kaku ai</code></td><td>AI settings panel を開く</td><td>Assistant と外部 AI coding tools の設定</td></tr>
-          <tr><td><code>kaku config</code></td><td>Lua 設定ファイルを開く</td><td>テーマ、フォント、キーバインド、ウィンドウ挙動を上書き</td></tr>
-          <tr><td><code>kaku doctor</code></td><td>環境診断</td><td>shell integration、PATH、optional tools の確認</td></tr>
+          <tr><td><code>kaku ai</code></td><td>AI 設定パネルを開く</td><td>Kaku Assistant と、Claude Code・Codex・Gemini CLI・Copilot CLI・Kimi Code などの設定</td></tr>
+          <tr><td><code>kaku chat</code></td><td>単体の AI チャット（<code>k</code> の別名）</td><td>別のシェルから <code>Cmd + L</code> と同じ会話・メモリを使う</td></tr>
+          <tr><td><code>kaku config</code></td><td>設定 TUI を開く（<code>Cmd + ,</code> と同じ）</td><td>よく使う設定の変更。<code>kaku.lua</code> が無ければ作成</td></tr>
+          <tr><td><code>kaku doctor</code></td><td>環境診断</td><td>アプリ、PATH、zsh / fish 連携、relay 接続の確認。匿名化した診断 zip を書き出す</td></tr>
+          <tr><td><code>kaku remote</code></td><td>ブラウザからのリモートアクセス</td><td>ペアリング、端末一覧、解除、停止</td></tr>
           <tr><td><code>kaku update</code></td><td>最新版確認と更新</td><td>release を追従</td></tr>
-          <tr><td><code>kaku init</code></td><td>zsh / fish integration を生成</td><td>初回セットアップ、CLI tools の provision</td></tr>
-          <tr><td><code>kaku cli</code></td><td>multiplexer を外部から操作</td><td>script や AI tools から pane / tab を開く</td></tr>
+          <tr><td><code>kaku init</code></td><td>zsh / fish integration を生成</td><td>初回セットアップ、Starship・Delta・Lazygit・Yazi の導入</td></tr>
+          <tr><td><code>kaku reset</code></td><td>Kaku 管理の統合と状態を削除</td><td>shell / tmux 連携、管理ブロック、AI メモリを消す。手書きの Lua は残る</td></tr>
+          <tr><td><code>kaku cli</code></td><td>multiplexer を外部から操作</td><td>ペイン分割、<code>send-text</code> / <code>get-text</code>、<code>wait</code> / <code>events</code></td></tr>
         </tbody>
       </table>
     </div>
     <div class="ve-code-block" aria-label="Kaku Lua configuration sample">
-      <pre><code>local wezterm = require 'wezterm'
-local config = {}
+      <pre><code>-- ~/.config/kaku/kaku.lua
+-- 生成されたファイルはバンドル済みの既定値を読み込み、その後に上書きを適用する。
 
--- Kaku loads bundled defaults first, then applies your overrides.
+-- User overrides:
 config.font_size = 16
 config.window_background_opacity = 0.95
-config.color_scheme = "Kaku Dark"
-config.copy_on_select = false
-
-return config</code></pre>
+config.color_scheme = "Auto"          -- 新規インストールの既定は "Kaku Dark"
+config.smart_tab_mode = "completion_first"
+config.show_agent_title = false
+config.macos_global_hotkey = { key = 'j', mods = 'CMD|OPT|CTRL' }</code></pre>
+    </div>
+    <div class="ve-callout">
+      <strong>設定ファイルの分担:</strong> 端末の挙動・見た目・キーバインドは WezTerm 互換の <code>kaku.lua</code>、AI のモデル・認証・ツール設定は <code>kaku ai</code> が書き込む <code>assistant.toml</code>。更新はバックグラウンドで確認・ダウンロードされるが、全ウィンドウを閉じるため適用前に必ず確認を求める。
     </div>
 
-    <section id="internals" class="sec-head">6 — 内部構成</section>
+    <section id="internals" class="sec-head">8 — 内部構成</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> Rust workspace map</span>
       <p>Kaku は WezTerm 由来の crate 群を抱えた Rust workspace と、macOS アプリ本体、GUI、mux、terminal rendering 周辺のサブシステムで構成される。外側は「すぐ使えるターミナル」だが、中身は GUI・PTY・SSH・mux・surface・font・escape parser を分けた大きめのターミナル実装だ。</p>
@@ -415,27 +523,35 @@ return config</code></pre>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>性能項目</th><th>Upstream</th><th>Kaku</th><th>方針</th></tr>
+          <tr><th>Kaku 固有の crate</th><th>役割</th></tr>
         </thead>
         <tbody>
-          <tr><td>Executable Size</td><td>約 67 MB</td><td>約 40 MB</td><td>symbol stripping と feature pruning</td></tr>
-          <tr><td>Resources Volume</td><td>約 100 MB</td><td>約 80 MB</td><td>asset optimization と lazy-loaded assets</td></tr>
-          <tr><td>Launch Latency</td><td>標準</td><td>Instant</td><td>just-in-time initialization</td></tr>
-          <tr><td>Shell Bootstrap</td><td>約 200 ms</td><td>約 100 ms</td><td>environment provisioning の最適化</td></tr>
+          <tr><td><code>kaku</code></td><td>CLI 本体。<code>ai</code> / <code>chat</code> / <code>config</code> TUI / <code>doctor</code> / <code>init</code> / <code>reset</code> / <code>update</code> などのサブコマンド。</td></tr>
+          <tr><td><code>kaku-gui</code></td><td>GUI、タブとペイン、AI チャットパネル、エージェント状態表示、macOS 統合。</td></tr>
+          <tr><td><code>crates/kaku-ai-utils</code></td><td>AI 関連バイナリの共通処理（Codex 設定ディレクトリ <code>CODEX_HOME</code> の解決など）。</td></tr>
+          <tr><td><code>crates/kaku-remote</code></td><td>リモートアクセスの Mac 側。ペアリング、Web ページ配信、ファイル共有、WebRTC の direct path（<code>str0m</code>、純 Rust 暗号）、接続中の App Nap 抑止。</td></tr>
+          <tr><td><code>crates/kaku-relay</code></td><td>Mac とブラウザを中継するサーバー（axum + WebSocket）。暗号化済みバイト列の転送のみ。</td></tr>
         </tbody>
       </table>
     </div>
+    <div class="ve-callout">
+      <strong>旧版との差分:</strong> 以前の README にあった WezTerm 比の性能表（実行ファイル約 40 MB、シェル起動約 100 ms など）は現行 README から削除されているため、このページでも掲載をやめた。設定スキーマは <code>config_version</code>（現在 47）でリリースごとに番号を上げ、既存キーの変更にはマイグレーションを伴わせる運用になっている。
+    </div>
 
-    <section id="links" class="sec-head">7 — 参考リンク</section>
+    <section id="links" class="sec-head">9 — 参考リンク</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> Source</span>
-      <p>このページは tw93/Kaku の README、Features、Configuration、CLI Reference、Cargo workspace から公開向けに要点を再構成した。</p>
+      <p>このページは tw93/Kaku（V0.30.0 以降の main）の README、Features、Configuration、CLI Reference、FAQ、Agent skill、Cargo workspace から公開向けに要点を再構成した。</p>
       <div class="source-list">
         <a href="https://github.com/tw93/Kaku" target="_blank" rel="noopener">GitHub: tw93/Kaku</a>
+        <a href="https://kaku.fun/docs/" target="_blank" rel="noopener">kaku.fun/docs</a>
+        <a href="https://github.com/tw93/Kaku/releases/latest" target="_blank" rel="noopener">Releases（最新版）</a>
         <a href="https://github.com/tw93/Kaku/blob/main/README.md" target="_blank" rel="noopener">README.md</a>
         <a href="https://github.com/tw93/Kaku/blob/main/docs/features.md" target="_blank" rel="noopener">docs/features.md</a>
         <a href="https://github.com/tw93/Kaku/blob/main/docs/configuration.md" target="_blank" rel="noopener">docs/configuration.md</a>
         <a href="https://github.com/tw93/Kaku/blob/main/docs/cli.md" target="_blank" rel="noopener">docs/cli.md</a>
+        <a href="https://github.com/tw93/Kaku/blob/main/docs/agent-skill.md" target="_blank" rel="noopener">docs/agent-skill.md</a>
+        <a href="https://github.com/tw93/Kaku/blob/main/docs/faq.md" target="_blank" rel="noopener">docs/faq.md</a>
       </div>
     </div>
   </main>
