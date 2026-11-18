@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>eve — ファイルシステム起点の durable AI エージェント（vercel/eve）</title>
-  <meta name="description" content="Vercel eve は agent/ 配下のファイルを契約に durable なバックエンド AI エージェントへコンパイルする。プロジェクト構造、メッセージ処理、拡張ポイント、クイックスタート。">
+  <meta name="description" content="Vercel eve 1.0 は agent/ 配下のファイルを契約に durable なバックエンド AI エージェントへコンパイルする。1.0 の変更点、プロジェクト構造、実行モデル、承認ポリシー、チャネル・プロトコル、運用。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="eve — ファイルシステム起点の durable AI エージェント（vercel/eve）">
-  <meta property="og:description" content="Vercel eve は agent/ 配下のファイルを契約に durable なバックエンド AI エージェントへコンパイルする。プロジェクト構造、メッセージ処理、拡張ポイント、クイックスタート。">
+  <meta property="og:description" content="Vercel eve 1.0 は agent/ 配下のファイルを契約に durable なバックエンド AI エージェントへコンパイルする。1.0 の変更点、プロジェクト構造、実行モデル、承認ポリシー、チャネル・プロトコル、運用。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/eve.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="eve — ファイルシステム起点の durable AI エージェント（vercel/eve）">
-  <meta name="twitter:description" content="Vercel eve は agent/ 配下のファイルを契約に durable なバックエンド AI エージェントへコンパイルする。">
+  <meta name="twitter:description" content="Vercel eve 1.0 は agent/ 配下のファイルを契約に durable なバックエンド AI エージェントへコンパイルする。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;500;600;700&family=Rubik:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
@@ -214,138 +214,240 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
+    <a href="#v1">1.0 での変更</a>
     <a href="#structure">プロジェクト構造</a>
-    <a href="#message-flow">メッセージ処理</a>
+    <a href="#execution">実行モデル</a>
     <a href="#capabilities">拡張ポイント</a>
+    <a href="#tools">ツールと承認</a>
     <a href="#quickstart">クイックスタート</a>
-    <a href="#channels">チャネル</a>
+    <a href="#channels">チャネル・プロトコル</a>
+    <a href="#operate">セキュリティと運用</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
   <h1>eve</h1>
-  <p class="subtitle">vercel/eve — ファイルシステムを契約に durable なバックエンド AI エージェントへコンパイルする Vercel 製フレームワーク</p>
+  <p class="subtitle">vercel/eve — ファイルシステムを契約に durable なバックエンド AI エージェントへコンパイルする Vercel 製フレームワーク（eve 1.0.2 / main 2026-11-18 時点）</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-    <p><strong>eve</strong> は、エージェントの能力を <code>agent/</code> 配下の通常ファイル（Markdown・TypeScript）として記述し、モデルループ・セッション永続化・HTTP / 各種プラットフォーム配信までをフレームワークが担う<strong>filesystem-first</strong> な durable エージェント基盤。npm パッケージ名・CLI バイナリ名はいずれも <code>eve</code>。</p>
+    <p><strong>eve</strong> は、エージェントの能力を <code>agent/</code> 配下の通常ファイル（Markdown・TypeScript）として記述し、モデルループ・セッション永続化・HTTP / 各種プラットフォーム配信までをフレームワークが担う<strong>filesystem-first</strong> な durable エージェント基盤。npm パッケージ名・CLI バイナリ名はいずれも <code>eve</code>。2026-11-15 に <strong>1.0.0</strong> がリリースされ、安定 API はセマンティックバージョニングの対象になった。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">agent/</span><span class="ve-kpi-card__label">執筆インターフェース</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node 24+</span><span class="ve-kpi-card__label">実行要件</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Workflow SDK</span><span class="ve-kpi-card__label">durable 実行基盤</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">.eve/</span><span class="ve-kpi-card__label">コンパイル成果物</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">1.0.2</span><span class="ve-kpi-card__label">最新リリース（2026-11-17）</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Node 24+</span><span class="ve-kpi-card__label">実行要件（新規は 26.x 固定）</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">Workflow 5.x</span><span class="ve-kpi-card__label">durable 実行基盤</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">3</span><span class="ve-kpi-card__label">runtime 依存（nitro / rolldown / undici）</span></div>
     </div>
-    <p>設定オブジェクトを 1 か所に集約するのではなく、instructions・tools・skills・channels など<strong>責務ごとにファイルの場所が決まっている</strong>。ファイルを追加すれば eve が発見し、別レジストリとの同期は不要。現在は Vercel ベータ条件の preview 段階。</p>
+    <p>設定オブジェクトを 1 か所に集約するのではなく、instructions・tools・skills・channels・memory など<strong>責務ごとにファイルの場所が決まっている</strong>。ファイルを置けば eve が発見し、名前はパスから導出される（<code>agent/tools/get_weather.ts</code> → <code>get_weather</code>）。別レジストリとの同期は不要。</p>
   </div>
   <div class="ve-callout" style="margin-top:1rem">
-    <strong>設計上の分離:</strong> チャネル（ingress / delivery）、ハーネス（モデルループ）、ワークフロー実行は runtime 上で分離される。同じ weather ツールは Web UI・ターミナル・Slack のどれから呼ばれても同じ挙動を保てる。
+    <strong>設計上の分離:</strong> チャネル（ingress / delivery）、ハーネス（モデルループ）、ワークフロー実行は runtime 上で分離される。同じツールは Web Chat・ターミナル・Slack・A2A のどこから呼ばれても同じ挙動になる。
   </div>
 
-  <section id="structure" class="sec-head">2 — プロジェクト構造</section>
+  <section id="v1" class="sec-head">2 — 1.0 での主な変更</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> agent/ が契約</span>
-    <p>最小構成は <code>instructions.md</code> と <code>agent.ts</code>。必要に応じて下位ディレクトリを増やす。</p>
-    <div class="ve-code-block structure-tree">
-      <pre><code>my-agent/
-├── package.json
-├── tsconfig.json
-└── <span class="dir">agent/</span>
-    ├── <span class="file-main">agent.ts</span>           <span class="comment"># モデル・ランタイム設定（defineAgent）</span>
-    ├── <span class="file-main">instructions.md</span>    <span class="comment"># 常時オンな system prompt（必須）</span>
-    ├── <span class="dir">tools/</span>               <span class="comment"># モデルが呼ぶ typed 関数</span>
-    │   └── get_weather.ts
-    ├── <span class="dir">skills/</span>              <span class="comment"># 必要時だけ読み込む手順</span>
-    │   └── plan_a_trip.md
-    ├── <span class="dir">hooks/</span>               <span class="comment"># ライフサイクル・ストリーム購読</span>
-    ├── <span class="dir">channels/</span>            <span class="comment"># HTTP / Slack / Discord 等</span>
-    │   └── slack.ts
-    ├── <span class="dir">connections/</span>         <span class="comment"># 外部 MCP / OpenAPI</span>
-    ├── <span class="dir">sandbox/</span>             <span class="comment"># エージェント用サンドボックス上書き</span>
-    ├── <span class="dir">subagents/</span>           <span class="comment"># 委譲先の専門エージェント</span>
-    ├── <span class="dir">schedules/</span>           <span class="comment"># cron 等の定期実行</span>
-    └── <span class="dir">lib/</span>                 <span class="comment"># 共有 TypeScript</span></code></pre>
-    </div>
-    <p><code>agent/tools/get_weather.ts</code> を置けばツール名 <code>get_weather</code> として発見される。パスが名前空間を兼ねるため、移動・リネームで ID も一緒に移る。</p>
-  </div>
-
-  <section id="message-flow" class="sec-head">3 — メッセージ処理</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> プラットフォーム非依存の 1 本の流れ</span>
-    <p>Web・ターミナル・Slack など入力元が違っても同じパイプラインが走る。eve は入力を正規化し、instructions / skills / tools / 会話履歴をモデルに渡し、ツール・subagent 実行を挟みながらセッションを永続化し、プラットフォーム向け形式で返す。</p>
-    <div class="mermaid-wrap">
-      <pre class="mermaid">
-flowchart LR
-  In["プラットフォーム入力\nHTTP / TUI / Slack …"]
-  Norm["正規化\nuser message"]
-  Ctx["コンテキスト組立\ninstructions · skills · tools · history"]
-  Loop["モデルループ\ntool / subagent 実行"]
-  Persist["セッション永続化\nstream events · continuationToken"]
-  Out["配信\nプラットフォーム形式"]
-
-  In --> Norm --> Ctx --> Loop --> Persist --> Out
-  Loop -.->|"承認待ち / HITL"| Persist
-      </pre>
-    </div>
-    <h3>durable セッション</h3>
+    <span class="ve-section-label"><span class="ve-dot"></span> 0.x から 1.0 へ</span>
+    <p>前回このページを書いた 2026-06 時点から約 2,500 コミットが入り、0.x 系を経て 1.0.0（2026-11-15）、1.0.1、1.0.2 が出ている。アップグレードは <code>node_modules/eve/CHANGELOG.md</code> と公式の Upgrade ガイド（agent files / channels / clients / saved history / session events）を版ごとに確認する。</p>
+    <h3>安定性ポリシー</h3>
     <ul>
-      <li>1 リクエスト 1 レスポンスに閉じない。複数ターン・ストリーミング・ツール呼び出しに対応</li>
-      <li>承認や人間からの回答で一時停止し、回答到着後に再開可能</li>
-      <li>内部ではオープンソースの <a href="https://workflow-sdk.dev" target="_blank" rel="noopener">Workflow SDK</a> でクラッシュセーフな実行を実現</li>
-      <li>HTTP プロトコルは <code>continuationToken</code> と <code>sessionId</code> を明示的に扱う</li>
+      <li>安定 API の非互換変更はメジャーリリースのみ。deprecated な API は次のメジャーまで動く</li>
+      <li><code>eve/experimental/*</code>・<code>eve/internal/*</code>、および <code>defineAgent({ experimental })</code> などの <code>experimental</code> フィールドは互換保証なし</li>
+      <li>イベント union・出力値はマイナーで値が増え得るため、<code>switch</code> には default 分岐を残す</li>
+      <li><code>eve/channels/chat-sdk</code>・<code>linq</code>・<code>photon</code> は Chat SDK v4 の型を契約に含む。<code>chat</code> の破壊的メジャーは eve のメジャーを伴う可能性がある</li>
+    </ul>
+    <h3>1.0.0 の破壊的変更（抜粋）</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>変更</th><th>影響</th></tr></thead>
+        <tbody>
+          <tr><td><code>agentWithModel</code> → <code>agent({ models })</code>（<code>eve/tools/agent</code>）</td><td>root-copy タスクが使えるモデルを列挙する形に置換</td></tr>
+          <tr><td>全エージェントに既定の <code>edit_file</code> ツール</td><td>code 拡張の <code>code__apply_patch</code>・<code>code__grep</code>・<code>code__worker</code> は削除。<code>bash</code> の結果形式と system prompt は pi に合わせた</td></tr>
+          <tr><td>同名の dynamic tool は static tool を上書きしない</td><td>static 側が名前を保持し、eve はエラーを記録する</td></tr>
+          <tr><td>新規セッションは開始時にアドレスを claim</td><td>同じチャネルアドレスへの競合した初回メッセージは 1 セッションに集約される</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>主な追加機能</h3>
+    <ul>
+      <li><strong>A2A チャネル</strong>（<code>eve/channels/a2a</code>）: A2A v1.0 サーバーとして公開し、Agent Card から発見・JSON-RPC でタスク委譲</li>
+      <li><strong>エージェント全体の承認ポリシー</strong>: <code>agent.ts</code> の <code>approval</code> で tool・connection・subagent の全呼び出しをゲート</li>
+      <li><strong><code>ctx.conversation.space</code></strong>: Slack チャネル等「会話の場所」を表す ID。tool・承認・memory スコープで共有できる</li>
+      <li><strong><code>eveVite()</code></strong>（<code>eve/vite</code>）: 任意の Vite アプリと並走（dev / preview / Vercel）</li>
+      <li>Vercel 上のスケジュールは Vercel Cron Jobs から <strong>Vercel Schedules</strong> に移行。固定スケジュールは IANA タイムゾーン指定可</li>
+      <li>実験的: ユーザーが自分用・チャネル共有のスキルを保存できる <code>custom-skills</code> 拡張、実行時に作成する dynamic schedules</li>
+      <li>起動・初回応答の高速化、AI Gateway 上の Anthropic モデルで system prompt を 1 時間キャッシュ、新規プロジェクトは Node.js 26 を対象</li>
     </ul>
   </div>
 
-  <section id="capabilities" class="sec-head">4 — 拡張ポイント</section>
+  <section id="structure" class="sec-head">3 — プロジェクト構造</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> agent/ が契約</span>
+    <p>必須は <code>instructions.md</code> だけ。<code>agent.ts</code> を省くと <code>openai/gpt-6-luna-fast</code>（reasoning high）で動く。必要に応じて下位ディレクトリを増やす。</p>
+    <div class="ve-code-block structure-tree">
+      <pre><code>my-agent/
+├── package.json
+├── <span class="dir">evals/</span>                 <span class="comment"># *.eval.ts（eve eval）</span>
+└── <span class="dir">agent/</span>
+    ├── <span class="file-main">agent.ts</span>           <span class="comment"># 任意: モデル・承認・compaction 等（defineAgent）</span>
+    ├── <span class="file-main">instructions.md</span>    <span class="comment"># 必須: 常時オンな system prompt</span>
+    ├── <span class="dir">tools/</span>             <span class="comment"># モデルが呼ぶ typed 関数</span>
+    ├── <span class="dir">skills/</span>            <span class="comment"># 必要時だけ読み込む手順</span>
+    ├── <span class="dir">channels/</span>          <span class="comment"># HTTP / Slack / A2A / MCP 等</span>
+    ├── <span class="dir">connections/</span>       <span class="comment"># 外部 MCP / OpenAPI</span>
+    ├── <span class="dir">memory/</span>            <span class="comment"># セッションをまたぐ記憶スロット</span>
+    ├── <span class="dir">extensions/</span>        <span class="comment"># npm / workspace 拡張のマウント</span>
+    ├── <span class="dir">hooks/</span>             <span class="comment"># ライフサイクル・ストリーム購読</span>
+    ├── <span class="dir">sandbox/</span>           <span class="comment"># サンドボックス環境の定義</span>
+    ├── <span class="dir">subagents/</span>         <span class="comment"># 委譲先（ローカル / リモート）</span>
+    ├── <span class="dir">schedules/</span>         <span class="comment"># cron 等の定期実行</span>
+    └── <span class="dir">lib/</span>               <span class="comment"># エージェント専用の共有コード</span></code></pre>
+    </div>
+    <h3>規模に応じた構成</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>必要なもの</th><th>構成</th></tr></thead>
+        <tbody>
+          <tr><td>エージェント 1 つ（ブラウザアプリの有無を問わず）</td><td>アプリコードの横に <code>agent/</code></td></tr>
+          <tr><td>委譲先の専門エージェント</td><td><code>agent/subagents/&lt;name&gt;/</code>（独自の prompt・tool・sandbox、チャネルなし）</td></tr>
+          <tr><td>個別にアドレスできる複数エージェント（同一パッケージ・同一デプロイ）</td><td>エージェントワークスペース <code>agents/&lt;name&gt;/agent/</code></td></tr>
+          <tr><td>依存・バージョン・リリースを分けたい</td><td>別パッケージ / 別プロジェクト（共有は拡張、委譲は remote agent）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>ワークスペースは <code>npx eve@latest init operations --agents support,research</code> で作り、<code>eve dev --agent support</code> のように対象を選ぶ。ルートに <code>agent/</code> が残っていると単一エージェント扱いになる点に注意。</p>
+  </div>
+
+  <section id="execution" class="sec-head">4 — 実行モデル</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> session / turn / step</span>
+    <ul>
+      <li><strong>session</strong>: 会話・タスク全体。日〜週単位でリクエストをまたぎ、再起動・再デプロイ後も継続</li>
+      <li><strong>turn</strong>: 1 つのユーザーメッセージと、それが引き起こす model / tool 呼び出し全体</li>
+      <li><strong>step</strong>: turn 内の保存チェックポイント。既定は model 呼び出し 1 回とそれに続く inline tool 呼び出し</li>
+    </ul>
+    <p>各セッションは <a href="https://workflow-sdk.dev" target="_blank" rel="noopener">Workflow SDK</a> 上の 1 ワークフローとして動く（Vercel では Vercel Workflow、ローカルと <code>eve start</code> は <code>.eve/.workflow-data</code> の local world）。</p>
+    <div class="mermaid-wrap">
+      <pre class="mermaid">
+flowchart LR
+  In["プラットフォーム入力<br/>HTTP / TUI / Slack / A2A …"]
+  Norm["チャネル<br/>正規化 · session 対応付け"]
+  Ctx["コンテキスト組立<br/>instructions · skills · tools · memory · history"]
+  Loop["モデルループ<br/>tool / subagent / task"]
+  Persist["step チェックポイント<br/>stream events"]
+  Out["配信<br/>プラットフォーム形式"]
+
+  In --> Norm --> Ctx --> Loop --> Persist --> Out
+  Loop -.->|"承認 / 質問 / サインイン待ち"| Persist
+      </pre>
+    </div>
+    <h3>長期セッションを支える仕組み</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>仕組み</th><th>挙動</th></tr></thead>
+        <tbody>
+          <tr><td>HITL 待機</td><td>承認・質問で turn は <code>turn.paused</code> のまま停止。待機は再起動を越えて数日続けられ、回答到着で再開</td></tr>
+          <tr><td>デプロイ間の移動</td><td>Vercel の production が変わると、アイドルなセッションは次の配信で新デプロイへ移る。実行中 turn・未回答の承認・稼働中タスクがある間は移らない</td></tr>
+          <tr><td>Compaction</td><td>会話がコンテキスト窓の <code>compaction.threshold</code>（既定 0.9）に達すると古い turn を要約。その後セッションを新しいワークフロー run へ移し、run 履歴を有界に保つ</td></tr>
+          <tr><td>タスク</td><td>agent 呼び出しや workflow tool はレシートを即返し、結果は後で <code>task.result</code> として届く。タスク稼働中は turn が終わらない</td></tr>
+          <tr><td>stranded セッション</td><td>新しい eve が読めない古いセッションは <code>409 session_stranded</code>。記録の読み出しは可能で、<code>end()</code> 後に新セッションを作る</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <section id="capabilities" class="sec-head">5 — 拡張ポイント</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> パスと define* ヘルパー</span>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>パス</th><th>追加するタイミング</th><th>主な API</th></tr>
+          <tr><th>パス</th><th>用途</th><th>主な API</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>instructions.md</code></td><td>常に（エージェントの振る舞い定義）</td><td><code>defineInstructions</code></td></tr>
-          <tr><td><code>agent.ts</code></td><td>モデル・compaction 等のランタイム設定</td><td><code>defineAgent</code></td></tr>
-          <tr><td><code>tools/</code></td><td>モデルが呼ぶ typed アクション</td><td><code>defineTool</code> 他</td></tr>
-          <tr><td><code>skills/</code></td><td>長い手順をオンデマンドロード</td><td><code>defineSkill</code></td></tr>
-          <tr><td><code>connections/</code></td><td>外部 MCP / OpenAPI からツール取得</td><td>connections ガイド</td></tr>
+          <tr><td><code>instructions.md</code> / <code>instructions/</code></td><td>振る舞いの定義（静的 / 動的）</td><td><code>defineInstructions</code></td></tr>
+          <tr><td><code>agent.ts</code></td><td>モデル・reasoning・承認・compaction・runtime limits・workflow world</td><td><code>defineAgent</code></td></tr>
+          <tr><td><code>tools/</code></td><td>モデルが呼ぶ typed アクション。workflow tool も可</td><td><code>defineTool</code> / <code>defineWorkflowTool</code></td></tr>
+          <tr><td><code>skills/</code></td><td>長い手順をオンデマンドロード</td><td><code>defineSkill</code> / <code>SKILL.md</code></td></tr>
+          <tr><td><code>connections/</code></td><td>外部 MCP / OpenAPI からツール取得</td><td><code>defineMcpClientConnection</code> 他</td></tr>
+          <tr><td><code>memory/</code></td><td>セッションをまたぐ事実・好み。スロットごとに provider と scope を指定</td><td><code>defineMemory</code></td></tr>
+          <tr><td><code>extensions/</code></td><td>tools・skills・channels 等をまとめたパッケージをマウント（<code>crm__</code> のような接頭辞付き）</td><td><code>defineExtension</code></td></tr>
           <tr><td><code>hooks/</code></td><td>ライフサイクル・ストリームイベント</td><td><code>defineHook</code></td></tr>
-          <tr><td><code>sandbox/</code></td><td>ファイル・コマンド用の制御 workspace</td><td><code>defineSandbox</code></td></tr>
-          <tr><td><code>subagents/</code></td><td>ルートから委譲する専門エージェント</td><td><code>defineAgent</code>（子）</td></tr>
-          <tr><td><code>schedules/</code></td><td>定期・スケジュール実行</td><td><code>defineSchedule</code></td></tr>
-          <tr><td><code>evals/</code></td><td>回帰評価・シナリオテスト</td><td><code>defineEval</code></td></tr>
+          <tr><td><code>sandbox/</code></td><td>ファイル・コマンド用の隔離 workspace</td><td><code>defineSandbox</code></td></tr>
+          <tr><td><code>subagents/</code></td><td>ローカル委譲先、または別デプロイの remote agent</td><td><code>defineAgent</code> / <code>defineRemoteAgent</code></td></tr>
+          <tr><td><code>schedules/</code></td><td>定期実行（Vercel では Vercel Schedules）</td><td><code>defineSchedule</code></td></tr>
+          <tr><td><code>evals/</code>（アプリ直下）</td><td>回帰評価。HTTP API 経由で実エージェントを叩く</td><td><code>defineEval</code></td></tr>
         </tbody>
       </table>
     </div>
+    <h3>動的設定</h3>
+    <p>model・tools・skills・connections・subagents・instructions は <code>defineDynamic</code> でセッションごとに切り替えられる。動的関数は<strong>毎回のモデル呼び出し前に実行される</strong>ため、ネットワーク・DB・サンドボックス読み出しは <code>ctx.memo</code> の中に入れる。</p>
+    <h3>memory provider</h3>
+    <p>同梱の <code>fileMemory()</code>（Vercel Blob 版あり）のほか、Supermemory・Upstash AgentKit・Kybernesis Arcana・memco・claude-mem、独自 provider を選べる。scope は <code>byPrincipal</code> などで「誰と共有するか」を決める。</p>
     <div class="ve-callout" style="margin-top:1rem">
-      <strong>バンドル docs:</strong> <code>eve</code> パッケージに公式ドキュメント全文が同梱される（<code>node_modules/eve/docs/</code>）。インストール版と一致するため、コーディングエージェントは SKILL よりこちらを正とする。
+      <strong>バンドル docs:</strong> <code>eve</code> パッケージに公式ドキュメント全文が同梱される（<code>node_modules/eve/docs/</code>）。インストール版と一致するため、コーディングエージェントはこちらを正とする。
     </div>
   </div>
 
-  <section id="quickstart" class="sec-head">5 — クイックスタート</section>
+  <section id="tools" class="sec-head">6 — ツールと承認</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 既定ツールと HITL</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>区分</th><th>ツール</th></tr></thead>
+        <tbody>
+          <tr><td>既定（import 不要）</td><td><code>bash</code>・<code>read_file</code>・<code>write_file</code>・<code>edit_file</code>・<code>web_fetch</code>・<code>web_search</code>・<code>agent</code>、カタログ用 <code>eve__search</code> / <code>eve__tool</code> / <code>eve__skill</code>、タスク用 <code>eve__task_wait</code> / <code>eve__task_cancel</code></td></tr>
+          <tr><td>オプトイン</td><td><code>ask_question</code>・<code>glob</code>・<code>grep</code>・<code>no_reply</code>・<code>sleep</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>既定ツールは同名ファイル（例: <code>agent/tools/bash.ts</code>）で置き換え、<code>defaultTools: false</code> で一括無効化できる。<code>bash</code> は既定 60 秒、モデル指定の <code>timeout</code> で最大 120 秒待ち、それ以上はバックグラウンドで実行を続けて <code>/tmp/.eve/jobs/</code> に出力を残す。</p>
+    <h3>承認ポリシー</h3>
+    <div class="ve-code-block">
+      <pre><code>import { defineAgent } from "eve";
+
+export default defineAgent({
+  model: "anthropic/claude-opus-5.5",
+  approval: ({ toolName, toolAnnotations }) => {
+    if (toolName.startsWith("billing__")) return "user-approval";
+    if (toolAnnotations?.destructiveHint === true) return "user-approval";
+    return undefined; // ツール側の判断に任せる
+  },
+});</code></pre>
+    </div>
+    <ul>
+      <li>エージェント全体のポリシーとツール個別の <code>approval</code> は<strong>厳しい方</strong>が採用される（deny &gt; user-approval &gt; approve）。全体ポリシーはゲートを追加できるが外せない</li>
+      <li><code>eve/tools/approval</code> の <code>always()</code>・<code>once()</code>・<code>never()</code>・<code>auto()</code> を使う。<code>auto()</code> は decision model（既定 <code>typesafe-ai/jev</code>）が <code>clear</code> / <code>caution</code> を判定し、caution なら人間に回す</li>
+      <li>承認後の実行は依頼者の identity・認証情報で走り、承認者の権限は使わない</li>
+    </ul>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>注意:</strong> <code>approval</code> を省略したツールは <code>never()</code> 扱いで、承認なしに実行される。課金・送信・破壊的操作など副作用のあるツールは明示的にゲートを付け、非冪等な処理には別途冪等キーを持たせる（承認は「ちょうど 1 回実行」を保証しない）。
+    </div>
+  </div>
+
+  <section id="quickstart" class="sec-head">7 — クイックスタート</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 新規 scaffold</span>
     <div class="step-flow">
       <div class="step-card">
         <div class="step-card__num">Step 1</div>
         <div class="step-card__title">scaffold</div>
-        <div class="step-card__body"><code>npx eve@latest init my-agent</code> で依存関係・Git・対話 TUI を起動。既存 repo なら <code>eve init .</code>。</div>
+        <div class="step-card__body"><code>npx eve@latest init my-agent</code> で依存関係・Git・対話 TUI を起動。既存 repo なら <code>npx eve@latest init .</code>。<code>--model</code> / <code>--reasoning</code> で初期モデルを指定できる。</div>
       </div>
       <div class="step-card">
         <div class="step-card__num">Step 2</div>
-        <div class="step-card__title">instructions</div>
-        <div class="step-card__body"><code>agent/instructions.md</code> に system prompt を書く。</div>
+        <div class="step-card__title">認証</div>
+        <div class="step-card__body">ChatGPT サブスクリプション、Vercel アカウント、AI Gateway / OpenAI / Anthropic の API キーのいずれか。未設定なら TUI が <code>/login</code> を開く。Vercel プロジェクトは不要。</div>
       </div>
       <div class="step-card">
         <div class="step-card__num">Step 3</div>
-        <div class="step-card__title">tool（任意）</div>
-        <div class="step-card__body"><code>agent/tools/get_weather.ts</code> など <code>defineTool</code> + Zod schema。</div>
+        <div class="step-card__title">instructions と tool</div>
+        <div class="step-card__body"><code>agent/instructions.md</code> に system prompt、<code>agent/tools/*.ts</code> に <code>defineTool</code> + Zod（または任意の Standard Schema / JSON Schema）。</div>
       </div>
       <div class="step-card">
         <div class="step-card__num">Step 4</div>
-        <div class="step-card__title">model</div>
-        <div class="step-card__body"><code>agent/agent.ts</code> で <code>defineAgent({ model: "anthropic/claude-sonnet-4.6" })</code> 等を指定。</div>
+        <div class="step-card__title">起動・追加・デプロイ</div>
+        <div class="step-card__body"><code>npx eve dev</code> で TUI。<code>/model</code> でモデル切替、<code>/add</code> でチャネル追加、<code>/deploy</code> で Vercel へ。</div>
       </div>
     </div>
     <div class="ve-code-block">
@@ -360,40 +462,98 @@ export default defineTool({
   },
 });</code></pre>
     </div>
-    <p>デフォルトモデルは Vercel AI Gateway 経由の <code>anthropic/claude-sonnet-4.6</code>。<code>AI_GATEWAY_API_KEY</code> または <code>VERCEL_OIDC_TOKEN</code>（<code>vercel link</code>）が必要。dev TUI の <code>/model</code> でキー設定も可能。</p>
-    <p>起動: <code>npm run dev</code>（または scaffold 時に開始した TUI）。組み込み HTTP チャネル（<code>agent/channels/eve.ts</code>）はファイル未作成でも有効。</p>
+    <p>モデル ID 文字列は Vercel AI Gateway 経由になる。直接接続は <code>eve/models/openai</code> の <code>openai()</code> / <code>chatgpt()</code>、<code>eve/models/anthropic</code> の <code>anthropic()</code>（既定 <code>claude-sonnet-5</code>）を使う。静的なモデル変更は <code>eve set model &lt;id&gt;</code> でも可能。</p>
+    <h3>Web Chat を足す</h3>
+    <div class="ve-code-block">
+      <pre><code>npx eve link
+npx eve add channel/web   # Next.js か TanStack Start を apps/web に生成
+npx eve deploy</code></pre>
+    </div>
+    <p>ホスティングは「Vercel services（推奨、Web Chat とエージェントを別サービス化）」か「フレームワークがエージェントをホスト」を選ぶ。Sign in with Vercel でチームメンバー向け認証が付く。既存アプリには <code>useEveAgent</code>（React / Vue / Svelte）と Next.js・Nuxt・SvelteKit・TanStack Start・Vite の統合を使う。</p>
   </div>
 
-  <section id="channels" class="sec-head">6 — チャネル</section>
+  <section id="channels" class="sec-head">8 — チャネル・プロトコル</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 入口アダプタ</span>
-    <p>チャネルはプラットフォーム入力を user message に正規化し、<code>continuationToken</code> で会話を再開し、応答の配信方法を決める。ファイルは <code>agent/channels/&lt;id&gt;.ts</code>、stem が channel id。</p>
+    <p>チャネルはプラットフォーム入力をエージェント入力に変換し、会話を eve セッションへ対応付け、返信の配信方法を決める。ファイルは <code>agent/channels/&lt;id&gt;.ts</code>。<code>eve add channel/&lt;name&gt;</code> で導入できる。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
           <tr><th>用途</th><th>チャネル</th></tr>
         </thead>
         <tbody>
-          <tr><td>Web UI / <code>curl</code> / SDK</td><td>eve HTTP（デフォルト）</td></tr>
-          <tr><td>Slack メンション・DM</td><td>Slack</td></tr>
-          <tr><td>Discord</td><td>Discord</td></tr>
-          <tr><td>Microsoft Teams</td><td>Teams</td></tr>
-          <tr><td>Telegram bot</td><td>Telegram</td></tr>
-          <tr><td>SMS / 音声</td><td>Twilio</td></tr>
-          <tr><td>GitHub @mention / PR</td><td>GitHub</td></tr>
-          <tr><td>Linear delegation</td><td>Linear</td></tr>
-          <tr><td>独自 Webhook / WebSocket</td><td><code>defineChannel</code> で custom</td></tr>
+          <tr><td>Web UI / <code>curl</code> / TypeScript client</td><td>eve HTTP（既定で有効）、Web Chat</td></tr>
+          <tr><td>チャット</td><td>Slack・Discord・Microsoft Teams・Telegram・Chat SDK アダプタ</td></tr>
+          <tr><td>SMS / iMessage / 音声</td><td>Twilio・Linq・Photon</td></tr>
+          <tr><td>開発ツール</td><td>GitHub（@mention / PR）・Linear（delegation）</td></tr>
+          <tr><td>エージェント間</td><td>A2A（A2A v1.0 サーバー）・MCP（<code>agent_start</code> 等 4 ツールで長時間タスクを委譲、tool / skill の公開も可）</td></tr>
+          <tr><td>ビデオ会議</td><td>Recall.ai（実験的。Zoom / Meet / Teams に bot 参加）</td></tr>
+          <tr><td>独自 Webhook 等</td><td>custom channel</td></tr>
         </tbody>
       </table>
     </div>
-    <p>Slack のリッチメッセージは Chat SDK の card-builder コンポーネントを利用するが、Chat SDK の <code>Chat</code> / <code>Adapter</code> runtime は eve 公開 API からは到達しない。</p>
+    <ul>
+      <li><strong>サインイン</strong>: 接続の認可リンクは資格情報として扱われ、グループでは本人だけに見える経路（Slack のエフェメラル等）で送る。送れないプラットフォームでは DM への移動を促す</li>
+      <li><strong>audience</strong>（<code>public</code> / <code>private</code> / <code>unknown</code>）はトレースに何を残すかを制御する。誰が呼べるかはルート認証で決める</li>
+    </ul>
+    <h3>プロトコル</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>プロトコル</th><th>eve での扱い</th></tr></thead>
+        <tbody>
+          <tr><td>ACP（Agent Client Protocol）</td><td><code>eve acp</code> がエディタ等から stdio で起動される。<code>--url</code> でデプロイ済みエージェントへ接続</td></tr>
+          <tr><td>UCP（Universal Commerce Protocol）</td><td><code>/.well-known/ucp</code> のプロファイルをチャネルから配信し、コマースエンドポイントを追加</td></tr>
+          <tr><td>A2A / MCP</td><td>上記チャネルで公開。逆に外部 MCP を使う側は connections</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <section id="operate" class="sec-head">9 — セキュリティと運用</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 信頼境界</span>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th></th><th>App runtime</th><th>Sandbox</th></tr></thead>
+        <tbody>
+          <tr><td><code>process.env</code> / シークレット</td><td>あり</td><td>なし</td></tr>
+          <tr><td>自分の Node.js コード（tools 等）</td><td>実行される</td><td>実行されない</td></tr>
+          <tr><td>ネットワーク</td><td>制限なし</td><td>ポリシーで制御</td></tr>
+          <tr><td>ファイルシステム</td><td>アプリ自身</td><td>隔離された <code>/workspace</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>ツールは app runtime で動き、<code>bash</code> などモデルが操るコマンドは sandbox で動く。サンドボックス provider は Default（Vercel 上は Vercel Sandbox、Docker があれば Docker、開発時は just-bash）・Vercel・Docker・just-bash（プロセス隔離なし）から選ぶ。アイドル時は自動停止し、使わない turn では起こさない。</p>
+    <h3>同梱拡張</h3>
+    <ul>
+      <li><code>eve/extensions/code</code>: コーディングエージェント化（1.0 で prompt を約 1/3 に縮小）</li>
+      <li><code>eve/extensions/git</code>: <code>gh</code> 付きサンドボックスと GitHub App のスコープ付きトークン</li>
+      <li><code>eve/extensions/computer-use</code>、self-modification（local / remote）、<code>eve add extension/agent-browser</code> など</li>
+    </ul>
+    <h3>運用コマンド</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead><tr><th>コマンド</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>eve dev</code> / <code>eve start</code> / <code>eve build</code></td><td>開発 TUI・セルフホスト起動・ビルド</td></tr>
+          <tr><td><code>eve link</code> / <code>eve deploy</code></td><td>Vercel へのデプロイ（ワークスペースは全メンバー一括）</td></tr>
+          <tr><td><code>eve eval</code></td><td>evals 実行。<code>--url</code> でデプロイ先を評価</td></tr>
+          <tr><td><code>eve logs</code> / <code>eve traces</code></td><td>ログ・トレース参照。OpenTelemetry 計装や Braintrust 等の instrumentation も追加可</td></tr>
+          <tr><td><code>eve info</code> / <code>eve add</code> / <code>eve extension init</code></td><td>発見結果の確認・統合の導入・拡張の雛形</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout" style="margin-top:1rem">
+      <strong>セルフホスト時の注意:</strong> Vercel Workflow 以外の world では、eve の正確なバージョンを <code>package.json</code> に固定する。意図しないアップグレードで既存セッションが stranded になるのを避けるため。
+    </div>
+  </div>
+
+  <section id="links" class="sec-head">10 — 参考リンク</section>
   <div class="ve-card ve-card--recessed" style="--i:0">
     <ul>
       <li><a href="https://github.com/vercel/eve" target="_blank" rel="noopener">vercel/eve</a> — ソースリポジトリ</li>
       <li><a href="https://eve.dev/docs" target="_blank" rel="noopener">eve.dev/docs</a> — 公式ドキュメント</li>
+      <li><a href="https://github.com/vercel/eve/blob/main/packages/eve/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG</a> — リリースノート</li>
       <li><a href="https://www.npmjs.com/package/eve" target="_blank" rel="noopener">npm: eve</a> — パッケージ</li>
       <li><a href="https://github.com/vercel/eve/discussions" target="_blank" rel="noopener">GitHub Discussions</a> — コミュニティ</li>
       <li><a href="https://workflow-sdk.dev" target="_blank" rel="noopener">Workflow SDK</a> — durable 実行基盤</li>
