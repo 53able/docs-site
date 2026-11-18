@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>rust-anything — 元のコードの振る舞いを記録し、Rust への移植を 1 単位ずつ照合する CLI</title>
+  <meta name="description" content="erkamyaman/rust-anything の解説。TypeScript/JavaScript、Python、C、Go、Ruby、Java のアプリを 1 単位ずつ Rust に移す CLI と MCP サーバー。元のコードの振る舞いを記録して移植と照合するループ、アプリ全体の移植、ホットパスのバッチ化、実コードでの結果、検出できないこと、導入と注意点。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="rust-anything — 元のコードの振る舞いを記録し、Rust への移植を 1 単位ずつ照合する CLI">
+  <meta property="og:description" content="erkamyaman/rust-anything の解説。TypeScript/JavaScript、Python、C、Go、Ruby、Java のアプリを 1 単位ずつ Rust に移す CLI と MCP サーバー。元のコードの振る舞いを記録して移植と照合するループ、アプリ全体の移植、ホットパスのバッチ化、実コードでの結果、検出できないこと、導入と注意点。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/rust-anything.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="rust-anything — 元のコードの振る舞いを記録し、Rust への移植を 1 単位ずつ照合する CLI">
+  <meta name="twitter:description" content="erkamyaman/rust-anything の解説。TypeScript/JavaScript、Python、C、Go、Ruby、Java のアプリを 1 単位ずつ Rust に移す CLI と MCP サーバー。元のコードの振る舞いを記録して移植と照合するループ、アプリ全体の移植、ホットパスのバッチ化、実コードでの結果、検出できないこと、導入と注意点。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700&family=Cousine:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.56 0.15 48);
+      --chart-2: oklch(0.66 0.12 60);
+      --chart-3: oklch(0.44 0.12 42);
+      --chart-4: oklch(0.72 0.1 55);
+      --chart-5: oklch(0.6 0.1 200);
+      --code-bg: var(--muted);
+      --code-text: #6a2f0c;
+      --font-body: 'Kumbh Sans', 'Hiragino Sans', system-ui, sans-serif;
+      --font-mono: 'Cousine', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.78 0.14 55);
+        --chart-2: oklch(0.8 0.1 65);
+        --chart-3: oklch(0.88 0.08 60);
+        --chart-4: oklch(0.74 0.1 50);
+        --chart-5: oklch(0.78 0.1 200);
+        --code-bg: #0f0f0f;
+        --code-text: #f3c9a4;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--hero {
+      background: color-mix(in srgb, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in srgb, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in srgb, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in srgb, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 26rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap caption { text-align: left; font-size: .75rem; color: var(--text-dim); padding: .6rem 1rem; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.56 0.15 48 / 0.06) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.78 0.14 55 / 0.08) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; max-width: 48rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.0625rem; font-weight: 600; margin: 1.5rem 0 0.6rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    a:focus-visible { outline: 2px solid var(--chart-1); outline-offset: 4px; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    .hero-title { font-size: clamp(1.4rem, 2.8vw, 2.2rem); line-height: 1.5; margin: .3rem 0 1rem; }
+    .eyebrow { font-family: var(--font-mono); color: var(--chart-1); font-size: .75rem; letter-spacing: .08em; }
+    .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .card-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card-grid h3 { margin-top: .25rem; }
+    .card-grid p:last-child { margin-bottom: 0; }
+    .graph-example { margin: 1.5rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+    .graph-example svg { display: block; width: 100%; height: auto; color: var(--foreground); }
+    .graph-example rect { fill: var(--muted); stroke: var(--border); }
+    .graph-example .fix { fill: color-mix(in srgb, var(--card) 88%, var(--chart-1)); stroke: var(--chart-1); }
+    .graph-example .dash { fill: none; stroke: var(--ring); stroke-dasharray: 5 4; }
+    .graph-example path { fill: none; stroke: var(--chart-1); stroke-width: 2; }
+    .graph-example path.back { stroke-dasharray: 6 4; }
+    .graph-example text { fill: currentColor; font-family: var(--font-body); font-size: 15px; }
+    .graph-example .small { font-size: 12px; }
+    .graph-example .edge-label { fill: var(--chart-1); font-size: 13px; }
+    figcaption { font-size: .8rem; color: var(--text-dim); margin-top: .75rem; }
+    .ve-table-wrap { overflow-x: auto; margin: 1rem 0; }
+    .ve-table-wrap table { min-width: 560px; font-size: .875rem; }
+    .ve-table-wrap td { vertical-align: top; }
+    .ve-table-wrap td:first-child { white-space: nowrap; }
+    .ve-table-wrap.wrap-first td:first-child { white-space: normal; }
+    .ve-table-wrap td.c { text-align: center; }
+    .ve-table-wrap th.c { text-align: center; }
+    .ve-callout { margin: 1rem 0; font-size: .9rem; }
+    .steps { padding-left: 1.5rem; }
+    .steps > li { padding-left: .5rem; margin-bottom: 1.25rem; }
+    .steps > li::marker { color: var(--chart-1); font-weight: 700; font-family: var(--font-mono); }
+    .steps h3 { margin: 0 0 .4rem; }
+    .source-note { font-size: .8rem; color: var(--text-dim); overflow-wrap: anywhere; }
+    .skip-link { position: absolute; left: 1rem; top: -5rem; padding: .5rem 1rem; background: var(--card); z-index: 20; }
+    .skip-link:focus { top: 1rem; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+    @media (max-width: 760px) { .card-grid.three { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) {
+      body { padding: 20px; }
+      .toc { margin-inline: -20px; padding-inline: 20px; }
+      .card-grid { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .ve-card { padding: 1rem; }
+      h1 { font-size: 1.8rem; }
+    }
+    .graph-example .arm-a { fill: color-mix(in srgb, var(--card) 85%, var(--chart-1)); stroke: var(--chart-1); }
+    .graph-example .arm-b { fill: var(--muted); stroke: var(--ring); stroke-dasharray: 5 4; }
+    .formula { font-family: var(--font-mono); font-size: .875rem; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .75rem 1rem; margin: 1rem 0; overflow-x: auto; white-space: pre; }
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#main">本文へ移動</a>
+<div class="wrap">
+<nav class="toc" id="toc" aria-label="目次"><div class="toc-title">rust-anything</div>
+<a href="#overview">概要</a>
+<a href="#loop">移植のループ</a>
+<a href="#languages">言語とブリッジ</a>
+<a href="#whole-app">アプリ全体の移植</a>
+<a href="#batch">ホットパスとバッチ</a>
+<a href="#cases">実コードでの結果</a>
+<a href="#analyze">analyze と bridge の判断</a>
+<a href="#limits">検出できないこと</a>
+<a href="#install">導入とエージェント連携</a>
+<a href="#cautions">注意点</a>
+<a href="#sources">出典</a>
+</nav>
+<main class="main" id="main">
+<p><a href="../index.html">← 資料一覧</a></p>
+<h1>rust-anything</h1>
+<p class="subtitle">erkamyaman/rust-anything · crates.io / npm 1.5.1（main には未リリースの変更あり） · Rust 製 CLI と MCP サーバー · 対象 TypeScript/JavaScript、Python、C、Go、Ruby、Java（PHP と C# はプレビュー） · MIT</p>
+
+<section id="overview" aria-labelledby="overview-title">
+<h2 class="sec-head" id="overview-title">01 — 元のコードの振る舞いを記録し、Rust の移植をそれと照合する</h2>
+<div class="ve-card ve-card--hero">
+<span class="eyebrow">PROFILE → PLAN → BRIDGE → RECORD → PORT → DIFF → BENCH → SHADOW → GATE</span>
+<p class="hero-title"><strong>コードを翻訳するツールではない。Rust を書くのはエージェントか人で、rust-anything は「どこを移すか」「元と同じ振る舞いか」「出荷してよいか」を判定する。</strong></p>
+<p>rust-anything は、既存のアプリを 1 単位（unit）ずつ Rust に移すための CLI です。元のコードを生成した境界値入力で実行して結果を <code>cases.jsonl</code> に記録し、Rust 側の実装をその記録と 1 件ずつ照合します。呼び出し側は元の API のまま Rust を呼べるよう、言語ごとのバインディング（ブリッジ）も生成します。</p>
+<p>使い方は 2 通りあります。遅い部分だけを移す（ホットパスの移植）か、CLI・HTTP サーバー・ライブラリをまるごと純粋な Rust にする（アプリ全体の移植）かです。どちらも同じループを単位ごとに回し、<code>gate</code> が通るまで完了とみなしません。</p>
+</div>
+<div class="kpi-row">
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">6</div><div class="ve-kpi-card__label">対応言語（＋プレビュー 2）</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">15</div><div class="ve-kpi-card__label">MCP ツール</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">38,251</div><div class="ve-kpi-card__label">README 記載の記録ケース数（不一致 0）</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">20x</div><div class="ve-kpi-card__label">x18n 検索（50,000 キー、バッチ）</div></div>
+</div>
+<div class="card-grid three">
+<article class="ve-card"><span class="eyebrow">HOT PATH</span><h3>遅いループだけを移す</h3><p><code>profile</code> で時間を使っている関数と呼び出し元を見つけ、<code>--batch</code> でループごと Rust に移します。1 回ずつ呼ぶ移植は多くの場合、元より遅くなります。</p></article>
+<article class="ve-card"><span class="eyebrow">WHOLE APP</span><h3>アプリをまるごと移す</h3><p>アプリの入出力を外側から記録し、入口を Rust の「フロントドア」に置き換えてから、単位ごとに Rust へ切り替えます。最後に <code>app lift</code> で元のコードへのフォールバックを外します。</p></article>
+<article class="ve-card"><span class="eyebrow">AGENT</span><h3>エージェントから使う</h3><p><code>rust-anything setup</code> が Claude Code・Codex・Cursor・Gemini CLI に MCP サーバーとワークフロー用スキルを登録します。各ステップは MCP ツールとして呼べます。</p></article>
+</div>
+</section>
+
+<section id="loop" aria-labelledby="loop-title">
+<h2 class="sec-head" id="loop-title">02 — 移植のループ</h2>
+<p>1 単位の移植は次の流れで進みます。元のコードが常に正（source of truth）で、記録したすべてのケースが一致し、<code>gate</code> が通るまで出荷しません。呼び出し側は最初から最後まで元の API を使い続けます。</p>
+<figure class="graph-example">
+<svg viewBox="0 0 960 315" role="img" aria-labelledby="loop-svg-title">
+<title id="loop-svg-title">1 単位の移植ループ。profile で時間のかかる箇所を調べ、analyze で移す順序を決め、bridge で Rust のクレートとラッパーを生成する。record が元のコードの振る舞いを cases.jsonl に記録し、エージェントか人が port.rs を書く。diff で全ケースを照合し、bench で速度を比べ、shadow で本番で両方を並行実行し、gate が通れば完了。diff で不一致があれば port.rs を直す。</title>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--chart-1); stroke: none;"/></marker></defs>
+<rect x="10" y="30" width="200" height="80" rx="8"/>
+<text x="110" y="64" text-anchor="middle">profile</text>
+<text x="110" y="88" text-anchor="middle" class="small">時間を使う関数と呼び出し元</text>
+<rect x="250" y="30" width="200" height="80" rx="8"/>
+<text x="350" y="64" text-anchor="middle">analyze</text>
+<text x="350" y="88" text-anchor="middle" class="small">単位・順序・リスク</text>
+<rect x="490" y="30" width="200" height="80" rx="8"/>
+<text x="590" y="64" text-anchor="middle">bridge</text>
+<text x="590" y="88" text-anchor="middle" class="small">クレートとラッパー生成</text>
+<rect class="fix" x="730" y="30" width="220" height="80" rx="8"/>
+<text x="840" y="64" text-anchor="middle">record</text>
+<text x="840" y="88" text-anchor="middle" class="small">元の振る舞い → cases.jsonl</text>
+<rect class="dash" x="730" y="170" width="220" height="80" rx="8"/>
+<text x="840" y="204" text-anchor="middle">port.rs を書く</text>
+<text x="840" y="228" text-anchor="middle" class="small">エージェントか人</text>
+<rect class="fix" x="490" y="170" width="200" height="80" rx="8"/>
+<text x="590" y="204" text-anchor="middle">diff</text>
+<text x="590" y="228" text-anchor="middle" class="small">全ケース一致まで</text>
+<rect x="250" y="170" width="200" height="80" rx="8"/>
+<text x="350" y="204" text-anchor="middle">bench → shadow</text>
+<text x="350" y="228" text-anchor="middle" class="small">速いか / 本番で並行実行</text>
+<rect class="fix" x="10" y="170" width="200" height="80" rx="8"/>
+<text x="110" y="204" text-anchor="middle">gate</text>
+<text x="110" y="228" text-anchor="middle" class="small">通れば完了</text>
+<path d="M210,70 L246,70" marker-end="url(#arr)"/>
+<path d="M450,70 L486,70" marker-end="url(#arr)"/>
+<path d="M690,70 L726,70" marker-end="url(#arr)"/>
+<path d="M840,110 L840,166" marker-end="url(#arr)"/>
+<path d="M730,210 L694,210" marker-end="url(#arr)"/>
+<path d="M490,210 L454,210" marker-end="url(#arr)"/>
+<path d="M250,210 L214,210" marker-end="url(#arr)"/>
+<path class="back" d="M620,250 C640,290 790,290 810,254" marker-end="url(#arr)"/>
+<text class="edge-label" x="715" y="308" text-anchor="middle">不一致なら port.rs を直す（記録は直さない）</text>
+</svg>
+<figcaption>README の「How it works」「The loop」と skills/rust-anything/SKILL.md をもとに作図。</figcaption>
+</figure>
+<div class="ve-table-wrap">
+<table>
+<caption>README「The loop」より</caption>
+<thead><tr><th>コマンド</th><th>何をするか</th></tr></thead>
+<tbody>
+<tr><td><code>profile &lt;repo&gt; -- node bench.mjs</code></td><td>実際のワークロードを言語ごとの標準プロファイラー（node <code>--cpu-prof</code>、cProfile、<code>go test</code> の pprof、JFR、Ruby のトレーサー）で走らせ、関数を包含時間順に並べ、呼び出し元とバッチ化すべきループを示す。numba・Cython・JAX でコンパイル済みのコードは移しても速くならないと警告する</td></tr>
+<tr><td><code>analyze &lt;repo&gt;</code></td><td>単位の一覧、移植順序（ウェーブ）、<code>file:line</code> つきのリスク、単位ごとのブリッジ、依存パッケージに対応するクレート、最初に移すべき単位（<code>start_here</code>）。<code>--json</code> はスキーマ <code>rust-anything/analyze@1</code></td></tr>
+<tr><td><code>bridge &lt;repo&gt; &lt;unit&gt;</code></td><td>バインディング（<code>lib.rs</code> と元の言語が読み込むラッパー）と移植用のスタブ <code>port.rs</code> を持つクレートを作る。空でないフォルダーには書かない</td></tr>
+<tr><td><code>record &lt;crate&gt;</code></td><td>元のコードを生成した境界値入力（非 ASCII、絵文字、<code>-0</code>、<code>NaN</code>、浮動小数を期待する箇所への整数など）と、引数ごとの意味上の罠（文字列長と大小文字、符号付き除算、オーバーフロー、浮動小数の表示、マップと並び順）で実行し、<code>cases.jsonl</code> に保存。<code>--from-tests -- npx jest</code>（または <code>-- pytest</code>）で元のテストスイートが行う呼び出しも記録する</td></tr>
+<tr><td><code>build &lt;crate&gt;</code></td><td>Rust 側をビルド（<code>.node</code>、wasm パッケージ、Python 拡張、共有ライブラリ）</td></tr>
+<tr><td><code>diff &lt;crate&gt;</code></td><td>記録したケースを、元の呼び出し側と同じ経路で Rust に流し、不一致を列挙</td></tr>
+<tr><td><code>bench &lt;crate&gt;</code></td><td>記録したケースで元と Rust をブリッジ込みで計測し、「出荷」「遅い関数は残す」「もっと大きな単位を移す」などの判定を出す（1.1x 以上で速い、0.9x 未満で遅い）</td></tr>
+<tr><td><code>shadow &lt;crate&gt;</code></td><td>両方を実行して元の結果を返し、不一致だけを報告するドロップイン。<code>RUST_ANYTHING_MODE=old|shadow|new</code> で切り替え</td></tr>
+<tr><td><code>gate &lt;crate&gt;</code></td><td>fmt、clippy <code>-D warnings</code>、テスト、<code>unsafe</code> の監査、未移植の関数がないこと、元のエラー経路ごとに失敗ケースが記録されていること、元がエラーを返す箇所に <code>unwrap</code>/<code>expect</code>/<code>panic!</code> がないこと、ビルド、API、振る舞い、コード量（元の 3 倍＋50 行まで）</td></tr>
+</tbody>
+</table>
+</div>
+<div class="ve-callout"><strong>記録は直さない：</strong>SKILL.md は「不一致は振る舞いの違いであり、直すのは移植側で、記録ではない」としています。意図して違う結果にするケースは <code>known-diffs.jsonl</code> に理由とともに書き、<code>diff</code> と <code>gate</code> はその結果のときだけ合格として数えます（CHANGELOG の Unreleased 項目）。</div>
+<p><code>record</code> は元の単位のファイルの指紋（<code>recorded-from.json</code>）も保存します。後で元のコードが変わると <code>diff</code> が警告し、<code>gate</code> は再記録するまで失敗します。</p>
+</section>
+
+<section id="languages" aria-labelledby="languages-title">
+<h2 class="sec-head" id="languages-title">03 — 言語ごとの単位とブリッジ</h2>
+<p>手順は全言語で共通で、違うのはブリッジだけです。言語は <code>go.mod</code>、<code>pom.xml</code>、<code>pyproject.toml</code>、<code>Gemfile</code>、<code>package.json</code> などから判定され、<code>--lang</code> で上書きできます。型は各言語のソース（TS の型、Python の型ヒント、C・Go・Java の宣言、Ruby の YARD タグ）から取り、型のない引数でも数値として使われていれば数値と推定します。</p>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>README「Languages」より</caption>
+<thead><tr><th>言語</th><th>単位</th><th>ブリッジ</th><th>記録・再生を行うもの</th></tr></thead>
+<tbody>
+<tr><td>TypeScript / JavaScript</td><td>フォルダーかファイル</td><td>napi-rs または wasm-bindgen と生成したバイナリワイヤー。クラスと async も対象</td><td>Node が <code>.ts</code> をそのまま実行</td></tr>
+<tr><td>Python</td><td>パッケージかモジュール</td><td>PyO3（abi3）、直接変換、型つき例外</td><td>Python が元のコードを import</td></tr>
+<tr><td>C</td><td><code>.c</code> ファイル</td><td>元の名前とヘッダーを持つ <code>extern "C"</code> 関数</td><td>元を共有ライブラリにして ctypes で呼ぶ。1 ケースごとに fork</td></tr>
+<tr><td>Go</td><td>パッケージ</td><td>型つき cgo 呼び出しとバイナリワイヤー。元の API のパッケージに収める</td><td>生成した Go のドライバー（別モジュール）</td></tr>
+<tr><td>Ruby</td><td>モジュール関数のファイルかフォルダー</td><td>元のモジュールの下に置く magnus 拡張</td><td>生成した Ruby のドライバー</td></tr>
+<tr><td>Java</td><td><code>public static</code> メソッドのパッケージ</td><td>型つき JNI とバイナリワイヤー。元のメソッドを持つラッパークラス</td><td>生成したリフレクションのドライバー</td></tr>
+<tr><td>PHP（プレビュー）</td><td>関数と <code>public static</code> メソッドのフォルダー</td><td>未対応（PHP FFI 経由を予定）</td><td>アプリ全体の <code>app record</code> / <code>app replay</code> / フロントドアのみ</td></tr>
+<tr><td>C#（プレビュー）</td><td><code>public static</code> メソッドのフォルダー</td><td>未対応（P/Invoke 経由を予定）</td><td>アプリ全体の <code>app record</code> / <code>app replay</code> / フロントドアのみ</td></tr>
+</tbody>
+</table>
+</div>
+<p>元のリポジトリには何も書き込みません。記録と照合は元の言語の実行環境で、生成したドライバーを使って行います（DECISIONS.md の M4）。エラーの比較は例外の型（Python、Ruby、Java）、Go の <code>error</code> はメッセージ、Go の panic は panic であることで行い、移植側は <code>Err("TypeName: message")</code> を返します。C で入力が契約外になりクラッシュしたケースは <code>crash: &lt;signal&gt;</code> と記録され、移植側の結果は何でも合格になります。</p>
+</section>
+
+<section id="whole-app" aria-labelledby="whole-app-title">
+<h2 class="sec-head" id="whole-app-title">04 — アプリ全体を純粋な Rust にする</h2>
+<p>目標は、元のアプリと同じ振る舞いをする純粋な Rust のアプリで、元のコードは参照用に残します。<code>record</code> と <code>diff</code> が 1 単位を検証するのに対し、<code>app record</code> と <code>app replay</code> はアプリを外側から（ブラックボックスとして）検証します。</p>
+<figure class="graph-example">
+<svg viewBox="0 0 960 230" role="img" aria-labelledby="app-svg-title">
+<title id="app-svg-title">アプリ全体の移植の流れ。analyze --whole-app で形と依存と決定事項を出し、app record でアプリの外から見た振る舞いを記録する。app front-door で入口を Rust にし、最初は全コマンドを元のアプリに転送する。単位ごとに移植ループを回して app wire で Rust に切り替え、フォールバック率を下げる。フォールバック率 0 で全単位が gate を通れば app lift で純粋な Rust にする。</title>
+<defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--chart-1); stroke: none;"/></marker></defs>
+<rect x="10" y="40" width="165" height="110" rx="8"/>
+<text x="92" y="78" text-anchor="middle">analyze</text>
+<text x="92" y="100" text-anchor="middle" class="small">--whole-app</text>
+<text x="92" y="124" text-anchor="middle" class="small">形・依存・決定事項</text>
+<rect class="fix" x="205" y="40" width="165" height="110" rx="8"/>
+<text x="287" y="78" text-anchor="middle">app record</text>
+<text x="287" y="100" text-anchor="middle" class="small">外から見た振る舞い</text>
+<text x="287" y="124" text-anchor="middle" class="small">trycmd 形式で保存</text>
+<rect x="400" y="40" width="165" height="110" rx="8"/>
+<text x="482" y="78" text-anchor="middle">app front-door</text>
+<text x="482" y="100" text-anchor="middle" class="small">入口だけ Rust</text>
+<text x="482" y="124" text-anchor="middle" class="small">fallback 100%</text>
+<rect class="dash" x="595" y="40" width="165" height="110" rx="8"/>
+<text x="677" y="78" text-anchor="middle">単位ごとに</text>
+<text x="677" y="100" text-anchor="middle" class="small">ループ → gate</text>
+<text x="677" y="124" text-anchor="middle" class="small">app wire で切替</text>
+<rect class="fix" x="790" y="40" width="160" height="110" rx="8"/>
+<text x="870" y="78" text-anchor="middle">app lift</text>
+<text x="870" y="100" text-anchor="middle" class="small">fallback 0 が条件</text>
+<text x="870" y="124" text-anchor="middle" class="small">純粋な Rust</text>
+<path d="M175,95 L201,95" marker-end="url(#arr2)"/>
+<path d="M370,95 L396,95" marker-end="url(#arr2)"/>
+<path d="M565,95 L591,95" marker-end="url(#arr2)"/>
+<path d="M760,95 L786,95" marker-end="url(#arr2)"/>
+<path class="back" d="M700,150 C690,200 560,200 540,154" marker-end="url(#arr2)"/>
+<text class="edge-label" x="480" y="215" text-anchor="middle">各段階で app replay が 100% 合格であることを確かめ、フォールバック率を下げていく</text>
+</svg>
+<figcaption>README「Port a whole app」の 2 つ目の図と本文をもとに作図。</figcaption>
+</figure>
+<ol class="steps">
+<li><h3>計画する</h3><div class="ve-code-block"><pre><code>rust-anything analyze . --whole-app</code></pre></div><p>アプリの形（CLI・サーバー・ライブラリ）と入口、import か宣言されているすべての外部依存と対応するクレート、互いに import し合う単位をまとめた移植順序、推奨回答つきの番号つき決定事項を出します。</p></li>
+<li><h3>アプリの振る舞いを外から記録する</h3><div class="ve-code-block"><pre><code>rust-anything app record . -- python3 cli.py   # 元のアプリを起動するコマンド
+rust-anything app replay .                     # 元のアプリ自身が 100% 合格すること</code></pre></div><p>入力は、アプリの Markdown やシェルファイルにある <code>$ mytool ...</code> の例、<code>--inputs</code> の JSONL、そこから派生させた罠（非 ASCII、負の除算、オーバーフロー、ファイルなしなど）です。各ケースを 2 回実行し、2 回で違った部分は <code>[..]</code> のワイルドカードにします。ケースは <a href="https://docs.rs/trycmd">trycmd</a> 形式で <code>rust/app-cases/</code> に保存され、手で読んで編集できます。</p></li>
+<li><h3>入口を Rust にする</h3><div class="ve-code-block"><pre><code>rust-anything app front-door .                   # rust/app: 全コマンドを元のアプリに転送
+rust-anything app wire . textkit --command upper # textkit-rs が gate を通った後</code></pre></div><p><code>app front-door</code> は記録したケースのコマンドとフラグを clap で受け付ける Rust のバイナリ <code>rust/app</code> を作り、最初は全コマンドを同じ argv・stdin・環境変数で元のアプリに渡します。直後の replay は「100% 合格、フォールバック率 100%」です。<code>app wire</code> は単位のクレートに <code>gate</code> をかけてから <code>rust/app</code> に組み込み、指定したコマンドを Rust に振り向けます。<code>RUST_ANYTHING_UNIT_&lt;NAME&gt;=original</code> で単位ごとに元へ戻せます。</p></li>
+<li><h3>純粋な Rust にする</h3><div class="ve-code-block"><pre><code>rust-anything app lift .</code></pre></div><p>フォールバック率 0 かつ全単位が <code>gate</code> を通るまでは拒否し、何が阻んでいるかを示します。条件を満たすと、まずコピー上でフォールバック経路と切り替えスイッチを外し、各単位をバインディングなしの普通のライブラリにし、<code>cargo test</code> でケースを走らせる <code>rust/app/tests/app_cases.rs</code> を追加します。チェックリスト（fmt、clippy、テスト、<code>rust/DECISIONS.md</code> の全ターゲットのビルド、純粋なバイナリでの replay）がすべて通ったときだけ書き戻します。元のコードには触れません。</p></li>
+</ol>
+<h3>サーバーとライブラリ</h3>
+<div class="card-grid">
+<article class="ve-card"><span class="eyebrow">HTTP SERVER</span><h3><code>--http</code></h3><p><code>app record . --http -- node server.js</code> で、ドキュメント中の <code>curl</code> 行、<code>--inputs</code>、パスやクエリ・本文の罠からリクエストを作ります。フロントドアは axum のサーバーで、どの単位も答えないルートを元のサーバーにプロキシします。<code>app wire . api --route 'GET /users/{id}'</code> でルート単位に切り替えます。</p></article>
+<article class="ve-card"><span class="eyebrow">LIBRARY</span><h3>公開 API が入口</h3><p>プロセスを再生できないので、各単位の記録ケースが証拠になります。<code>rust/app</code> は公開 API を持つライブラリクレートになり、<code>app wire</code> は元のパッケージが単位の代わりに import するシャドウを書きます。フォールバック率は Rust がまだ答えていない公開エクスポートの割合です。</p></article>
+</div>
+<p><code>app replay</code> のレポート <code>rust/app-cases/replay-report.md</code> には時刻や一時パスが入らないため、2 回の replay は同じファイルになります。README はこれをコミットし、CI で <code>git diff --exit-code</code> にかける運用を勧めています。合格状況が良くも悪くも変われば CI が落ちます。</p>
+<h3>エージェント向けの手順（whole-app スキル）</h3>
+<p>スキルの whole-app.md は、Matt Pocock の skills から取り入れた次の進め方をエージェントに指示します。</p>
+<ul>
+<li><strong>Grilling</strong>：移植が依存する決定事項を、推奨回答つきの質問で数回に分けて利用者に聞き、決まったものを ADR として <code>rust/DECISIONS.md</code> に書く。元の用語と Rust 側の名前の対応は <code>rust/GLOSSARY.md</code>。</li>
+<li><strong>Research</strong>：バックグラウンドのエージェントが依存ごとに一次資料を読み、見つけた罠を <code>rust/research/&lt;topic&gt;.md</code> に書く。</li>
+<li><strong>セッションをまたぐ</strong>：<code>rust/MAP.md</code> に全単位の状態を置き、セッションは着手前に 1 単位を確保し、区切りごとに <code>rust/HANDOFF.md</code> を残す。同じウェーブの単位はサブエージェントで並行して移せる。</li>
+<li><strong>Cutover</strong>：デプロイ、DNS、シークレットなど利用者にしかできない手順は、各段階に戻し方を持つ対話式スクリプト <code>rust/cutover.sh</code> にする。</li>
+</ul>
+</section>
+
+<section id="batch" aria-labelledby="batch-title">
+<h2 class="sec-head" id="batch-title">05 — ホットパス：1 回ずつ呼ぶのでなく、ループごと移す</h2>
+<p>小さな関数を 1 件ずつ Rust で呼ぶと、呼ぶたびにブリッジの費用がかかり、V8・JVM・Go が数ナノ秒で済ませる処理に負けます。README と DECISIONS.md はこれを前提にしていて、勝つのは「データを Rust 側に置いたまま、ループごと移す」場合です。</p>
+<div class="ve-code-block"><pre><code>rust-anything profile ../x18n -- node --experimental-strip-types $PWD/demo/x18n-search/search.ts .
+# -> fuzzyScore: 実行時間の 4 分の 1。matched がキーごとに呼んでいる。バッチ化せよ
+rust-anything bridge ../x18n packages/core/src/fuzzy.ts --batch fuzzyScore:text</code></pre></div>
+<div class="ve-code-block"><pre><code>const search = new FuzzyScoreBatch(keys)   // 1 回だけ
+const order = search.rank(query, 0)        // キー入力ごと。インデックスを良い順に返す</code></pre></div>
+<p><code>--batch fn:param</code> は、<code>param</code> の値の集合を 1 回だけ Rust に渡して保持するクラスを生成します。<code>run</code> は全件の結果を 1 つの配列で返し、<code>rank</code> は閾値以上の項目のインデックスを良い順に返します。全コアで実行され、エラーは元と同じです。<code>port.rs</code> に <code>FuzzyScoreIndex</code> のような構造体を書くと、小文字化や文字マスクなど項目ごとの前処理を 1 回で済ませられます。</p>
+<div class="ve-table-wrap">
+<table>
+<caption>README「Hot paths」より。4 コアで計測、結果が同一であることを確認済み</caption>
+<thead><tr><th>言語</th><th>ワークロード</th><th class="c">元</th><th class="c">1 回ずつ呼ぶ移植</th><th class="c">バッチ</th></tr></thead>
+<tbody>
+<tr><td>TS</td><td>x18n の検索、50,000 キー</td><td class="c">10 ms</td><td class="c">0.2–0.4x</td><td class="c"><strong>20x</strong></td></tr>
+<tr><td>Python</td><td><code>slugify</code>、20,000 文字列</td><td class="c">98 ms</td><td class="c">—</td><td class="c"><strong>17x</strong></td></tr>
+<tr><td>Ruby</td><td><code>slugify</code>、20,000 文字列</td><td class="c">110 ms</td><td class="c">—</td><td class="c"><strong>12.7x</strong></td></tr>
+<tr><td>Ruby</td><td><code>shellescape</code>（標準ライブラリ）、50,000 値</td><td class="c">88 ms</td><td class="c">—</td><td class="c"><strong>11.8x</strong></td></tr>
+<tr><td>Go</td><td><code>Slugify</code>、50,000 文字列</td><td class="c">49 ms</td><td class="c">0.93x</td><td class="c"><strong>4x</strong></td></tr>
+<tr><td>Java</td><td><code>slugify</code>、50,000 文字列</td><td class="c">43 ms</td><td class="c">0.68x</td><td class="c"><strong>3x</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p>Go や Java のようにコンパイル済みの元は 1 項目あたりの処理が既に速く、バッチの利得はほぼコア数ぶんです。バッチのクレートは mimalloc を使います。システムのアロケーターでは Go のバッチが 1 スレッドより遅くなったためです（DECISIONS.md の S12）。同じ x18n の検索を wasm（1 スレッド）で動かした場合は 11.5x です。</p>
+</section>
+
+<section id="cases" aria-labelledby="cases-title">
+<h2 class="sec-head" id="cases-title">06 — 実コードでの結果</h2>
+<p>リポジトリの <code>demo/</code> と docs/real-world.md に、実在のライブラリを移植した記録があります。速くならなかった結果も載せています。</p>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>demo/x18n-core/README.md、docs/real-world.md、docs/real-world-languages.md より</caption>
+<thead><tr><th>対象</th><th>正しさ</th><th>速度</th></tr></thead>
+<tbody>
+<tr><td>x18n の <code>packages/core</code>（TS、29 関数）</td><td>9 単位すべて gate 合格。記録 7,925 件とシャドウ 4,600 回で不一致 0</td><td>JS から 1 回ずつ呼ぶと、ほぼすべての関数で TS より遅い（例：<code>splitKey</code> 0.03x）。ブリッジの費用が処理を上回る</td></tr>
+<tr><td><a href="https://github.com/vercel/ms">vercel/ms</a>（TS）</td><td>975/975 一致（Jest の 167 テストから 340 呼び出しを取得）</td><td>1 回ずつ 0.56x。<code>parse</code> のバッチ 100,000 件で 18x（文字列の受け渡し込みで 3.4x）</td></tr>
+<tr><td><a href="https://github.com/krisk/Fuse">Fuse.js</a>（TS、未リリースの 1.6 で実施）</td><td>3,414/3,414 一致。<code>withRust(Fuse)</code> は 360 検索で Fuse とバイト単位で同一</td><td>50,000 文字列で 91.2 ms → 2.8 ms（32x）。1 コアでは 5.3x</td></tr>
+<tr><td>Go の <code>path</code>、Ruby の <code>shellwords</code>、Python の <code>colorsys</code>、JDK と glibc の挙動</td><td>すべて gate 合格、計 13,010 件</td><td>1 回ずつでは Ruby 4.4x、Python 1.35x、Go と Java は元のほうが速い。バッチでは全言語で上回る</td></tr>
+</tbody>
+</table>
+</div>
+<h3>記録したケースが捕まえた違い</h3>
+<p>README と docs/real-world.md には、単純なテストは通ったが <code>diff</code> で落ちた例が挙がっています。</p>
+<div class="ve-code-block"><pre><code>198/200 cases match
+- fuzzyScore("b😀", "a😀b😀c"): expected {"ok":1997}, got {"ok":1998}</code></pre></div>
+<ul>
+<li>JS の <code>indexOf</code> は UTF-16 のコード単位で数えるため、絵文字は 2 位置になる。Rust の <code>char</code> で数えた最初の移植は不一致になり、生成された <code>utf16</code> ヘルパーを使って 2000/2000 になった。</li>
+<li><code>u</code> フラグなしの <code>/.../i</code> は ASCII しか大文字小文字を同一視しないが、Rust の <code>regex</code> は Unicode で同一視する。<code>"1 ſ"</code>（long s）やケルビン記号が秒として解釈されるところだった（vercel/ms）。</li>
+<li><code>Math.round</code> は .5 を正の方向に丸める（<code>-2.5</code> は <code>-2</code>）が、Rust の <code>round</code> は 0 から離れる方向に丸める。</li>
+<li>Fuse の Bitap は 32 ビットの JS 整数で動き、<code>1 &lt;&lt; 31</code> は負になる。移植はその値を JS と同じに保つ。</li>
+</ul>
+<p>移植の過程でツール自身の不具合も見つかり、修正されています（<code>serde_json</code> 経由で浮動小数が 1 ULP ずれる、C の記録中のクラッシュなど）。</p>
+</section>
+
+<section id="analyze" aria-labelledby="analyze-title">
+<h2 class="sec-head" id="analyze-title">07 — analyze と bridge が決めること</h2>
+<h3>analyze の単位と順序</h3>
+<ul>
+<li><strong>単位</strong>：ソースファイルのフォルダー、またはパッケージのソースルート直下のファイル。<code>node_modules</code>、ビルド出力、fixtures、playground、ツール設定は除外。</li>
+<li><strong>ウェーブ</strong>：単位の import 先は前のウェーブに入る。import が循環する単位はまとめて移す。</li>
+<li><strong>ブリッジ</strong>：単位か、その import 先が Node を必要とするなら napi-rs、移植可能なコードは wasm-bindgen（ブラウザで動き続ける必要があるため）、UI とエディターのコードは JS に残す。</li>
+<li><strong>readiness と priority</strong>：readiness は安全さ（100 からリスク・規模・被依存数を引き、テストがあれば加点）。priority は readiness と価値（ループと文字列処理の密度、テスト、80〜600 行の規模）の半々。</li>
+</ul>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>TS のリスク分類（README「What analyze looks at」より）。DECISIONS.md の A6 は、これらがヒューリスティックで誤検知を含むと明記している</caption>
+<thead><tr><th>リスク</th><th class="c">重大度</th><th>例</th></tr></thead>
+<tbody>
+<tr><td>文字列のオフセット</td><td class="c">high</td><td><code>slice</code>、<code>indexOf</code>、<code>matchAll</code>、<code>d</code> フラグ：UTF-16 と UTF-8 の違い</td></tr>
+<tr><td>正規表現の構文</td><td class="c">high</td><td>先読み・後読み、後方参照、<code>y</code>：<code>regex</code> クレートにない</td></tr>
+<tr><td>動的な正規表現</td><td class="c">high</td><td><code>new RegExp(userPattern)</code></td></tr>
+<tr><td>動的なコード</td><td class="c">high</td><td><code>eval</code>、<code>new Function</code>、計算された <code>import()</code></td></tr>
+<tr><td>動的な型</td><td class="c">medium</td><td><code>any</code>、<code>'key' in value</code></td></tr>
+<tr><td>順序のあるコレクション</td><td class="c">medium</td><td><code>Map</code>、<code>Set</code>、<code>Object.keys</code> の挿入順</td></tr>
+<tr><td>async、ジェネレーター</td><td class="c">medium</td><td>Promise とジェネレーターの境界</td></tr>
+<tr><td>クラス継承、リフレクション</td><td class="c">medium</td><td><code>extends</code>、<code>Proxy</code>、<code>Reflect</code>、<code>Symbol</code></td></tr>
+<tr><td>コールバック型の API</td><td class="c">medium</td><td>関数型の引数：ブリッジの往復が増える</td></tr>
+<tr><td>例外、数値、JSON</td><td class="c">low</td><td><code>throw</code>、ビット演算、<code>JSON.stringify</code> の順序</td></tr>
+</tbody>
+</table>
+</div>
+<h3>bridge が元の言語に残すもの</h3>
+<p>ブリッジを越えられないエクスポートは理由つきで元の言語に残し、シャドウモジュールが元を再エクスポートします。TS では、関数を受け取る・返す関数、ジェネレーターとイテレーター、RegExp、<code>instanceof</code> の判定、ジェネリクス、型に関数を含む値（import・再エクスポート・<code>extends</code> をたどって判定）が対象です。<code>--keep "name: reason"</code> で追加できます。x18n の core では 55 エクスポートのうち 26 がこれに該当しました（DECISIONS.md の X1）。</p>
+<p>JSON で表せない <code>undefined</code>、NaN、Infinity、<code>-0</code>、孤立サロゲートは、<code>{"$undefined": true}</code> などのマーカーで運びます。構造化された値は通常、生成したバイナリワイヤーで渡し、JSON はワイヤーが扱えない形のときだけ使います。</p>
+</section>
+
+<section id="limits" aria-labelledby="limits-title">
+<h2 class="sec-head" id="limits-title">08 — 検出できないこと</h2>
+<p>合格が意味するのは「記録されたすべてのケースで Rust が一致した」ことだけです。README は書き直しで問題になる箇所の多くが記録の外にあるとして、次を挙げています。</p>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption>README「What it can't catch」より</caption>
+<thead><tr><th>項目</th><th>内容と対策</th></tr></thead>
+<tbody>
+<tr><td>誰も記録しなかった入力</td><td>生成ケース、罠、元のテストスイート、<code>--inputs</code> が上限。本番のサンプルやバグ報告など実際の入力を足す</td></tr>
+<tr><td>その後変わった元のコード</td><td>指紋（<code>recorded-from.json</code>）で検出し、<code>gate</code> は再記録まで失敗する</td></tr>
+<tr><td>正規表現</td><td><code>regex</code> クレートは先読みと後方参照を持たず、コンパイルできるパターンでも非 ASCII の <code>\w</code>、<code>\b</code>、<code>\d</code>、大文字小文字の扱いが JS・Python・Java と違うことがある。<code>record</code> は正規表現を使うファイルに罠（トルコ語の ı、ケルビン記号、ゼロ幅接合子など）を足すが、実際のパターンを実際のテキストでも試す</td></tr>
+<tr><td>実行ごとに変わるもの</td><td>2 回の実行で違った値はワイルドカード、行の順序の違いは順不同で比較、行数の違いは <code>...</code>（何にでも一致）になる。ハッシュ順や並行処理の違いは移植で本当に変わりうるため、<code>record</code> が列挙する各項目を確認する</td></tr>
+<tr><td>浮動小数</td><td>数値の文字列化（<code>1e21</code>、<code>-0</code>、桁数）は言語ごとに違い、完全一致が必要。<code>--float-tolerance</code> が許すのは丸め誤差だけ</td></tr>
+<tr><td>出力に出ないもの</td><td>時間、メモリ、負荷時の並行性、stdout・stderr・終了コード・書いたファイル・HTTP 応答以外の副作用（ネットワーク呼び出し、DB、シグナル）は比較しない</td></tr>
+<tr><td>他のプラットフォーム</td><td>記録が示すのは記録したマシンでの振る舞い。型のサイズ・エンディアン・コンパイラに依存する C はターゲットで違いうるため、<code>analyze</code> はハードウェア寄りの C を C に残す</td></tr>
+</tbody>
+</table>
+</div>
+<div class="ve-callout"><strong>対象外：</strong>APK、JAR、.exe などのバイナリしかないアプリは移植できません（ソースを解析して関数単位で記録するため）。Kotlin と Swift は未対応です。Electron アプリはメインプロセスのロジックを移し、レンダラーはそのまま残します。</div>
+</section>
+
+<section id="install" aria-labelledby="install-title">
+<h2 class="sec-head" id="install-title">09 — 導入とエージェント連携</h2>
+<div class="ve-code-block"><pre><code>cargo install rust-anything   # crates.io から
+rust-anything setup           # Claude Code、Codex、Cursor、Gemini CLI に登録</code></pre></div>
+<p>Rust のツールチェーンがなければ、GitHub のリリースに macOS・Linux・Windows のビルド済みバイナリがあり、JavaScript のプロジェクトでは <code>npm install -g rust-anything</code> でも同じバイナリが入ります。Claude Code ではプラグインとしても入れられます（CLI は別途 <code>PATH</code> に必要）。</p>
+<div class="ve-code-block"><pre><code>/plugin install rust-anything --marketplace erkamyaman/rust-anything</code></pre></div>
+<div class="ve-table-wrap wrap-first">
+<table>
+<caption><code>rust-anything setup</code> が追加するもの（README「Works with」より）</caption>
+<thead><tr><th>エージェント</th><th>追加先</th></tr></thead>
+<tbody>
+<tr><td>Claude Code</td><td>MCP サーバーを <code>~/.claude.json</code>、スキルを <code>~/.claude/skills/</code></td></tr>
+<tr><td>Codex</td><td>MCP サーバーを <code>~/.codex/config.toml</code>、スキルを <code>~/.codex/skills/</code></td></tr>
+<tr><td>Cursor</td><td>MCP サーバーを <code>~/.cursor/mcp.json</code></td></tr>
+<tr><td>Gemini CLI</td><td>MCP サーバーを <code>~/.gemini/settings.json</code></td></tr>
+<tr><td>その他の MCP クライアント</td><td><code>rust-anything mcp</code> を stdio サーバーとして手で追加</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>setup</code> は既存ファイルを変える前に <code>&lt;file&gt;.rust-anything.bak</code> を残し、他の設定とキーの順序を保ち、パースできないファイルは書き換えません。再実行しても安全で、<code>setup --remove</code> で rust-anything の項目だけを外せます。</p>
+<p>MCP ツールは <code>profile</code>、<code>analyze</code>、<code>bridge</code>、<code>refresh</code>、<code>record</code>、<code>build</code>、<code>diff</code>、<code>bench</code>、<code>shadow</code>、<code>gate</code> と、アプリ全体用の <code>app_record</code>、<code>app_replay</code>、<code>app_front_door</code>、<code>app_wire</code>、<code>app_lift</code> です。スキルはエージェントに、計画（<code>analyze</code>）を示した後は利用者が計画と最初の単位を承認するまで止まるよう指示しています。</p>
+<h3>実行に必要なもの</h3>
+<p><code>record</code>、<code>diff</code>、<code>bench</code> は元のコードをその実行環境で動かすため、Node 22.6 以上（<code>.ts</code> を直接実行）、Python 3.9 以上（Python と C）、Go 1.21 以上、Ruby 3 以上、JDK 17 以上が必要です。Node の <code>profile</code> は Node 24 以上、C には C コンパイラー、wasm のブリッジには <code>wasm32-unknown-unknown</code> ターゲットと、クレートと同じバージョンの <code>wasm-bindgen-cli</code> が要ります。Cargo.toml の <code>rust-version</code> は 1.97 です。</p>
+</section>
+
+<section id="cautions" aria-labelledby="cautions-title">
+<h2 class="sec-head" id="cautions-title">10 — 注意点</h2>
+<h3>速くなるとは限らない</h3>
+<p>README の FAQ は「Rust が常に速いか」に No と答えています。x18n の core は全関数が正しく移せたうえで、JS から呼ぶと遅くなりました。<code>bench</code> は <code>gate</code> とは別のステップで、出荷前に測る前提です（DECISIONS.md の X5）。速度目的なら <code>profile</code> から始め、バッチで移せるループがあるかを先に確かめます。</p>
+<h3>合格は記録の範囲での一致</h3>
+<p>08 節のとおり、生成ケースと罠は実際の入力の代わりになりません。正規表現、浮動小数、ハッシュ順、外部への副作用を含むコードでは、本番の入力を <code>--inputs</code> で足し、<code>shadow</code> で本番トラフィックでも比べてから切り替えます。<code>shadow</code> は同期的な結果だけを比べ、引数を書き換える関数では 2 つ目の実装が書き換え後の入力で動く、という制限も DECISIONS.md に書かれています。</p>
+<h3>言語ごとの制限</h3>
+<ul>
+<li>C：スカラーと <code>const char *</code> の API だけがブリッジを越える。出力バッファや状態構造体、マクロで定義された関数は C に残る。</li>
+<li>Go：メソッド、ジェネリクス、可変長引数、ポインター、インターフェイス、チャネルは Go に残る。</li>
+<li>Ruby：モジュール関数のみ。クラスとブロックを取るメソッドは Ruby に残る。</li>
+<li>Java：公開クラスの <code>public static</code> メソッドのみ。<code>record</code> は <code>javac</code> だけでコンパイルするため、Maven の依存が必要なコードはまだ記録できない。</li>
+<li>PHP と C# はプレビューで、単位を Rust に移すブリッジはまだない。</li>
+</ul>
+<h3>その他</h3>
+<ul>
+<li>プロジェクトは新しく、最初のコミットは 2026-11-16、v1.5.1 は 2026-11-18 のリリースです。CHANGELOG の Unreleased にも変更が続いており、本ページの Fuse.js の結果は未リリースの 1.6 で取られたものです。</li>
+<li>rust-anything はローカルで動き、コードを外部に送りません。ただし Rust を書くエージェントは、そのモデル提供元のポリシーのもとでコードを送ります。</li>
+<li><code>gate</code> は移植のコード量を元の 3 倍（＋50 行）までに制限します。超える場合はクレートで済む処理を手書きしているか、ケースを個別に処理している可能性が高い、とされています。</li>
+<li>Rust プロジェクトや Rust Foundation とは無関係の独立したプロジェクトです。</li>
+</ul>
+</section>
+
+<section id="sources" aria-labelledby="sources-title">
+<h2 class="sec-head" id="sources-title">11 — 公式資料と確認したソース</h2>
+<ul>
+<li><a href="https://github.com/erkamyaman/rust-anything">erkamyaman/rust-anything</a> — README.md、DECISIONS.md、CHANGELOG.md、Cargo.toml、<code>src/mcp.rs</code></li>
+<li><a href="https://github.com/erkamyaman/rust-anything/blob/main/skills/rust-anything/SKILL.md">skills/rust-anything/SKILL.md</a> と whole-app.md — エージェント向けの手順</li>
+<li><a href="https://github.com/erkamyaman/rust-anything/blob/main/docs/real-world.md">docs/real-world.md</a>、docs/real-world-languages.md、<a href="https://github.com/erkamyaman/rust-anything/blob/main/demo/x18n-core/README.md">demo/x18n-core/README.md</a> — 実コードでの移植記録</li>
+<li><a href="https://crates.io/crates/rust-anything">crates.io</a> · <a href="https://www.npmjs.com/package/rust-anything">npm</a> · <a href="https://github.com/erkamyaman/rust-anything/releases">GitHub Releases</a></li>
+</ul>
+<p class="source-note">確認日: 2026-11-18 · ソース: <a href="https://github.com/erkamyaman/rust-anything/tree/a8275628fbc365af15bde2c713cf2ca49161a901">a827562</a>（2026-11-18、Cargo.toml のバージョン 1.5.1）。原文は英語で、本ページの引用・要約は日本語訳です。動作は実行して確認しておらず、速度の数値はすべてリポジトリの記載にもとづきます。</p>
+</section>
+</main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
