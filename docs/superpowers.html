@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Superpowers — マルチプラットフォーム開発ワークフロー</title>
-  <meta name="description" content="Claude Code、Cursor、Codex、Factory Droid、OpenCode、Gemini CLI、GitHub Copilot CLI 向けのスキルベース開発ワークフロー。v5.1.0 時点の worktree 検出、code review 統合、AI 向け貢献ガイドを整理。">
+  <meta name="description" content="Claude Code、Codex、Cursor、Antigravity など 15 ハーネスで動くスキルベースの開発ワークフロー。v7.0.2 時点の brainstorming、Subagent-driven と Native の実行方式、diagnosing-superpowers、v5.1.0 以降の変更を整理。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Superpowers — マルチプラットフォーム開発ワークフロー">
-  <meta property="og:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。v5.1.0 時点の worktree 検出、code review 統合、AI 向け貢献ガイドを整理。">
+  <meta property="og:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。v7.0.2 時点の brainstorming、プランの実行方式、v5.1.0 以降の変更を整理。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/superpowers.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Superpowers — マルチプラットフォーム開発ワークフロー">
-  <meta name="twitter:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。v5.1.0 時点の対応ハーネスと実行モデルを整理。">
+  <meta name="twitter:description" content="コーディングエージェント向けのスキルベース開発ワークフロー。v7.0.2 時点の実行方式と対応ハーネスを整理。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Azeret+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -196,6 +196,7 @@
 
     .badge { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; white-space: nowrap; background: var(--muted); }
     .badge--new { border-color: color-mix(in oklch, var(--chart-1) 55%, var(--border)); color: var(--chart-4); }
+    .source-note { font-size: .8rem; color: var(--text-dim); overflow-wrap: anywhere; margin-top: 1rem; }
     .badge--safe { border-color: color-mix(in oklch, var(--chart-2) 55%, var(--border)); color: var(--chart-2); }
 
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -208,206 +209,332 @@
   <nav class="toc" id="toc">
     <div class="toc-title">目次</div>
     <a href="#overview">概要</a>
-    <a href="#updates">最新アップデート</a>
+    <a href="#updates">v6〜v7 の変更</a>
     <a href="#workflow">基本ワークフロー</a>
+    <a href="#brainstorming">brainstorming</a>
+    <a href="#execution">プランの実行方式</a>
     <a href="#skills">スキルライブラリ</a>
+    <a href="#diagnosing">不具合の調べ方</a>
     <a href="#install">インストール</a>
     <a href="#contributing">貢献時の注意</a>
-    <a href="#philosophy">哲学</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
   <h1>Superpowers</h1>
-  <p class="subtitle">Composable skills for coding agents. v5.1.0 extends the same disciplined workflow to Claude Code, Cursor, Codex, Factory Droid, OpenCode, Gemini CLI, and GitHub Copilot CLI.</p>
+  <p class="subtitle">obra/superpowers · v7.0.2（2026-11-03） · 15 スキル · 15 ハーネス対応 · MIT</p>
 
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-    <p><strong>Superpowers</strong> は、コーディングエージェント向けの<strong>ソフトウェア開発ワークフロー一式</strong>。組み合わせ可能な「スキル」と、エージェントがそれらを確実に使うための初期指示で構成され、コードを書く前に仕様を引き出し、設計を承認してからプランに落とし、TDD とレビューを通してマージ判断まで進める。</p>
+    <p><strong>Superpowers</strong> は、コーディングエージェント向けの<strong>ソフトウェア開発の進め方一式</strong>。組み合わせ可能な「スキル」と、エージェントがそれらを確実に使うための初期指示（<code>using-superpowers</code> の bootstrap）で構成される。作者は Jesse Vincent と Prime Radiant。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">5.1.0</span><span class="ve-kpi-card__label">最新確認版</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">8</span><span class="ve-kpi-card__label">対応ハーネス</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">14</span><span class="ve-kpi-card__label">コアスキル</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">0 deps</span><span class="ve-kpi-card__label">brainstorm server</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">7.0.2</span><span class="ve-kpi-card__label">確認したバージョン</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">15</span><span class="ve-kpi-card__label">対応ハーネス（Codex App/CLI を 1 と数える）</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">15</span><span class="ve-kpi-card__label">スキル</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">0 deps</span><span class="ve-kpi-card__label">第三者依存</span></div>
     </div>
-    <p>エージェントは「何か作る」と検知すると、いきなりコードを書かずに「何をしたいか」を問いかける。仕様を固めて短いチャンクで確認し、承認後に実装プランを作る。「go」と言えば <code>subagent-driven-development</code> または <code>executing-plans</code> に進み、タスク単位で検証しながら作業する。</p>
+    <p>エージェントは「何か作る」と判断すると、すぐにはコードを書かず、何をなぜ作りたいかを確認する。設計を承認したら実装プランを書き、プランを人が確認してから実行に移る。実行方式は、タスクごとにサブエージェントとレビューを回す <code>subagent-driven-development</code> と、同じセッションで全タスクを実装して最後に 1 回だけレビューする <code>executing-plans</code>（Native）から選ぶ。</p>
   </div>
 
-  <section id="updates" class="sec-head">2 — 最新アップデート</section>
+  <section id="updates" class="sec-head">2 — v6〜v7 の変更</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> v5.1.0 の主な変更</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> v5.1.0（2026-04-30）以降の主な変更</span>
+    <p>前回このページが基準にした v5.1.0 から、v6.0.0・v6.4.1・v7.0.0 の 3 回で構成が大きく変わった。RELEASE-NOTES.md から利用者に影響する変更を抜き出す。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>領域</th><th>更新</th><th>意味</th></tr>
+          <tr><th>版</th><th>変更</th><th>利用者への影響</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge--new">v5.1.0</span></td><td><code>using-git-worktrees</code> / <code>finishing-a-development-branch</code> を書き直し</td><td>既存 worktree 内なら作成をスキップ。作成前にユーザー同意を取り、ハーネス固有の worktree ツールを優先。クリーンアップは <code>.worktrees/</code> 配下のみ。</td></tr>
-          <tr><td><span class="badge badge--new">review</span></td><td><code>superpowers:code-reviewer</code> 名前付きエージェントを削除し、<code>requesting-code-review</code> を自己完結化</td><td>ペルソナとチェックリストを <code>code-reviewer.md</code> に集約し、<code>Task (general-purpose)</code> で直接ディスパッチ。</td></tr>
-          <tr><td><span class="badge badge--new">sdd</span></td><td><code>subagent-driven-development</code> の「3 タスクごとに停止」を廃止</td><td>タスク単位または自然な区切りでレビューし、計画に沿って連続実行しやすくした。</td></tr>
-          <tr><td><span class="badge badge--safe">commands</span></td><td>レガシー slash コマンド <code>/brainstorm</code>、<code>/execute-plan</code>、<code>/write-plan</code> を削除</td><td>対応スキル（<code>superpowers:brainstorming</code> など）を直接呼び出す前提へ。</td></tr>
-          <tr><td><span class="badge badge--safe">contrib</span></td><td><code>CLAUDE.md</code> / <code>AGENTS.md</code> に AI エージェント向け貢献ガイドを追加</td><td>PR テンプレート確認、重複検索、実在する問題の検証、完全 diff の人間承認を必須化。</td></tr>
-          <tr><td><span class="badge badge--safe">install</span></td><td>Factory Droid のインストール手順を README に追加</td><td>8 ハーネス目として marketplace 登録と plugin install を明記。</td></tr>
+          <tr><td><span class="badge badge--new">6.0.0</span></td><td>SDD のタスクレビューを 1 本に統合（<code>task-reviewer-prompt.md</code>）。最後に全ブランチを最上位モデルで 1 回レビュー</td><td><code>spec-reviewer-prompt.md</code> と <code>code-quality-reviewer-prompt.md</code> は削除。リリースノートでは、評価条件で Claude Code と Codex がおよそ 2 倍速く、トークンを約 50% 減らしたとしている（ハーネスや作業内容によって変わる、と注記付き）。</td></tr>
+          <tr><td><span class="badge badge--new">6.0.0</span></td><td>worktree をプロジェクト内（既存の <code>.worktrees/</code> か <code>worktrees/</code>、無ければ <code>.worktrees/</code>）に作る</td><td>旧来の <code>~/.config/superpowers/worktrees/</code> は使われなくなった。</td></tr>
+          <tr><td><span class="badge badge--new">6.0.0</span></td><td>brainstorming の visual companion にセッション鍵を導入</td><td>URL に付く一回限りの鍵がないとリクエストも WebSocket も通らない。アイドル時間は 30 分から 4 時間に延長。</td></tr>
+          <tr><td><span class="badge badge--new">6.0.0</span></td><td>スキル本文を特定ベンダーの用語から切り離す</td><td>「Task tool を使う」は「サブエージェントを起動する」に。ハーネスごとの対応表は <code>skills/using-superpowers/references/</code>。</td></tr>
+          <tr><td><span class="badge badge--safe">6.1.0</span></td><td><code>using-superpowers</code> の bootstrap を圧縮</td><td>全セッションに注入されるため、そのトークン量を削減。Codex は SessionStart hook をやめ、スキル検出だけで動く。</td></tr>
+          <tr><td><span class="badge badge--safe">6.2.0</span></td><td>SDD の作業ディレクトリをプランごとに分ける（<code>.superpowers/sdd/&lt;plan&gt;/</code>）。修正ループは実装役を再開して進め、5 ラウンドで打ち切る</td><td>別プランの進捗台帳を読み違えなくなった。最終レビューが通ると作業ディレクトリは削除される。</td></tr>
+          <tr><td><span class="badge badge--safe">6.2.0</span></td><td><code>finishing-a-development-branch</code> の選択肢から「破棄」を外す</td><td>破棄は利用者が明示的に頼んだときだけ。PR 作成は <code>gh</code> 固定ではなくなった。</td></tr>
+          <tr><td><span class="badge badge--safe">6.3.0</span></td><td>SDD の実行中、計画の矛盾はコントローラが判断して台帳に記録し、作業を止めない</td><td>人を待つのは破壊的・不可逆な操作だけになった。現行の SKILL.md では止まる条件を 4 種類に限定している（<a href="#execution">5 章</a>）。</td></tr>
+          <tr><td><span class="badge badge--new">6.4.1</span></td><td><code>executing-plans</code> を Native 実行として作り直し。<code>diagnosing-superpowers</code> を追加</td><td>プランの引き渡し時に Subagent-driven と Native のどちらにするか、理由付きで推奨が出る。保存したプランを人が確認するまで実行しない。プランには、仕様から読み取れるがどのタスクのテストも扱わない入力や失敗を最大 5 件挙げる Review Focus 節が付く。</td></tr>
+          <tr><td><span class="badge badge--safe">6.4.2</span></td><td><code>writing-plans</code> はコード全文ではなく決定事項を書く</td><td>手順にはシグネチャ・テストのアサーション・仕様の値を書き、本文は仕様から決まらないアルゴリズムだけ。再現した報告ではプラン作成の時間が 1/4、トークンが約 1/3 になった。</td></tr>
+          <tr><td><span class="badge badge--new">7.0.0</span></td><td>brainstorming を作り直し</td><td>作業の大きさを判断してから進め方を変える。設計書のレビュー役は「builder check」（作る立場で読んで不明点を挙げるサブエージェント）に置き換え。</td></tr>
+          <tr><td><span class="badge badge--safe">7.0.1</span></td><td>brainstorming の再調整。長い 3 スキルを短縮（<code>subagent-driven-development</code> と <code>writing-skills</code> は <code>references/</code> に分割）</td><td>Claude Code は圧縮後にスキルを 20,000 文字で切って再添付するため。<code>SKILL.md</code> が 20,000 バイトに達するとテストが落ちる。</td></tr>
+          <tr><td><span class="badge badge--safe">7.0.2</span></td><td>brainstorming の質問を減らす。6 ハーネスの bootstrap 不具合を修正。SDD 補助スクリプトが現在のリポジトリを対象にし、<code>-C DIR</code> を受け付ける</td><td>コミットの無い新規プロジェクトでは、<code>git init</code> と最初のコミットをしてから SDD を始める必要がある。</td></tr>
         </tbody>
       </table>
+    </div>
+    <div class="ve-callout">
+      <strong>削除・名前変更されたもの:</strong> SDD のレビュー用プロンプト 2 本（6.0.0）、<code>plan-document-reviewer-prompt.md</code> と <code>CLAUDE.md</code>（6.4.2。貢献ガイドは <code>AGENTS.md</code> に一本化）、TDD の <code>testing-anti-patterns.md</code> は <code>writing-good-tests.md</code> に改名（6.2.0）。Gemini CLI は 6.1.0 でいったん外され、6.2.0 で戻っている。
     </div>
   </div>
 
   <section id="workflow" class="sec-head">3 — 基本ワークフロー</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 7 ステップ</span>
-    <p>エージェントはタスクの前に必ず関連スキルを確認する。推奨ではなく必須のワークフローとして組み込まれる。</p>
+    <p>エージェントはタスクの前に必ず関連スキルを確認する。README は「提案ではなく必須のワークフロー」と書いている。</p>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>順</th><th>スキル</th><th>役割</th></tr>
+          <tr><th>順</th><th>スキル</th><th>発動する場面と役割</th></tr>
         </thead>
         <tbody>
-          <tr><td>1</td><td><code>brainstorming</code></td><td>コードを書く前に発動。曖昧なアイデアを問いで整理し、設計をセクションごとに示して承認を得る。仕様は inline self-review でプレースホルダ、矛盾、曖昧さを点検。</td></tr>
-          <tr><td>2</td><td><code>using-git-worktrees</code></td><td>設計承認後に発動。分離したワークスペースで新ブランチを作成し、セットアップとクリーンなテストベースを確認。</td></tr>
-          <tr><td>3</td><td><code>writing-plans</code></td><td>承認された設計に基づき、2〜5 分で完了するタスクに分解。各タスクにファイルパス・完全なコード・検証手順を記載し、プラン自体も自己点検。</td></tr>
-          <tr><td>4</td><td><code>subagent-driven-development</code> / <code>executing-plans</code></td><td>実行方式を選ぶ。推奨は fresh subagent per task でタスク間を連続実行（v5.1.0 で 3 タスクごとの強制停止を廃止）。代替は同一セッションでのバッチ実行＋人間チェックポイント。</td></tr>
-          <tr><td>5</td><td><code>test-driven-development</code></td><td>実装中に発動。RED-GREEN-REFACTOR を強制。失敗テストを書き、落ちることを確認し、最小コードで通す。テストより前に書いたコードは削除。</td></tr>
-          <tr><td>6</td><td><code>requesting-code-review</code></td><td>タスク間で発動。<code>code-reviewer.md</code> テンプレートで <code>Task (general-purpose)</code> をディスパッチし、プランとの整合性を深刻度別に報告。クリティカルな問題は進行をブロック。</td></tr>
-          <tr><td>7</td><td><code>finishing-a-development-branch</code></td><td>タスク完了時に発動。テスト確認後、マージ / PR / 維持 / 破棄の選択肢を提示し、ワークツリーを整理。</td></tr>
+          <tr><td>1</td><td><code>brainstorming</code></td><td>何かを作る前。質問で何をなぜ作りたいかを引き出し、理解した内容を返して訂正を受ける。小さな変更はチャットで合意し、プロジェクト規模なら設計書を書く。</td></tr>
+          <tr><td>2</td><td><code>using-git-worktrees</code></td><td>設計の承認後。新しいブランチの worktree を作り、セットアップしてテストが通る状態を確認する。</td></tr>
+          <tr><td>3</td><td><code>writing-plans</code></td><td>承認された設計をもとに、確認できる結果を 1 つ持つ手順単位まで分解する。ファイルパス、シグネチャ、テストのアサーション、検証コマンドを書く。</td></tr>
+          <tr><td>4</td><td><code>subagent-driven-development</code> / <code>executing-plans</code></td><td>プランの確認後。タスクごとにサブエージェントとレビューを回すか、同じセッションで全タスクを実装して最後に全ブランチを 1 回レビューするか（<a href="#execution">5 章</a>）。</td></tr>
+          <tr><td>5</td><td><code>test-driven-development</code></td><td>実装中。RED-GREEN-REFACTOR を守らせ、テストより先に書いたコードは削除する。緑の判定はそのテストファイルではなくプロジェクトのテスト全体（6.4.1）。</td></tr>
+          <tr><td>6</td><td><code>requesting-code-review</code></td><td>タスクの間。プランとの整合を深刻度別に報告し、Critical は先へ進ませない。</td></tr>
+          <tr><td>7</td><td><code>finishing-a-development-branch</code></td><td>全タスク完了時。テストを確認し、ローカルマージ / PR 作成 / そのまま残す の 3 択を出して worktree を片付ける。</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <section id="skills" class="sec-head">4 — スキルライブラリ</section>
+  <section id="brainstorming" class="sec-head">4 — brainstorming</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ別一覧</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> 7.0 系での振る舞い</span>
+    <p>7.0.0 で作り直し、7.0.1 と 7.0.2 で質問の出し方を調整している。現行の <code>skills/brainstorming/SKILL.md</code> から要点をまとめる。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>段階</th><th>やること</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>最初に判断</td><td>依頼に必要なことが全部あるか（例:「アイコンをコーンフラワーブルーに」）。あればそのまま実行して、何をしたかを伝える。足りなければ会話を始める。</td></tr>
+          <tr><td>聞く前に読む</td><td>既存プロジェクトや渡された仕様・プラン・ファイルは、最初のメッセージの前に読む。プロジェクトや文脈で答えが出ることは聞かない。</td></tr>
+          <tr><td>最初のメッセージ</td><td>要望が具体的なら約 200 語で依頼を言い直し、調べて分かったことを添える。理由が書かれていなければ、選択肢を付けずに理由を聞く。決めることが残っていなければ短い設計を示して承認を求める。</td></tr>
+          <tr><td>質問の条件</td><td>答えで作るものが変わり、依頼にもプロジェクトにも答えが無いときだけ聞く。それ以外は判断と理由を、訂正できる提案として書く。書き起こし・ファイルの置き場所・追加調査といった進め方は自分で決めて報告する。</td></tr>
+          <tr><td>選択肢の出し方</td><td>選択肢を挙げられる判断は、それぞれのトレードオフと推奨を付けて出す。7.0.2 のリリースノートでは、Ctrl+K が 2 機能に割り当てられた仕様のシナリオで、7.0.1 は 8 回中 8 回「どちら？」とだけ聞き、7.0.2 は 8 回中 8 回選択肢と推奨を示した。</td></tr>
+          <tr><td>読み返し</td><td>理解した部分ごとに 200〜300 語で説明を返し、相手が言ったことと自分が補ったことを分けて書く。画面や印刷物なら文字のスケッチを付ける。</td></tr>
+          <tr><td>作業の大きさ</td><td>小さな変更なら会話の内容をまとめた短い設計書、プロジェクトなら完全な設計書。どちらにも検討した 2〜3 案とトレードオフ、選んだ案と理由（Approaches）を入れる。途中で大きくなったら止まって段階を上げる。</td></tr>
+          <tr><td>実装に入る条件</td><td>案を選んでもらう → 設計書を書く → 承認を得る → <code>writing-plans</code> を呼ぶ、の順。依頼者が質問を断った場合と、合意済みのスパイクは例外。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>visual companion:</strong> 画面・レイアウト・フロー・図など、見たほうが早い内容のときにブラウザで開く小さな Web サーバー。既定ではロゴを Prime Radiant のサイトから読み込み、その際に Superpowers のバージョンが送られる。止めるには <code>SUPERPOWERS_DISABLE_TELEMETRY</code> を設定する。Claude Code の <code>DISABLE_TELEMETRY</code> と <code>CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC</code> も有効。
+    </div>
+  </div>
+
+  <section id="execution" class="sec-head">5 — プランの実行方式</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> Subagent-driven と Native</span>
+    <p><code>writing-plans</code> はプランを保存すると、人にプランの確認を頼み、どちらの方式で実行するかを推奨付きで尋ねる。推奨の理由は、タスク間のインターフェースの依存度、タスク数、誤りを出荷したときのコストから 1 文で示す。</p>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th></th><th>Subagent-driven（<code>subagent-driven-development</code>）</th><th>Native（<code>executing-plans</code>）</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>実装</td><td>タスクごとに新しいサブエージェント</td><td>現在のセッションが全タスクを実装</td></tr>
+          <tr><td>レビュー</td><td>タスクごとに 1 回（仕様準拠と品質の 2 判定）＋最後に全ブランチを 1 回</td><td>最後に全ブランチを 1 回（最上位モデル）</td></tr>
+          <tr><td>コスト</td><td>タスクとレビューごとに新しいコンテキスト</td><td>1 コンテキスト＋最終レビュー 1 回。中位モデルのセッションでも動く</td></tr>
+          <tr><td>向く場面</td><td>タスクごとにレビューを挟みたい。プランが長く、後半が圧縮後のコンテキストで走る</td><td>コストを抑えたい。ハーネスにサブエージェントの道具が無い</td></tr>
+          <tr><td>共通</td><td colspan="2">同じプラン単位の作業ディレクトリ（<code>.superpowers/sdd/&lt;plan&gt;/</code>）と進捗台帳 <code>progress.md</code> を使い、タスクの間で止まらない。最終レビューが通ると作業ディレクトリを削除して <code>finishing-a-development-branch</code> へ進む。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>止まらずに判断する</h3>
+    <p>どちらの方式も、計画の矛盾や曖昧さで人を待たない。仕様を最優先、プランをその根拠とし、どちらにも答えが無ければ自分で決めて、台帳に次の形で記録する。</p>
+    <div class="ve-code-block">
+      <pre><code>Ruling: &lt;何を決めたか&gt; — &lt;理由&gt; — &lt;間違っていた場合のコスト&gt;</code></pre>
+    </div>
+    <p>止まって聞くのは次の 4 つだけ。</p>
+    <ul>
+      <li>取り返しのつかない操作、破壊的な操作</li>
+      <li>セキュリティに関わる操作</li>
+      <li>この worktree の外への副作用で、通常は事前に聞くもの（マージ、共有ブランチへの push、公開）</li>
+      <li>プランが壊れていて、どの進め方も当て推量になる場合</li>
+    </ul>
+    <h3>SDD のモデル選択</h3>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>役割</th><th>モデル</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>プランに完全なコードがある実装、1 ファイルの機械的な修正</td><td>最も安い層</td></tr>
+          <tr><td>複数ファイルの統合、デバッグ、文章の指示からの実装、レビュー</td><td>中位を下限にする（安いモデルは手数が 2〜3 倍になり、総額でかえって高くなるため）</td></tr>
+          <tr><td>設計判断、最後の全ブランチレビュー</td><td>使える中で最上位</td></tr>
+          <tr><td>修正ループの 4〜5 ラウンド目</td><td>行き詰まった実装役より 1 段上</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>モデルは必ず明示する:</strong> 省略するとセッションのモデル（多くは最上位で最も高い）を引き継ぐ。6.0.0 のリリースノートでは、ある実行で 26 回のレビューがすべて最上位モデルで走った例を挙げている。
+    </div>
+  </div>
+
+  <section id="skills" class="sec-head">6 — スキルライブラリ</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> カテゴリ別一覧（15 本）</span>
     <div class="ve-table-wrap">
       <table>
         <thead>
           <tr><th>カテゴリ</th><th>スキル</th><th>概要</th></tr>
         </thead>
         <tbody>
-          <tr><td>Testing</td><td><code>test-driven-development</code></td><td>RED-GREEN-REFACTOR サイクル（アンチパターン参照付き）</td></tr>
-          <tr><td>Debugging</td><td><code>systematic-debugging</code></td><td>4 段階の根因追跡（root-cause-tracing、defense-in-depth、condition-based-waiting）</td></tr>
-          <tr><td>Debugging</td><td><code>verification-before-completion</code></td><td>修正が本当に効いているか確認してから完了とする</td></tr>
-          <tr><td>Collaboration</td><td><code>brainstorming</code></td><td>問いによる設計の洗練</td></tr>
+          <tr><td>Testing</td><td><code>test-driven-development</code></td><td>RED-GREEN-REFACTOR。参照文書 <code>writing-good-tests.md</code> 付き</td></tr>
+          <tr><td>Debugging</td><td><code>systematic-debugging</code></td><td>4 段階の根本原因調査（root-cause-tracing、defense-in-depth、condition-based-waiting）</td></tr>
+          <tr><td>Debugging</td><td><code>verification-before-completion</code></td><td>直ったことを確かめてから完了とする</td></tr>
+          <tr><td>Debugging</td><td><code>diagnosing-superpowers</code> <span class="badge badge--new">6.4.1</span></td><td>セッションで何が起きたかを証拠付きで調べ、匿名化したバンドルや issue を作る</td></tr>
+          <tr><td>Collaboration</td><td><code>brainstorming</code></td><td>作る前に意図を引き出す</td></tr>
           <tr><td>Collaboration</td><td><code>writing-plans</code></td><td>詳細な実装プラン</td></tr>
-          <tr><td>Collaboration</td><td><code>executing-plans</code></td><td>チェックポイント付きバッチ実行</td></tr>
-          <tr><td>Collaboration</td><td><code>dispatching-parallel-agents</code></td><td>並列サブエージェントワークフロー</td></tr>
-          <tr><td>Collaboration</td><td><code>requesting-code-review</code></td><td>レビュー前チェックリスト</td></tr>
-          <tr><td>Collaboration</td><td><code>receiving-code-review</code></td><td>フィードバックへの対応</td></tr>
-          <tr><td>Collaboration</td><td><code>using-git-worktrees</code></td><td>分離ブランチでの並行開発</td></tr>
-          <tr><td>Collaboration</td><td><code>finishing-a-development-branch</code></td><td>マージ / PR 判断ワークフロー</td></tr>
-          <tr><td>Collaboration</td><td><code>subagent-driven-development</code></td><td>二段階レビュー（spec → code quality）付きの連続イテレーション</td></tr>
-          <tr><td>Meta</td><td><code>writing-skills</code></td><td>ベストプラクティスに沿った新規スキル作成（テスト手法含む）</td></tr>
-          <tr><td>Meta</td><td><code>using-superpowers</code></td><td>スキルシステムの導入</td></tr>
+          <tr><td>Collaboration</td><td><code>executing-plans</code></td><td>同じセッションで実行し、最後に 1 回レビュー</td></tr>
+          <tr><td>Collaboration</td><td><code>subagent-driven-development</code></td><td>タスクごとのサブエージェントと 2 判定レビュー</td></tr>
+          <tr><td>Collaboration</td><td><code>dispatching-parallel-agents</code></td><td>サブエージェントの並列実行</td></tr>
+          <tr><td>Collaboration</td><td><code>requesting-code-review</code></td><td>レビュー依頼前のチェックリスト</td></tr>
+          <tr><td>Collaboration</td><td><code>receiving-code-review</code></td><td>レビュー指摘への対応</td></tr>
+          <tr><td>Collaboration</td><td><code>using-git-worktrees</code></td><td>分離したブランチでの並行開発</td></tr>
+          <tr><td>Collaboration</td><td><code>finishing-a-development-branch</code></td><td>マージ / PR の判断</td></tr>
+          <tr><td>Meta</td><td><code>writing-skills</code></td><td>スキルの作り方とテスト手法</td></tr>
+          <tr><td>Meta</td><td><code>using-superpowers</code></td><td>スキルシステムの導入（bootstrap）</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <section id="install" class="sec-head">5 — インストール</section>
+  <section id="diagnosing" class="sec-head">7 — 不具合の調べ方</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> プラットフォーム別</span>
-    <p>v5.1.0 時点では、Claude Code、Cursor、OpenAI Codex CLI/App、Factory Droid、OpenCode、GitHub Copilot CLI、Gemini CLI に導線がある。ハーネスごとに別途インストールが必要。各環境で導入後、新セッションで「この機能を計画して」などスキルが発動しそうな依頼をすると、エージェントが該当スキルを読み込む。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> diagnosing-superpowers</span>
+    <p>スキルが発動すべきでないときに発動した、発動しなかった、プランを無視した、同じ作業を繰り返した、トークンを使いすぎた、といったときに使う。エージェントに次のように頼む。</p>
+    <div class="ve-code-block">
+      <pre><code>figure out what went wrong with superpowers in this session
+figure out what went wrong with superpowers in session &lt;id&gt;</code></pre>
+    </div>
+    <div class="ve-table-wrap">
+      <table>
+        <thead>
+          <tr><th>手順</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1. 問題の聞き取り</td><td>対象セッション、期待したこと、起きたこと、気にしている指標（時間・トークン・繰り返し）が書けるまで 1 問ずつ聞く</td></tr>
+          <tr><td>2. 特定</td><td>セッションのトランスクリプトを実ファイルのパスまで解決し、<code>~/.superpowers/diagnosing-superpowers/&lt;session-id&gt;/</code> に作業ファイルを作る</td></tr>
+          <tr><td>3. 切り分け</td><td>7 つの観点（スキルの時系列、プラン遵守、重複作業、つまずき、品質の証拠、依頼の衝突、コストと時間）ごとに分析用サブエージェントを並列に起動する。<code>path:line</code> の無い指摘は捨てる</td></tr>
+          <tr><td>4. 報告</td><td>テンプレートに沿ってレポートを書き、パスを示す</td></tr>
+          <tr><td>5〜7. 任意</td><td>GitHub issue の検索と下書き（承認後に作成）、匿名化バンドルの作成（頼まれたときだけ）、似たセッションの検索</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ve-callout">
+      <strong>扱い:</strong> セッションファイルは読むだけで変更しない。数値はトランスクリプトか実行したコマンドから取り、記憶から書かない。匿名化は取りこぼしがありうるので、共有前に全ファイルを自分で確認するよう明記されている。
+    </div>
+  </div>
+
+  <section id="install" class="sec-head">8 — インストール</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> ハーネス別</span>
+    <p>ハーネスごとに別々にインストールする。導入後、新しいセッションで <code>Let's make a react todo list</code> などと送り、コードを書く前に <code>brainstorming</code> が発動すれば動いている。</p>
     <div class="platform-grid">
-      <div class="platform-card"><strong>Claude Code</strong><small>公式プラグイン市場、または Superpowers Marketplace から導入。</small></div>
-      <div class="platform-card"><strong>Cursor</strong><small>プラグイン市場で <code>superpowers</code> を検索。Windows では SessionStart hook が <code>run-hook.cmd</code> 経由。</small></div>
-      <div class="platform-card"><strong>Codex</strong><small>CLI は <code>/plugins</code> から、App は sidebar の Plugins から導入。</small></div>
-      <div class="platform-card"><strong>Factory Droid</strong><small>marketplace 登録と plugin install で導入（v5.1.0 で README に手順追加）。</small></div>
-      <div class="platform-card"><strong>OpenCode</strong><small>bootstrap 内容をセッション中キャッシュ。詳細は <code>.opencode/INSTALL.md</code>。</small></div>
-      <div class="platform-card"><strong>Copilot CLI</strong><small>Marketplace 登録と install コマンドで導入。SessionStart で bootstrap を注入。</small></div>
-      <div class="platform-card"><strong>Gemini CLI</strong><small>extension と <code>GEMINI.md</code> で tool mapping。Task は <code>@agent-name</code> にマップ。</small></div>
+      <div class="platform-card"><strong>Claude Code</strong><small>公式マーケットプレース、または Superpowers Marketplace。</small></div>
+      <div class="platform-card"><strong>Antigravity</strong><small><code>agy plugin install</code>。session-start hook が無いため、スキルの説明文から <code>using-superpowers</code> を読ませる。</small></div>
+      <div class="platform-card"><strong>Codex App / CLI</strong><small>公式 Codex プラグインマーケットプレース。hook を使わずスキル検出だけで動く。</small></div>
+      <div class="platform-card"><strong>Cursor</strong><small><code>/add-plugin superpowers</code>。</small></div>
+      <div class="platform-card"><strong>Devin CLI</strong><small><code>devin plugins install obra/superpowers</code>。</small></div>
+      <div class="platform-card"><strong>Factory Droid</strong><small>マーケットプレースを登録して plugin install。</small></div>
+      <div class="platform-card"><strong>Gemini CLI</strong><small><code>gemini extensions install</code>。</small></div>
+      <div class="platform-card"><strong>GitHub Copilot CLI</strong><small>Superpowers Marketplace から。Windows では 7.0.2 から PowerShell 形式の hook で bootstrap が入る。</small></div>
+      <div class="platform-card"><strong>Grok Build CLI</strong><small>xAI 公式マーケットプレース。</small></div>
+      <div class="platform-card"><strong>Kimi Code</strong><small><code>/plugins</code> の Marketplace、またはリポジトリから。</small></div>
+      <div class="platform-card"><strong>OpenCode</strong><small>INSTALL.md を読ませて導入。2.0.4 以降にも対応。スキル名は名前空間なし（<code>brainstorming</code>）。</small></div>
+      <div class="platform-card"><strong>Pi</strong><small><code>pi install git:github.com/obra/superpowers</code>。起動時と圧縮後に bootstrap を注入。</small></div>
+      <div class="platform-card"><strong>Qwen Code</strong><small><code>qwen extensions install obra/superpowers</code>。</small></div>
+      <div class="platform-card"><strong>Hermes Agent</strong><small><code>hermes plugins install ... --enable</code>。圧縮後の hook が無く、長いセッションでは bootstrap が消えることがある。</small></div>
+      <div class="platform-card"><strong>Muse</strong><small>ローカルのチェックアウトから install して approve。</small></div>
     </div>
-    <h3>Claude Code（公式マーケットプレース）</h3>
+    <h3>Claude Code</h3>
     <div class="ve-code-block">
-      <pre><code>/plugin install superpowers@claude-plugins-official</code></pre>
-    </div>
-    <h3>Claude Code（コミュニティマーケットプレース）</h3>
-    <div class="ve-code-block">
-      <pre><code>/plugin marketplace add obra/superpowers-marketplace
+      <pre><code># 公式マーケットプレース
+/plugin install superpowers@claude-plugins-official
+
+# Superpowers Marketplace
+/plugin marketplace add obra/superpowers-marketplace
 /plugin install superpowers@superpowers-marketplace</code></pre>
     </div>
-    <h3>Cursor</h3>
-    <p>Agent チャットでプラグイン市場から <code>/add-plugin superpowers</code> または「superpowers」で検索。</p>
-    <h3>OpenAI Codex CLI</h3>
+    <h3>Antigravity / Devin CLI / Gemini CLI / Qwen Code / Pi / Hermes Agent</h3>
     <div class="ve-code-block">
-      <pre><code>/plugins
-superpowers
-# Select: Install Plugin</code></pre>
+      <pre><code>agy plugin install https://github.com/obra/superpowers
+devin plugins install obra/superpowers
+gemini extensions install https://github.com/obra/superpowers
+qwen extensions install obra/superpowers
+pi install git:github.com/obra/superpowers
+hermes plugins install obra/superpowers --enable</code></pre>
     </div>
-    <h3>OpenAI Codex App</h3>
-    <p>Codex app の sidebar で Plugins を開き、Coding セクションにある <code>Superpowers</code> の <code>+</code> をクリックして案内に従う。</p>
-    <h3>Factory Droid</h3>
+    <h3>Codex App / Codex CLI</h3>
+    <p>App はサイドバーの Plugins を開き、Coding セクションの <code>Superpowers</code> の <code>+</code> を押す。CLI は <code>/plugins</code> で <code>superpowers</code> を検索して <code>Install Plugin</code> を選ぶ。</p>
+    <h3>Cursor / Kimi Code</h3>
+    <div class="ve-code-block">
+      <pre><code># Cursor の Agent チャット
+/add-plugin superpowers
+
+# Kimi Code（Marketplace からでも可）
+/plugins install https://github.com/obra/superpowers</code></pre>
+    </div>
+    <h3>Factory Droid / GitHub Copilot CLI / Grok Build CLI</h3>
     <div class="ve-code-block">
       <pre><code>droid plugin marketplace add https://github.com/obra/superpowers
-droid plugin install superpowers@superpowers</code></pre>
+droid plugin install superpowers@superpowers
+
+copilot plugin marketplace add obra/superpowers-marketplace
+copilot plugin install superpowers@superpowers-marketplace
+
+grok plugin install superpowers@xai-official --trust</code></pre>
     </div>
     <h3>OpenCode</h3>
     <div class="ve-code-block">
       <pre><code>Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.opencode/INSTALL.md</code></pre>
     </div>
-    <p>詳細: <a href="https://github.com/obra/superpowers/blob/main/docs/README.opencode.md" target="_blank" rel="noopener">docs/README.opencode.md</a></p>
-    <h3>GitHub Copilot CLI</h3>
+    <h3>Muse</h3>
     <div class="ve-code-block">
-      <pre><code>copilot plugin marketplace add obra/superpowers-marketplace
-copilot plugin install superpowers@superpowers-marketplace</code></pre>
-    </div>
-    <h3>Gemini CLI</h3>
-    <div class="ve-code-block">
-      <pre><code>gemini extensions install https://github.com/obra/superpowers
-gemini extensions update superpowers   # 更新時</code></pre>
+      <pre><code>git clone https://github.com/obra/superpowers.git
+muse plugins install ./superpowers
+muse plugins approve superpowers</code></pre>
     </div>
     <div class="ve-callout">
-      <strong>確認:</strong> 新規セッションで「この機能を計画して」や「このバグを調査して」などスキルが発動しそうな依頼をすると、エージェントが該当スキルを自動で読み込む。
+      <strong>更新:</strong> README は「ハーネスによるが、多くは自動」としている。明示的なコマンドがあるのは <code>gemini extensions update</code>、<code>devin plugins update</code>、<code>qwen extensions update</code>、<code>muse plugins update</code>。Antigravity は同じ install コマンドの再実行。Hermes と Muse は導入後に実行中のセッションを再起動する。
     </div>
   </div>
 
-  <section id="contributing" class="sec-head">6 — 貢献時の注意</section>
+  <section id="contributing" class="sec-head">9 — 貢献時の注意</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> AI agent 向けの安全柵</span>
-    <p>Superpowers 本体への PR は厳しく審査される。直近 100 件の closed PR を監査したところ、却下率は約 94%。スキル本文は「文章」ではなく、エージェントの行動を変える実行可能なプロンプト資産として扱われる。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> AGENTS.md の要件</span>
+    <p>貢献ガイドは <code>AGENTS.md</code> に一本化された（6.4.2 で <code>CLAUDE.md</code> を削除）。冒頭は AI エージェント向けで、PR の却下率は 94% と書かれている。新しいスキルの持ち込みは原則受け付けず、スキルの変更は対応する全ハーネスで動く必要がある。</p>
     <div class="ve-callout">
-      <strong>PR 前の必須チェック（v5.1.0）:</strong> PR テンプレート全項目を具体的内容で埋める。open/closed 両方で重複 PR を検索する。実在する問題か検証する。core に属する変更か判断する。モデル・ハーネス・プラグインを開示する。完全 diff を人間パートナーに見せて明示承認を得る。ターゲットブランチは <code>dev</code>（<code>main</code> ではない）。
+      <strong>PR 前に必須:</strong> PR テンプレートの全項目を具体的に埋める。open / closed の両方で重複 PR を探す。人間のパートナーが実際に遭遇した問題か確かめる。core に入れるべき変更か判断する。モデル・ハーネス・バージョン・導入済みプラグインと、依頼内容を開示する。完全な diff を人間に見せて承認を得る。「Human-authored summary」は人間が 200 語以内で書く。ターゲットブランチは <code>dev</code>。
     </div>
     <div class="ve-table-wrap">
       <table>
         <thead>
-          <tr><th>避ける変更</th><th>理由</th></tr>
+          <tr><th>受け付けない変更</th><th>理由</th></tr>
         </thead>
         <tbody>
-          <tr><td>ドメイン特化・プロジェクト特化のスキル</td><td>core は汎用スキルの場所。特定領域向けは standalone plugin が適切。</td></tr>
-          <tr><td>評価なしのスキル文面リライト</td><td>Red Flags などの語彙は挙動調整済み。改善には before/after eval が必要。</td></tr>
-          <tr><td>架空の問題や理論上の修正</td><td>実際のセッション、エラー、ユーザー体験に基づかない PR は却下されやすい。</td></tr>
-          <tr><td>複数の無関係な修正を束ねる</td><td>1 PR 1 problem。まとめた変更はレビュー不能になりやすい。</td></tr>
-          <tr><td>第三者依存の追加</td><td>新ハーネス対応を除き zero-dependency 方針。外部ツール依存は別プラグインへ。</td></tr>
-          <tr><td>新ハーネス PR にセッション transcript なし</td><td>「Let's make a react todo list」で <code>brainstorming</code> が自動発火する end-to-end 証拠が必要。</td></tr>
+          <tr><td>他人が起票した issue をエージェントが直す PR</td><td>メンテナが頼んだ場合を除く。同じ問題に遭遇したなら既存 issue に報告を足す（7.0.1 で追加）。</td></tr>
+          <tr><td>第三者依存の追加</td><td>新ハーネス対応を除き zero-dependency。外部ツール依存は別プラグインにする。</td></tr>
+          <tr><td>Anthropic のスキル文書に「合わせる」書き換え</td><td>スキル本文は実際の挙動で調整済み。変えるには結果が良くなる評価の証拠が必要。</td></tr>
+          <tr><td>ドメイン・プロジェクト固有のスキルや設定</td><td>core は汎用。固有のものは独立したプラグインにする。</td></tr>
+          <tr><td>issue を拾ってまとめて出す PR、推測だけの修正</td><td>実際のセッション・エラー・体験を示せないものは出さない。</td></tr>
+          <tr><td>無関係な変更の同梱、fork 固有の変更、作り話</td><td>分割する、または出さない。</td></tr>
+          <tr><td>新ハーネス対応でセッションの記録が無いもの</td><td>エンドツーエンドで動く証拠が必要。</td></tr>
         </tbody>
       </table>
     </div>
+    <p>スキルの挙動テストは別リポジトリ <a href="https://github.com/prime-radiant-inc/superpowers-evals/" target="_blank" rel="noopener">superpowers-evals</a> の drill を <code>evals/</code> に clone して使う。プラグイン本体のテストは <code>tests/</code> にあり、<code>run-*.sh</code> または <code>npm test</code> で動かす。</p>
   </div>
 
-  <section id="philosophy" class="sec-head">7 — 哲学</section>
-  <div class="ve-card ve-card--recessed" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> 設計思想</span>
-    <ul>
-      <li><strong>Test-Driven Development</strong> — 常にテストを先に書く</li>
-      <li><strong>Systematic over ad-hoc</strong> — 当て推量よりプロセス</li>
-      <li><strong>Complexity reduction</strong> — シンプルさを最優先</li>
-      <li><strong>Evidence over claims</strong> — 主張の前に検証してから「完了」とする</li>
-    </ul>
-  </div>
-
-  <section id="links" class="sec-head">8 — 参考リンク</section>
+  <section id="links" class="sec-head">10 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・関連</span>
     <ul>
       <li><a href="https://github.com/obra/superpowers" target="_blank" rel="noopener">GitHub: obra/superpowers</a> — 本体リポジトリ</li>
+      <li><a href="https://github.com/obra/superpowers/blob/main/RELEASE-NOTES.md" target="_blank" rel="noopener">RELEASE-NOTES.md</a> — 版ごとの変更</li>
       <li><a href="https://github.com/obra/superpowers-marketplace" target="_blank" rel="noopener">Superpowers Marketplace</a> — プラグイン用マーケットプレース</li>
       <li><a href="https://claude.com/plugins/superpowers" target="_blank" rel="noopener">Claude 公式プラグイン: Superpowers</a></li>
-      <li><a href="https://blog.fsck.com/2025/10/09/superpowers/" target="_blank" rel="noopener">Superpowers for Claude Code</a> — 作者ブログ記事</li>
-      <li><a href="https://primeradiant.com/superpowers/" target="_blank" rel="noopener">Release announcements</a> — 新バージョン通知</li>
+      <li><a href="https://github.com/obra/superpowers/blob/main/docs/porting-to-a-new-harness.md" target="_blank" rel="noopener">docs/porting-to-a-new-harness.md</a> — 新しいハーネスへの移植ガイド</li>
+      <li><a href="https://blog.fsck.com/2025/10/09/superpowers/" target="_blank" rel="noopener">Superpowers for Claude Code</a> — 作者のブログ記事（最初の公開時）</li>
+      <li><a href="https://primeradiant.com/superpowers/" target="_blank" rel="noopener">Release announcements</a> — 新バージョンの通知</li>
       <li><a href="https://discord.gg/35wsABTejz" target="_blank" rel="noopener">Discord</a> — コミュニティサポート</li>
-      <li><a href="https://github.com/sponsors/obra" target="_blank" rel="noopener">Sponsor (Jesse/obra)</a></li>
     </ul>
+    <p class="source-note">確認日: 2026-11-19 · ソース: <a href="https://github.com/obra/superpowers/tree/22f0b463e7a5e579904dd6211a520321035526f7" target="_blank" rel="noopener">22f0b46</a>（2026-11-03、v7.0.2 リリースのコミット）。前回の基準は v5.1.0。原文は英語で、本ページの引用・要約は日本語訳です。動作は実行して確認しておらず、ソースと文書の記述にもとづきます。リリースノート中の数値は作者側の評価結果です。</p>
   </div>
   </div>
 </div>
