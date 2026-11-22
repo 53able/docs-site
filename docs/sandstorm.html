@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sandstorm — 待機中のサンドボックスを段階的に眠らせ、1 台に数千を載せる gVisor / Firecracker フリート</title>
+  <meta name="description" content="deeplethe/sandstorm の解説。アイドルなサンドボックスを hot・frozen・snapshot・detached の 4 階層へ落とし、リクエストが来たら起こすことで 1 台に多数を収容する Rust 製ランタイム。master と node の分担、トラフィックでの起床、ノードの自己防衛、gVisor と Firecracker の境界、計測値、API と SDK、動かし方、注意点。">
+  <!-- Unfurl: Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="Sandstorm — 待機中のサンドボックスを段階的に眠らせ、1 台に数千を載せる gVisor / Firecracker フリート">
+  <meta property="og:description" content="deeplethe/sandstorm の解説。アイドルなサンドボックスを hot・frozen・snapshot・detached の 4 階層へ落とし、リクエストが来たら起こすことで 1 台に多数を収容する Rust 製ランタイム。master と node の分担、トラフィックでの起床、ノードの自己防衛、gVisor と Firecracker の境界、計測値、API と SDK、動かし方、注意点。">
+  <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/sandstorm.html">
+  <!-- Unfurl: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Sandstorm — 待機中のサンドボックスを段階的に眠らせ、1 台に数千を載せる gVisor / Firecracker フリート">
+  <meta name="twitter:description" content="deeplethe/sandstorm の解説。アイドルなサンドボックスを hot・frozen・snapshot・detached の 4 階層へ落とし、リクエストが来たら起こすことで 1 台に多数を収容する Rust 製ランタイム。master と node の分担、トラフィックでの起床、ノードの自己防衛、gVisor と Firecracker の境界、計測値、API と SDK、動かし方、注意点。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gantari:wght@400;500;600;700&family=Kode+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============ THEME (Spell UI tokens + fonts) ============ */
+    :root {
+      --radius: 0.625rem;
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.145 0 0);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.145 0 0);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.145 0 0);
+      --primary: oklch(0.205 0 0);
+      --primary-foreground: oklch(0.985 0 0);
+      --secondary: oklch(0.97 0 0);
+      --secondary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.97 0 0);
+      --muted-foreground: oklch(0.556 0 0);
+      --accent: oklch(0.97 0 0);
+      --accent-foreground: oklch(0.205 0 0);
+      --destructive: oklch(0.577 0.245 27.325);
+      --border: oklch(0.922 0 0);
+      --input: oklch(0.922 0 0);
+      --ring: oklch(0.708 0 0);
+      --chart-1: oklch(0.56 0.13 58);
+      --chart-2: oklch(0.6 0.09 230);
+      --chart-3: oklch(0.42 0.11 52);
+      --chart-4: oklch(0.72 0.1 70);
+      --chart-5: oklch(0.6 0.15 25);
+      --code-bg: var(--muted);
+      --code-text: #5a3410;
+      --font-body: 'Gantari', 'Hiragino Sans', system-ui, sans-serif;
+      --font-mono: 'Kode Mono', 'SF Mono', Consolas, monospace;
+      --bg: var(--background);
+      --surface: var(--card);
+      --surface2: var(--muted);
+      --text: var(--foreground);
+      --text-dim: var(--muted-foreground);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: oklch(0.1149 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(22.213% 0.00003 271.152);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.8 0.13 68);
+        --chart-2: oklch(0.78 0.08 230);
+        --chart-3: oklch(0.88 0.09 75);
+        --chart-4: oklch(0.75 0.1 70);
+        --chart-5: oklch(0.75 0.14 25);
+        --code-bg: #0f0f0f;
+        --code-text: #f0d2a4;
+        --bg: var(--background);
+        --surface: var(--card);
+        --surface2: var(--muted);
+        --text: var(--foreground);
+        --text-dim: var(--muted-foreground);
+      }
+    }
+
+    /* ============ Spell UI static ============ */
+    .ve-card { background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+    .ve-card--hero {
+      background: color-mix(in srgb, var(--card) 92%, var(--chart-1) 8%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-color: color-mix(in srgb, var(--border) 60%, var(--chart-1) 40%);
+    }
+    @media (prefers-color-scheme: dark) {
+      .ve-card--hero {
+        background: color-mix(in srgb, var(--card) 90%, var(--chart-1) 10%);
+        border-color: color-mix(in srgb, var(--border) 70%, var(--chart-1) 30%);
+      }
+    }
+    .ve-code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); max-height: 26rem; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .ve-code-block pre { margin: 0; overflow-x: auto; overflow-y: auto; padding: 0.75rem 1rem; flex: 1; min-height: 0; }
+    .ve-code-block code { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.7; color: var(--code-text); white-space: pre; }
+    .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
+    .ve-table-wrap caption { text-align: left; font-size: .75rem; color: var(--text-dim); padding: .6rem 1rem; }
+    .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap tbody tr:hover { background: var(--border); }
+    .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; color: var(--muted-foreground); margin-top: 0.375rem; }
+    .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; line-height: 1.6; color: var(--muted-foreground); }
+    .ve-callout strong { color: var(--foreground); font-weight: 600; }
+
+    /* ============ Reset + base ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 30% 0%, oklch(0.56 0.13 58 / 0.07) 0%, transparent 50%);
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 40px;
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background-image: radial-gradient(ellipse at 30% 0%, oklch(0.8 0.13 68 / 0.08) 0%, transparent 50%); }
+    }
+
+    /* ============ Wrap + TOC ============ */
+    .wrap { width: 100%; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 200px 1fr; gap: 0 48px; }
+    .main { min-width: 0; max-width: 72rem; }
+    .toc {
+      position: sticky; top: 24px; align-self: start; padding: 14px 0; grid-row: 1 / -1;
+      max-height: calc(100dvh - 48px); overflow-y: auto;
+    }
+    .toc::-webkit-scrollbar { width: 3px; }
+    .toc::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .toc-title { font-family: var(--font-mono); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); padding: 0 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .toc a { display: block; font-size: 11px; color: var(--text-dim); text-decoration: none; padding: 4px 8px; border-radius: 5px; border-left: 2px solid transparent; transition: all 0.15s; line-height: 1.4; margin-bottom: 1px; }
+    .toc a:hover { color: var(--text); background: var(--surface2); }
+    .toc a.active { color: var(--text); border-left-color: var(--chart-1); }
+    @media (max-width: 1000px) {
+      .wrap { grid-template-columns: 1fr; padding-top: 0; }
+      body { padding: 24px; }
+      .toc {
+        position: sticky; top: 0; z-index: 200; max-height: none; display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        -webkit-overflow-scrolling: touch; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 0;
+        margin: 0 -24px; padding-left: 24px; padding-right: 24px; grid-row: auto;
+      }
+      .toc::-webkit-scrollbar { display: none; }
+      .toc-title { display: none; }
+      .toc a { white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 2px solid transparent; border-radius: 4px 4px 0 0; padding: 6px 10px; font-size: 10px; }
+      .toc a.active { border-left: none; border-bottom-color: var(--chart-1); background: var(--surface); }
+      .main { padding-top: 20px; }
+      .sec-head { scroll-margin-top: 52px; }
+    }
+
+    /* ============ Typography ============ */
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; text-wrap: balance; }
+    .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; max-width: 48rem; }
+    .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.0625rem; font-weight: 600; margin: 1.5rem 0 0.6rem; }
+    p { font-size: 0.9375rem; line-height: 1.7; margin-bottom: 0.75rem; }
+    ul { margin: 0 0 1rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.35rem; }
+    a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--chart-3); }
+    a:focus-visible { outline: 2px solid var(--chart-1); outline-offset: 4px; }
+    code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+    .ve-code-block { margin: 1rem 0; }
+    .ve-code-block pre code { display: block; background: transparent; border-radius: 0; color: var(--code-text); padding: 0; tab-size: 2; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.25rem 0; }
+    .kpi-row .ve-kpi-card { min-width: 0; }
+    .hero-title { font-size: clamp(1.4rem, 2.8vw, 2.2rem); line-height: 1.5; margin: .3rem 0 1rem; }
+    .eyebrow { font-family: var(--font-mono); color: var(--chart-1); font-size: .75rem; letter-spacing: .08em; }
+    .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .card-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card-grid h3 { margin-top: .25rem; }
+    .card-grid p:last-child { margin-bottom: 0; }
+    .graph-example { margin: 1.5rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+    .graph-example svg { display: block; width: 100%; height: auto; color: var(--foreground); }
+    .graph-example rect { fill: var(--muted); stroke: var(--border); }
+    .graph-example .fix { fill: color-mix(in srgb, var(--card) 88%, var(--chart-1)); stroke: var(--chart-1); }
+    .graph-example .dash { fill: none; stroke: var(--ring); stroke-dasharray: 5 4; }
+    .graph-example path { fill: none; stroke: var(--chart-1); stroke-width: 2; }
+    .graph-example path.back { stroke-dasharray: 6 4; }
+    .graph-example text { fill: currentColor; font-family: var(--font-body); font-size: 15px; }
+    .graph-example .small { font-size: 12px; }
+    .graph-example .edge-label { fill: var(--chart-1); font-size: 13px; }
+    figcaption { font-size: .8rem; color: var(--text-dim); margin-top: .75rem; }
+    .ve-table-wrap { overflow-x: auto; margin: 1rem 0; }
+    .ve-table-wrap table { min-width: 560px; font-size: .875rem; }
+    .ve-table-wrap td { vertical-align: top; }
+    .ve-table-wrap td:first-child { white-space: nowrap; }
+    .ve-table-wrap.wrap-first td:first-child { white-space: normal; }
+    .ve-table-wrap td.c { text-align: center; }
+    .ve-table-wrap th.c { text-align: center; }
+    .ve-callout { margin: 1rem 0; font-size: .9rem; }
+    .steps { padding-left: 1.5rem; }
+    .steps > li { padding-left: .5rem; margin-bottom: 1.25rem; }
+    .steps > li::marker { color: var(--chart-1); font-weight: 700; font-family: var(--font-mono); }
+    .steps h3 { margin: 0 0 .4rem; }
+    .source-note { font-size: .8rem; color: var(--text-dim); overflow-wrap: anywhere; }
+    .skip-link { position: absolute; left: 1rem; top: -5rem; padding: .5rem 1rem; background: var(--card); z-index: 20; }
+    .skip-link:focus { top: 1rem; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .ve-card { animation: fadeUp 0.35s ease-out both; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
+    @media (max-width: 760px) { .card-grid.three { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) {
+      body { padding: 20px; }
+      .toc { margin-inline: -20px; padding-inline: 20px; }
+      .card-grid { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .ve-card { padding: 1rem; }
+      h1 { font-size: 1.8rem; }
+    }
+    .graph-example .arm-a { fill: color-mix(in srgb, var(--card) 85%, var(--chart-1)); stroke: var(--chart-1); }
+    .graph-example .arm-b { fill: var(--muted); stroke: var(--ring); stroke-dasharray: 5 4; }
+    .formula { font-family: var(--font-mono); font-size: .875rem; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .75rem 1rem; margin: 1rem 0; overflow-x: auto; white-space: pre; }
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#main">本文へ移動</a>
+<div class="wrap">
+<nav class="toc" id="toc" aria-label="目次"><div class="toc-title">Sandstorm</div>
+<a href="#overview">概要</a>
+<a href="#tiers">4 つの階層</a>
+<a href="#architecture">master と node</a>
+<a href="#wake">トラフィックで起こす</a>
+<a href="#admission">ノードの自己防衛</a>
+<a href="#backends">gVisor と Firecracker</a>
+<a href="#numbers">計測値</a>
+<a href="#api">API・SDK・MCP</a>
+<a href="#run">動かす</a>
+<a href="#cautions">注意点</a>
+<a href="#sources">出典</a>
+</nav>
+<main class="main" id="main">
+<p><a href="../index.html">← 資料一覧</a></p>
+<h1>Sandstorm</h1>
+<p class="subtitle">deeplethe/sandstorm · v0.6.0（2026-11-02）以降の main · Linux（cgroup v2）· Rust · Apache-2.0</p>
+
+<section id="overview" aria-labelledby="overview-title">
+<h2 class="sec-head" id="overview-title">01 — 使われていないサンドボックスを止めて、1 台に多く載せる</h2>
+<div class="ve-card ve-card--hero">
+<span class="eyebrow">HOT · FROZEN · SNAPSHOT · DETACHED</span>
+<p class="hero-title"><strong>アイドルなサンドボックスを一時停止し、ディスクへ退避し、リクエストが来たら戻す。同時に動かせる数より多くのサンドボックスを 1 台に抱えるためのランタイム。</strong></p>
+<p>Sandstorm は AI エージェントのコード実行などに使うサンドボックスを、複数台のマシンにまたがって管理する Rust 製のデーモンです。README の前提は「エージェントは待っている時間が長い」ことです。そこで、使われていないサンドボックスを 4 段階で少しずつ眠らせ、CPU、メモリ、ローカルディスクを順に返させます。リクエストが届くと、そのノードが自分でサンドボックスを起こしてから転送します。</p>
+<p>サンドボックスの実体は 2 種類から選べます。既定は <a href="https://gvisor.dev">gVisor</a>（<code>runsc</code>）のコンテナで、KVM を必要としません。KVM のあるホストでは <a href="https://firecracker-microvm.github.io">Firecracker</a> の microVM をノード単位で選べます。どちらのサンドボックスも専用のネットワーク名前空間を持ち、1 つのフリートに両方を混在させられます。</p>
+</div>
+<div class="kpi-row">
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">4</div><div class="ve-kpi-card__label">サンドボックスの階層（hot → detached）</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">2</div><div class="ve-kpi-card__label">バックエンド（gVisor ・ Firecracker）</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">1</div><div class="ve-kpi-card__label">バイナリ（sandstormd が master ・ node ・ コンソールを兼ねる）</div></div>
+<div class="ve-kpi-card"><div class="ve-kpi-card__value">2 s</div><div class="ve-kpi-card__label">起床を始められる猶予。超えたら 503</div></div>
+</div>
+<p>リポジトリの歴史は 2026-05 に始まり、v0.5.3 までは Firecracker のフォーク（実行中 VM の複製）を中心にした別物でした。v0.6.0 で名前を Sandstorm に改め、gVisor を既定にし、1 台からフリートへ構成を変えています。v0.5 からのその場アップグレードはなく、SDK 名も <code>forkd</code> から <code>sandstorm-sdk</code>・<code>@deeplethe/sandstorm</code>・<code>sandstorm-mcp</code> に変わりました。</p>
+</section>
+
+<section id="tiers" aria-labelledby="tiers-title">
+<h2 class="sec-head" id="tiers-title">02 — 4 つの階層：アイドル時間で 1 段ずつ下げ、リクエストで一気に hot へ戻す</h2>
+<p>各サンドボックスは常に 4 つの階層のどれかにあります（<code>tier.rs</code>）。master の降格ループが 5 秒ごとにアイドル時間を見て、あるべき階層を 1 段ずつ冷たい側へ動かします。戻るときは途中を経由せず、直接 hot に戻ります。</p>
+<figure class="graph-example">
+<svg viewBox="0 0 960 280" role="img" aria-labelledby="tier-svg-title">
+<title id="tier-svg-title">4 つの階層の遷移。hot はアイドル 30 秒で frozen、frozen は 5 分で snapshot、snapshot は 1 時間で detached に下がる（いずれも既定値）。リクエストが来ると frozen からは約 0.1 秒、snapshot からは約 0.2 秒、detached からはコールドスタートで hot に戻る。</title>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--chart-1); stroke: none;"/></marker></defs>
+<rect class="fix" x="10" y="40" width="190" height="90" rx="8"/>
+<text x="105" y="76" text-anchor="middle">hot</text>
+<text x="105" y="100" text-anchor="middle" class="small">実行中・メモリを保持</text>
+<rect x="260" y="40" width="190" height="90" rx="8"/>
+<text x="355" y="76" text-anchor="middle">frozen</text>
+<text x="355" y="100" text-anchor="middle" class="small">cgroup.freeze・CPU を返す</text>
+<rect x="510" y="40" width="190" height="90" rx="8"/>
+<text x="605" y="76" text-anchor="middle">snapshot</text>
+<text x="605" y="100" text-anchor="middle" class="small">ディスクへ退避・メモリを返す</text>
+<rect class="dash" x="760" y="40" width="190" height="90" rx="8"/>
+<text x="855" y="76" text-anchor="middle">detached</text>
+<text x="855" y="100" text-anchor="middle" class="small">ボリュームだけ残る</text>
+<path d="M200,85 L256,85" marker-end="url(#arr)"/>
+<text x="228" y="30" text-anchor="middle" class="edge-label">30 秒</text>
+<path d="M450,85 L506,85" marker-end="url(#arr)"/>
+<text x="478" y="30" text-anchor="middle" class="edge-label">5 分</text>
+<path d="M700,85 L756,85" marker-end="url(#arr)"/>
+<text x="728" y="30" text-anchor="middle" class="edge-label">1 時間</text>
+<path class="back" d="M355,130 C355,190 120,190 112,136" marker-end="url(#arr)"/>
+<text x="364" y="154" class="edge-label small">約 0.1 秒</text>
+<path class="back" d="M605,130 C605,235 105,235 100,136" marker-end="url(#arr)"/>
+<text x="614" y="154" class="edge-label small">約 0.2 秒</text>
+<path class="back" d="M855,130 C855,285 90,285 88,136" marker-end="url(#arr)"/>
+<text x="846" y="154" text-anchor="end" class="edge-label small">コールドスタート</text>
+</svg>
+<figcaption>実線の矢印は降格（アイドル時間は <code>--idle-frozen-secs</code> 30、<code>--idle-snapshot-secs</code> 300、<code>--idle-detached-secs</code> 3600 の既定値）。破線は起床で、時間は README の目安。ADR 3 と <code>main.rs</code> をもとに作図。</figcaption>
+</figure>
+<div class="ve-table-wrap wrap-first">
+<table>
+<thead><tr><th>階層</th><th>状態</th><th>返すもの</th><th>残るもの</th></tr></thead>
+<tbody>
+<tr><td><strong>hot</strong></td><td>実行中</td><td>—</td><td>すべて</td></tr>
+<tr><td><strong>frozen</strong></td><td>同じノードで <code>cgroup.freeze=1</code></td><td>CPU</td><td>メモリ（冷えたページは zswap / zram へ圧縮）</td></tr>
+<tr><td><strong>snapshot</strong></td><td><code>runsc checkpoint</code> などでノードのローカルディスクへ保存し、プロセスを終了</td><td>CPU とメモリ</td><td>ローカルディスク上の書き込み層</td></tr>
+<tr><td><strong>detached</strong></td><td>どのノードにもいない。書き込み層はボリュームへアーカイブ</td><td>CPU・メモリ・ローカルディスク</td><td>ボリュームのみ。メモリの状態は失われる</td></tr>
+</tbody>
+</table>
+</div>
+<p>設計時の案には、凍結したまま <code>memory.high</code> を下げてメモリを回収する <code>cold</code> 階層もありました。1 台なら 7 ms で 90% を回収できたものの、8 台を同時に回収すると 8 台とも目標に届かず 85 秒のタイムアウトに達しました。同じ 8 台をチェックポイントすると 1.1 秒で 413 MiB を解放できたため、<code>cold</code> は採用されていません（ADR 3）。</p>
+<div class="ve-callout"><strong>階層ごとの帰結：</strong>frozen はメモリを解放しないため、メモリの収容数を増やすのは snapshot 階層です。ディスクの収容数を増やすのは detached 階層です。frozen や snapshot の間に、サンドボックス内の TCP 接続はタイムアウトすることがあります。別ノードへの移動は detached からのコールドスタートで行い、チェックポイントは運びません。</div>
+</section>
+
+<section id="architecture" aria-labelledby="architecture-title">
+<h2 class="sec-head" id="architecture-title">03 — master と node：あるべき状態と、実際の状態を分ける</h2>
+<p>役割は master と node に分かれます。どちらも同じバイナリ <code>sandstormd</code> で、<code>serve --master</code>、<code>serve --node</code>、両方を付けると 1 台構成になります。1 台構成でも node は master とループバック上で同じプロトコルを話します（ADR 10）。</p>
+<figure class="graph-example">
+<svg viewBox="0 0 960 420" role="img" aria-labelledby="arch-svg-title">
+<title id="arch-svg-title">Sandstorm の構成。クライアントは master の API に Bearer トークンで接続する。master は SQLite にあるべき状態を持ち、配置と降格を決める。node は mTLS で master とつながり、master から接続する listen 方式と、NAT の内側から node が接続する pull 方式がある。アプリへの通信は master を通らず、node の gateway が sandbox トークンを確認してサンドボックスへ転送する。</title>
+<defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--chart-1); stroke: none;"/></marker></defs>
+<rect x="10" y="160" width="210" height="80" rx="8"/>
+<text x="115" y="192" text-anchor="middle">クライアント</text>
+<text x="115" y="216" text-anchor="middle" class="small">SDK・MCP・E2B SDK・コンソール</text>
+<rect class="fix" x="320" y="20" width="320" height="110" rx="8"/>
+<text x="480" y="52" text-anchor="middle">master</text>
+<text x="480" y="78" text-anchor="middle" class="small">公開 API・配置・降格ループ・ノード証明書の発行</text>
+<text x="480" y="100" text-anchor="middle" class="small">SQLite = あるべき状態（観測値は持たない）</text>
+<rect x="290" y="280" width="300" height="120" rx="8"/>
+<text x="440" y="310" text-anchor="middle">node（listen）</text>
+<text x="440" y="336" text-anchor="middle" class="small">gateway → サンドボックス</text>
+<text x="440" y="358" text-anchor="middle" class="small">runsc または Firecracker</text>
+<text x="440" y="380" text-anchor="middle" class="small">保持しているものを master に報告</text>
+<rect x="650" y="280" width="300" height="120" rx="8"/>
+<text x="800" y="310" text-anchor="middle">node（pull）</text>
+<text x="800" y="336" text-anchor="middle" class="small">NAT の内側。受信ポート不要</text>
+<text x="800" y="358" text-anchor="middle" class="small">master へ接続し、仕事を待つ</text>
+<path d="M220,180 L316,90" marker-end="url(#arr2)"/>
+<text x="40" y="140" class="edge-label small">API（Bearer トークン）</text>
+<path d="M220,226 L286,318" marker-end="url(#arr2)"/>
+<text x="10" y="272" class="edge-label small">アプリ通信 ＋ sandbox トークン</text>
+<path d="M440,130 L440,276" marker-end="url(#arr2)"/>
+<text x="450" y="210" class="edge-label small">master から接続</text>
+<text x="450" y="228" class="edge-label small">（mTLS）</text>
+<path d="M770,276 L620,134" marker-end="url(#arr2)"/>
+<text x="712" y="200" class="edge-label small">node から接続（mTLS）</text>
+</svg>
+<figcaption>ADR 4・5・7 をもとに作図。アプリ通信の経路に master は入らない。</figcaption>
+</figure>
+<div class="card-grid">
+<div class="ve-card"><h3>DB はあるべき状態だけを持つ</h3><p>master の SQLite（<code>--state-db</code>）には「どのサンドボックスが、どのノードの、どの階層にあるべきか」だけを書きます。実際の状態は毎回ノードの報告から読み、差分がそのノードの仕事になります。v0.5 ではコントローラーの再起動時に管理中の VM と孤児を区別できず、全部を殺していました（issue #301）。</p></div>
+<div class="ve-card"><h3>再起動しても止めない</h3><p><code>runsc create</code> / <code>start</code> でサンドボックスはデーモン化され、<code>sandstormd</code> の子プロセスではありません。コントローラーを <code>kill -9</code> しても 20 個中 0 個が失われ、134 ms で 20 個すべてを引き取り直したと記録されています。master が落ちていても、node は起床を含めて既存のサンドボックスを動かし続けます。</p></div>
+<div class="ve-card"><h3>制御面は mTLS</h3><p>master が自前の CA を持ち、node は登録時にクライアント証明書を受け取ります。登録トークンは <code>&lt;CA の指紋&gt;.&lt;秘密&gt;</code> の形で、node は最初の接続で CA を固定し、トークンは 1 回で失効します。node の識別は証明書で行い、メッセージに書かれた ID は信用しません。</p></div>
+<div class="ve-card"><h3>プールは移行できる範囲</h3><p>スナップショットは <code>runsc</code> の版、ホストのカーネル、CPU の機能に依存します。そこで node はこれらのハッシュを指紋として計算し、指紋が違う node は <code>&lt;pool&gt;#&lt;fp&gt;</code> という派生プールに入ります。復元できない node へのフォークは配置の時点で 409 になります（ADR 6）。</p></div>
+</div>
+<p>参加する node は、master 自身のバイナリと CA を master から取得します。インターネットへの接続は不要で、master と node のバージョンがずれることもありません。Web コンソールは HTML 1 ファイルとしてバイナリに埋め込まれています。</p>
+</section>
+
+<section id="wake" aria-labelledby="wake-title">
+<h2 class="sec-head" id="wake-title">04 — トラフィックで起こす：接続拒否を「眠っている」の合図にする</h2>
+<p>公開されたポートへの通信は、サンドボックスがいるノードの gateway（<code>node/gateway.rs</code>）が受けます。gateway は階層の状態を持ちません。hot 以外のサンドボックスは TCP リセットで接続を拒否するので、拒否されたら起こして転送し直す、という動きだけで済みます。</p>
+<ol class="steps">
+<li><h3>トークンを確認する</h3><p><code>x-sandstorm-sandbox-token</code> ヘッダーを定数時間で比較し、サンドボックスへは転送しません。単純な DNAT ではトークンを読めず、master はデータ経路にいないため、この確認は gateway が担います。</p></li>
+<li><h3>転送し、拒否されたら起こす</h3><p>接続が拒否されたら、そのノード上でサンドボックスを起こし（<code>node/wake.rs</code>）、もう一度転送します。呼び出し側からはエラーではなく遅い応答に見え、起床を待った応答にはその旨のヘッダーが付きます。</p></li>
+<li><h3>足りなければ場所を空ける</h3><p>メモリやスワップが下限を下回っていれば、需要の低いサンドボックスから（hot より frozen を先に）ディスクへ退避します。1 回の起床で退避するのは最大 4 個です。需要は 1 リクエストごとに 1 増え、30 秒ごとに e 分の 1 に減衰します。処理中のリクエストがあるサンドボックス、起動から 2 秒以内のもの、階層の変更中のものは退避の対象から外れます。</p></li>
+<li><h3>2 秒で始められなければ断る</h3><p>復元の枠の確保とメモリ圧力（PSI）の低下を待てるのは 2 秒です（<code>--wake-budget-ms</code>）。超えたら <code>retry-after</code> 付きの 503 を返します。枠数の 2 倍を超える起床が待っていれば、待たずに断ります（<code>--wake-max-waiting</code>）。</p></li>
+<li><h3>あとで master に伝える</h3><p>node は次の報告でリクエストの発生（<code>traffic</code>）と退避したもの（<code>evicted</code>）を伝え、master はアイドル時間の計測をやり直して、あるべき状態をそれに合わせます。master が退避されたものを戻させると、node がまた別のものを退避することになるためです。</p></li>
+</ol>
+</section>
+
+<section id="admission" aria-labelledby="admission-title">
+<h2 class="sec-head" id="admission-title">05 — ノードの自己防衛：SSH が届かなくなる前に新しい仕事を断る</h2>
+<p>メモリを使う処理（作成と hot への昇格）の前に、node は自分の現在値を確認し、次のどれかに当たれば保留します（ADR 8）。master も直近の報告にもとづいて配置を判断しますが、最終的な判断は現在値を持っている node が行います。</p>
+<div class="ve-table-wrap wrap-first">
+<table>
+<thead><tr><th>条件</th><th>オプションと既定値</th></tr></thead>
+<tbody>
+<tr><td>空きメモリが下限を下回る</td><td><code>--admit-min-free-mib</code>（既定 512）</td></tr>
+<tr><td>スワップがあるとき、スワップの空きが下限を下回る</td><td>同じ設定から算出</td></tr>
+<tr><td>メモリ圧力が上限を超える（PSI <code>some</code> の 10 秒平均）</td><td><code>--admit-max-psi</code>（既定 8）、起床用は <code>--wake-max-psi</code></td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>削除と降格は保留しません。ノードの不足を解消する手段だからです。</li>
+<li><code>/proc</code> の読み取りに失敗した場合は 0 として扱い、拒否しません。読めないことでフリート全体が止まらないようにするためです。</li>
+<li>過負荷はキューに積まずに素早く断ります。node が保留した作成は <code>held_back</code> として報告され、5 秒以内に再試行されます。どこにも置けない作成と、間に合わない起床は 503 です。</li>
+</ul>
+<p>この仕組みがない状態では、master がマシンの SSH が応答しなくなるまで作成を受け付け続けた、と <code>docs/SECURITY.md</code> に書かれています。</p>
+</section>
+
+<section id="backends" aria-labelledby="backends-title">
+<h2 class="sec-head" id="backends-title">06 — gVisor と Firecracker：隔離の強さと、必要なホストが違う</h2>
+<p>v0.6 で既定を gVisor にした理由は、KVM のないクラウドインスタンスで動かすためです。開発と計測に使っている 3 台はいずれも <code>/dev/kvm</code> がなく、多くの運用者も同じ状況だと ADR 2 は述べています。Firecracker は <code>--backend firecracker</code> でノード単位に選ぶ 2 つ目のバックエンドで、フォークではなく upstream の Firecracker を使います。</p>
+<div class="ve-table-wrap">
+<table>
+<caption><code>docs/SECURITY.md</code> の「Which boundary you actually get」より</caption>
+<thead><tr><th></th><th>gVisor（既定）</th><th>Firecracker</th></tr></thead>
+<tbody>
+<tr><td>サンドボックス</td><td><code>runsc</code> のコンテナ</td><td>microVM</td></tr>
+<tr><td>ゲストのカーネル</td><td>ユーザー空間の gVisor Sentry</td><td>専用の Linux カーネル</td></tr>
+<tr><td>ホストのカーネル</td><td><strong>全サンドボックスで共有</strong></td><td>KVM 経由でのみ到達</td></tr>
+<tr><td>脱出に必要なもの</td><td>Sentry のバグ、またはその背後の seccomp の穴</td><td>KVM か Firecracker のバグ</td></tr>
+<tr><td><code>/dev/kvm</code></td><td>不要</td><td>必要（PVM 上でも動作確認済み）</td></tr>
+<tr><td>メモリ上限の既定</td><td>なし</td><td>ゲスト 512 MiB（cgroup には VMM 分の 64 MiB を加算）</td></tr>
+</tbody>
+</table>
+</div>
+<p>2 つのバックエンドは <code>Backend</code> トレイト（<code>node/backend.rs</code>）の裏にあり、同じ cgroup に入るため、凍結、メモリの計測、<code>cgroup.kill</code> は同じコードで扱えます。Firecracker 側の主な決まりは次のとおりです（ADR 11）。</p>
+<ul>
+<li><strong>メモリとディスクを一緒に保存する：</strong>ゲストのページキャッシュはディスクのブロックを参照するため、別の時点のメモリとディスクを組み合わせるとファイルシステムが壊れます。各イメージは <code>vmstate</code>、<code>mem.*</code>、VM 停止中に reflink した <code>rootfs.ext4</code> をまとめて持ちます。</li>
+<li><strong>reflink が必須：</strong>作業ディレクトリは <code>FICLONE</code> に対応した XFS（<code>reflink=1</code>）か btrfs である必要があり、全コピーへのフォールバックはありません。</li>
+<li><strong>差分スナップショット：</strong>8 回未満の書き込みの連鎖からなるメモリは Diff、それ以外は Full で保存し、最初の復元時に連鎖を組み立ててキャッシュします。</li>
+<li><strong>ゲストのアドレスは 1 つ：</strong>どのゲストも名前空間内で <code>10.42.0.2</code> を使うため、スナップショットのネットワーク設定はどの名前空間でも通用します。ゲスト内ではエージェントがポート 8888 を使うので、テンプレートはこのポートを使えません。</li>
+</ul>
+<p>v0.5 にあった実行中 VM のライブフォーク、hugepages、Firecracker のボリュームは持ち越されていません。API で <code>live_fork</code> や <code>hugepages</code> を指定すると 410 Gone が返ります。実行中のサンドボックスを複製したい場合は、<code>branch</code> でチェックポイントを取ってタグにし、そこからフォークします。</p>
+</section>
+
+<section id="numbers" aria-labelledby="numbers-title">
+<h2 class="sec-head" id="numbers-title">07 — 計測値：ホストが違うので列ごとに読む</h2>
+<p>README の表（2026-10-31 計測）です。各ノードから自分の gateway へリクエストを送っており、ネットワークは経路に入っていません。3 列はホストの性能が大きく違うため、列どうしを比べる表ではありません。</p>
+<div class="ve-table-wrap">
+<table>
+<thead><tr><th></th><th class="c">gVisor</th><th class="c">Firecracker（KVM）</th><th class="c">Firecracker（PVM）</th></tr></thead>
+<tbody>
+<tr><td>ホスト</td><td class="c">2 コア・2 GB</td><td class="c">16 スレッド・31 GB</td><td class="c">2 vCPU・3.8 GB</td></tr>
+<tr><td>frozen から起床（64 MiB のアプリ）</td><td class="c">100 ms</td><td class="c">165 ms</td><td class="c">78 ms</td></tr>
+<tr><td>ディスクから起床（16 / 64 / 256 MiB）</td><td class="c">130 / 150 / 720 ms</td><td class="c">150 / 150 / 500 ms</td><td class="c">80 / 135 / 450 ms</td></tr>
+<tr><td>ディスクから起床（512 MiB / 1 GiB）</td><td class="c">1.1 / 3.3 s</td><td class="c">0.7 / 1.4 s</td><td class="c">0.4 s / 未計測</td></tr>
+<tr><td>1 ノードのメモリに保持できた数（web / 64 MiB / 256 MiB）</td><td class="c">76 / 18 / 6</td><td class="c">293 / 160 / 85</td><td class="c">45 / 34 / 18</td></tr>
+<tr><td>同時に起こした 10 / 40 個のうち応答した数</td><td class="c">6 / 6</td><td class="c">10 / 28</td><td class="c">8 個中 5.5</td></tr>
+</tbody>
+</table>
+</div>
+<p>トラフィック試験はノードあたり 40 個のサンドボックスに、一部へリクエストが偏る負荷をかけています。p50 は gVisor で 6〜10 ms、p99 は約 2 秒で、p99 は復元を待ったリクエストです。gVisor のノードは 2 個ずつ並行して復元し、4 個までを待たせるため、10 個以上を同時に起こすと 6 個が応答し、残りはすぐに 503 になります。「保持できた数」はスワップありで動き続けた数で、応答の速さは表していません。</p>
+<h3>他のランタイムとの比較</h3>
+<p>README 冒頭の図は、64 MiB のアプリを 1 つずつ 20 回起動した p50 です。起動済みのアプリのイメージから復元する「warm テンプレート」（オプトイン）では、クラウド VM 上で Sandstorm on Firecracker が 84 ms、CubeSandbox が 87 ms、KVM マシンでは 100 ms と 129 ms でした。同じ図で Docker + gVisor は 685 ms、microsandbox は 1.1 s、Kata は 3.4 s です。実行中のアプリを 20 個に複製する時間は、KVM マシンで Sandstorm 361 ms、CubeSandbox 1,064 ms と記録されています。README 自身が、同じバイナリで前日に計測した 64 MiB アプリの値が 74 ms と 78 ms だったため相対値として読むよう注記しています。</p>
+<p>バックエンドごとの最適化（凍結したページの zswap への回収、ディスク速度に応じたスナップショットの圧縮、PS/2 の検出を止めるカーネルオプションなど）と、その前後の計測値は <code>docs/OPTIMIZATIONS.md</code> にまとまっています。</p>
+</section>
+
+<section id="api" aria-labelledby="api-title">
+<h2 class="sec-head" id="api-title">08 — API・SDK・MCP：コンソールでできることはすべて HTTP API にある</h2>
+<p>master は既定で <code>127.0.0.1:8080</code> に TLS で HTTP API を提供します。証明書は master 自身の CA で署名されるため、クライアントには <code>ca.pem</code>（<code>GET /ca.pem</code> でも取得可）を渡します。トークンは <code>/var/lib/sandstorm/pki/api-token</code> にあります。</p>
+<div class="ve-table-wrap">
+<table>
+<caption>主なルート（<code>docs/API.md</code> の「Quick look」から抜粋）</caption>
+<thead><tr><th>ルート</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td><code>POST /v1/sandboxes</code></td><td>テンプレートから起動、またはタグからフォーク。<code>n</code> で最大 256 個。サンドボックスのトークンはこの応答でしか返らない</td></tr>
+<tr><td><code>POST /v1/sandboxes/:id/{touch,tier,retry}</code></td><td>起こす、階層を動かす、失敗を再試行する</td></tr>
+<tr><td><code>POST /v1/sandboxes/:id/{exec,eval,ping}</code></td><td>コマンドやコード片を実行する。API トークンに加えてサンドボックスのトークンが必要</td></tr>
+<tr><td><code>POST /v1/sandboxes/:id/branch</code></td><td>実行中のサンドボックスをチェックポイントしてタグにする。親は短く止まったあと動き続ける</td></tr>
+<tr><td><code>POST /v1/templates/from-image</code></td><td>コンテナイメージから各ノードがテンプレートを作る。ノードに Docker は不要。公開イメージのみ</td></tr>
+<tr><td><code>POST /v1/sandboxes/:id/egress</code>、<code>/v1/egress</code></td><td>外への通信の許可（既定は閉じている）</td></tr>
+<tr><td><code>/v1/nodes</code>、<code>/v1/node-tokens</code>、<code>/v1/node/revoke/:id</code></td><td>ノードの一覧・参加・失効</td></tr>
+<tr><td><code>GET /metrics</code></td><td>Prometheus 形式のメトリクス</td></tr>
+</tbody>
+</table>
+</div>
+<h3>外への通信（egress）</h3>
+<p>サンドボックスは既定で自分のノードの外へ何も届きません。ポリシーは <code>internet</code>（パブリックアドレス。プライベート範囲、他のサンドボックス、クラウドのメタデータサービスは含まない）、<code>allow</code>、<code>deny</code>（IPv4 アドレスと CIDR）の 3 つで、ドメイン名は指定できません。</p>
+<div class="ve-code-block"><pre><code>{ "internet": true, "allow": ["10.1.0.0/16"], "deny": ["203.0.113.0/24"] }</code></pre></div>
+<h3>クライアント</h3>
+<div class="card-grid three">
+<div class="ve-card"><h3>Python SDK</h3><p><code>pip install sandstorm-sdk</code>。依存なしで、E2B 互換の書き方ができます。<code>SANDSTORM_URL</code>・<code>SANDSTORM_TOKEN</code>・<code>SANDSTORM_CA</code> で接続先を渡します。</p></div>
+<div class="ve-card"><h3>TypeScript SDK</h3><p><code>npm install @deeplethe/sandstorm</code>。Node 20 以上。証明書の検証を無効にする手段は意図的に用意されていません。</p></div>
+<div class="ve-card"><h3>MCP サーバー</h3><p><code>pip install sandstorm-mcp</code>（0.3.0）。<code>spawn_sandboxes</code>、<code>branch_sandbox</code>、<code>exec_command</code> など 13 個のツールを MCP クライアントに公開します。</p></div>
+</div>
+<div class="ve-code-block"><pre><code>from sandstorm import Sandbox
+
+with Sandbox("python") as sandbox:              # master 上のテンプレート名
+    result = sandbox.commands.run("python3 -c 'print(2 + 2)'")
+    print(result.stdout)        # 4
+
+with Sandbox(tag="checkpoint-1") as sandbox:    # タグからフォーク
+    print(sandbox.commands.run("ls /work").stdout)</code></pre></div>
+<p>公式の E2B SDK もそのまま使えます。master を <code>--e2b-bind</code> と <code>--e2b-domain</code> 付きで起動し、<code>recipes/e2b-codeinterpreter</code> で E2B の <code>envd</code>（固定したタグからビルド）を入れたテンプレートを作ります。<code>E2B_API_KEY</code> には master の API トークンを使います。</p>
+</section>
+
+<section id="run" aria-labelledby="run-title">
+<h2 class="sec-head" id="run-title">09 — 動かす</h2>
+<h3>1 台で試す</h3>
+<p>cgroup v2 の Linux、<code>PATH</code> 上の <code>runsc</code>、Rust、コンソールのビルド用に Node 22.12 以上が必要です。</p>
+<div class="ve-code-block"><pre><code>git clone https://github.com/deeplethe/sandstorm.git &amp;&amp; cd sandstorm
+npm --prefix web/console ci &amp;&amp; npm --prefix web/console run build
+cargo build --release -p sandstorm-core
+sudo ./target/release/sandstormd serve --master --node</code></pre></div>
+<p>master と node が 1 プロセスで起動します。ブラウザで <code>https://127.0.0.1:8080</code> を開き、自前 CA の警告を越えて、<code>/var/lib/sandstorm/pki/api-token</code> のトークンでサインインします。「+ From an image」でテンプレートを作り、そこからサンドボックスを起動します。</p>
+<h3>複数台のフリート</h3>
+<p>ssh で入れるマシンがあれば、<code>scripts/fleet.sh</code> で master とノードをまとめて立ち上げられます。ノードは master が配る <code>install.sh</code> で参加します。</p>
+<div class="ve-code-block"><pre><code>scripts/fleet.sh up --master m1 --nodes n1,n2,n3 --listen 80
+scripts/fleet.sh seed     # 各ノードにテンプレートを置く
+scripts/fleet.sh verify   # サンドボックスを 1 つ起動して動作を確認</code></pre></div>
+<p>別のマシンのクライアントが master に接続する名前は、master の証明書に含まれている必要があります。<code>--tls-san</code> で追加します。すでに入っているノードや、NAT の内側から master に接続するノードは <code>docs/API.md</code> の Nodes の手順で参加させます。</p>
+</section>
+
+<section id="cautions" aria-labelledby="cautions-title">
+<h2 class="sec-head" id="cautions-title">10 — 注意点</h2>
+<ul>
+<li><strong>アルファ版：</strong><code>docs/SECURITY.md</code> は自らをアルファと位置付けています。第三者のセキュリティ監査は未実施で、1.0 までは minor バージョンで互換性が壊れることがあります。</li>
+<li><strong>gVisor は VM と同等ではない：</strong>gVisor のサンドボックスはホストのカーネルを共有するため、Sentry からの脱出はホストと同じノードの他のサンドボックスに届きます。敵対的なコードを動かすなら、KVM のあるホストで Firecracker を選ぶよう SECURITY.md は勧めています。</li>
+<li><strong>API トークンは root 相当：</strong>トークンは 1 種類でスコープもテナントもなく、master につながる全ノードのサンドボックスを操作できます。マルチテナントにするなら、テナントごとに master と専用ノードを分けるよう書かれています。<code>--api-open</code> で認証を外すと、届く相手なら誰でもノードトークンを発行できます。</li>
+<li><strong>既知の穴：</strong>ノードの gateway は平文の HTTP で、サンドボックスのトークンとアプリの通信は暗号化されません。E2B 用の入口はサンドボックスのポートへのリクエストを認証しないため、ID を知っていれば到達できます。egress はアドレス単位で、ドメインでの制御や中身の検査はありません。API の監査ログは配線されていません。</li>
+<li><strong>master は冗長化されない：</strong>master の状態は SQLite 1 ファイルで、HA とフェイルオーバーは未実装です。<code>--pki-dir</code> の CA 鍵を失うと全ノードの再登録が必要になるため、状態 DB と一緒にバックアップします。</li>
+<li><strong>メモリ以外の上限がない：</strong><code>cpu.max</code>、<code>io.max</code>、<code>pids.max</code> は API から設定できません。スナップショットのサイズにも上限がなく、1 個あたり 50.2 MiB と計測されているので、1,000 個で約 50 GB のディスクを使います。受け入れ判断はディスクを見ません。</li>
+<li><strong>眠っている間の接続：</strong>frozen と snapshot の間に、サンドボックス内の TCP 接続はタイムアウトすることがあります。detached から戻るとメモリの状態は失われ、コールドスタートになります。</li>
+<li><strong>Kubernetes は未対応：</strong>公式のマニフェストはありません。ノードには <code>privileged: true</code> と root、<code>/sys/fs/cgroup</code> の書き込み可能なマウントが必要で、<code>sandstormd</code> の Pod が侵害されるとホストまで届きます。</li>
+<li><strong>未完の項目：</strong>README のロードマップでは、配置時に master が容量を予約し、バーストがノードの直近の報告を超えないようにする項目が未完です。</li>
+</ul>
+</section>
+
+<section id="sources" aria-labelledby="sources-title">
+<h2 class="sec-head" id="sources-title">11 — 公式資料と確認したソース</h2>
+<ul>
+<li><a href="https://github.com/deeplethe/sandstorm">deeplethe/sandstorm</a> — README.md、CHANGELOG.md、LICENSE</li>
+<li><code>docs/adr/</code> — ADR 2（gVisor 既定）、3（4 階層）、4（master と node）、5（mTLS）、6（プール）、7（トラフィックでの起床）、8（ノードの自己防衛）、9（起床時の退避と 2 秒）、10（1 バイナリ）、11（Firecracker バックエンド）</li>
+<li><code>docs/SECURITY.md</code>、<code>docs/OPTIMIZATIONS.md</code>、<code>docs/API.md</code></li>
+<li><code>crates/sandstorm-core/src/main.rs</code>（階層のアイドル時間の既定値）、<code>master/demote.rs</code></li>
+<li><code>sdk/python/README.md</code>、<code>sdk/typescript/README.md</code>、<code>sdk/mcp/README.md</code>、<code>recipes/e2b-codeinterpreter/README.md</code>、<code>scripts/fleet.sh</code></li>
+<li><code>bench/fleet/results/2026-10-31/README.md</code> — 計測の方法と生データ</li>
+</ul>
+<p class="source-note">確認日: 2026-11-22 · ソース: <a href="https://github.com/deeplethe/sandstorm/tree/6b34362dbe45aae31c066ca7a950f4613e67217a">6b34362</a>（2026-11-21、タグ v0.6.0 以降）。原文は英語で、本ページの引用・要約は日本語訳です。デーモンは実行して確認しておらず、ソースと文書の記述にもとづきます。計測値はすべてリポジトリに記録された値です。</p>
+</section>
+</main>
+</div>
+<script>
+(function() {
+  var toc = document.getElementById('toc');
+  if (!toc) return;
+  var links = toc.querySelectorAll('a[href^="#"]');
+  var sections = [];
+  links.forEach(function(a) {
+    var id = a.getAttribute('href').slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, head: el });
+  });
+  function updateActive() {
+    var top = window.scrollY + 24;
+    var current = sections[0] || null;
+    sections.forEach(function(s) {
+      var rect = s.head.getBoundingClientRect();
+      var docTop = rect.top + window.scrollY;
+      if (docTop <= top) current = s;
+    });
+    sections.forEach(function(s) {
+      s.link.classList.toggle('active', s === current);
+    });
+  }
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+})();
+</script>
+</body>
+</html>
