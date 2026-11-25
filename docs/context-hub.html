@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Context Hub — コーディングエージェント向けキュレートドキュメント</title>
-  <meta name="description" content="Chub（Context Hub）はエージェント向けのバージョン付き・キュレートされた API ドキュメント。検索・取得・アノテーション・フィードバックでセッションを超えて賢くなる仕組みの概要。">
+  <meta name="description" content="Chub（Context Hub）はエージェント向けのバージョン付き・キュレートされた API ドキュメント。検索・取得・アノテーション・フィードバック・MCP 統合でセッションを超えて賢くなる仕組みの概要。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="Context Hub — コーディングエージェント向けキュレートドキュメント">
-  <meta property="og:description" content="Chub（Context Hub）はエージェント向けのバージョン付き・キュレートされた API ドキュメント。検索・取得・アノテーション・フィードバックでセッションを超えて賢くなる仕組みの概要。">
+  <meta property="og:description" content="Chub（Context Hub）はエージェント向けのバージョン付き・キュレートされた API ドキュメント。検索・取得・アノテーション・フィードバック・MCP 統合でセッションを超えて賢くなる仕組みの概要。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/context-hub.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Context Hub — コーディングエージェント向けキュレートドキュメント">
-  <meta name="twitter:description" content="Chub（Context Hub）はエージェント向けのバージョン付き・キュレートされた API ドキュメント。検索・取得・アノテーション・フィードバックの概要。">
+  <meta name="twitter:description" content="Chub（Context Hub）はエージェント向けのバージョン付き・キュレートされた API ドキュメント。検索・取得・アノテーション・フィードバック・MCP 統合の概要。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -116,10 +116,11 @@
     .ve-table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .ve-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; line-height: 1.55; }
     .ve-table-wrap th { background: var(--muted); font-weight: 600; text-align: left; padding: 0.875rem 1rem; border-bottom: 2px solid var(--ring); }
-    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); }
+    .ve-table-wrap td { padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ve-table-wrap tbody tr:last-child td { border-bottom: none; }
     .ve-table-wrap tbody tr:hover { background: var(--border); }
     .ve-kpi-card { background: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.125rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
-    .ve-kpi-card__value { font-variant-numeric: tabular-nums; font-size: 2rem; line-height: 1.1; }
+    .ve-kpi-card__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.375rem; line-height: 1.2; font-weight: 500; overflow-wrap: break-word; word-break: break-all; }
     .ve-kpi-card__label { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin-top: 0.375rem; }
     .ve-callout { background: var(--muted); border: 1px solid var(--border); border-left: 3px solid var(--chart-1); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 0.875rem 1.125rem; font-size: 0.8125rem; line-height: 1.6; color: var(--muted-foreground); }
     .ve-callout strong { color: var(--foreground); font-weight: 600; }
@@ -173,20 +174,56 @@
     .subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; font-family: var(--font-mono); }
     .sec-head { font-size: 1.125rem; font-weight: 600; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
     .sec-head:first-of-type { margin-top: 0; }
-    h3 { font-size: 1.125rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+    h3 { font-size: 1.0625rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
     p { font-size: 0.9375rem; line-height: 1.65; margin-bottom: 0.75rem; }
+    p:last-child { margin-bottom: 0; }
     ul { margin: 0 0 1rem; padding-left: 1.5rem; }
-    li { margin-bottom: 0.35rem; }
+    li { margin-bottom: 0.35rem; font-size: 0.9375rem; line-height: 1.6; }
     a { color: var(--chart-1); text-decoration: underline; text-underline-offset: 2px; }
     a:hover { color: var(--chart-3); }
     .ve-section-label .ve-dot { background: var(--chart-1); }
     .ve-code-block { margin: 1rem 0; }
     code { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
 
-    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    /* ============ KPI row ============ */
+    .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
     .kpi-row .ve-kpi-card { min-width: 0; }
-    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 800px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 480px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
 
+    /* ============ Flow steps ============ */
+    .flow-steps { display: flex; flex-direction: column; gap: 0.75rem; margin: 1rem 0; }
+    .flow-step { display: grid; grid-template-columns: 2rem 1fr; gap: 0.875rem; align-items: start; }
+    .flow-step__num {
+      width: 2rem; height: 2rem; border-radius: 50%; background: var(--chart-1); color: oklch(1 0 0);
+      display: flex; align-items: center; justify-content: center; font-family: var(--font-mono);
+      font-size: 0.8125rem; font-weight: 700; flex-shrink: 0; margin-top: 0.1rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      .flow-step__num { background: var(--chart-1); color: oklch(0.145 0 0); }
+    }
+    .flow-step__body { min-width: 0; }
+    .flow-step__title { font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.25rem; }
+    .flow-step__desc { font-size: 0.875rem; color: var(--text-dim); line-height: 1.55; }
+    .flow-step__code { margin-top: 0.5rem; }
+
+    /* ============ Label pills ============ */
+    .label-group { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.75rem; }
+    .label-pill {
+      font-family: var(--font-mono); font-size: 0.75rem; padding: 0.25rem 0.625rem; border-radius: 999px;
+      border: 1px solid var(--border); color: var(--text-dim);
+    }
+    .label-pill--pos { background: oklch(0.696 0.17 162.48 / 0.12); border-color: oklch(0.696 0.17 162.48 / 0.4); color: oklch(0.396 0.12 162.48); }
+    .label-pill--neg { background: oklch(0.577 0.245 27.325 / 0.1); border-color: oklch(0.577 0.245 27.325 / 0.35); color: oklch(0.47 0.2 27.325); }
+    @media (prefers-color-scheme: dark) {
+      .label-pill--pos { color: oklch(0.696 0.17 162.48); }
+      .label-pill--neg { color: oklch(0.704 0.191 22.216); }
+    }
+
+    /* ============ Card gap ============ */
+    .card-gap { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* ============ Animations ============ */
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .ve-card { animation: fadeUp 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 0.05s); }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; } }
@@ -200,28 +237,32 @@
     <a href="#quickstart">Quick Start</a>
     <a href="#how-it-works">仕組み</a>
     <a href="#commands">コマンド一覧</a>
-    <a href="#self-improving">セッションを超えて賢く</a>
-    <a href="#content-features">コンテンツと機能</a>
+    <a href="#self-improving">セッションを超えて</a>
+    <a href="#content-mcp">コンテンツと MCP</a>
+    <a href="#agent-skill">エージェントスキル</a>
     <a href="#links">参考リンク</a>
   </nav>
 
   <div class="main">
   <h1>Context Hub</h1>
-  <p class="subtitle">コーディングエージェント向けのキュレート・バージョン付きドキュメント。検索・取得・アノテーション・フィードバックで、セッションを超えて賢くなる。</p>
+  <p class="subtitle">コーディングエージェント向けのキュレート・バージョン付きドキュメント。検索・取得・アノテーション・フィードバック・MCP で、セッションを超えて賢くなる。</p>
 
+  <!-- 1 ============================================================ -->
   <section id="overview" class="sec-head">1 — 概要</section>
   <div class="ve-card ve-card--hero" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 何か</span>
-    <p><strong>Context Hub</strong>（CLI 名: <strong>Chub</strong>）は、コーディングエージェントが「API をハルシネートする」「セッションで学んだことを忘れる」問題に向き合うための仕組み。キュレートされバージョン管理されたドキュメントを配信し、エージェントが <code>chub search</code> / <code>chub get</code> で必要なドキュメントを取得して使う。コンテンツはすべてオープンで Markdown としてこのリポジトリにあり、エージェントが読む内容をそのまま確認・貢献できる。</p>
+    <p><strong>Context Hub</strong>（CLI 名: <strong>Chub</strong>）は、コーディングエージェントが「API をハルシネートする」「セッションで学んだことを忘れる」問題に向き合うための仕組み。キュレートされバージョン管理されたドキュメントを配信し、エージェントが <code>chub search</code> / <code>chub get</code> で必要なドキュメントを取得して使う。コンテンツはすべてオープンで Markdown としてリポジトリにあり、エージェントが読む内容をそのまま確認・貢献できる。</p>
     <div class="kpi-row">
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">chub</span><span class="ve-kpi-card__label">CLI</span></div>
-      <div class="ve-kpi-card"><span class="ve-kpi-card__value">search / get</span><span class="ve-kpi-card__label">検索・取得</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">chub</span><span class="ve-kpi-card__label">CLI 名</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">search/get</span><span class="ve-kpi-card__label">検索・取得</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">annotate</span><span class="ve-kpi-card__label">ローカル注釈</span></div>
       <div class="ve-kpi-card"><span class="ve-kpi-card__value">feedback</span><span class="ve-kpi-card__label">作者へ投票</span></div>
+      <div class="ve-kpi-card"><span class="ve-kpi-card__value">chub-mcp</span><span class="ve-kpi-card__label">MCP サーバー</span></div>
     </div>
-    <p>npm パッケージは <code>@aisuite/chub</code>。Node.js 18 以上。エージェント用スキル（例: get-api-docs）を組み合わせると「最新の API ドキュメントを chub で取得して使う」フローを自動化できる。</p>
+    <p>npm パッケージは <code>@aisuite/chub</code>。Node.js 18 以上。2 つの実行ファイル（<code>chub</code> CLI と <code>chub-mcp</code> MCP サーバー）が同梱されている。</p>
   </div>
 
+  <!-- 2 ============================================================ -->
   <section id="quickstart" class="sec-head">2 — Quick Start</section>
   <div class="ve-card ve-card--elevated" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 導入</span>
@@ -234,79 +275,250 @@ chub get openai/chat --lang py     # 現在のドキュメントを取得（Pyth
     <p>言語は <code>--lang py</code> / <code>--lang js</code> で指定。取得した Markdown をエージェントのコンテキストに含めてコード生成に使う。</p>
   </div>
 
+  <!-- 3 ============================================================ -->
   <section id="how-it-works" class="sec-head">3 — 仕組み</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 設計思想</span>
     <p>Chub は<strong>人間ではなくコーディングエージェントが使う</strong>ことを前提にしている。プロンプトで「chub を使って最新の API ドキュメントを取得し、その内容に従って実装して」と指示するか、<a href="https://github.com/andrewyng/context-hub/blob/main/cli/skills/get-api-docs/SKILL.md" target="_blank" rel="noopener">get-api-docs スキル</a>（SKILL.md）をエージェントに登録して使う。</p>
-    <p>基本フローは <strong>search → fetch → use</strong>。エージェントが不足やワークアラウンドに気づいたら、<code>chub annotate</code> でローカルにメモしておくと、次回の <code>chub get</code> 時にその注釈が自動で付いて返る。作者への評価は <code>chub feedback &lt;id&gt; up</code> / <code>down</code> で送れる。</p>
+    <p>基本フローは <strong>search → get → use → annotate → feedback</strong> の 5 ステップ。エージェントが不足やワークアラウンドに気づいたら <code>chub annotate</code> でローカルにメモしておくと、次回の <code>chub get</code> 時にその注釈が自動で付いて返る。</p>
   </div>
   <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> 例</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> 使用例</span>
     <div class="ve-code-block">
       <pre><code>chub search "stripe payments"        # 関連ドキュメントを検索
 chub get stripe/api --lang js       # ドキュメントを取得
 # エージェントがドキュメントを読み、正しいコードを書く。
 
 chub annotate stripe/api "Needs raw body for webhook verification"
-# 次セッションでは chub get 時にこの注釈が自動で付与される。</code></pre>
+# 次セッションでは chub get 時にこの注釈が自動で付与される。
+
+chub feedback stripe/api up          # 作者に評価を送る</code></pre>
     </div>
   </div>
 
+  <!-- 4 ============================================================ -->
   <section id="commands" class="sec-head">4 — コマンド一覧</section>
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> CLI</span>
+    <span class="ve-section-label"><span class="ve-dot"></span> 全コマンド</span>
     <div class="ve-table-wrap">
-      <table>
+      <table aria-label="chub コマンド一覧">
         <thead>
-          <tr><th>コマンド</th><th>説明</th></tr>
+          <tr><th>コマンド</th><th>説明</th><th>主なフラグ</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>chub search [query]</code></td><td>ドキュメント・スキルを検索（クエリ省略で一覧）</td></tr>
-          <tr><td><code>chub get &lt;id&gt; [--lang py|js]</code></td><td>ID でドキュメントまたはスキルを取得</td></tr>
-          <tr><td><code>chub annotate &lt;id&gt; &lt;note&gt;</code></td><td>ドキュメント／スキルにローカル注釈を付与</td></tr>
-          <tr><td><code>chub annotate &lt;id&gt; --clear</code></td><td>注釈を削除</td></tr>
-          <tr><td><code>chub annotate --list</code></td><td>すべての注釈を一覧</td></tr>
-          <tr><td><code>chub feedback &lt;id&gt; up|down</code></td><td>ドキュメントをアップ／ダウンボート（作者に送信）</td></tr>
+          <tr>
+            <td><code>chub search [query]</code></td>
+            <td>ドキュメント・スキルを検索（クエリ省略で一覧）</td>
+            <td><code>--tags &lt;csv&gt;</code> <code>--lang</code> <code>--limit</code> <code>--json</code></td>
+          </tr>
+          <tr>
+            <td><code>chub get &lt;ids...&gt;</code></td>
+            <td>ID でドキュメントまたはスキルを取得。複数指定可</td>
+            <td><code>--lang</code> <code>--version</code> <code>--full</code> <code>--file</code> <code>-o</code> <code>--json</code></td>
+          </tr>
+          <tr>
+            <td><code>chub annotate &lt;id&gt; [note]</code></td>
+            <td>ローカル注釈を付与・閲覧・削除・一覧</td>
+            <td><code>--clear</code> <code>--list</code> <code>--json</code></td>
+          </tr>
+          <tr>
+            <td><code>chub feedback &lt;id&gt; up|down</code></td>
+            <td>ドキュメントを評価。ラベルと作者情報を付与できる</td>
+            <td><code>--label</code> <code>--file</code> <code>--agent</code> <code>--model</code> <code>--status</code></td>
+          </tr>
+          <tr>
+            <td><code>chub update</code></td>
+            <td>キャッシュ済みレジストリインデックスを更新</td>
+            <td><code>--force</code> <code>--full</code>（オフライン用フルバンドル）</td>
+          </tr>
+          <tr>
+            <td><code>chub build &lt;content-dir&gt;</code></td>
+            <td>ローカルコンテンツから配布用レジストリをビルド</td>
+            <td><code>-o &lt;output&gt;</code> <code>--base-url</code></td>
+          </tr>
         </tbody>
       </table>
     </div>
-    <p>オプション（<code>--file</code>, <code>--full</code> など）とパイプの詳細は <a href="https://github.com/andrewyng/context-hub/blob/main/docs/cli-reference.md" target="_blank" rel="noopener">CLI Reference</a> を参照。</p>
-  </div>
-
-  <section id="self-improving" class="sec-head">5 — セッションを超えて賢く</section>
-  <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> アノテーションとフィードバック</span>
-    <p><strong>アノテーション</strong>は、エージェントがドキュメントに付けるローカルメモ。セッションをまたいで永続し、次回 <code>chub get</code> したときに自動で付いて返る。過去の経験を次に活かせる。</p>
-    <p><strong>フィードバック</strong>（up / down）は作者に送られ、ドキュメントの改善に使われる。みんなの利用結果がコンテンツの質向上につながる。</p>
+    <p style="margin-top:1rem">グローバルフラグ: <code>--json</code>（構造化 JSON 出力）、<code>--version</code>、<code>--help</code>。詳細は <a href="https://github.com/andrewyng/context-hub/blob/main/docs/cli-reference.md" target="_blank" rel="noopener">CLI Reference</a> を参照。</p>
   </div>
   <div class="ve-card ve-card--recessed" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> 対比</span>
-    <p>Context Hub なし: ウェブ検索 → ノイズ → コードが動かない → 修正に手間 → 知識は忘れられ、次のセッションで繰り返し。</p>
-    <p>Context Hub あり: キュレートドキュメントを取得 → 動くコードが出やすい → ギャップがあればアノテーション → 次回はさらに賢く。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> Incremental Fetch</span>
+    <p>ドキュメントにメイン以外の参照ファイルがある場合、<code>chub get</code> の出力末尾に利用可能なファイル一覧が表示される。<code>--file</code> で必要なファイルだけ、<code>--full</code> で一式を取得できる。トークンを無駄にしない設計。</p>
+    <div class="ve-code-block">
+      <pre><code>chub get acme/widgets --file references/advanced.md   # 特定のリファレンスのみ
+chub get acme/widgets --full                          # すべてのファイルを取得
+chub get stripe/api -o .context/stripe.md             # ファイルに保存</code></pre>
+    </div>
   </div>
 
-  <section id="content-features" class="sec-head">6 — コンテンツと機能</section>
+  <!-- 5 ============================================================ -->
+  <section id="self-improving" class="sec-head">5 — セッションを超えて賢く</section>
+  <div class="card-gap">
   <div class="ve-card" style="--i:0">
-    <span class="ve-section-label"><span class="ve-dot"></span> コンテンツタイプ</span>
-    <p>バージョン管理され、<strong>言語別</strong>（py / js など）のバリアントがある。「何を知るべきか」が整理されている。API ドキュメント以外（エージェントスキルなど）もロードマップ上。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> アノテーション</span>
+    <p><strong>アノテーション</strong>は、エージェントがドキュメントに付けるローカルメモ。<code>~/.chub/annotations/</code> に JSON として保存され、セッションをまたいで永続する。次回 <code>chub get</code> したときにドキュメントの末尾に自動で追記されて返る。</p>
+    <p>効果的なアノテーションの例:</p>
+    <ul>
+      <li>環境固有の落とし穴 — <em>「Webhook 検証は JSON parse 前の raw body が必要」</em></li>
+      <li>バージョン固有の注意 — <em>「v3 API は別の認証ヘッダーが必要」</em></li>
+      <li>プロジェクト固有の文脈 — <em>「個別呼び出しではなくバッチエンドポイントを使用」</em></li>
+      <li>エラー対策 — <em>「レートリミットエラーには jitter 付き指数バックオフが必要」</em></li>
+    </ul>
   </div>
   <div class="ve-card" style="--i:1">
-    <span class="ve-section-label"><span class="ve-dot"></span> Incremental Fetch</span>
-    <p>ドキュメントにメイン以外の参照ファイルがある場合、<code>--file</code> で必要なファイルだけ、<code>--full</code> で一式を取得できる。トークンを無駄にしない。</p>
+    <span class="ve-section-label"><span class="ve-dot"></span> フィードバックラベル</span>
+    <p>作者へ投票する際にラベルを付けると、何が良くて何が悪いかを具体的に伝えられる。</p>
+    <p>ポジティブ:</p>
+    <div class="label-group">
+      <span class="label-pill label-pill--pos">accurate</span>
+      <span class="label-pill label-pill--pos">well-structured</span>
+      <span class="label-pill label-pill--pos">helpful</span>
+      <span class="label-pill label-pill--pos">good-examples</span>
+    </div>
+    <p style="margin-top:0.75rem">ネガティブ:</p>
+    <div class="label-group">
+      <span class="label-pill label-pill--neg">outdated</span>
+      <span class="label-pill label-pill--neg">inaccurate</span>
+      <span class="label-pill label-pill--neg">incomplete</span>
+      <span class="label-pill label-pill--neg">wrong-examples</span>
+      <span class="label-pill label-pill--neg">wrong-version</span>
+      <span class="label-pill label-pill--neg">poorly-structured</span>
+    </div>
+    <div class="ve-code-block" style="margin-top:1rem">
+      <pre><code>chub feedback openai/chat down --label outdated --label wrong-examples
+chub feedback stripe/api up --agent "claude-code" --model "claude-sonnet-4"
+chub feedback acme/widgets down --file references/advanced.md --label incomplete</code></pre>
+    </div>
   </div>
-  <div class="ve-callout" style="--i:2">
-    <strong>貢献</strong>: ドキュメント・スキルは Markdown + YAML フロントマターで PR により追加できる。Content Guide でフォーマットと構造を確認できる。
+  <div class="ve-card ve-card--recessed" style="--i:2">
+    <span class="ve-section-label"><span class="ve-dot"></span> アノテーション vs フィードバック</span>
+    <div class="ve-table-wrap">
+      <table aria-label="アノテーションとフィードバックの比較">
+        <thead><tr><th scope="col">項目</th><th scope="col">アノテーション</th><th scope="col">フィードバック</th></tr></thead>
+        <tbody>
+          <tr><td><strong>対象</strong></td><td>自分のエージェント（ローカル）</td><td>ドキュメント作者（レジストリ経由）</td></tr>
+          <tr><td><strong>永続場所</strong></td><td><code>~/.chub/annotations/</code></td><td>リモートレジストリ</td></tr>
+          <tr><td><strong>目的</strong></td><td>同じミスを繰り返さない</td><td>コンテンツ品質の向上</td></tr>
+          <tr><td><strong>可視範囲</strong></td><td>自分のみ</td><td>メンテナーのみ</td></tr>
+          <tr><td><strong>効果</strong></td><td>次回 get 時に自動付与</td><td>作者がドキュメントを更新</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:0.875rem">アノテーションは今日の自分のエージェントを賢くし、フィードバックは明日の全員のドキュメントをよくする。</p>
+  </div>
   </div>
 
-  <section id="links" class="sec-head">7 — 参考リンク</section>
+  <!-- 6 ============================================================ -->
+  <section id="content-mcp" class="sec-head">6 — コンテンツと MCP</section>
+  <div class="card-gap">
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> コンテンツタイプ</span>
+    <p>バージョン管理され、<strong>言語別</strong>（py / js など）のバリアントがある。ディレクトリ構造でマルチ言語・マルチバージョンを表現する。</p>
+    <div class="ve-code-block">
+      <pre><code>content/
+  acme/
+    docs/
+      widgets/
+        DOC.md             # 単一言語
+      client/
+        javascript/DOC.md  # 複数言語
+        python/DOC.md
+      api/
+        v1/DOC.md          # 複数バージョン
+        v2/DOC.md          # 最高バージョンが推奨バージョンになる
+    skills/
+      deploy/SKILL.md      # エージェントスキル</code></pre>
+    </div>
+    <p>API ドキュメント以外のコンテンツタイプ（エージェントスキルなど）もロードマップ上にある。</p>
+  </div>
+  <div class="ve-card ve-card--elevated" style="--i:1">
+    <span class="ve-section-label"><span class="ve-dot"></span> MCP 統合（chub-mcp）</span>
+    <p><code>@aisuite/chub</code> には CLI だけでなく、<strong>MCP サーバー</strong>（<code>chub-mcp</code>）も同梱されている。MCP クライアント（Claude Desktop など）から Context Hub のドキュメントを直接呼び出せる。</p>
+    <div class="ve-code-block">
+      <pre><code># Claude Desktop の mcp_servers 設定例
+{
+  "chub": {
+    "command": "chub-mcp"
+  }
+}</code></pre>
+    </div>
+    <p>CLI と MCP の 2 経路でアクセスでき、エージェントのアーキテクチャに合わせて選択できる。</p>
+  </div>
+  <div class="ve-callout" style="--i:2">
+    <strong>貢献</strong>: ドキュメント・スキルは Markdown + YAML フロントマターで PR により追加できる。<code>chub build</code> でローカルコンテンツを検証・ビルドし、<a href="https://github.com/andrewyng/context-hub/blob/main/docs/content-guide.md" target="_blank" rel="noopener">Content Guide</a> でフォーマットと構造を確認できる。エージェントからのフィードバック（up/down）が集まるほど、コンテンツの優先度が上がる。
+  </div>
+  </div>
+
+  <!-- 7 ============================================================ -->
+  <section id="agent-skill" class="sec-head">7 — エージェントスキル（get-api-docs）</section>
+  <div class="ve-card" style="--i:0">
+    <span class="ve-section-label"><span class="ve-dot"></span> 5 ステップワークフロー</span>
+    <p>Context Hub には <code>cli/skills/get-api-docs/SKILL.md</code> が付属する。エージェントに登録すると、外部ライブラリを使うコードを書く前に自動でドキュメントを取得するようになる。</p>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-step__num">1</div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">ドキュメント ID を見つける</div>
+          <div class="flow-step__desc">推測ではなく <code>chub search</code> で確認してから取得する。</div>
+          <div class="ve-code-block flow-step__code">
+            <pre><code>chub search "openai" --json</code></pre>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step__num">2</div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">ドキュメントを取得する</div>
+          <div class="flow-step__desc">バリアントが複数あれば <code>--lang</code> を指定。1 つのみなら自動選択される。</div>
+          <div class="ve-code-block flow-step__code">
+            <pre><code>chub get openai/chat --lang py</code></pre>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step__num">3</div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">ドキュメントに従ってコードを書く</div>
+          <div class="flow-step__desc">記憶で API を推測せず、取得した内容を正として実装する。</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step__num">4</div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">学んだことをアノテートする</div>
+          <div class="flow-step__desc">ドキュメントに書かれていないワークアラウンドや落とし穴をメモしておく。次回以降のセッションでも役立つ。</div>
+          <div class="ve-code-block flow-step__code">
+            <pre><code>chub annotate openai/chat "streaming requires async iterator, not .text()"</code></pre>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step__num">5</div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">フィードバックを送る</div>
+          <div class="flow-step__desc">ドキュメントが役立ったかどうかをラベル付きで評価する。ユーザーに確認してから送信するのが推奨。</div>
+          <div class="ve-code-block flow-step__code">
+            <pre><code>chub feedback openai/chat up --label helpful --label good-examples</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ve-callout" style="--i:1">
+    <strong>スキルの登録方法（Claude Code の場合）</strong>: <code>~/.claude/skills/get-api-docs/</code> ディレクトリを作成し、<code>SKILL.md</code> を配置する。Claude Code が外部ライブラリを使う場面でスキルを自動的に参照するようになる。
+  </div>
+
+  <!-- 8 ============================================================ -->
+  <section id="links" class="sec-head">8 — 参考リンク</section>
   <div class="ve-card" style="--i:0">
     <span class="ve-section-label"><span class="ve-dot"></span> 公式・リポジトリ</span>
     <ul>
       <li><a href="https://github.com/andrewyng/context-hub" target="_blank" rel="noopener">GitHub: andrewyng/context-hub</a> — リポジトリ（cli, content, docs）</li>
-      <li><a href="https://www.npmjs.com/package/@aisuite/chub" target="_blank" rel="noopener">npm: @aisuite/chub</a> — CLI パッケージ</li>
+      <li><a href="https://www.npmjs.com/package/@aisuite/chub" target="_blank" rel="noopener">npm: @aisuite/chub</a> — CLI + MCP サーバー同梱パッケージ</li>
       <li><a href="https://github.com/andrewyng/context-hub/blob/main/docs/cli-reference.md" target="_blank" rel="noopener">CLI Reference</a> — コマンド・フラグ・パイプ</li>
       <li><a href="https://github.com/andrewyng/context-hub/blob/main/docs/feedback-and-annotations.md" target="_blank" rel="noopener">Feedback and Annotations</a> — アノテーション・フィードバックの詳細</li>
       <li><a href="https://github.com/andrewyng/context-hub/blob/main/docs/content-guide.md" target="_blank" rel="noopener">Content Guide</a> — ドキュメントのフォーマット・構造</li>
+      <li><a href="https://github.com/andrewyng/context-hub/blob/main/cli/skills/get-api-docs/SKILL.md" target="_blank" rel="noopener">get-api-docs SKILL.md</a> — エージェント登録用スキルファイル</li>
     </ul>
   </div>
   </div>
