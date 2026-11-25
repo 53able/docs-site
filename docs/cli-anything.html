@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CLI-Anything — GUI をエージェント向け CLI に変換するハーネス（HKUDS/CLI-Anything）</title>
-  <meta name="description" content="HKUDS/CLI-Anything の技術概要。HARNESS.md による 7 フェーズ生成、agent-harness モノレポ、CLI-Hub による配布、Click REPL・JSON 出力・SKILL.md 連携。Blender・GIMP・n8n など 60 超の CLI ハーネス。">
+  <meta name="description" content="HKUDS/CLI-Anything（v0.4.0 以降の main、2026-09-22）の技術概要。既存 CLI を使う入口と新規に作る入口、HARNESS.md による 7 フェーズ生成、CLI-Hub 0.4.1 と CLI Matrix、Cursor・Hermes・Reasonix を含むエージェント別の導入、Click REPL・JSON 出力・SKILL.md 連携。">
   <!-- Unfurl: Open Graph -->
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:title" content="CLI-Anything — GUI をエージェント向け CLI に変換するハーネス（HKUDS/CLI-Anything）">
-  <meta property="og:description" content="HARNESS 7 フェーズ、agent-harness、CLI-Hub、スキル配布、2,269 テスト。エージェントが GUI アプリを操作するための Click CLI 生成フレームワーク。">
+  <meta property="og:description" content="HARNESS 7 フェーズ、CLI-Hub（79 + 公開 24 CLI）、能力ベースの CLI Matrix、10 種のエージェント対応、2,461 テスト。GUI アプリをエージェント向け Click CLI にするフレームワーク。">
   <meta property="og:url" content="https://tadano-go.github.io/docs-site/docs/cli-anything.html">
   <!-- Unfurl: Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="CLI-Anything — エージェント向け CLI ハーネス">
-  <meta name="twitter:description" content="GUI アプリを stateful CLI + SKILL に。HARNESS、CLI-Hub、モノレポ構成の整理。">
+  <meta name="twitter:description" content="GUI アプリを stateful CLI + SKILL に。HARNESS、CLI-Hub、CLI Matrix、エージェント別導入の整理。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Fragment+Mono:ital@0;1&display=swap" rel="stylesheet">
@@ -175,6 +175,7 @@
       <li><a href="#structure">リポジトリ構成</a></li>
       <li><a href="#harness">HARNESS 7 フェーズ</a></li>
       <li><a href="#hub">CLI-Hub とスキル</a></li>
+      <li><a href="#matrix">CLI Matrix</a></li>
       <li><a href="#agents">エージェント統合</a></li>
       <li><a href="#cli-features">生成 CLI の特徴</a></li>
       <li><a href="#links">参照</a></li>
@@ -185,7 +186,8 @@
     <header class="page-header">
       <p class="breadcrumb"><a href="../index.html">資料一覧</a> / cli-anything</p>
       <h1 class="page-title">CLI-Anything</h1>
-      <p class="page-subtitle"><a href="https://github.com/HKUDS/CLI-Anything" target="_blank" rel="noopener">HKUDS/CLI-Anything</a> — 人間向け GUI アプリを、コーディングエージェントが操作できる <strong>stateful CLI</strong> に変換するオープンソースのハーネスとモノレポ。Claude Code・Pi・OpenCode・Codex などから <code>/cli-anything</code> 一発で新規ハーネスを生成し、既存の 60 件超の CLI は CLI-Hub で配布する。</p>
+      <p class="page-subtitle"><a href="https://github.com/HKUDS/CLI-Anything" target="_blank" rel="noopener">HKUDS/CLI-Anything</a> — 人間向け GUI アプリを、コーディングエージェントが操作できる <strong>stateful CLI</strong> に変換するオープンソースのハーネスとモノレポ。Claude Code・Pi・OpenCode・Codex などから <code>/cli-anything</code> 一発で新規ハーネスを生成し、既存の約 80 件の CLI は CLI-Hub で配布する。</p>
+      <p class="page-subtitle" style="font-size:0.8125rem; margin-top:0.5rem;">対象: main <code>34f5195</code>（2026-09-22、v0.4.0 以降）· CLI-Hub 0.4.1 · 前回更新（2026-05-17）からの主な差分は CLI Matrix、Cursor / Hermes / Reasonix 対応、Hub の update / uninstall / launch。</p>
     </header>
 
     <section id="overview" class="sec-head">1 — 概要</section>
@@ -193,16 +195,30 @@
       <span class="ve-section-label"><span class="ve-dot"></span> 位置づけ</span>
       <p>README のスローガンは「<strong>Today's Software Serves Humans. Tomorrow's Users will be Agents.</strong>」である。CLI-Anything は、Blender・GIMP・LibreOffice・n8n・OBS・Zotero など、画面とマウス前提のソフトを <strong>Click ベースの CLI + REPL</strong> に落とし、<code>--json</code> 出力と <code>SKILL.md</code> でエージェントが発見・実行できる形にそろえる。</p>
       <div class="kpi-row">
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">60+</span><span class="ve-kpi-card__label">registry.json の CLI</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">57</span><span class="ve-kpi-card__label">skills/ の SKILL</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">2,269</span><span class="ve-kpi-card__label">README 掲載の合格テスト</span></div>
-        <div class="ve-kpi-card"><span class="ve-kpi-card__value">7</span><span class="ve-kpi-card__label">HARNESS 生成フェーズ</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">79</span><span class="ve-kpi-card__label">registry.json の CLI</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">24</span><span class="ve-kpi-card__label">public_registry.json の外部 CLI</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">2,461</span><span class="ve-kpi-card__label">README 掲載の合格テスト</span></div>
+        <div class="ve-kpi-card"><span class="ve-kpi-card__value">5</span><span class="ve-kpi-card__label">CLI Matrix（用途別の束）</span></div>
       </div>
       <div class="tag-row">
         <span class="tag">Python 3.10+</span>
         <span class="tag">Click</span>
         <span class="tag">pytest</span>
         <span class="tag">Apache-2.0</span>
+      </div>
+    </div>
+    <div class="ve-card" style="--i:1; margin-top:1rem;">
+      <span class="ve-section-label"><span class="ve-dot"></span> 2 つの入口</span>
+      <p>README のクイックスタートは「既存の CLI を使う」と「新しい CLI を作る」の 2 本立てになった。まず CLI-Hub で探し、無ければ生成に進む順序である。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>目的</th><th>入れるもの</th><th>最初の操作</th></tr></thead>
+          <tbody>
+            <tr><td>既存 CLI を自分で使う</td><td><code>pip install cli-anything-hub</code></td><td><code>cli-hub search image</code> → <code>cli-hub install gimp</code></td></tr>
+            <tr><td>エージェントに探させる</td><td><code>cli-hub-meta-skill</code>（<code>npx skills add</code>）</td><td>「Find appropriate CLI software in CLI-Hub and complete the task: …」と依頼</td></tr>
+            <tr><td>新しい CLI を作る</td><td>各エージェント向けのプラグイン / スキル（<a href="#agents">7 章</a>）</td><td><code>/cli-anything ./gimp</code> で 7 フェーズ生成</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -234,6 +250,7 @@ flowchart TB
     PLUGIN["cli-anything-plugin/ コマンド・テンプレ"]
     SKILLS["skills/cli-anything-*"]
     HUB["cli-hub/ · registry.json"]
+    MATRIX["cli-hub-matrix/ · matrix_registry.json"]
     APP["&lt;app&gt;/agent-harness/"]
   end
   AGENT["コーディングエージェント"] --> PLUGIN
@@ -241,13 +258,19 @@ flowchart TB
   HARNESS --> APP
   APP --> SKILLS
   HUB --> APP
+  MATRIX --> HUB
       </pre>
       <div class="ve-code-block">
         <pre><code>CLI-Anything/
-├── cli-anything-plugin/     # Claude Code プラグイン・HARNESS.md
+├── cli-anything-plugin/     # Claude Code プラグイン・HARNESS.md（方法論の正本）
+├── cursor-plugin/           # Cursor 用の生成プラグイン
+├── codex-skill/ hermes-skill/ reasonix-skill/ …  # エージェント別の導入口
 ├── cli-hub/                 # pip install cli-anything-hub
+├── cli-hub-matrix/          # 用途別マトリクスの SKILL.md（5 件）
 ├── skills/                  # 正本 SKILL.md（npx skills add 対象）
-├── registry.json            # CLI-Hub メタデータ（60 CLI）
+├── registry.json            # 本リポジトリのハーネス（79 CLI）
+├── public_registry.json     # 外部の公開 CLI（24 件）
+├── matrix_registry.json     # CLI Matrix の定義
 ├── blender/agent-harness/   # 例: cli_anything/blender/
 ├── gimp/agent-harness/
 ├── n8n/agent-harness/
@@ -288,20 +311,72 @@ flowchart LR
     <section id="hub" class="sec-head">5 — CLI-Hub とスキル</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 配布レイヤ</span>
-      <p><a href="https://hkuds.github.io/CLI-Anything/" target="_blank" rel="noopener">CLI-Hub</a> は Web カタログと PyPI パッケージ <code>cli-anything-hub</code> の両面を持つ。<code>registry.json</code> に各 CLI の <code>install_cmd</code>・<code>entry_point</code>・<code>skill_md</code> が載る。</p>
-      <div class="ve-code-block">
+      <p><a href="https://clianything.cc" target="_blank" rel="noopener">CLI-Hub</a> は Web カタログと PyPI パッケージ <code>cli-anything-hub</code>（0.4.1）の両面を持つ。収録元は 2 つで、本リポジトリのハーネスを載せる <code>registry.json</code> と、pip・npm・brew などで入る外部 CLI を載せる <code>public_registry.json</code> である。各エントリに <code>install_cmd</code>・<code>entry_point</code>・<code>skill_md</code> が入る。</p>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>コマンド</th><th>用途</th></tr></thead>
+          <tbody>
+            <tr><td><code>cli-hub list</code> / <code>search &lt;query&gt;</code></td><td>一覧・検索（<code>-c image</code> でカテゴリ絞り込み、<code>--json</code> 対応）</td></tr>
+            <tr><td><code>cli-hub info &lt;name&gt;</code></td><td>1 件の詳細</td></tr>
+            <tr><td><code>cli-hub install</code> / <code>update</code> / <code>uninstall</code></td><td>導入・更新・削除</td></tr>
+            <tr><td><code>cli-hub launch &lt;name&gt; [args...]</code></td><td>導入済み CLI を起動</td></tr>
+            <tr><td><code>cli-hub previews …</code></td><td>プレビューバンドルの確認・HTML 化</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-code-block" style="margin-top:0.75rem;">
         <pre><code>pip install cli-anything-hub
-cli-hub search blender
-cli-hub install shotcut
-cli-hub list</code></pre>
+cli-hub search image
+cli-hub install gimp
+cli-hub launch gimp</code></pre>
       </div>
-      <p>エージェント向けメタスキル <code>skills/cli-hub-meta-skill/SKILL.md</code> により、ハブから CLI を自律的に発見・インストールする流れも用意されている。個別スキルは README 記載どおり次でグローバル導入できる。</p>
+      <div class="ve-callout"><strong>上流アプリは別途必要:</strong> GIMP・Blender・LibreOffice などをラップする CLI は、ハーネスだけ入れても動かない。対象アプリ本体も導入する（README の注意書き）。</div>
+      <p>エージェント向けメタスキル <code>cli-hub-meta-skill</code> を入れると、エージェントがハブから CLI を選び、導入し、その CLI 自身の <code>SKILL.md</code> を読んで使う。個別スキルも同じ方法で入る。</p>
       <div class="ve-code-block">
-        <pre><code>npx skills add HKUDS/CLI-Anything --skill cli-anything-blender -g -y</code></pre>
+        <pre><code>npx skills add HKUDS/CLI-Anything --skill cli-hub-meta-skill -g -y
+npx skills add HKUDS/CLI-Anything --skill cli-anything-blender -g -y</code></pre>
       </div>
+      <div class="ve-callout"><strong>利用統計の送信:</strong> <code>cli-hub</code> は既定で匿名の利用イベントを PostHog に送る（<code>cli-hub/README.md</code> の Analytics 節）。止める場合は <code>export CLI_HUB_NO_ANALYTICS=1</code>。</div>
     </div>
 
-    <section id="agents" class="sec-head">6 — エージェント統合</section>
+    <section id="matrix" class="sec-head">6 — CLI Matrix</section>
+    <div class="ve-card ve-card--elevated" style="--i:0">
+      <span class="ve-section-label"><span class="ve-dot"></span> 複数 CLI を用途で束ねる</span>
+      <p>CLI-Hub 0.4 系で追加された仕組み。「動画制作」のような用途ごとに、必要な<strong>能力（capability）</strong>と、それを満たす<strong>提供元（provider）</strong>を <code>matrix_registry.json</code> に定義する。提供元にはハーネス CLI のほか、外部 CLI・Python ライブラリ・ネイティブバイナリ・クラウド API・他のスキルも含まれる。固定の工程表ではなく、手順例（recipe）が使う能力を選び、能力ごとに提供元を選ぶ。</p>
+      <pre class="mermaid">
+flowchart LR
+  Q["タスク\n例: 音声を文字起こし"] --> CAN["cli-hub can"]
+  CAN --> CAP["能力\n例: transcribe"]
+  CAP --> PRE["matrix preflight\n手元で使える提供元を確認"]
+  PRE --> INS["matrix install\n登録済みハーネスだけ導入"]
+  PRE --> EXT["外部 CLI・API\n必要になった時点で導入"]
+      </pre>
+      <div class="ve-table-wrap">
+        <table>
+          <thead><tr><th>マトリクス</th><th>CLI</th><th>能力</th><th>手順例</th><th>主な範囲</th></tr></thead>
+          <tbody>
+            <tr><td><code>video-creation</code></td><td>14</td><td>19</td><td>7</td><td>絵コンテ、素材検索、収録、生成、音声・音楽、字幕、編集、書き出し、品質確認</td></tr>
+            <tr><td><code>knowledge-research</code></td><td>13</td><td>12</td><td>6</td><td>文献検索、引用、ノート、Office 文書、PDF、図、LaTeX</td></tr>
+            <tr><td><code>3d-cad</code></td><td>6</td><td>12</td><td>6</td><td>モデリング、パラメトリック CAD、点群、レンダリング、スライス・CAM</td></tr>
+            <tr><td><code>game-development</code></td><td>9</td><td>10</td><td>6</td><td>Godot 中心のエンジン操作、アセット、プレイテスト、配布</td></tr>
+            <tr><td><code>image-design</code></td><td>7</td><td>9</td><td>7</td><td>画像生成、ラスタ / ベクタ編集、モック、超解像、RAW 現像</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ve-code-block" style="margin-top:0.75rem;">
+        <pre><code>cli-hub can "transcribe audio"                  # 全マトリクスから能力を探す
+cli-hub matrix list
+cli-hub matrix info video-creation              # 提供元と手順例
+cli-hub matrix preflight video-creation --offline --fix-hints
+cli-hub matrix install video-creation           # 登録済みハーネスのみ
+cli-hub matrix doctor video-creation
+cli-hub matrix recipes video-creation</code></pre>
+      </div>
+      <p><code>matrix preflight</code> の終了コードは、全能力を満たせば 0、欠けがあれば 3、マトリクスが無ければ 1、能力名・手順例名の誤りは 2。各マトリクスの <code>SKILL.md</code> は、preflight を「何が使えるかの報告」として扱い、提供元はユーザーの目的・予算・オフライン要件で選ぶこと、有料 API はユーザーの同意か認証情報がある場合だけ使うことを求めている。</p>
+      <div class="ve-callout"><strong>README には未記載:</strong> CLI Matrix はルートの README に説明が無く、仕様はコード（<code>cli-hub/cli_hub/matrix.py</code>）と <code>cli-hub-matrix/*/SKILL.md</code> にある。<code>matrix_registry.json</code> が参照する <code>docs/cli-matrix/</code> は 34f5195 時点でリポジトリに存在しない。</div>
+    </div>
+
+    <section id="agents" class="sec-head">7 — エージェント統合</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> プラットフォーム別エントリ</span>
       <div class="ve-table-wrap">
@@ -309,18 +384,23 @@ cli-hub list</code></pre>
           <thead><tr><th>環境</th><th>セットアップの要点</th><th>ビルドコマンド例</th></tr></thead>
           <tbody>
             <tr><td>Claude Code</td><td><code>/plugin marketplace add HKUDS/CLI-Anything</code> → <code>/plugin install cli-anything</code></td><td><code>/cli-anything ./gimp</code></td></tr>
+            <tr><td>Cursor</td><td><code>cursor-plugin/scripts/install.sh</code>（Windows は <code>install.ps1</code>）→ ウィンドウを再読み込み</td><td><code>/cli-anything ./gimp</code></td></tr>
             <tr><td>Pi</td><td><code>.pi-extension/cli-anything/install.sh</code> でグローバル拡張</td><td><code>/cli-anything https://github.com/…</code></td></tr>
             <tr><td>OpenCode</td><td><code>opencode-commands/*.md</code> と HARNESS.md を <code>~/.config/opencode/commands/</code> へ</td><td><code>/cli-anything ./gimp</code></td></tr>
-            <tr><td>Codex</td><td><code>codex-skill/scripts/install.sh</code></td><td>自然言語で「CLI-Anything で harness を組んで」</td></tr>
+            <tr><td>Codex</td><td><code>codex-skill/scripts/install.sh</code>（HARNESS.md などを同梱した自己完結のスキルとして入る）</td><td>自然言語で「CLI-Anything で harness を組んで」</td></tr>
+            <tr><td>Hermes</td><td><code>hermes-skill/scripts/install.sh</code> → Hermes を再起動（実験的・コミュニティ）</td><td>「Use CLI-Anything to build a harness for ./gimp」</td></tr>
+            <tr><td>Reasonix</td><td><code>reasonix-skill/scripts/install.sh</code> → Reasonix を再起動（実験的・コミュニティ）</td><td>同上（自然言語）</td></tr>
             <tr><td>OpenClaw</td><td><code>openclaw-skill/SKILL.md</code> をスキルディレクトリへコピー</td><td><code>@cli-anything build …</code></td></tr>
             <tr><td>Qodercli</td><td><code>qoder-plugin/setup-qodercli.sh</code></td><td><code>/cli-anything ./gimp</code></td></tr>
+            <tr><td>GitHub Copilot CLI</td><td><code>copilot plugin install ./cli-anything-plugin</code></td><td><code>/cli-anything ./gimp</code></td></tr>
           </tbody>
         </table>
       </div>
+      <p>Cursor・Codex・Hermes・Reasonix の導入スクリプトは、<code>cli-anything-plugin/</code> の HARNESS.md・コマンド仕様・補助スクリプトを各導入先へ複製する。方法論の正本は <code>cli-anything-plugin/</code> のまま。</p>
       <div class="ve-callout"><strong>Windows:</strong> Claude Code / Pi はシェルが bash 前提。Git for Windows（<code>cygpath</code> 含む）または WSL がないとコマンドが失敗しうる（README の注意書き）。</div>
     </div>
 
-    <section id="cli-features" class="sec-head">7 — 生成 CLI の特徴</section>
+    <section id="cli-features" class="sec-head">8 — 生成 CLI の特徴</section>
     <div class="ve-card" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 実装パターン</span>
       <p>既存ハーネス（GIMP・Blender・Shotcut・FreeCAD 等）に共通する設計が HARNESS.md で規定されている。</p>
@@ -329,17 +409,20 @@ cli-hub list</code></pre>
         <li><strong>バックエンド分離:</strong> <code>utils/&lt;software&gt;_backend.py</code> が実ソフトの CLI / ヘッドレス API を呼ぶ</li>
         <li><strong>ReplSkin:</strong> ブランド付き REPL・履歴・テーブル表示（<code>cli-anything-plugin/repl_skin.py</code> を各パッケージへコピー）</li>
         <li><strong>プレビュー:</strong> <code>preview_bundle.py</code> と <code>docs/PREVIEW_PROTOCOL.md</code> による成果物プレビュー（3D・動画・図など）</li>
-        <li><strong>テスト:</strong> コアロジックの unit と、実バックエンドを使う E2E の二層</li>
+        <li><strong>テスト:</strong> コアロジックの unit と、実バックエンドを使う E2E の二層。README の集計は 2,461 件（unit 1,732 / E2E 579 / Node.js 19）</li>
+        <li><strong>入力の安全性:</strong> XML・SVG・ODF・MLT・MusicXML・CSL の解析は、信頼できない入力として <code>defusedxml</code> 経由で読む（2026-05-19 の変更）</li>
       </ul>
       <p>代表例: <code>cli-anything-blender</code>、<code>cli-anything-freecad</code>（258 コマンド / 17 グループと README 記載）、<code>cli-anything-n8n</code>、<code>cli-anything-zotero</code>。</p>
     </div>
 
-    <section id="links" class="sec-head">8 — 参照</section>
+    <section id="links" class="sec-head">9 — 参照</section>
     <div class="ve-card ve-card--recessed" style="--i:0">
       <span class="ve-section-label"><span class="ve-dot"></span> 公式・ドキュメント</span>
       <ul>
         <li><a href="https://github.com/HKUDS/CLI-Anything" target="_blank" rel="noopener">GitHub: HKUDS/CLI-Anything</a></li>
-        <li><a href="https://hkuds.github.io/CLI-Anything/" target="_blank" rel="noopener">CLI-Hub（Web）</a></li>
+        <li><a href="https://clianything.cc" target="_blank" rel="noopener">CLI-Hub（Web）</a> · <a href="https://github.com/HKUDS/CLI-Anything/blob/main/cli-hub/README.md" target="_blank" rel="noopener">cli-hub/README.md</a></li>
+        <li><a href="https://arxiv.org/abs/2606.03854" target="_blank" rel="noopener">技術レポート（arXiv:2606.03854）</a></li>
+        <li><a href="https://github.com/HKUDS/CLI-Anything/blob/main/cli-hub-matrix/video-creation/SKILL.md" target="_blank" rel="noopener">cli-hub-matrix/video-creation/SKILL.md</a>（CLI Matrix の例）</li>
         <li><a href="https://github.com/HKUDS/CLI-Anything/blob/main/README.md" target="_blank" rel="noopener">README.md</a> · <a href="https://github.com/HKUDS/CLI-Anything/blob/main/README_JA.md" target="_blank" rel="noopener">README_JA.md</a></li>
         <li><a href="https://github.com/HKUDS/CLI-Anything/blob/main/cli-anything-plugin/HARNESS.md" target="_blank" rel="noopener">HARNESS.md</a></li>
         <li><a href="https://github.com/HKUDS/CLI-Anything/blob/main/docs/PREVIEW_PROTOCOL.md" target="_blank" rel="noopener">PREVIEW_PROTOCOL.md</a></li>
